@@ -1,0 +1,602 @@
+/* Mobile-Responsive Styles for CreditMaster Pro */
+
+/* ============================================================================
+   MOBILE-FIRST RESPONSIVE DESIGN
+   ============================================================================ */
+
+/* Base mobile styles (320px and up) */
+@media (max-width: 767px) {
+  
+  /* ========================================
+     LAYOUT & CONTAINERS
+     ======================================== */
+  
+  .mobile-container {
+    padding: 1rem;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  .mobile-safe-area {
+    padding-bottom: env(safe-area-inset-bottom, 80px);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  
+  /* ========================================
+     TYPOGRAPHY
+     ======================================== */
+  
+  .mobile-heading-1 {
+    font-size: 1.75rem;
+    line-height: 1.2;
+    font-weight: 700;
+  }
+  
+  .mobile-heading-2 {
+    font-size: 1.5rem;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+  
+  .mobile-heading-3 {
+    font-size: 1.25rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  
+  .mobile-body {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  
+  .mobile-caption {
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+  
+  /* ========================================
+     TOUCH-FRIENDLY INTERACTIONS
+     ======================================== */
+  
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .mobile-button {
+    padding: 12px 16px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .mobile-button:active {
+    transform: scale(0.98);
+  }
+  
+  .mobile-card {
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.2s ease;
+  }
+  
+  .mobile-card:active {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* ========================================
+     NAVIGATION
+     ======================================== */
+  
+  .mobile-nav-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0.75rem 1rem;
+  }
+  
+  .mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+    padding: 0.5rem;
+    z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+  }
+  
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .mobile-nav-item:active {
+    background-color: #f3f4f6;
+  }
+  
+  .mobile-nav-item.active {
+    color: #2563eb;
+    background-color: #eff6ff;
+  }
+  
+  /* ========================================
+     FORMS & INPUTS
+     ======================================== */
+  
+  .mobile-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    width: 100%;
+    transition: border-color 0.2s ease;
+  }
+  
+  .mobile-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  
+  .mobile-textarea {
+    font-size: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    width: 100%;
+    min-height: 100px;
+    resize: vertical;
+  }
+  
+  .mobile-select {
+    font-size: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    width: 100%;
+    background-color: white;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 40px;
+  }
+  
+  /* ========================================
+     CHARTS & VISUALIZATIONS
+     ======================================== */
+  
+  .mobile-chart-container {
+    width: 100%;
+    height: 200px;
+    margin: 1rem 0;
+  }
+  
+  .mobile-chart-small {
+    width: 100%;
+    height: 120px;
+  }
+  
+  .mobile-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  
+  .mobile-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+  }
+  
+  /* ========================================
+     MODALS & OVERLAYS
+     ======================================== */
+  
+  .mobile-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 1rem;
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+  
+  .mobile-modal-content {
+    width: 100%;
+    max-width: 100%;
+    background: white;
+    border-radius: 16px 16px 0 0;
+    padding: 1.5rem;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  
+  .mobile-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+  }
+  
+  /* ========================================
+     TABLES
+     ======================================== */
+  
+  .mobile-table {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .mobile-table table {
+    min-width: 600px;
+    font-size: 0.875rem;
+  }
+  
+  .mobile-table th,
+  .mobile-table td {
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+    white-space: nowrap;
+  }
+  
+  /* Alternative: Card-based table for mobile */
+  .mobile-table-cards .table-row {
+    display: block;
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .mobile-table-cards .table-cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  
+  .mobile-table-cards .table-cell:last-child {
+    border-bottom: none;
+  }
+  
+  .mobile-table-cards .cell-label {
+    font-weight: 500;
+    color: #6b7280;
+    font-size: 0.75rem;
+  }
+  
+  .mobile-table-cards .cell-value {
+    font-weight: 500;
+    color: #111827;
+  }
+  
+  /* ========================================
+     PROGRESS INDICATORS
+     ======================================== */
+  
+  .mobile-progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #f3f4f6;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  
+  .mobile-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+  
+  .mobile-step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 1rem 0;
+  }
+  
+  .mobile-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+  }
+  
+  .mobile-step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .mobile-step.completed .mobile-step-circle {
+    background-color: #10b981;
+    color: white;
+  }
+  
+  .mobile-step.active .mobile-step-circle {
+    background-color: #3b82f6;
+    color: white;
+  }
+  
+  .mobile-step.pending .mobile-step-circle {
+    background-color: #f3f4f6;
+    color: #6b7280;
+  }
+  
+  /* ========================================
+     ANIMATIONS & TRANSITIONS
+     ======================================== */
+  
+  .mobile-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .mobile-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+  
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  
+  .mobile-bounce {
+    animation: bounce 0.6s ease-out;
+  }
+  
+  @keyframes bounce {
+    0%, 20%, 53%, 80%, 100% {
+      transform: translate3d(0, 0, 0);
+    }
+    40%, 43% {
+      transform: translate3d(0, -8px, 0);
+    }
+    70% {
+      transform: translate3d(0, -4px, 0);
+    }
+    90% {
+      transform: translate3d(0, -2px, 0);
+    }
+  }
+  
+  /* ========================================
+     UTILITY CLASSES
+     ======================================== */
+  
+  .mobile-hide {
+    display: none !important;
+  }
+  
+  .mobile-show {
+    display: block !important;
+  }
+  
+  .mobile-flex {
+    display: flex !important;
+  }
+  
+  .mobile-grid {
+    display: grid !important;
+  }
+  
+  .mobile-text-center {
+    text-align: center !important;
+  }
+  
+  .mobile-text-left {
+    text-align: left !important;
+  }
+  
+  .mobile-text-right {
+    text-align: right !important;
+  }
+  
+  .mobile-full-width {
+    width: 100% !important;
+  }
+  
+  .mobile-no-scroll {
+    overflow: hidden !important;
+  }
+  
+  /* ========================================
+     ACCESSIBILITY
+     ======================================== */
+  
+  .mobile-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  
+  .mobile-focus-visible:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .mobile-card {
+      border: 2px solid #000;
+    }
+    
+    .mobile-button {
+      border: 2px solid #000;
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-fade-in,
+    .mobile-slide-in-right,
+    .mobile-bounce {
+      animation: none;
+    }
+    
+    .mobile-button:active {
+      transform: none;
+    }
+  }
+}
+
+/* ============================================================================
+   TABLET STYLES (768px - 1023px)
+   ============================================================================ */
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .mobile-container {
+    padding: 1.5rem;
+  }
+  
+  .mobile-grid-tablet {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .mobile-chart-container {
+    height: 250px;
+  }
+  
+  .mobile-modal-content {
+    max-width: 600px;
+    border-radius: 16px;
+    margin: auto;
+  }
+}
+
+/* ============================================================================
+   DESKTOP OVERRIDE (1024px and up)
+   ============================================================================ */
+
+@media (min-width: 1024px) {
+  .mobile-hide-desktop {
+    display: none !important;
+  }
+  
+  .mobile-bottom-nav {
+    display: none;
+  }
+  
+  .mobile-nav-header {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   PWA SPECIFIC STYLES
+   ============================================================================ */
+
+/* iOS PWA status bar */
+@media (display-mode: standalone) {
+  .mobile-safe-area {
+    padding-top: env(safe-area-inset-top, 20px);
+  }
+  
+  .mobile-nav-header {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+  }
+}
+
+/* Android PWA */
+@media (display-mode: standalone) and (orientation: portrait) {
+  .mobile-container {
+    padding-top: 1rem;
+  }
+}
+
+/* ============================================================================
+   DARK MODE SUPPORT
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  .mobile-card {
+    background-color: #1f2937;
+    color: #f9fafb;
+    border-color: #374151;
+  }
+  
+  .mobile-nav-header,
+  .mobile-bottom-nav {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+  
+  .mobile-input,
+  .mobile-textarea,
+  .mobile-select {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+  
+  .mobile-modal-content {
+    background-color: #1f2937;
+    color: #f9fafb;
+  }
+}
+
