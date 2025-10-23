@@ -1,0 +1,48 @@
+{
+  "fcra": {
+    "name": "Fair Credit Reporting Act",
+    "description": "Federal law that regulates the collection, dissemination, and use of consumer information",
+    "key_provisions": [
+      "Right to dispute inaccurate information",
+      "30-day investigation period",
+      "Removal of unverified items"
+    ]
+  },
+  "fresh_start_program": {
+    "name": "Fresh Start Program",
+    "description": "Federal program to help borrowers get out of default",
+    "eligibility": [
+      "Federal student loans in default",
+      "One-time opportunity",
+      "Must complete application"
+    ]
+  },
+  "loan_rehabilitation": {
+    "name": "Loan Rehabilitation",
+    "description": "Program to remove default status from credit report",
+    "requirements": [
+      "9 consecutive on-time payments",
+      "Reasonable and affordable payment amount",
+      "Default notation removed upon completion"
+    ]
+  },
+  "hea": {
+    "name": "Higher Education Act",
+    "description": "Federal law governing student loan programs",
+    "protections": [
+      "Income-driven repayment plans",
+      "Loan forgiveness programs",
+      "Servicer accountability"
+    ]
+  },
+  "cfpb": {
+    "name": "Consumer Financial Protection Bureau Regulations",
+    "description": "Federal regulations protecting student loan borrowers",
+    "requirements": [
+      "Fair lending practices",
+      "Transparent communication",
+      "Proper servicing standards"
+    ]
+  }
+}
+
