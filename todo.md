@@ -66,7 +66,7 @@
 - [ ] Mobile responsiveness check
 
 ### Documentation
-- [ ] Update README with new features
+- [x] Update README with new features
 - [ ] Create user guide for AIML features
 - [ ] Add API documentation
 - [ ] Create deployment guide
