@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { pricingTiers } from '@/lib/pricing';
+import CheckoutButton from '@/components/payment/CheckoutButton';
 
 const PricingPage = () => {
   return (
@@ -25,6 +26,8 @@ const PricingPage = () => {
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-6">
               <a href="/dashboard" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Dashboard</a>
+              <a href="/credit-builder" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Credit Builder</a>
+              <a href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Marketplace</a>
               <a href="/student-loan-agent" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Student Loans</a>
               <a href="/pricing" className="text-sm font-medium text-blue-600 border-b-2 border-blue-600 pb-1">Pricing</a>
             </nav>
@@ -56,8 +59,8 @@ const PricingPage = () => {
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           {pricingTiers.map((tier, index) => (
-            <div 
-              key={tier.name} 
+            <div
+              key={tier.id} 
               className={`relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transition-all hover:shadow-2xl hover:scale-105 ${
                 index === 1 ? 'border-2 border-purple-500 transform scale-105' : 'border border-gray-200'
               }`}
@@ -89,15 +92,11 @@ const PricingPage = () => {
                 ))}
               </ul>
 
-              <button 
-                className={`w-full py-3 px-6 rounded-lg font-medium transition-all ${
-                  index === 1 
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-lg' 
-                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                }`}
-              >
-                Get Started
-              </button>
+              <CheckoutButton
+                priceId={tier.priceId}
+                planName={tier.name}
+                planPrice={tier.priceNumber}
+              />
             </div>
           ))}
         </div>

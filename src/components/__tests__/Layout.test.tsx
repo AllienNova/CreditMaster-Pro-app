@@ -15,6 +15,8 @@ describe('Layout', () => {
 
     // Check for navigation links
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Credit Builder')).toBeInTheDocument();
+    expect(screen.getByText('Marketplace')).toBeInTheDocument();
     expect(screen.getByText('Student Loans')).toBeInTheDocument();
     expect(screen.getByText('Pricing')).toBeInTheDocument();
 

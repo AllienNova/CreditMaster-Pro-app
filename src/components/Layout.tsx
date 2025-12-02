@@ -14,6 +14,8 @@ const Layout: React.FC<LayoutProps> = ({ children, showNavigation = true }) => {
 
   const navigationItems = [
     { href: '/dashboard', label: 'Dashboard' },
+    { href: '/credit-builder', label: 'Credit Builder' },
+    { href: '/marketplace', label: 'Marketplace' },
     { href: '/student-loan-agent', label: 'Student Loans' },
     { href: '/pricing', label: 'Pricing' },
   ];

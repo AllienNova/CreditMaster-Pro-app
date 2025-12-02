@@ -41,3 +41,7 @@ Thumbs.db
 *.pem
 .vercel
 
+
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md

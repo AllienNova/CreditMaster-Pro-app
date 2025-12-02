@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 
@@ -12,13 +12,19 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const router = useRouter();
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // Create Supabase client lazily using useMemo to avoid SSR issues
+  const supabase = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    return createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+  }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!supabase) return;
+
     setLoading(true);
     setError('');
 

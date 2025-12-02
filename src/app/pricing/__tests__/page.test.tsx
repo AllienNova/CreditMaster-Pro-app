@@ -19,16 +19,17 @@ describe('PricingPage', () => {
 
   it('should display all three pricing tiers', () => {
     render(<PricingPage />);
-    expect(screen.getByText('Essential✨')).toBeInTheDocument();
-    expect(screen.getByText('Pro 🚀')).toBeInTheDocument();
-    expect(screen.getByText('Elite 🏆')).toBeInTheDocument();
+    expect(screen.getByText('Basic')).toBeInTheDocument();
+    expect(screen.getByText('Premium')).toBeInTheDocument();
+    expect(screen.getByText('Enterprise')).toBeInTheDocument();
   });
 
   it('should display pricing information', () => {
     render(<PricingPage />);
-    expect(screen.getByText(/\$49/)).toBeInTheDocument();
-    expect(screen.getByText(/\$99/)).toBeInTheDocument();
-    expect(screen.getByText(/\$199/)).toBeInTheDocument();
+    // Prices appear in both the price display and button text
+    expect(screen.getAllByText(/\$29/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/\$79/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/\$199/).length).toBeGreaterThan(0);
   });
 
   it('should highlight the Pro tier as popular', () => {
@@ -44,9 +45,9 @@ describe('PricingPage', () => {
     expect(screen.getAllByText(/Federal/i).length).toBeGreaterThan(0);
   });
 
-  it('should have Get Started buttons for each tier', () => {
+  it('should have Subscribe buttons for each tier', () => {
     render(<PricingPage />);
-    const buttons = screen.getAllByText('Get Started');
+    const buttons = screen.getAllByRole('button', { name: /Subscribe to/i });
     expect(buttons.length).toBe(3);
   });
 });

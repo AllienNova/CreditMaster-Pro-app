@@ -5,10 +5,7 @@ module.exports = {
     '!src/**/*.d.ts',
   ],
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
-  testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
-    '<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}',
-  ],
+  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.[jt]sx?$',
   testEnvironment: 'jsdom',
     transform: {
       '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],

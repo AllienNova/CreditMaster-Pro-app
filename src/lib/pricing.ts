@@ -1,35 +1,60 @@
-export const pricingTiers = [
+export interface PricingTier {
+  id: string;
+  name: string;
+  price: string;
+  priceNumber: number;
+  priceSuffix: string;
+  priceId: string;
+  features: string[];
+}
+
+export const pricingTiers: PricingTier[] = [
   {
-    name: 'Essential✨',
-    price: '49',
+    id: 'basic',
+    name: 'Basic',
+    price: '29',
+    priceNumber: 29,
     priceSuffix: '/ month',
+    priceId: process.env.NEXT_PUBLIC_STRIPE_BASIC_PRICE_ID || 'price_basic',
     features: [
       'AI-powered credit analysis',
-      'Automated dispute generation',
-      'Credit score monitoring',
+      'Basic dispute letter generation',
+      'Credit score tracking',
       'Email support',
+      '5 disputes per month',
     ],
   },
   {
-    name: 'Pro 🚀',
-    price: '99',
+    id: 'premium',
+    name: 'Premium',
+    price: '79',
+    priceNumber: 79,
     priceSuffix: '/ month',
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_PRICE_ID || 'price_premium',
     features: [
-      'All Essential features',
-      'Student loan credit repair',
+      'Everything in Basic',
       'Advanced AI strategies',
-      'Priority email & chat support',
+      'Unlimited disputes',
+      'Priority support',
+      'Student loan optimization',
+      'Credit building recommendations',
     ],
   },
   {
-    name: 'Elite 🏆',
+    id: 'enterprise',
+    name: 'Enterprise',
     price: '199',
+    priceNumber: 199,
     priceSuffix: '/ month',
+    priceId: process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_PRICE_ID || 'price_enterprise',
     features: [
-      'All Pro features',
-      'Dedicated AI agent',
-      'Federal system integration (NSLDS, FSA)',
-      '24/7 phone support',
+      'Everything in Premium',
+      'Multi-user access',
+      'Dedicated account manager',
+      'Custom AI training',
+      'API access',
+      'White-label options',
+      'Advanced analytics',
     ],
   },
 ];

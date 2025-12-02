@@ -399,17 +399,20 @@ class StripePaymentService {
   
   private async handleSubscriptionCreated(subscription: Stripe.Subscription): Promise<void> {
     console.log('Subscription created:', subscription.id);
-    // TODO: Update database with subscription info
+    const { subscriptionService } = await import('../subscriptions/subscription-service');
+    await subscriptionService.handleSubscriptionCreated(subscription);
   }
-  
+
   private async handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
     console.log('Subscription updated:', subscription.id);
-    // TODO: Update database with subscription changes
+    const { subscriptionService } = await import('../subscriptions/subscription-service');
+    await subscriptionService.handleSubscriptionUpdated(subscription);
   }
-  
+
   private async handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
     console.log('Subscription deleted:', subscription.id);
-    // TODO: Mark subscription as canceled in database
+    const { subscriptionService } = await import('../subscriptions/subscription-service');
+    await subscriptionService.handleSubscriptionDeleted(subscription);
   }
   
   private async handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
