@@ -1,7 +1,6 @@
-
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 
@@ -17,15 +16,22 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+
+  // Create Supabase client lazily using useMemo to avoid SSR issues
+  const supabase = useMemo(() => {
+    if (typeof window === 'undefined') return null
+    return createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  }, [])
 
   useEffect(() => {
+    if (!supabase) return
+
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session) {
         router.push('/login')
         return
@@ -36,9 +42,10 @@ export default function DashboardPage() {
     }
 
     getUser()
-  }, [router, supabase.auth])
+  }, [router, supabase])
 
   const handleSignOut = async () => {
+    if (!supabase) return
     await supabase.auth.signOut()
     router.push('/login')
   }
@@ -75,6 +82,8 @@ export default function DashboardPage() {
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-6">
               <a href="/dashboard" className="text-sm font-medium text-blue-600 border-b-2 border-blue-600 pb-1">Dashboard</a>
+              <a href="/credit-builder" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Credit Builder</a>
+              <a href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Marketplace</a>
               <a href="/student-loan-agent" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Student Loans</a>
               <a href="/pricing" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Pricing</a>
             </nav>

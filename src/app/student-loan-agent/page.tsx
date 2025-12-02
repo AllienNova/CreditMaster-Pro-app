@@ -39,6 +39,8 @@ const StudentLoanAgentPage = () => {
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-6">
               <a href="/dashboard" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Dashboard</a>
+              <a href="/credit-builder" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Credit Builder</a>
+              <a href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Marketplace</a>
               <a href="/student-loan-agent" className="text-sm font-medium text-blue-600 border-b-2 border-blue-600 pb-1">Student Loans</a>
               <a href="/pricing" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Pricing</a>
             </nav>

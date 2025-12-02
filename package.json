@@ -12,7 +12,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "cypress:open": "cypress open",
-    "cypress:run": "wait-on http://localhost:3000 && cypress run"
+    "cypress:run": "wait-on http://localhost:3000 && cypress run",
+    "check-env": "node scripts/check-env.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.917.0",
