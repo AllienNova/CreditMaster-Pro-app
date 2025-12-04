@@ -110,7 +110,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Deploy to Vercel (Staging)
-        if: ${{ secrets.VERCEL_TOKEN != '' }}
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -129,7 +128,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Deploy to Vercel (Production)
-        if: ${{ secrets.VERCEL_TOKEN != '' }}
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
