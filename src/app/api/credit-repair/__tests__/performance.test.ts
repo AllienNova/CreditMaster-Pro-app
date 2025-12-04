@@ -26,7 +26,7 @@ jest.mock('@/lib/credit-repair/db', () => ({
       createCreditCard: jest.fn(),
     },
     creditRepair: {
-      getActionsByUser: jest.fn(),
+      getActions: jest.fn(),
       createAction: jest.fn(),
     },
   },
@@ -105,7 +105,7 @@ describe('Credit Repair API - Performance Tests', () => {
     });
 
     // Mock creditRepair database methods
-    (db.creditRepair.getActionsByUser as jest.Mock).mockResolvedValue([]);
+    (db.creditRepair.getActions as jest.Mock).mockResolvedValue([]);
     (db.creditRepair.createAction as jest.Mock).mockResolvedValue({ id: 'action-1' });
 
     // Mock creditRepairService methods
