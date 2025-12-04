@@ -46,10 +46,12 @@ let experimentsCache: Map<string, Experiment> = new Map();
 let cacheExpiry = 0;
 const CACHE_TTL = 60 * 1000; // 1 minute
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 /**
  * Load experiments from database
@@ -57,6 +59,7 @@ const supabase = createClient(
 async function loadExperiments(): Promise<void> {
   if (Date.now() < cacheExpiry) return;
 
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('experiments')
     .select('*')
@@ -85,6 +88,8 @@ export async function getVariant(
   if (!experiment || experiment.status !== 'running') {
     return null;
   }
+
+  const supabase = getSupabaseClient();
 
   // Check for existing assignment
   const { data: existing } = await supabase
@@ -161,6 +166,7 @@ export async function trackConversion(
   eventName: string,
   value?: number
 ): Promise<void> {
+  const supabase = getSupabaseClient();
   await supabase.from('experiment_conversions').insert({
     experiment_id: experimentId,
     user_id: userId,

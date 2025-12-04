@@ -51,15 +51,18 @@ interface AuditLogEntry extends AuditEvent {
   timestamp: string;
 }
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 /**
  * Log an audit event
  */
 export async function logAuditEvent(event: AuditEvent): Promise<void> {
+  const supabase = getSupabaseClient();
   try {
     const entry = {
       action: event.action,
@@ -100,6 +103,7 @@ export async function queryAuditLogs(filters: {
   limit?: number;
   offset?: number;
 }): Promise<{ logs: AuditLogEntry[]; total: number }> {
+  const supabase = getSupabaseClient();
   let query = supabase
     .from('audit_logs')
     .select('*', { count: 'exact' });

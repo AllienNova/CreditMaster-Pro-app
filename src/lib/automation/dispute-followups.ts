@@ -1,18 +1,22 @@
 /**
  * Automated Dispute Follow-up Service
- * 
+ *
  * Sends scheduled reminder emails for dispute status updates
  */
 
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResendClient() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 // Follow-up schedule (days after dispute submission)
 const FOLLOWUP_SCHEDULE = [
@@ -79,6 +83,7 @@ export async function processFollowups(): Promise<{
  * Get disputes that need follow-up emails
  */
 async function getDisputesNeedingFollowup(): Promise<Dispute[]> {
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('disputes')
     .select('*')
@@ -128,6 +133,7 @@ function determineFollowupType(dispute: Dispute): string | null {
  * Get user by ID
  */
 async function getUser(userId: string): Promise<User | null> {
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from('profiles')
     .select('id, email, full_name')
@@ -146,6 +152,8 @@ async function sendFollowupEmail(
   dispute: Dispute,
   followupType: string
 ): Promise<void> {
+  const supabase = getSupabaseClient();
+  const resend = getResendClient();
   const subject = getEmailSubject(followupType);
   const body = getEmailBody(user, dispute, followupType);
 
@@ -169,6 +177,7 @@ async function sendFollowupEmail(
  * Update last follow-up timestamp
  */
 async function updateLastFollowup(disputeId: string): Promise<void> {
+  const supabase = getSupabaseClient();
   await supabase
     .from('disputes')
     .update({ last_followup_at: new Date().toISOString() })
