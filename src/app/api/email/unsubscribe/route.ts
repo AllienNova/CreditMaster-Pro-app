@@ -7,10 +7,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyUnsubscribeToken } from '@/lib/email/unsubscribe-token';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 // Email types that can be unsubscribed
 const EMAIL_TYPES = ['marketing', 'disputes', 'scores', 'payments', 'all'] as const;
@@ -48,6 +50,7 @@ export async function GET(request: NextRequest) {
  * POST - Process unsubscribe request
  */
 export async function POST(request: NextRequest) {
+  const supabase = getSupabaseClient();
   try {
     const body = await request.json();
     const { token, userId, type } = body;

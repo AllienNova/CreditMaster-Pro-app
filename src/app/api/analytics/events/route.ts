@@ -6,10 +6,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 interface AnalyticsEvent {
   event: string;
@@ -23,6 +25,7 @@ interface AnalyticsEvent {
 }
 
 export async function POST(request: NextRequest) {
+  const supabase = getSupabaseClient();
   try {
     const { events } = await request.json() as { events: AnalyticsEvent[] };
 
@@ -64,6 +67,7 @@ export async function POST(request: NextRequest) {
  * GET - Retrieve analytics summary (admin only)
  */
 export async function GET(request: NextRequest) {
+  const supabase = getSupabaseClient();
   try {
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('start') || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
