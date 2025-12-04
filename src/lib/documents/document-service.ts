@@ -341,7 +341,84 @@ class DocumentService {
     const maxSize = 10 * 1024 * 1024; // 10MB
     return size <= maxSize;
   }
+
+  // Share link storage
+  private shareLinks: Map<string, ShareLink> = new Map();
+
+  /**
+   * Create a share link for a document
+   */
+  createShareLink(
+    documentId: string,
+    userId: string,
+    recipients: string[],
+    permissions: 'view' | 'download',
+    expiresInHours: number = 24
+  ): ShareLink {
+    const shareId = `share_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
+
+    const shareLink: ShareLink = {
+      id: shareId,
+      documentId,
+      userId,
+      recipients,
+      permissions,
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/shared/${shareId}`,
+      expiresAt,
+      createdAt: new Date(),
+    };
+
+    this.shareLinks.set(shareId, shareLink);
+    return shareLink;
+  }
+
+  /**
+   * List share links for a document
+   */
+  listShareLinks(documentId: string, userId: string): ShareLink[] {
+    return Array.from(this.shareLinks.values())
+      .filter(link => link.documentId === documentId && link.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  /**
+   * Revoke a share link
+   */
+  revokeShareLink(shareId: string, userId: string): boolean {
+    const link = this.shareLinks.get(shareId);
+    if (!link || link.userId !== userId) return false;
+
+    this.shareLinks.delete(shareId);
+    return true;
+  }
+
+  /**
+   * Get share link by ID
+   */
+  getShareLink(shareId: string): ShareLink | undefined {
+    const link = this.shareLinks.get(shareId);
+    if (link && link.expiresAt < new Date()) {
+      this.shareLinks.delete(shareId);
+      return undefined;
+    }
+    return link;
+  }
 }
+
+export interface ShareLink {
+  id: string;
+  documentId: string;
+  userId: string;
+  recipients: string[];
+  permissions: 'view' | 'download';
+  url: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
+// Type alias for backward compatibility
+export type DocumentShareLink = ShareLink;
 
 // Export singleton instance
 export const documentService = new DocumentService();

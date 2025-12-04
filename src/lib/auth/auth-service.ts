@@ -1,0 +1,554 @@
+/**
+ * Authentication Service
+ *
+ * Provides complete authentication functionality including:
+ * - User registration
+ * - User login
+ * - Password reset
+ * - Session management
+ * - Token validation
+ */
+
+import { supabase } from '@/lib/supabase';
+import { validateSignUpData, validateSignInData, validateResetEmail, sanitizeInput } from './validation';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'user' | 'premium' | 'admin' | 'super_admin';
+  subscriptionId?: string;
+  subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'trialing';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  user?: User;
+  error?: string;
+  token?: string;
+}
+
+export interface SignUpData {
+  email: string;
+  password: string;
+  name: string;
+}
+
+export interface SignInData {
+  email: string;
+  password: string;
+}
+
+export interface ResetPasswordData {
+  email: string;
+}
+
+export interface UpdatePasswordData {
+  token: string;
+  newPassword: string;
+}
+
+class AuthService {
+  /**
+   * Register a new user
+   */
+  async signUp(data: SignUpData): Promise<AuthResponse> {
+    try {
+      // Validate input data
+      const validation = validateSignUpData({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      });
+
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error,
+        };
+      }
+
+      // Sanitize inputs
+      const sanitizedName = sanitizeInput(data.name);
+      const sanitizedEmail = sanitizeInput(data.email).toLowerCase();
+
+      // Create user in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: sanitizedEmail,
+        password: data.password,
+        options: {
+          data: {
+            name: sanitizedName,
+          },
+        },
+      });
+
+      if (authError) {
+        return {
+          success: false,
+          error: authError.message,
+        };
+      }
+
+      if (!authData.user) {
+        return {
+          success: false,
+          error: 'Failed to create user',
+        };
+      }
+
+      // Create user profile in database
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert({
+          id: authData.user.id,
+          email: sanitizedEmail,
+          name: sanitizedName,
+          role: 'user',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+      if (profileError) {
+        console.error('Failed to create user profile:', profileError);
+      }
+
+      const user: User = {
+        id: authData.user.id,
+        email: sanitizedEmail,
+        name: sanitizedName,
+        role: 'user',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      return {
+        success: true,
+        user,
+        token: authData.session?.access_token,
+      };
+    } catch (error) {
+      console.error('Sign up error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to sign up',
+      };
+    }
+  }
+
+  /**
+   * Sign in an existing user
+   */
+  async signIn(data: SignInData): Promise<AuthResponse> {
+    try {
+      // Validate input data
+      const validation = validateSignInData({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error,
+        };
+      }
+
+      // Sanitize email
+      const sanitizedEmail = sanitizeInput(data.email).toLowerCase();
+
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: sanitizedEmail,
+        password: data.password,
+      });
+
+      if (authError) {
+        return {
+          success: false,
+          error: authError.message,
+        };
+      }
+
+      if (!authData.user) {
+        return {
+          success: false,
+          error: 'Invalid credentials',
+        };
+      }
+
+      // Get user profile from database
+      const { data: profileData, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Failed to fetch user profile:', profileError);
+      }
+
+      const user: User = {
+        id: authData.user.id,
+        email: authData.user.email || sanitizedEmail,
+        name: profileData?.name || authData.user.user_metadata?.name || 'User',
+        role: profileData?.role || 'user',
+        subscriptionId: profileData?.subscription_id,
+        subscriptionStatus: profileData?.subscription_status,
+        createdAt: new Date(authData.user.created_at),
+        updatedAt: new Date(profileData?.updated_at || authData.user.updated_at),
+      };
+
+      return {
+        success: true,
+        user,
+        token: authData.session?.access_token,
+      };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to sign in',
+      };
+    }
+  }
+
+  /**
+   * Sign out the current user
+   */
+  async signOut(): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Sign out error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to sign out',
+      };
+    }
+  }
+
+  /**
+   * Get the current authenticated user
+   */
+  async getCurrentUser(): Promise<User | null> {
+    try {
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !authUser) {
+        return null;
+      }
+
+      // Get user profile from database
+      const { data: profileData, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+
+      if (profileError) {
+        console.error('Failed to fetch user profile:', profileError);
+      }
+
+      const user: User = {
+        id: authUser.id,
+        email: authUser.email || '',
+        name: profileData?.name || authUser.user_metadata?.name || 'User',
+        role: profileData?.role || 'user',
+        subscriptionId: profileData?.subscription_id,
+        subscriptionStatus: profileData?.subscription_status,
+        createdAt: new Date(authUser.created_at),
+        updatedAt: new Date(profileData?.updated_at || authUser.updated_at),
+      };
+
+      return user;
+    } catch (error) {
+      console.error('Get current user error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Request password reset
+   */
+  async requestPasswordReset(data: ResetPasswordData): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Validate email
+      const validation = validateResetEmail(data.email);
+
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error,
+        };
+      }
+
+      // Sanitize email
+      const sanitizedEmail = sanitizeInput(data.email).toLowerCase();
+
+      // Get the app URL from environment variable or use default for development
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ||
+                     (typeof globalThis.window !== 'undefined' ? globalThis.window.location.origin : 'http://localhost:3000');
+
+      const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
+        redirectTo: `${appUrl}/auth/reset-password`,
+      });
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to request password reset',
+      };
+    }
+  }
+
+  /**
+   * Update password with reset token
+   */
+  async updatePassword(data: UpdatePasswordData): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: data.newPassword,
+      });
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Update password error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update password',
+      };
+    }
+  }
+
+  /**
+   * Get the current session
+   */
+  async getSession() {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error('Get session error:', error);
+        return null;
+      }
+
+      return session;
+    } catch (error) {
+      console.error('Get session error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Refresh the current session
+   */
+  async refreshSession() {
+    try {
+      const { data: { session }, error } = await supabase.auth.refreshSession();
+
+      if (error) {
+        console.error('Refresh session error:', error);
+        return null;
+      }
+
+      return session;
+    } catch (error) {
+      console.error('Refresh session error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Sign in with OAuth provider (Google, GitHub, Microsoft, Apple, LinkedIn)
+   */
+  async signInWithOAuth(provider: 'google' | 'github' | 'azure' | 'apple' | 'linkedin_oidc'): Promise<{ success: boolean; error?: string }> {
+    try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ||
+                     (typeof globalThis.window !== 'undefined' ? globalThis.window.location.origin : 'http://localhost:3000');
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${appUrl}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('OAuth sign in error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to sign in with OAuth',
+      };
+    }
+  }
+
+  /**
+   * Resend email verification
+   */
+  async resendVerificationEmail(email: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const sanitizedEmail = sanitizeInput(email).toLowerCase();
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: sanitizedEmail,
+      });
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Resend verification email error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to resend verification email',
+      };
+    }
+  }
+
+  /**
+   * Enable Two-Factor Authentication (2FA)
+   */
+  async enableTwoFactor(): Promise<{ success: boolean; qrCode?: string; secret?: string; error?: string }> {
+    try {
+      const { data, error } = await supabase.auth.mfa.enroll({
+        factorType: 'totp',
+      });
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      return {
+        success: true,
+        qrCode: data.totp.qr_code,
+        secret: data.totp.secret,
+      };
+    } catch (error) {
+      console.error('Enable 2FA error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to enable 2FA',
+      };
+    }
+  }
+
+  /**
+   * Verify Two-Factor Authentication code
+   */
+  async verifyTwoFactor(factorId: string, code: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase.auth.mfa.challengeAndVerify({
+        factorId,
+        code,
+      });
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Verify 2FA error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to verify 2FA code',
+      };
+    }
+  }
+
+  /**
+   * Disable Two-Factor Authentication
+   */
+  async disableTwoFactor(factorId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase.auth.mfa.unenroll({
+        factorId,
+      });
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Disable 2FA error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to disable 2FA',
+      };
+    }
+  }
+
+  /**
+   * Get MFA factors for current user
+   */
+  async getMFAFactors() {
+    try {
+      const { data, error } = await supabase.auth.mfa.listFactors();
+
+      if (error) {
+        console.error('Get MFA factors error:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Get MFA factors error:', error);
+      return null;
+    }
+  }
+}
+
+// Export singleton instance
+export const authService = new AuthService();
+export default authService;

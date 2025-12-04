@@ -1,0 +1,132 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 120
+      arrivalRate: 20
+      name: "API Load Test"
+  
+  # Performance thresholds for APIs
+  ensure:
+    maxErrorRate: 2 # Max 2% error rate for APIs
+    p95: 1500 # 95th percentile < 1.5s
+    p99: 3000 # 99th percentile < 3s
+  
+  http:
+    timeout: 30
+  
+  variables:
+    testUserId: "api-test-user"
+    testEmail: "api-test@creditmaster.com"
+
+scenarios:
+  # Test health check endpoint
+  - name: "Health Check"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/health"
+          expect:
+            - statusCode: 200
+
+  # Test monitoring endpoints
+  - name: "Monitoring APIs"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/monitoring/health"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 1
+      - get:
+          url: "/api/monitoring/events"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 1
+
+  # Test notification APIs
+  - name: "Notification APIs"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/notifications"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 1
+      - post:
+          url: "/api/notifications"
+          headers:
+            Authorization: "Bearer dev-token"
+            Content-Type: "application/json"
+          json:
+            type: "info"
+            title: "Test Notification"
+            message: "This is a test notification"
+      - think: 1
+
+  # Test dispute APIs
+  - name: "Dispute APIs"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/disputes"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 2
+      - post:
+          url: "/api/disputes/generate"
+          headers:
+            Authorization: "Bearer dev-token"
+            Content-Type: "application/json"
+          json:
+            bureau: "experian"
+            itemType: "late_payment"
+            itemDescription: "Late payment on credit card"
+            reason: "not_mine"
+      - think: 3
+
+  # Test document APIs
+  - name: "Document APIs"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/documents"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 2
+
+  # Test credit analysis APIs
+  - name: "Credit Analysis APIs"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/credit/analyze"
+          headers:
+            Authorization: "Bearer dev-token"
+            Content-Type: "application/json"
+          json:
+            creditScore: 650
+            accounts: []
+            inquiries: []
+            negativeItems: []
+      - think: 3
+
+  # Test student loan APIs
+  - name: "Student Loan APIs"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/student-loans"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 2
+      - post:
+          url: "/api/student-loans/strategy"
+          headers:
+            Authorization: "Bearer dev-token"
+            Content-Type: "application/json"
+          json:
+            loans: []
+            income: 50000
+            familySize: 1
+      - think: 3
+

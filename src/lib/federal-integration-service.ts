@@ -47,12 +47,47 @@ export class FederalIntegrationService {
   async retrieveNSLDSData(userId: string) {
     // Mock implementation
     console.log("Retrieving NSLDS data for user:", userId);
-    return { 
+    return {
       user_id: userId,
-      loans: [], 
+      loans: [],
       grants: [],
       last_updated: new Date().toISOString()
     };
   }
+
+  async checkFreshStartEligibility(ssn: string) {
+    // Mock implementation
+    console.log("Checking Fresh Start eligibility for SSN:", ssn.slice(-4));
+    return {
+      eligible: true,
+      program: 'fresh_start',
+      requirements_met: ['defaulted_loan', 'no_recent_payments'],
+      next_steps: ['Submit application', 'Provide documentation']
+    };
+  }
+
+  async checkRehabilitationEligibility(ssn: string) {
+    // Mock implementation
+    console.log("Checking Rehabilitation eligibility for SSN:", ssn.slice(-4));
+    return {
+      eligible: true,
+      program: 'rehabilitation',
+      requirements_met: ['defaulted_loan'],
+      next_steps: ['Agree to payment plan', 'Make 9 consecutive payments']
+    };
+  }
+
+  async checkDischargeEligibility(ssn: string) {
+    // Mock implementation
+    console.log("Checking Discharge eligibility for SSN:", ssn.slice(-4));
+    return {
+      eligible: false,
+      program: 'discharge',
+      requirements_met: [],
+      reason: 'Does not meet discharge criteria'
+    };
+  }
 }
 
+// Export singleton instance for use in API routes
+export const federalIntegrationService = new FederalIntegrationService();

@@ -1,0 +1,79 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "AIML_API_KEY": "@aiml_api_key",
+    "AIML_BASE_URL": "https://api.aimlapi.com/v1",
+    "AIML_DEFAULT_CHAT_MODEL": "anthropic/claude-4.5-sonnet",
+    "AIML_REASONING_MODEL": "deepseek/deepseek-r1",
+    "AIML_FAST_MODEL": "openai/gpt-4o-mini",
+    "AIML_IMAGE_MODEL": "flux-pro",
+    "AIML_VOICE_MODEL": "tts-1-hd",
+    "ENABLE_MULTI_MODEL": "true",
+    "ENABLE_VOICE_ASSISTANT": "true",
+    "ENABLE_IMAGE_GENERATION": "true",
+    "ENABLE_SEMANTIC_SEARCH": "true",
+    "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+    "STRIPE_SECRET_KEY": "@stripe_secret_key",
+    "STRIPE_WEBHOOK_SECRET": "@stripe_webhook_secret",
+    "STRIPE_BASIC_PRICE_ID": "@stripe_basic_price_id",
+    "STRIPE_PREMIUM_PRICE_ID": "@stripe_premium_price_id",
+    "STRIPE_ENTERPRISE_PRICE_ID": "@stripe_enterprise_price_id",
+    "RESEND_API_KEY": "@resend_api_key",
+    "EMAIL_FROM": "CreditMaster Pro <noreply@creditmaster-pro.com>",
+    "AWS_REGION": "us-east-1",
+    "AWS_ACCESS_KEY_ID": "@aws_access_key_id",
+    "AWS_SECRET_ACCESS_KEY": "@aws_secret_access_key",
+    "AWS_S3_BUCKET": "creditmaster-pro-documents",
+    "NSLDS_API_KEY": "@nslds_api_key",
+    "NSLDS_API_URL": "https://nslds.ed.gov/api/v1",
+    "FSA_API_KEY": "@fsa_api_key",
+    "FSA_API_URL": "https://api.studentaid.gov/v1",
+    "NODE_ENV": "production"
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ],
+  "functions": {
+    "api/**/*.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  }
+}
+

@@ -1,0 +1,77 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Gradual ramp-up to breaking point
+    - duration: 60
+      arrivalRate: 50
+      name: "Phase 1: 50 req/s"
+    - duration: 60
+      arrivalRate: 100
+      name: "Phase 2: 100 req/s"
+    - duration: 60
+      arrivalRate: 200
+      name: "Phase 3: 200 req/s"
+    - duration: 60
+      arrivalRate: 500
+      name: "Phase 4: 500 req/s"
+    - duration: 60
+      arrivalRate: 1000
+      name: "Phase 5: 1000 req/s (stress)"
+  
+  # HTTP settings
+  http:
+    timeout: 30
+  
+  # Variables
+  variables:
+    testUserId: "stress-test-user"
+
+scenarios:
+  # Stress test API endpoints
+  - name: "API Stress Test"
+    weight: 50
+    flow:
+      - get:
+          url: "/api/health"
+      - think: 0.1
+      - get:
+          url: "/api/notifications"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 0.1
+
+  # Stress test rate limiting
+  - name: "Rate Limit Test"
+    weight: 30
+    flow:
+      - loop:
+          - post:
+              url: "/api/ai/chat"
+              headers:
+                Authorization: "Bearer dev-token"
+                Content-Type: "application/json"
+              json:
+                message: "Test message {{ $randomNumber() }}"
+          - think: 0.05
+        count: 20
+
+  # Stress test database queries
+  - name: "Database Stress"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/disputes"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 0.1
+      - get:
+          url: "/api/documents"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 0.1
+      - get:
+          url: "/api/credit-monitoring/reports"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 0.1
+

@@ -1,0 +1,147 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm-up"
+    # Ramp-up phase
+    - duration: 120
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp-up"
+    # Sustained load phase
+    - duration: 180
+      arrivalRate: 50
+      name: "Sustained load"
+    # Peak load phase
+    - duration: 60
+      arrivalRate: 100
+      name: "Peak load"
+    # Cool-down phase
+    - duration: 60
+      arrivalRate: 10
+      name: "Cool-down"
+  
+  # Performance thresholds
+  ensure:
+    maxErrorRate: 1 # Max 1% error rate
+    p95: 2000 # 95th percentile response time < 2s
+    p99: 5000 # 99th percentile response time < 5s
+  
+  # HTTP settings
+  http:
+    timeout: 30
+  
+  # Variables
+  variables:
+    testUserId: "test-user-123"
+    testEmail: "test@creditmaster.com"
+
+scenarios:
+  # Scenario 1: Public pages (no auth)
+  - name: "Public Pages"
+    weight: 30
+    flow:
+      - get:
+          url: "/"
+          capture:
+            - json: "$.status"
+              as: "homeStatus"
+      - think: 2
+      - get:
+          url: "/pricing"
+      - think: 3
+      - get:
+          url: "/about"
+      - think: 2
+
+  # Scenario 2: Authentication flow
+  - name: "Authentication"
+    weight: 20
+    flow:
+      - get:
+          url: "/auth/login"
+      - think: 3
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ testEmail }}"
+            password: "TestPassword123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      - think: 2
+
+  # Scenario 3: Dashboard access
+  - name: "Dashboard"
+    weight: 25
+    flow:
+      - get:
+          url: "/dashboard"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 3
+      - get:
+          url: "/api/notifications"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 2
+      - get:
+          url: "/api/disputes"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 2
+
+  # Scenario 4: AI features (expensive)
+  - name: "AI Features"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/ai/chat"
+          headers:
+            Authorization: "Bearer dev-token"
+            Content-Type: "application/json"
+          json:
+            message: "What is my credit score?"
+            context: "credit_analysis"
+      - think: 5
+      - post:
+          url: "/api/credit/analyze"
+          headers:
+            Authorization: "Bearer dev-token"
+            Content-Type: "application/json"
+          json:
+            creditReport: "Sample credit report data"
+      - think: 5
+
+  # Scenario 5: Document operations
+  - name: "Documents"
+    weight: 10
+    flow:
+      - get:
+          url: "/documents"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 2
+      - get:
+          url: "/api/documents"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 3
+
+  # Scenario 6: Credit reports
+  - name: "Credit Reports"
+    weight: 5
+    flow:
+      - get:
+          url: "/credit-reports"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 3
+      - get:
+          url: "/api/credit-monitoring/reports"
+          headers:
+            Authorization: "Bearer dev-token"
+      - think: 2
+

@@ -1,0 +1,26 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 30
+      arrivalRate: 10
+      name: "Quick Test"
+  
+  http:
+    timeout: 10
+
+scenarios:
+  - name: "Quick Health Check"
+    flow:
+      - get:
+          url: "/api/health"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/pricing"
+          expect:
+            - statusCode: 200
+

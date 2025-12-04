@@ -1,0 +1,534 @@
+{
+  "info": {
+    "name": "CreditMaster Pro - Credit Repair API",
+    "description": "Complete API collection for testing CreditMaster Pro credit repair endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "dispute_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "card_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "goodwill_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "negotiation_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "report_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Disputes",
+      "item": [
+        {
+          "name": "Get All Disputes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/disputes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "disputes"]
+            }
+          }
+        },
+        {
+          "name": "Get Disputes by Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/disputes?status=draft",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "disputes"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "draft"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Dispute (with AI)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('dispute_id', response.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bureau\": \"experian\",\n  \"itemType\": \"late_payment\",\n  \"itemDescription\": \"Late payment on Chase credit card\",\n  \"reason\": \"not_mine\",\n  \"generateLetter\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/disputes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "disputes"]
+            }
+          }
+        },
+        {
+          "name": "Get Dispute by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/disputes/{{dispute_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "disputes", "{{dispute_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Dispute",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"sent\",\n  \"version\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/disputes/{{dispute_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "disputes", "{{dispute_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Dispute",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/disputes/{{dispute_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "disputes", "{{dispute_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Credit Cards",
+      "item": [
+        {
+          "name": "Get All Cards",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/cards",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "cards"]
+            }
+          }
+        },
+        {
+          "name": "Create Card",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('card_id', response.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chase Sapphire\",\n  \"creditLimit\": 10000,\n  \"currentBalance\": 3000,\n  \"statementClosingDay\": 15,\n  \"paymentDueDay\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/cards",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "cards"]
+            }
+          }
+        },
+        {
+          "name": "Get Card by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/cards/{{card_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "cards", "{{card_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Card Balance",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentBalance\": 1000,\n  \"version\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/cards/{{card_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "cards", "{{card_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Card",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/cards/{{card_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "cards", "{{card_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Goodwill Letters",
+      "item": [
+        {
+          "name": "Get All Goodwill Letters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/goodwill",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "goodwill"]
+            }
+          }
+        },
+        {
+          "name": "Create Goodwill Letter (with AI)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('goodwill_id', response.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"creditorName\": \"Chase Bank\",\n  \"accountNumber\": \"****1234\",\n  \"issueDescription\": \"Late payment due to medical emergency\",\n  \"generateLetter\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/goodwill",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "goodwill"]
+            }
+          }
+        },
+        {
+          "name": "Update Goodwill Letter",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"sent\",\n  \"version\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/goodwill/{{goodwill_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "goodwill", "{{goodwill_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Negotiations",
+      "item": [
+        {
+          "name": "Get All Negotiations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/negotiate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "negotiate"]
+            }
+          }
+        },
+        {
+          "name": "Create Negotiation (with AI)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('negotiation_id', response.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"creditorName\": \"Collections Agency\",\n  \"accountNumber\": \"****5678\",\n  \"originalAmount\": 5000,\n  \"generateScripts\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/negotiate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "negotiate"]
+            }
+          }
+        },
+        {
+          "name": "Update Negotiation",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"accepted\",\n  \"settlementAmount\": 3000,\n  \"version\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/negotiate/{{negotiation_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "negotiate", "{{negotiation_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Credit Reports",
+      "item": [
+        {
+          "name": "Get All Reports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/reports",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "reports"]
+            }
+          }
+        },
+        {
+          "name": "Upload Credit Report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('report_id', response.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bureau\": \"experian\",\n  \"score\": 650,\n  \"reportDate\": \"2025-01-15\",\n  \"reportData\": {\n    \"accounts\": [],\n    \"inquiries\": []\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/reports",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "reports"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analysis",
+      "item": [
+        {
+          "name": "Get Quick Wins",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/quick-wins",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "quick-wins"]
+            }
+          }
+        },
+        {
+          "name": "Calculate Impact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"pay_down_utilization\",\n  \"data\": {\n    \"currentUtilization\": 80,\n    \"targetUtilization\": 30\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/impact",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "impact"]
+            }
+          }
+        },
+        {
+          "name": "Get Credit Score",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/score",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "score"]
+            }
+          }
+        },
+        {
+          "name": "Calculate Credit Score",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"factors\": {\n    \"paymentHistory\": 0.95,\n    \"utilization\": 0.30,\n    \"creditAge\": 5,\n    \"newCredit\": 2,\n    \"creditMix\": 4\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/credit-repair/score",
+              "host": ["{{base_url}}"],
+              "path": ["api", "credit-repair", "score"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+
