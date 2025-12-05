@@ -1,79 +1,79 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "name": "creditmaster-pro",
+  "framework": "nextjs",
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "framework": "nextjs",
+  "installCommand": "npm ci",
+  "outputDirectory": ".next",
   "regions": ["iad1"],
-  "env": {
-    "AIML_API_KEY": "@aiml_api_key",
-    "AIML_BASE_URL": "https://api.aimlapi.com/v1",
-    "AIML_DEFAULT_CHAT_MODEL": "anthropic/claude-4.5-sonnet",
-    "AIML_REASONING_MODEL": "deepseek/deepseek-r1",
-    "AIML_FAST_MODEL": "openai/gpt-4o-mini",
-    "AIML_IMAGE_MODEL": "flux-pro",
-    "AIML_VOICE_MODEL": "tts-1-hd",
-    "ENABLE_MULTI_MODEL": "true",
-    "ENABLE_VOICE_ASSISTANT": "true",
-    "ENABLE_IMAGE_GENERATION": "true",
-    "ENABLE_SEMANTIC_SEARCH": "true",
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase_url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
-    "STRIPE_SECRET_KEY": "@stripe_secret_key",
-    "STRIPE_WEBHOOK_SECRET": "@stripe_webhook_secret",
-    "STRIPE_BASIC_PRICE_ID": "@stripe_basic_price_id",
-    "STRIPE_PREMIUM_PRICE_ID": "@stripe_premium_price_id",
-    "STRIPE_ENTERPRISE_PRICE_ID": "@stripe_enterprise_price_id",
-    "RESEND_API_KEY": "@resend_api_key",
-    "EMAIL_FROM": "CreditMaster Pro <noreply@creditmaster-pro.com>",
-    "AWS_REGION": "us-east-1",
-    "AWS_ACCESS_KEY_ID": "@aws_access_key_id",
-    "AWS_SECRET_ACCESS_KEY": "@aws_secret_access_key",
-    "AWS_S3_BUCKET": "creditmaster-pro-documents",
-    "NSLDS_API_KEY": "@nslds_api_key",
-    "NSLDS_API_URL": "https://nslds.ed.gov/api/v1",
-    "FSA_API_KEY": "@fsa_api_key",
-    "FSA_API_URL": "https://api.studentaid.gov/v1",
-    "NODE_ENV": "production"
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
+    "src/app/api/disputes/generate/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "src/app/api/ai/**/*.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
   },
+  "crons": [
+    {
+      "path": "/api/cron/check-dispute-status",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/send-reminders",
+      "schedule": "0 10 * * 1"
+    },
+    {
+      "path": "/api/cron/cleanup-expired-sessions",
+      "schedule": "0 3 * * *"
+    }
+  ],
   "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=()"
-        }
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
       ]
     }
   ],
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
+      "source": "/app/:path*",
+      "destination": "/dashboard/:path*"
     }
   ],
-  "functions": {
-    "api/**/*.ts": {
-      "memory": 1024,
-      "maxDuration": 30
+  "redirects": [
+    {
+      "source": "/home",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/signup",
+      "destination": "/register",
+      "permanent": true
     }
-  }
+  ],
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ."
 }
 

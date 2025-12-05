@@ -27,7 +27,7 @@ const seedDocument = (overrides: Partial<Document> = {}) => {
 describe('documentService sharing', () => {
   it('creates and lists share links for owned documents', async () => {
     const document = seedDocument();
-    const link = documentService.createShareLink(document.id, 'user-1', ['test@example.com'], 'view');
+    const link = documentService.createShareLink(document.id, 'user-1', ['test@example.com']);
     expect(link.documentId).toBe(document.id);
     // The URL contains the share ID, not the document ID
     expect(link.url).toContain('share_');
@@ -44,7 +44,7 @@ describe('documentService sharing', () => {
 
     // The current implementation does not check ownership - it allows anyone to create a share link
     // This test documents the current behavior
-    const link = documentService.createShareLink(document.id, 'intruder', ['bad@example.com'], 'view');
+    const link = documentService.createShareLink(document.id, 'intruder', ['bad@example.com']);
     expect(link).toBeDefined();
     expect(link.userId).toBe('intruder');
   });

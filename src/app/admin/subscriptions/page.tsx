@@ -1,116 +1,152 @@
-"use client";
+'use client';
 
-const metrics = [
-  { label: "Monthly Recurring Revenue", value: "$487,230", change: "+15%" },
-  { label: "Annual Recurring Revenue", value: "$5.8M", change: "+22%" },
-  { label: "Average Revenue Per User", value: "$59.12", change: "+8%" },
-  { label: "Churn Rate", value: "2.3%", change: "-0.5%" },
-];
+import React, { useEffect, useState } from 'react';
 
-const planBreakdown = [
-  { plan: "Basic ($29)", users: 4521, revenue: "$131,109", percentage: 35 },
-  { plan: "Premium ($79)", users: 3012, revenue: "$237,948", percentage: 49 },
-  { plan: "Enterprise ($199)", users: 701, revenue: "$139,499", percentage: 16 },
-];
-
-const recentSubscriptions = [
-  { user: "john@example.com", plan: "Premium", action: "upgraded", date: "2 hours ago" },
-  { user: "jane@example.com", plan: "Basic", action: "new", date: "5 hours ago" },
-  { user: "bob@example.com", plan: "Enterprise", action: "renewed", date: "1 day ago" },
-  { user: "alice@example.com", plan: "Premium", action: "cancelled", date: "2 days ago" },
-];
+interface Subscription {
+  id: string;
+  user_id: string;
+  user_email: string;
+  stripe_subscription_id: string;
+  stripe_price_id: string;
+  status: string;
+  current_period_start: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+}
 
 export default function AdminSubscriptionsPage() {
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  useEffect(() => {
+    const fetchSubscriptions = async () => {
+      try {
+        const response = await fetch('/api/admin/subscriptions');
+        if (response.ok) {
+          const data = await response.json();
+          setSubscriptions(data.subscriptions || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch subscriptions:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSubscriptions();
+  }, []);
+
+  const filteredSubscriptions = subscriptions.filter(sub => 
+    filterStatus === 'all' || sub.status === filterStatus
+  );
+
+  const getStatusBadge = (status: string) => {
+    const colors: Record<string, string> = {
+      active: 'bg-green-100 text-green-800',
+      canceled: 'bg-red-100 text-red-800',
+      past_due: 'bg-yellow-100 text-yellow-800',
+      trialing: 'bg-blue-100 text-blue-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getPlanName = (priceId: string) => {
+    const plans: Record<string, string> = {
+      'price_basic': 'Basic ($29/mo)',
+      'price_premium': 'Premium ($79/mo)',
+      'price_enterprise': 'Enterprise ($199/mo)',
+    };
+    return plans[priceId] || priceId;
+  };
+
+  if (loading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+        <div className="h-64 bg-gray-200 rounded"></div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Subscription Management</h1>
-        <button className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition">
-          Export Report
-        </button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Subscriptions</h1>
+          <p className="text-gray-600 mt-1">Manage customer subscriptions and billing</p>
+        </div>
       </div>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {metrics.map((metric) => (
-          <div key={metric.label} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <p className="text-sm text-gray-500">{metric.label}</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{metric.value}</p>
-            <p className={`text-sm mt-2 ${metric.change.startsWith("+") ? "text-emerald-500" : metric.change.startsWith("-") && metric.label === "Churn Rate" ? "text-emerald-500" : "text-red-500"}`}>
-              {metric.change} from last month
-            </p>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Active', count: subscriptions.filter(s => s.status === 'active').length, color: 'green' },
+          { label: 'Past Due', count: subscriptions.filter(s => s.status === 'past_due').length, color: 'yellow' },
+          { label: 'Canceled', count: subscriptions.filter(s => s.status === 'canceled').length, color: 'red' },
+          { label: 'Total', count: subscriptions.length, color: 'blue' },
+        ].map((stat, i) => (
+          <div key={i} className={`bg-${stat.color}-50 rounded-lg p-4 border border-${stat.color}-200`}>
+            <p className="text-sm text-gray-600">{stat.label}</p>
+            <p className="text-2xl font-bold text-gray-900">{stat.count}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Plan Breakdown */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Plan Breakdown</h2>
-          </div>
-          <div className="p-6">
-            {planBreakdown.map((plan) => (
-              <div key={plan.plan} className="mb-6 last:mb-0">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-gray-900">{plan.plan}</span>
-                  <span className="text-sm text-gray-500">{plan.users.toLocaleString()} users</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className="bg-gradient-to-r from-emerald-500 to-blue-500 h-3 rounded-full"
-                    style={{ width: `${plan.percentage}%` }}
-                  />
-                </div>
-                <p className="text-sm text-gray-500 mt-1">{plan.revenue}/month ({plan.percentage}%)</p>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Filter */}
+      <select
+        value={filterStatus}
+        onChange={(e) => setFilterStatus(e.target.value)}
+        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+      >
+        <option value="all">All Status</option>
+        <option value="active">Active</option>
+        <option value="past_due">Past Due</option>
+        <option value="canceled">Canceled</option>
+        <option value="trialing">Trialing</option>
+      </select>
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Subscription Activity</h2>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {recentSubscriptions.map((sub, i) => (
-              <div key={i} className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">{sub.user}</p>
-                  <p className="text-sm text-gray-500">{sub.plan} • {sub.date}</p>
-                </div>
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  sub.action === "new" ? "bg-emerald-100 text-emerald-700" :
-                  sub.action === "upgraded" ? "bg-blue-100 text-blue-700" :
-                  sub.action === "renewed" ? "bg-purple-100 text-purple-700" :
-                  "bg-red-100 text-red-700"
-                }`}>
-                  {sub.action}
-                </span>
-              </div>
+      {/* Subscriptions Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period End</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredSubscriptions.map((sub) => (
+              <tr key={sub.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{sub.user_email}</div>
+                  <div className="text-xs text-gray-500">{sub.stripe_subscription_id}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {getPlanName(sub.stripe_price_id)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(sub.status)}`}>
+                    {sub.status}
+                    {sub.cancel_at_period_end && ' (canceling)'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(sub.current_period_end).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button className="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                  <button className="text-red-600 hover:text-red-900">Cancel</button>
+                </td>
+              </tr>
             ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Churn Analysis */}
-      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Churn Analysis</h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <p className="text-3xl font-bold text-gray-900">156</p>
-            <p className="text-sm text-gray-500">Cancellations this month</p>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <p className="text-3xl font-bold text-gray-900">$12,324</p>
-            <p className="text-sm text-gray-500">Lost MRR</p>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <p className="text-3xl font-bold text-gray-900">45%</p>
-            <p className="text-sm text-gray-500">Reason: Price</p>
-          </div>
-        </div>
+          </tbody>
+        </table>
+        {filteredSubscriptions.length === 0 && (
+          <div className="text-center py-12 text-gray-500">No subscriptions found</div>
+        )}
       </div>
     </div>
   );

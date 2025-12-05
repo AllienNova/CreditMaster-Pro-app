@@ -47,36 +47,6 @@ export interface StudentLoan {
   original_amount?: number;
   interest_rate?: number;
   loan_type?: string;
-  loan_status?: string;
-  account_number?: string;
-  payment_history?: {
-    payment_date: string;
-    payment_amount: number;
-    principal_amount: number;
-    interest_amount: number;
-  }[];
-  servicer_transfer_history?: {
-    from_servicer?: string;
-    to_servicer?: string;
-    transfer_date?: string;
-    proper_notification?: boolean;
-    payment_processing_gap_days?: number;
-  }[];
-  // Extended properties for AI analysis
-  credit_report_discrepancies?: unknown[];
-  dispute_history?: unknown[];
-  collection_activities?: unknown[];
-  servicer_communications?: unknown[];
-  error_flags?: string[];
-  fresh_start_eligible?: boolean;
-  rehabilitation_eligible?: boolean;
-  discharge_eligible?: boolean;
-  borrower_defense_eligible?: boolean;
-  user_id?: string;
-  created_at?: Date;
-  updated_at?: Date;
-  last_payment_date?: Date;
-  original_balance?: number;
   // Servicer intelligence properties
   servicer_name?: string;
   servicer_id?: string;

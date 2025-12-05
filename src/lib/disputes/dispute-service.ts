@@ -1,13 +1,31 @@
 /**
  * Dispute Tracking Service
- * 
+ *
  * Manages credit dispute lifecycle:
  * - Create disputes
  * - Track status
  * - Update progress
  * - Predict timelines
  * - Store outcomes
+ * - Template-based letter generation
+ * - Advanced strategy integration
  */
+
+import {
+  ALL_DISPUTE_TEMPLATES,
+  getTemplateById,
+  getTemplatesBySuccessRate,
+  type DisputeTemplate,
+} from '../prompts/dispute-templates';
+
+import {
+  ALL_ADVANCED_STRATEGIES,
+  getStrategyById,
+  recommendStrategy,
+  generateStrategyPrompt,
+  type AdvancedStrategy,
+  type StrategyTracking,
+} from './advanced-strategies';
 
 export type DisputeStatus = 
   | 'draft'
@@ -43,6 +61,11 @@ export interface Dispute {
   evidence?: string[];
   notes?: string;
   timeline: DisputeTimelineEvent[];
+  // New fields for templates and strategies
+  templateId?: string;
+  strategyId?: string;
+  strategyPhase?: string;
+  escalationLevel?: number;
 }
 
 export interface DisputeTimelineEvent {
@@ -377,9 +400,253 @@ class DisputeService {
   deleteDispute(disputeId: string): boolean {
     return this.disputes.delete(disputeId);
   }
+
+  // ============================================================================
+  // TEMPLATE INTEGRATION
+  // ============================================================================
+
+  /**
+   * Get all available dispute templates
+   */
+  getAvailableTemplates(): DisputeTemplate[] {
+    return ALL_DISPUTE_TEMPLATES;
+  }
+
+  /**
+   * Get template by ID
+   */
+  getTemplate(templateId: string): DisputeTemplate | undefined {
+    return getTemplateById(templateId);
+  }
+
+  /**
+   * Get recommended templates based on success rate
+   */
+  getRecommendedTemplates(minSuccessRate: number = 60): DisputeTemplate[] {
+    return getTemplatesBySuccessRate(minSuccessRate);
+  }
+
+  /**
+   * Create dispute from template
+   */
+  createDisputeFromTemplate(
+    userId: string,
+    bureau: Bureau,
+    templateId: string,
+    placeholderValues: Record<string, string>,
+    evidence?: string[]
+  ): Dispute | null {
+    const template = getTemplateById(templateId);
+    if (!template) return null;
+
+    // Replace placeholders in template
+    let letterContent = template.template;
+    for (const [key, value] of Object.entries(placeholderValues)) {
+      letterContent = letterContent.replace(new RegExp(`\\[${key}\\]`, 'g'), value);
+    }
+
+    const dispute = this.createDispute(
+      userId,
+      bureau,
+      template.scenario,
+      template.description,
+      template.name,
+      letterContent,
+      evidence
+    );
+
+    // Add template reference
+    dispute.templateId = templateId;
+
+    return dispute;
+  }
+
+  // ============================================================================
+  // STRATEGY INTEGRATION
+  // ============================================================================
+
+  /**
+   * Get all available strategies
+   */
+  getAvailableStrategies(): AdvancedStrategy[] {
+    return ALL_ADVANCED_STRATEGIES;
+  }
+
+  /**
+   * Get strategy by ID
+   */
+  getStrategy(strategyId: string): AdvancedStrategy | undefined {
+    return getStrategyById(strategyId);
+  }
+
+  /**
+   * Get recommended strategies for a dispute scenario
+   */
+  getRecommendedStrategies(scenario: {
+    disputeType: string;
+    previousAttempts: number;
+    hasEvidence: boolean;
+    accountAge: number;
+    isCollection: boolean;
+    hasRelationship: boolean;
+  }): AdvancedStrategy[] {
+    return recommendStrategy(scenario);
+  }
+
+  /**
+   * Apply strategy to dispute
+   */
+  applyStrategy(disputeId: string, strategyId: string): Dispute | null {
+    const dispute = this.disputes.get(disputeId);
+    const strategy = getStrategyById(strategyId);
+
+    if (!dispute || !strategy) return null;
+
+    dispute.strategyId = strategyId;
+    dispute.strategyPhase = 'initial';
+    dispute.escalationLevel = 1;
+    dispute.updatedAt = new Date();
+
+    // Add timeline event
+    dispute.timeline.push({
+      id: `event_${Date.now()}`,
+      date: new Date(),
+      status: dispute.status,
+      description: `Applied strategy: ${strategy.name}`,
+      automated: true,
+    });
+
+    return dispute;
+  }
+
+  /**
+   * Escalate dispute to next strategy phase
+   */
+  escalateDispute(disputeId: string): Dispute | null {
+    const dispute = this.disputes.get(disputeId);
+    if (!dispute || !dispute.strategyId) return null;
+
+    const strategy = getStrategyById(dispute.strategyId);
+    if (!strategy) return null;
+
+    const currentLevel = dispute.escalationLevel || 1;
+    const maxLevel = strategy.steps.length;
+
+    if (currentLevel >= maxLevel) {
+      // Already at max escalation
+      return dispute;
+    }
+
+    dispute.escalationLevel = currentLevel + 1;
+    dispute.status = 'escalated';
+    dispute.updatedAt = new Date();
+
+    const nextStep = strategy.steps[currentLevel]; // 0-indexed, so currentLevel is next step
+
+    // Add timeline event
+    dispute.timeline.push({
+      id: `event_${Date.now()}`,
+      date: new Date(),
+      status: 'escalated',
+      description: `Escalated to step ${currentLevel + 1}: ${nextStep.title}`,
+      automated: false,
+    });
+
+    return dispute;
+  }
+
+  /**
+   * Generate AI prompt for strategy-based letter
+   */
+  generateStrategyLetter(
+    disputeId: string,
+    variables: Record<string, string>
+  ): string | null {
+    const dispute = this.disputes.get(disputeId);
+    if (!dispute || !dispute.strategyId) return null;
+
+    try {
+      return generateStrategyPrompt(dispute.strategyId, variables);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get strategy tracking data for analytics
+   */
+  getStrategyAnalytics(userId: string): {
+    strategiesUsed: Map<string, number>;
+    successByStrategy: Map<string, number>;
+    avgResolutionByStrategy: Map<string, number>;
+  } {
+    const userDisputes = this.getUserDisputes(userId);
+    const strategiesUsed = new Map<string, number>();
+    const successByStrategy = new Map<string, number>();
+    const resolutionDays = new Map<string, number[]>();
+
+    for (const dispute of userDisputes) {
+      if (!dispute.strategyId) continue;
+
+      // Count usage
+      strategiesUsed.set(
+        dispute.strategyId,
+        (strategiesUsed.get(dispute.strategyId) || 0) + 1
+      );
+
+      // Track success
+      if (dispute.outcome === 'removed' || dispute.outcome === 'updated') {
+        successByStrategy.set(
+          dispute.strategyId,
+          (successByStrategy.get(dispute.strategyId) || 0) + 1
+        );
+      }
+
+      // Track resolution time
+      if (dispute.resolvedAt && dispute.sentAt) {
+        const days = Math.ceil(
+          (dispute.resolvedAt.getTime() - dispute.sentAt.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        const existing = resolutionDays.get(dispute.strategyId) || [];
+        existing.push(days);
+        resolutionDays.set(dispute.strategyId, existing);
+      }
+    }
+
+    // Calculate averages
+    const avgResolutionByStrategy = new Map<string, number>();
+    const resolutionEntries = Array.from(resolutionDays.entries());
+    for (const [strategyId, days] of resolutionEntries) {
+      const avg = days.reduce((a, b) => a + b, 0) / days.length;
+      avgResolutionByStrategy.set(strategyId, Math.round(avg));
+    }
+
+    return {
+      strategiesUsed,
+      successByStrategy,
+      avgResolutionByStrategy,
+    };
+  }
 }
 
 // Export singleton instance
 export const disputeService = new DisputeService();
 export default disputeService;
+
+// Re-export types and functions from templates and strategies
+export {
+  ALL_DISPUTE_TEMPLATES,
+  getTemplateById,
+  getTemplatesBySuccessRate,
+  type DisputeTemplate,
+} from '../prompts/dispute-templates';
+
+export {
+  ALL_ADVANCED_STRATEGIES,
+  getStrategyById,
+  recommendStrategy,
+  generateStrategyPrompt,
+  type AdvancedStrategy,
+  type StrategyTracking,
+} from './advanced-strategies';
 

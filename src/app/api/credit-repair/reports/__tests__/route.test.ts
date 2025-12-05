@@ -85,16 +85,17 @@ describe('/api/credit-repair/reports', () => {
 
     it('should filter reports by bureau', async () => {
       (db.creditReports.getCreditReportsByBureau as jest.Mock).mockResolvedValue([mockReport]);
-      // Route uses getCreditReportsByUser for latest report
-      (db.creditReports.getCreditReportsByUser as jest.Mock).mockResolvedValue([mockReport]);
+      (db.creditReports.getLatestCreditReport as jest.Mock).mockResolvedValue(mockReport);
 
       const request = createMockRequest('http://localhost:3000/api/credit-repair/reports?bureau=experian');
       const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      // Route calls getCreditReportsByBureau with (userId, bureau, fetchLimit)
-      expect(db.creditReports.getCreditReportsByBureau).toHaveBeenCalledWith(mockUser.id, 'experian', 50);
+      expect(db.creditReports.getCreditReportsByBureau).toHaveBeenCalledWith(mockUser.id, 'experian', {
+        limit: 50,
+        offset: 0,
+      });
     });
 
     it('should return 401 if not authenticated', async () => {

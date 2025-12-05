@@ -370,6 +370,73 @@ export interface Database {
           updated_at?: string
         }
       }
+      credit_reports: {
+        Row: {
+          id: string
+          user_id: string
+          bureau: 'experian' | 'equifax' | 'transunion'
+          report_date: string
+          score: number
+          report_data: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          bureau: 'experian' | 'equifax' | 'transunion'
+          report_date: string
+          score: number
+          report_data?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          bureau?: 'experian' | 'equifax' | 'transunion'
+          report_date?: string
+          score?: number
+          report_data?: Json
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      student_loans: {
+        Row: {
+          id: string
+          user_id: string
+          servicer: string
+          loan_type: string
+          balance: number
+          interest_rate: number
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          servicer: string
+          loan_type: string
+          balance: number
+          interest_rate: number
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          servicer?: string
+          loan_type?: string
+          balance?: number
+          interest_rate?: number
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

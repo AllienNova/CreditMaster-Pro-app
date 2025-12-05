@@ -3,13 +3,21 @@
  * Core database operations and business logic for student loans
  */
 
-import { supabase } from './supabase';
-import type { 
-  StudentLoan, 
+import { createClient } from '@supabase/supabase-js';
+import type {
+  StudentLoan,
   ServicerProfile,
   FederalProgramApplication,
   ServicerAnalysisResult
 } from '../types/student-loan';
+
+// Create a Supabase client for student loan operations
+function getStudentLoanSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 // Type aliases for service-specific types
 export type StudentLoanStrategy = {
@@ -79,67 +87,77 @@ export class StudentLoanService {
    * Create a new student loan record
    */
   async createStudentLoan(loan: Omit<StudentLoan, 'id' | 'created_at' | 'updated_at'>): Promise<StudentLoan> {
-    const { data, error } = await supabase
+    const supabase = getStudentLoanSupabase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from('student_loans')
       .insert(loan)
       .select()
       .single();
-    
+
     if (error) throw error;
-    return data;
+    return data as StudentLoan;
   }
 
   /**
    * Get student loans for a user
    */
   async getStudentLoans(userId: string): Promise<StudentLoan[]> {
-    const { data, error } = await supabase
+    const supabase = getStudentLoanSupabase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from('student_loans')
       .select('*')
       .eq('user_id', userId);
-    
+
     if (error) throw error;
-    return data || [];
+    return (data || []) as StudentLoan[];
   }
 
   /**
    * Get a single student loan by ID
    */
   async getStudentLoan(loanId: string): Promise<StudentLoan | null> {
-    const { data, error } = await supabase
+    const supabase = getStudentLoanSupabase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from('student_loans')
       .select('*')
       .eq('id', loanId)
       .single();
-    
+
     if (error) return null;
-    return data;
+    return data as StudentLoan;
   }
 
   /**
    * Update a student loan
    */
   async updateStudentLoan(loanId: string, updates: Partial<StudentLoan>): Promise<StudentLoan> {
-    const { data, error } = await supabase
+    const supabase = getStudentLoanSupabase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from('student_loans')
       .update(updates)
       .eq('id', loanId)
       .select()
       .single();
-    
+
     if (error) throw error;
-    return data;
+    return data as StudentLoan;
   }
 
   /**
    * Delete a student loan
    */
   async deleteStudentLoan(loanId: string): Promise<void> {
-    const { error } = await supabase
+    const supabase = getStudentLoanSupabase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
       .from('student_loans')
       .delete()
       .eq('id', loanId);
-    
+
     if (error) throw error;
   }
 

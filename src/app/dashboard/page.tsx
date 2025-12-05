@@ -82,10 +82,11 @@ export default function DashboardPage() {
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-6">
               <a href="/dashboard" className="text-sm font-medium text-blue-600 border-b-2 border-blue-600 pb-1">Dashboard</a>
+              <a href="/dashboard/disputes" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Disputes</a>
+              <a href="/dashboard/analytics" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Analytics</a>
               <a href="/credit-builder" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Credit Builder</a>
               <a href="/marketplace" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Marketplace</a>
-              <a href="/student-loan-agent" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Student Loans</a>
-              <a href="/pricing" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Pricing</a>
+              <a href="/dashboard/settings" className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors">Settings</a>
             </nav>
 
             <div className="flex items-center space-x-4">

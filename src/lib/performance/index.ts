@@ -1,12 +1,8 @@
 /**
- * Performance Module
- * 
- * Central export for performance monitoring functionality
+ * Performance Module Index
+ * Exports all performance utilities
  */
 
-export {
-  PerformanceMonitor,
-  type PerformanceMetric,
-  type PerformanceReport
-} from './performance-monitor';
+export * from './cache';
+export * from './compression';
 
