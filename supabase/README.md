@@ -165,25 +165,77 @@ SELECT * FROM pg_trigger WHERE tgname = 'on_auth_user_created';
 | Version | Date | Description |
 |---------|------|-------------|
 | 001 | 2025-11-29 | Initial schema - all core tables |
+| 002 | 2025-12-04 | Production enhancements - audit logs, sessions, tracking |
 
-## Next Steps
+## Production Setup
 
-After database setup:
+### Step 1: Create Production Project
 
-1. Update services to use database version:
-   - `dispute-service-db.ts` → `dispute-service.ts`
-   - `document-service-db.ts` → `document-service.ts`
-   - `notification-service-db.ts` → `notification-service.ts`
+1. Create new project at https://supabase.com/dashboard
+2. Choose region closest to your users (us-east-1 recommended)
+3. Save project URL and API keys securely
 
-2. Test API routes with database
+### Step 2: Run All Migrations
 
-3. Build UI components for:
-   - Dispute list/tracker
-   - Document upload
-   - Notification center
+```bash
+# Link to production project
+supabase link --project-ref YOUR_PROD_PROJECT_REF
+
+# Push all migrations
+supabase db push
+```
+
+### Step 3: Configure Authentication
+
+In Supabase Dashboard > Authentication > Settings:
+
+1. **Site URL**: `https://creditmaster.pro`
+2. **Redirect URLs**:
+   - `https://creditmaster.pro/auth/callback`
+   - `https://creditmaster.pro/dashboard`
+3. **Rate Limits**: Configure for production load
+
+### Step 4: Configure Storage Buckets
+
+Create in Dashboard > Storage:
+- `documents` (private) - Credit reports, ID docs
+- `avatars` (public) - Profile pictures
+
+### Step 5: Enable Backups
+
+1. Go to Database > Backups
+2. Enable Point-in-Time Recovery (PITR) for Pro plan
+3. Set backup retention (7+ days)
+
+## Production Tables (Migration 002)
+
+| Table | Description |
+|-------|-------------|
+| `sessions` | Active user sessions |
+| `audit_logs` | Security audit trail |
+| `uploads` | Temporary file tracking |
+| `credit_scores` | Score history |
+| `dispute_template_usage` | Template effectiveness |
+| `strategy_usage` | Strategy effectiveness |
+
+## Useful CLI Commands
+
+```bash
+# Check migration status
+supabase migration list
+
+# Create new migration
+supabase migration new migration_name
+
+# Push to remote
+supabase db push
+
+# Generate TypeScript types
+supabase gen types typescript --project-id YOUR_PROJECT_ID > src/types/supabase.ts
+```
 
 ## Support
 
 - Supabase Docs: https://supabase.com/docs
 - Supabase Discord: https://discord.supabase.com
-- Project Dashboard: https://supabase.com/dashboard/project/your-project-id
+- Status Page: https://status.supabase.com

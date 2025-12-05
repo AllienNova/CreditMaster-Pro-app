@@ -382,6 +382,48 @@ export default async function CreditBuilderDashboard() {
                 <span className="text-xs text-gray-500">Ongoing</span>
               </div>
             </Link>
+
+            {/* Score Simulator */}
+            <Link
+              href="/credit-builder/score-simulator"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow group"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center group-hover:bg-cyan-200 transition-colors">
+                  <span className="text-2xl">🎮</span>
+                </div>
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-cyan-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Score Simulator</h3>
+              <p className="text-sm text-gray-600 mb-4">See how actions affect your score</p>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs bg-cyan-100 text-cyan-700 px-2 py-1 rounded">What-If</span>
+                <span className="text-xs text-gray-500">Interactive</span>
+              </div>
+            </Link>
+
+            {/* Goal Tracker */}
+            <Link
+              href="/credit-builder/goals"
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow group"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                  <span className="text-2xl">🎯</span>
+                </div>
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-orange-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Goal Tracker</h3>
+              <p className="text-sm text-gray-600 mb-4">Set and track credit goals</p>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Milestones</span>
+                <span className="text-xs text-gray-500">Track Progress</span>
+              </div>
+            </Link>
           </div>
         </div>
 

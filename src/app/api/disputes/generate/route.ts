@@ -1,73 +1,47 @@
 /**
  * Enhanced Dispute Generation API
- * 
+ *
  * Generates professional credit dispute letters using AIML API's best models
  * (Claude 4.5 Sonnet for legal writing quality)
+ *
+ * Supports:
+ * - AI-generated custom letters
+ * - Template-based letter generation (10 templates)
+ * - Advanced strategy-based letters (7 strategies)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAIOrchestrator, DisputeGenerationInput } from '@/lib/ai-orchestrator';
+import {
+  disputeService,
+  ALL_DISPUTE_TEMPLATES,
+  ALL_ADVANCED_STRATEGIES,
+  getTemplateById,
+  getStrategyById,
+  recommendStrategy,
+} from '@/lib/disputes/dispute-service';
+
+// ============================================================================
+// MAIN POST HANDLER
+// ============================================================================
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // Validate required fields
-    const { creditReport, disputeReason, userInfo } = body;
-    
-    if (!creditReport || !disputeReason || !userInfo) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Missing required fields: creditReport, disputeReason, userInfo',
-        },
-        { status: 400 }
-      );
+    const { mode = 'ai' } = body;
+
+    // Route to appropriate handler based on mode
+    switch (mode) {
+      case 'template':
+        return handleTemplateGeneration(body);
+      case 'strategy':
+        return handleStrategyGeneration(body);
+      case 'ai':
+      default:
+        return handleAIGeneration(body);
     }
-
-    // Validate userInfo fields
-    if (!userInfo.name || !userInfo.address) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'userInfo must include name and address',
-        },
-        { status: 400 }
-      );
-    }
-
-    const input: DisputeGenerationInput = {
-      creditReport,
-      disputeReason,
-      userInfo,
-      additionalContext: body.additionalContext,
-    };
-
-    // Generate dispute using AI Orchestrator
-    const orchestrator = getAIOrchestrator();
-    const disputeLetter = await orchestrator.generateDispute(input);
-
-    // Optional: Review for legal compliance
-    let complianceReview;
-    if (body.reviewCompliance) {
-      complianceReview = await orchestrator.reviewCompliance(
-        disputeLetter,
-        'dispute_letter'
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        disputeLetter,
-        model: 'anthropic/claude-4.5-sonnet',
-        complianceReview,
-        timestamp: new Date().toISOString(),
-      },
-    });
   } catch (error) {
     console.error('Dispute generation error:', error);
-    
     return NextResponse.json(
       {
         success: false,
@@ -78,13 +52,274 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// ============================================================================
+// AI-POWERED GENERATION (Original)
+// ============================================================================
+
+async function handleAIGeneration(body: Record<string, unknown>) {
+  const { creditReport, disputeReason, userInfo } = body;
+
+  if (!creditReport || !disputeReason || !userInfo) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Missing required fields: creditReport, disputeReason, userInfo',
+      },
+      { status: 400 }
+    );
+  }
+
+  const userInfoObj = userInfo as { name?: string; address?: string };
+  if (!userInfoObj.name || !userInfoObj.address) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'userInfo must include name and address',
+      },
+      { status: 400 }
+    );
+  }
+
+  const input: DisputeGenerationInput = {
+    creditReport: creditReport as string,
+    disputeReason: disputeReason as string,
+    userInfo: userInfoObj as { name: string; address: string; ssn?: string; dob?: string },
+    additionalContext: body.additionalContext as string | undefined,
+  };
+
+  const orchestrator = getAIOrchestrator();
+  const disputeLetter = await orchestrator.generateDispute(input);
+
+  let complianceReview;
+  if (body.reviewCompliance) {
+    complianceReview = await orchestrator.reviewCompliance(disputeLetter, 'dispute_letter');
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      disputeLetter,
+      mode: 'ai',
+      model: 'anthropic/claude-4.5-sonnet',
+      complianceReview,
+      timestamp: new Date().toISOString(),
+    },
+  });
+}
+
+// ============================================================================
+// TEMPLATE-BASED GENERATION
+// ============================================================================
+
+async function handleTemplateGeneration(body: Record<string, unknown>) {
+  const { templateId, placeholders } = body;
+
+  if (!templateId) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Missing required field: templateId',
+        availableTemplates: ALL_DISPUTE_TEMPLATES.map(t => ({
+          id: t.id,
+          name: t.name,
+          scenario: t.scenario,
+          successRate: t.successRate,
+        })),
+      },
+      { status: 400 }
+    );
+  }
+
+  const template = getTemplateById(templateId as string);
+  if (!template) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: `Template not found: ${templateId}`,
+        availableTemplates: ALL_DISPUTE_TEMPLATES.map(t => t.id),
+      },
+      { status: 404 }
+    );
+  }
+
+  // Replace placeholders in template
+  let letterContent = template.template;
+  const placeholderValues = (placeholders || {}) as Record<string, string>;
+
+  for (const [key, value] of Object.entries(placeholderValues)) {
+    letterContent = letterContent.replace(new RegExp(`\\[${key}\\]`, 'g'), value);
+  }
+
+  // Find missing placeholders
+  const missingPlaceholders = template.placeholders.filter(
+    p => letterContent.includes(p)
+  );
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      disputeLetter: letterContent,
+      mode: 'template',
+      template: {
+        id: template.id,
+        name: template.name,
+        successRate: template.successRate,
+        tone: template.tone,
+        fcraSection: template.fcraSection,
+        requiredDocuments: template.requiredDocuments,
+        bestPractices: template.bestPractices,
+      },
+      missingPlaceholders: missingPlaceholders.length > 0 ? missingPlaceholders : undefined,
+      timestamp: new Date().toISOString(),
+    },
+  });
+}
+
+// ============================================================================
+// STRATEGY-BASED GENERATION
+// ============================================================================
+
+async function handleStrategyGeneration(body: Record<string, unknown>) {
+  const { strategyId, variables, scenario } = body;
+
+  // If no strategyId, recommend strategies based on scenario
+  if (!strategyId && scenario) {
+    const scenarioObj = scenario as {
+      disputeType: string;
+      previousAttempts: number;
+      hasEvidence: boolean;
+      accountAge: number;
+      isCollection: boolean;
+      hasRelationship: boolean;
+    };
+
+    const recommended = recommendStrategy(scenarioObj);
+    return NextResponse.json({
+      success: true,
+      data: {
+        recommendedStrategies: recommended.map(s => ({
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          successRate: s.successRate,
+          difficulty: s.difficulty,
+          riskLevel: s.riskLevel,
+          timeline: s.timeline,
+        })),
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+
+  if (!strategyId) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Missing required field: strategyId or scenario',
+        availableStrategies: ALL_ADVANCED_STRATEGIES.map(s => ({
+          id: s.id,
+          name: s.name,
+          successRate: s.successRate,
+        })),
+      },
+      { status: 400 }
+    );
+  }
+
+  const strategy = getStrategyById(strategyId as string);
+  if (!strategy) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: `Strategy not found: ${strategyId}`,
+        availableStrategies: ALL_ADVANCED_STRATEGIES.map(s => s.id),
+      },
+      { status: 404 }
+    );
+  }
+
+  // Generate AI prompt with variables
+  let aiPrompt = strategy.aiPrompt;
+  const variableValues = (variables || {}) as Record<string, string>;
+
+  for (const [key, value] of Object.entries(variableValues)) {
+    aiPrompt = aiPrompt.replace(`{${key}}`, value);
+  }
+
+  // Use AI to generate letter based on strategy prompt
+  const orchestrator = getAIOrchestrator();
+  const disputeLetter = await orchestrator.generateDispute({
+    creditReport: variableValues.DISPUTE_DETAILS || '',
+    disputeReason: strategy.name,
+    userInfo: {
+      name: variableValues.YOUR_NAME || '[YOUR_NAME]',
+      address: variableValues.YOUR_ADDRESS || '[YOUR_ADDRESS]',
+    },
+    additionalContext: aiPrompt,
+  });
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      disputeLetter,
+      mode: 'strategy',
+      strategy: {
+        id: strategy.id,
+        name: strategy.name,
+        successRate: strategy.successRate,
+        difficulty: strategy.difficulty,
+        riskLevel: strategy.riskLevel,
+        legalBasis: strategy.legalBasis,
+        steps: strategy.steps,
+        timeline: strategy.timeline,
+        expectedOutcomes: strategy.expectedOutcomes,
+      },
+      timestamp: new Date().toISOString(),
+    },
+  });
+}
+
+// ============================================================================
+// GET HANDLER - API Documentation
+// ============================================================================
+
 export async function GET() {
   return NextResponse.json({
-    message: 'Dispute Generation API',
-    method: 'POST',
-    endpoint: '/api/disputes/generate',
-    requiredFields: ['creditReport', 'disputeReason', 'userInfo'],
-    optionalFields: ['additionalContext', 'reviewCompliance'],
+    message: 'Enhanced Dispute Generation API',
+    version: '2.0.0',
+    modes: {
+      ai: {
+        description: 'AI-powered custom letter generation',
+        requiredFields: ['creditReport', 'disputeReason', 'userInfo'],
+        optionalFields: ['additionalContext', 'reviewCompliance'],
+      },
+      template: {
+        description: 'Template-based letter generation',
+        requiredFields: ['templateId'],
+        optionalFields: ['placeholders'],
+        availableTemplates: ALL_DISPUTE_TEMPLATES.map(t => ({
+          id: t.id,
+          name: t.name,
+          scenario: t.scenario,
+          successRate: t.successRate,
+          tone: t.tone,
+          placeholders: t.placeholders,
+        })),
+      },
+      strategy: {
+        description: 'Advanced strategy-based letter generation',
+        requiredFields: ['strategyId OR scenario'],
+        optionalFields: ['variables'],
+        availableStrategies: ALL_ADVANCED_STRATEGIES.map(s => ({
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          successRate: s.successRate,
+          difficulty: s.difficulty,
+          riskLevel: s.riskLevel,
+        })),
+      },
+    },
     model: 'anthropic/claude-4.5-sonnet',
   });
 }

@@ -145,84 +145,97 @@ export function createLogEntry(
 
 /**
  * Log AI interaction
+ * Supports both detailed AI model interactions and simple action logging
  */
 export function logAIInteraction(data: {
   userId?: string;
-  model: string;
-  prompt: string;
-  response: string;
-  tokens: number;
-  cost: number;
-  duration: number;
-  inputValid: boolean;
-  outputValid: boolean;
+  // For AI model interactions
+  model?: string;
+  prompt?: string;
+  response?: string;
+  tokens?: number;
+  cost?: number;
+  duration?: number;
+  inputValid?: boolean;
+  outputValid?: boolean;
   issues?: string[];
+  // For simple action logging (used by API routes)
+  action?: string;
+  input?: any;
+  output?: any;
+  success?: boolean;
 }): void {
   const entry: AIInteractionLog = {
     id: generateLogId(),
     timestamp: new Date(),
     level: 'info',
     eventType: 'ai_request',
-    message: `AI request to ${data.model}`,
+    message: data.model ? `AI request to ${data.model}` : `Action: ${data.action || 'unknown'}`,
     userId: data.userId,
-    model: data.model,
-    prompt: data.prompt.substring(0, 500), // Truncate for storage
-    response: data.response.substring(0, 500),
-    tokens: data.tokens,
-    cost: data.cost,
-    duration: data.duration,
+    model: data.model || 'api_action',
+    prompt: (data.prompt || JSON.stringify(data.input || {})).substring(0, 500),
+    response: (data.response || JSON.stringify(data.output || {})).substring(0, 500),
+    tokens: data.tokens || 0,
+    cost: data.cost || 0,
+    duration: data.duration || 0,
     validationResult: {
-      inputValid: data.inputValid,
-      outputValid: data.outputValid,
+      inputValid: data.inputValid ?? data.success ?? true,
+      outputValid: data.outputValid ?? data.success ?? true,
       issues: data.issues || [],
     },
   };
-  
+
   logStore.add(entry);
-  
+
   // Also log to console in development
   if (process.env.NODE_ENV === 'development') {
     console.log('[AI Interaction]', {
-      model: data.model,
+      model: data.model || data.action,
       tokens: data.tokens,
       cost: data.cost,
       duration: data.duration,
+      success: data.success,
     });
   }
 }
 
 /**
  * Log security event
+ * Supports both eventType and type (alias used by API routes)
  */
 export function logSecurityEvent(data: {
-  eventType: SecurityEventLog['eventType'];
+  eventType?: SecurityEventLog['eventType'];
+  type?: string;  // Alias for eventType, used by API routes
   message: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  action: 'blocked' | 'allowed' | 'flagged';
+  action?: 'blocked' | 'allowed' | 'flagged';
   userId?: string;
   ipAddress?: string;
   metadata?: Record<string, any>;
 }): void {
+  // Support both eventType and type (alias)
+  const eventType = data.eventType || (data.type as SecurityEventLog['eventType']) || 'input_validation_failed';
+
   const entry: SecurityEventLog = {
     id: generateLogId(),
     timestamp: new Date(),
-    level: data.severity === 'critical' ? 'critical' : 
-           data.severity === 'high' ? 'error' : 
+    level: data.severity === 'critical' ? 'critical' :
+           data.severity === 'high' ? 'error' :
            data.severity === 'medium' ? 'warn' : 'info',
-    eventType: data.eventType,
+    eventType: eventType,
     message: data.message,
     userId: data.userId,
     ipAddress: data.ipAddress,
     severity: data.severity,
-    action: data.action,
+    action: data.action || 'flagged',
     metadata: data.metadata,
   };
-  
+
   logStore.add(entry);
-  
+
   // Log to console
   console.log(`[Security Event - ${data.severity.toUpperCase()}]`, data.message);
-  
+
   // In production, send critical events to alerting system
   if (data.severity === 'critical') {
     // sendAlert(entry);
@@ -451,3 +464,50 @@ export function getLogCount(): number {
   return logStore.count();
 }
 
+/**
+ * Log API request
+ */
+export function logAPIRequest(
+  method: string,
+  path: string,
+  userId: string,
+  statusCode: number,
+  metadata?: Record<string, any>
+): void {
+  logInfo(`API ${method} ${path} - ${statusCode}`, {
+    userId,
+    method,
+    path,
+    statusCode,
+    ...metadata,
+  });
+}
+
+/**
+ * Audit Logger Object
+ *
+ * Provides a unified interface for logging operations.
+ * This object wraps the individual logging functions for convenient import.
+ */
+export const auditLogger = {
+  logAIInteraction,
+  logSecurityEvent,
+  logAuthEvent,
+  logError,
+  logInfo,
+  logWarning,
+  logAPIRequest,
+  queryLogs,
+  getRecentLogs,
+  getUserLogs,
+  getSecurityEvents,
+  getAIInteractionLogs,
+  getUsageStats,
+  exportLogs,
+  clearLogs,
+  getLogCount,
+  createLogEntry,
+};
+
+// Default export for backward compatibility
+export default auditLogger;

@@ -1,13 +1,42 @@
+/**
+ * Pricing Module
+ *
+ * Defines subscription pricing tiers for CreditMaster Pro.
+ * Integrates with Stripe for payment processing.
+ *
+ * @module pricing
+ */
+
+/**
+ * Represents a subscription pricing tier
+ * @interface PricingTier
+ */
 export interface PricingTier {
+  /** Unique identifier for the tier (e.g., 'basic', 'premium', 'enterprise') */
   id: string;
+  /** Display name of the tier */
   name: string;
+  /** Price as a string for display (e.g., '29') */
   price: string;
+  /** Numeric price value for calculations */
   priceNumber: number;
+  /** Price suffix for display (e.g., '/ month') */
   priceSuffix: string;
+  /** Stripe Price ID for checkout integration */
   priceId: string;
+  /** List of features included in this tier */
   features: string[];
 }
 
+/**
+ * Available subscription pricing tiers
+ *
+ * - **Basic** ($29/mo): Entry-level with AI analysis and 5 disputes/month
+ * - **Premium** ($79/mo): Unlimited disputes, student loan optimization
+ * - **Enterprise** ($199/mo): Multi-user, API access, white-label options
+ *
+ * @constant
+ */
 export const pricingTiers: PricingTier[] = [
   {
     id: 'basic',

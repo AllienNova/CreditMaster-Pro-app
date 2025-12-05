@@ -1,0 +1,72 @@
+{
+  "appName": "CreditMaster Pro",
+  "subtitle": "AI-Powered Credit Repair",
+  "shortDescription": "Repair your credit with AI-powered dispute letters and expert strategies",
+  "fullDescription": "CreditMaster Pro is the ultimate AI-powered credit repair solution that helps you take control of your financial future.\n\n🎯 KEY FEATURES:\n\n✅ AI-Powered Dispute Letters\nGenerate legally compliant, personalized dispute letters for all three credit bureaus using advanced AI technology.\n\n✅ 10 Proven Letter Templates\nAccess battle-tested templates with documented success rates for common credit issues:\n• Unauthorized inquiries (62% success)\n• Obsolete debts (78% success)\n• Mixed credit files (71% success)\n• Medical debt under $500 (85% success)\n• And more!\n\n✅ 7 Advanced Dispute Strategies\nLeverage expert-level tactics including:\n• Multi-level escalation (CFPB, State AG)\n• Method of Verification challenges\n• Furnisher direct disputes\n• FDCPA debt validation\n• Procedural violation exploitation\n\n✅ Credit Score Tracking\nMonitor your credit scores across all three bureaus (Experian, Equifax, TransUnion) and track improvements over time.\n\n✅ Student Loan Management\nNavigate federal programs including Fresh Start, IDR plans, and PSLF with our comprehensive student loan tools.\n\n✅ Educational Resources\nLearn credit repair strategies through our extensive library of guides, tutorials, and expert tips.\n\n📱 WHY CHOOSE CREDITMASTER PRO?\n\n• No monthly fees for basic features\n• FCRA-compliant letter generation\n• Real success rate data\n• Progress tracking dashboard\n• Secure document storage\n• Expert support available\n\n⚖️ LEGAL COMPLIANCE\nAll dispute letters cite relevant federal laws including:\n• Fair Credit Reporting Act (FCRA)\n• Fair Debt Collection Practices Act (FDCPA)\n• Consumer Financial Protection Bureau regulations\n\n🔒 SECURITY\n• Bank-level encryption\n• Biometric authentication\n• Secure cloud storage\n• GDPR compliant\n\nStart your credit repair journey today with CreditMaster Pro!",
+  "keywords": [
+    "credit repair",
+    "dispute letters",
+    "credit score",
+    "FCRA",
+    "credit bureau",
+    "Experian",
+    "Equifax",
+    "TransUnion",
+    "debt collection",
+    "credit report",
+    "financial",
+    "AI"
+  ],
+  "categories": {
+    "ios": ["Finance", "Productivity"],
+    "android": ["Finance", "Tools"]
+  },
+  "ageRating": "4+",
+  "contentRating": {
+    "ios": "4+",
+    "android": "Everyone"
+  },
+  "supportUrl": "https://creditmaster.pro/support",
+  "privacyPolicyUrl": "https://creditmaster.pro/privacy",
+  "termsOfServiceUrl": "https://creditmaster.pro/terms",
+  "marketingUrl": "https://creditmaster.pro",
+  "contactEmail": "support@creditmaster.pro",
+  "whatsNew": {
+    "1.0.0": "🎉 Initial Release!\n\n• AI-powered dispute letter generation\n• 10 proven letter templates\n• 7 advanced dispute strategies\n• Credit score tracking\n• Student loan management tools\n• Educational resources library"
+  },
+  "screenshots": {
+    "ios": {
+      "6.5inch": [
+        "screenshots/ios/6.5/01-home.png",
+        "screenshots/ios/6.5/02-disputes.png",
+        "screenshots/ios/6.5/03-templates.png",
+        "screenshots/ios/6.5/04-strategies.png",
+        "screenshots/ios/6.5/05-reports.png",
+        "screenshots/ios/6.5/06-profile.png"
+      ],
+      "5.5inch": [
+        "screenshots/ios/5.5/01-home.png",
+        "screenshots/ios/5.5/02-disputes.png",
+        "screenshots/ios/5.5/03-templates.png",
+        "screenshots/ios/5.5/04-strategies.png"
+      ]
+    },
+    "android": {
+      "phone": [
+        "screenshots/android/phone/01-home.png",
+        "screenshots/android/phone/02-disputes.png",
+        "screenshots/android/phone/03-templates.png",
+        "screenshots/android/phone/04-strategies.png",
+        "screenshots/android/phone/05-reports.png",
+        "screenshots/android/phone/06-profile.png"
+      ],
+      "tablet": [
+        "screenshots/android/tablet/01-home.png",
+        "screenshots/android/tablet/02-disputes.png"
+      ]
+    }
+  },
+  "featureGraphic": "store-assets/feature-graphic.png",
+  "promoVideo": "https://youtube.com/watch?v=PROMO_VIDEO_ID"
+}
+

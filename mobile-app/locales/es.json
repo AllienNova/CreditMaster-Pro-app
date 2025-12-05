@@ -1,0 +1,49 @@
+{
+  "app": {
+    "name": "CreditMaster Pro",
+    "tagline": "Reparación de Crédito con IA"
+  },
+  "tabs": {
+    "home": "Inicio",
+    "disputes": "Disputas",
+    "reports": "Reportes",
+    "loans": "Préstamos",
+    "profile": "Perfil"
+  },
+  "home": {
+    "welcome": "Bienvenido",
+    "creditScore": "Puntaje de Crédito",
+    "quickActions": "Acciones Rápidas",
+    "recentActivity": "Actividad Reciente"
+  },
+  "disputes": {
+    "title": "Mis Disputas",
+    "newDispute": "Nueva Disputa",
+    "templates": "Plantillas",
+    "strategies": "Estrategias",
+    "status": {
+      "draft": "Borrador",
+      "sent": "Enviada",
+      "under_review": "En Revisión",
+      "resolved": "Resuelta",
+      "rejected": "Rechazada"
+    }
+  },
+  "reports": {
+    "title": "Reportes de Crédito",
+    "upload": "Subir Reporte",
+    "comparison": "Comparar Reportes"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Ocurrió un error",
+    "retry": "Reintentar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "next": "Siguiente",
+    "back": "Atrás",
+    "submit": "Enviar",
+    "success": "Éxito"
+  }
+}
+

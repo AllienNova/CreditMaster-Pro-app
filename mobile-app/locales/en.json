@@ -1,0 +1,49 @@
+{
+  "app": {
+    "name": "CreditMaster Pro",
+    "tagline": "AI-Powered Credit Repair"
+  },
+  "tabs": {
+    "home": "Home",
+    "disputes": "Disputes",
+    "reports": "Reports",
+    "loans": "Loans",
+    "profile": "Profile"
+  },
+  "home": {
+    "welcome": "Welcome back",
+    "creditScore": "Credit Score",
+    "quickActions": "Quick Actions",
+    "recentActivity": "Recent Activity"
+  },
+  "disputes": {
+    "title": "My Disputes",
+    "newDispute": "New Dispute",
+    "templates": "Templates",
+    "strategies": "Strategies",
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "under_review": "Under Review",
+      "resolved": "Resolved",
+      "rejected": "Rejected"
+    }
+  },
+  "reports": {
+    "title": "Credit Reports",
+    "upload": "Upload Report",
+    "comparison": "Compare Reports"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "next": "Next",
+    "back": "Back",
+    "submit": "Submit",
+    "success": "Success"
+  }
+}
+

@@ -361,8 +361,51 @@ class NotificationService {
         </p>
       </div>
     `;
-    
+
     await this.sendEmail(to, subject, html);
+  }
+
+  /**
+   * Notify recipients about a document share link
+   */
+  async notifyDocumentShareLink(params: {
+    ownerUserId: string;
+    ownerEmail?: string;
+    documentName: string;
+    recipients: string[];
+    shareUrl: string;
+    expiresAt: Date;
+  }): Promise<void> {
+    const { ownerEmail, documentName, recipients, shareUrl, expiresAt } = params;
+    const senderName = ownerEmail || 'A CreditMaster Pro user';
+
+    for (const recipient of recipients) {
+      const subject = `${senderName} shared a document with you`;
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #4F46E5;">Document Shared With You</h1>
+          <p>${senderName} has shared a document with you.</p>
+          <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Document:</strong> ${documentName}</p>
+            <p><strong>Expires:</strong> ${expiresAt.toLocaleDateString()} at ${expiresAt.toLocaleTimeString()}</p>
+          </div>
+          <p style="margin-top: 30px;">
+            <a href="${shareUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+              View Document
+            </a>
+          </p>
+          <p style="margin-top: 30px; color: #666; font-size: 12px;">
+            This link will expire on ${expiresAt.toLocaleDateString()}.
+          </p>
+        </div>
+      `;
+
+      try {
+        await this.sendEmail(recipient, subject, html);
+      } catch (error) {
+        console.error(`Failed to send share notification to ${recipient}:`, error);
+      }
+    }
   }
 }
 

@@ -6,15 +6,29 @@
  * Provides authentication state and utilities for client components
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
+
+interface SignInCredentials {
+  email: string;
+  password: string;
+}
+
+interface SignUpCredentials {
+  email: string;
+  password: string;
+  name?: string;
+}
 
 interface UseAuthReturn {
   user: User | null;
   loading: boolean;
   error: string | null;
+  signIn: (credentials: SignInCredentials) => Promise<boolean>;
+  signUp: (credentials: SignUpCredentials) => Promise<boolean>;
+  signOut: () => Promise<void>;
 }
 
 export function useAuth(redirectTo: string = '/login'): UseAuthReturn {
@@ -22,6 +36,84 @@ export function useAuth(redirectTo: string = '/login'): UseAuthReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  const signIn = useCallback(async (credentials: SignInCredentials): Promise<boolean> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const supabase = createClient();
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      });
+
+      if (signInError) {
+        setError(signInError.message);
+        return false;
+      }
+
+      if (data.user) {
+        setUser(data.user);
+        router.push('/dashboard');
+        return true;
+      }
+
+      return false;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign in failed');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  const signUp = useCallback(async (credentials: SignUpCredentials): Promise<boolean> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const supabase = createClient();
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password,
+        options: {
+          data: {
+            name: credentials.name,
+          },
+        },
+      });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        return false;
+      }
+
+      if (data.user) {
+        setUser(data.user);
+        return true;
+      }
+
+      return false;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign up failed');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const signOut = useCallback(async (): Promise<void> => {
+    try {
+      setLoading(true);
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      setUser(null);
+      router.push('/login');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign out failed');
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -31,19 +123,19 @@ export function useAuth(redirectTo: string = '/login'): UseAuthReturn {
 
         if (authError) {
           setError(authError.message);
-          router.push(redirectTo);
+          // Don't redirect on initial load - let the component decide
+          setLoading(false);
           return;
         }
 
         if (!user) {
-          router.push(redirectTo);
+          setLoading(false);
           return;
         }
 
         setUser(user);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Authentication failed');
-        router.push(redirectTo);
       } finally {
         setLoading(false);
       }
@@ -58,14 +150,13 @@ export function useAuth(redirectTo: string = '/login'): UseAuthReturn {
         setUser(session.user);
       } else {
         setUser(null);
-        router.push(redirectTo);
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, redirectTo]);
+  }, []);
 
-  return { user, loading, error };
+  return { user, loading, error, signIn, signUp, signOut };
 }
