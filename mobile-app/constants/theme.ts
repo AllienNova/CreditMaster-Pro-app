@@ -34,6 +34,7 @@ export const colors = {
   background: '#FFFFFF',
   backgroundSecondary: '#F9FAFB',
   surface: '#FFFFFF',
+  card: '#FFFFFF',
   
   // Text colors
   text: '#111827',

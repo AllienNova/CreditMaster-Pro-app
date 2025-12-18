@@ -56,14 +56,14 @@ export default function HomeScreen() {
     ? Math.round(scores.reduce((sum, s) => sum + s.score, 0) / scores.length)
     : 0;
   const primaryChange = scores.length > 0
-    ? Math.round(scores.reduce((sum, s) => sum + s.change, 0) / scores.length)
+    ? Math.round(scores.reduce((sum, s) => sum + (s.change ?? 0), 0) / scores.length)
     : 0;
 
   // Dispute stats
   const disputeStats = {
     total: disputes.length,
-    pending: disputes.filter(d => d.status === 'pending' || d.status === 'in_progress').length,
-    resolved: disputes.filter(d => d.status === 'resolved' || d.status === 'deleted').length,
+    pending: disputes.filter(d => d.status === 'pending' || d.status === 'in_progress' || d.status === 'sent' || d.status === 'under_review').length,
+    resolved: disputes.filter(d => d.status === 'resolved').length,
   };
 
   // Quick actions
@@ -148,24 +148,27 @@ export default function HomeScreen() {
               {/* Bureau Scores Row */}
               {scores.length > 0 && (
                 <View style={styles.bureauRow}>
-                  {scores.map((score) => (
-                    <View key={score.bureau} style={styles.bureauItem}>
-                      <Text style={styles.bureauName}>{score.bureau}</Text>
-                      <Text style={styles.bureauScore}>{score.score}</Text>
-                      {score.change !== 0 && (
-                        <View style={[styles.bureauChange, { backgroundColor: score.change > 0 ? '#D1FAE5' : '#FEE2E2' }]}>
-                          <Ionicons
-                            name={score.change > 0 ? 'arrow-up' : 'arrow-down'}
-                            size={10}
-                            color={score.change > 0 ? '#10B981' : '#EF4444'}
-                          />
-                          <Text style={[styles.bureauChangeText, { color: score.change > 0 ? '#10B981' : '#EF4444' }]}>
-                            {Math.abs(score.change)}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  ))}
+                  {scores.map((score) => {
+                    const change = score.change ?? 0;
+                    return (
+                      <View key={score.bureau} style={styles.bureauItem}>
+                        <Text style={styles.bureauName}>{score.bureau}</Text>
+                        <Text style={styles.bureauScore}>{score.score}</Text>
+                        {change !== 0 && (
+                          <View style={[styles.bureauChange, { backgroundColor: change > 0 ? '#D1FAE5' : '#FEE2E2' }]}>
+                            <Ionicons
+                              name={change > 0 ? 'arrow-up' : 'arrow-down'}
+                              size={10}
+                              color={change > 0 ? '#10B981' : '#EF4444'}
+                            />
+                            <Text style={[styles.bureauChangeText, { color: change > 0 ? '#10B981' : '#EF4444' }]}>
+                              {Math.abs(change)}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
                 </View>
               )}
 

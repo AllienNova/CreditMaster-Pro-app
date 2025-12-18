@@ -45,7 +45,12 @@ export function Skeleton({
     <Animated.View
       style={[
         styles.skeleton,
-        { width, height, borderRadius, opacity },
+        {
+          width: typeof width === 'string' ? width as `${number}%` : width,
+          height,
+          borderRadius,
+          opacity
+        },
         style,
       ]}
     />

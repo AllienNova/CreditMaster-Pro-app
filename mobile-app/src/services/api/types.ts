@@ -173,6 +173,22 @@ export interface DisputeStrategy {
   steps: { step: number; title: string; description: string }[];
 }
 
+export interface DisputeReason {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  category: string;
+  legalBasis?: string;
+}
+
+export interface StrategyRecommendation {
+  strategyId: string;
+  name: string;
+  confidence: number;
+  reasoning: string;
+}
+
 // Financial Types
 export type AccountType = 'checking' | 'savings' | 'credit' | 'investment' | 'loan';
 

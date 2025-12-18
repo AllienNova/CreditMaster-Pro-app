@@ -43,8 +43,8 @@ const INITIAL_SCENARIOS: Scenario[] = [
 export default function ScoreSimulatorScreen() {
   const { currentScore } = useCreditStore();
   const [scenarios, setScenarios] = useState<Scenario[]>(INITIAL_SCENARIOS);
-  const [simulatedScore, setSimulatedScore] = useState(currentScore?.score || 680);
-  const baseScore = currentScore?.score || 680;
+  const [simulatedScore, setSimulatedScore] = useState(currentScore ?? 680);
+  const baseScore = currentScore ?? 680;
 
   useEffect(() => {
     calculateSimulatedScore();

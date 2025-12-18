@@ -68,14 +68,16 @@ export default function GoalsScreen() {
       if (storeGoals.length > 0) {
         const transformedGoals = storeGoals.map(g => {
           const progress = (g.currentAmount / g.targetAmount) * 100;
+          const goalType = g.type || 'other';
+          const targetDateStr = g.targetDate || g.deadline || new Date().toISOString();
           return {
             id: g.id,
             name: g.name,
-            icon: GOAL_ICONS[g.type] || 'flag',
-            color: GOAL_COLORS[g.type] || '#6B7280',
+            icon: GOAL_ICONS[goalType] || 'flag',
+            color: GOAL_COLORS[goalType] || '#6B7280',
             targetAmount: g.targetAmount,
             currentAmount: g.currentAmount,
-            targetDate: new Date(g.targetDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+            targetDate: new Date(targetDateStr).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
             monthlyContribution: g.monthlyContribution || 0,
             milestones: [
               { percent: 25, reached: progress >= 25 },

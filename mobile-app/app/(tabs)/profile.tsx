@@ -109,14 +109,14 @@ export default function ProfileScreen() {
                   <Text style={styles.menuItemLabel}>{item.label}</Text>
                 </View>
                 <View style={styles.menuItemRight}>
-                  {item.badge && (
+                  {'badge' in item && item.badge && (
                     <View style={[styles.menuBadge, { backgroundColor: `${tierColors[item.badge]}20` }]}>
                       <Text style={[styles.menuBadgeText, { color: tierColors[item.badge] }]}>
                         {item.badge.charAt(0).toUpperCase() + item.badge.slice(1)}
                       </Text>
                     </View>
                   )}
-                  {item.value && <Text style={styles.menuValue}>{item.value}</Text>}
+                  {'value' in item && item.value && <Text style={styles.menuValue}>{item.value}</Text>}
                   <Ionicons name="chevron-forward" size={18} color={theme.colors.border} />
                 </View>
               </TouchableOpacity>

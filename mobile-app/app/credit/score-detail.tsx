@@ -375,7 +375,7 @@ export default function ScoreDetailScreen() {
                         <Text style={[styles.tableCell, { flex: 1, textAlign: 'center', fontWeight: '600' }]}>
                           {item.score}
                         </Text>
-                        <View style={[styles.tableCell, { flex: 1, alignItems: 'flex-end' }]}>
+                        <View style={{ flex: 1, alignItems: 'flex-end', paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.sm }}>
                           {change !== 0 && (
                             <View style={[
                               styles.tableChange,

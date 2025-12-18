@@ -8,6 +8,8 @@ import type {
   Dispute,
   DisputeTemplate,
   DisputeStrategy,
+  DisputeReason,
+  StrategyRecommendation,
   ApiResponse,
   PaginatedResponse,
 } from './types';
@@ -29,13 +31,6 @@ export interface DisputeUpdateInput {
   outcome?: Dispute['outcome'];
   responseDetails?: string;
   followUpDate?: string;
-}
-
-export interface StrategyRecommendation {
-  strategy: DisputeStrategy;
-  score: number;
-  reason: string;
-  estimatedSuccess: number;
 }
 
 // Dispute CRUD Endpoints
@@ -82,6 +77,12 @@ export const disputeApi = {
    */
   markAsSent: (disputeId: string, sentDate?: string) =>
     api.patch<Dispute>(`/disputes/${disputeId}/send`, { sentDate: sentDate || new Date().toISOString() }),
+
+  /**
+   * Send dispute (alias for markAsSent)
+   */
+  send: (disputeId: string) =>
+    api.patch<Dispute>(`/disputes/${disputeId}/send`, { sentDate: new Date().toISOString() }),
 
   /**
    * Get dispute statistics
@@ -179,6 +180,15 @@ export const disputeResourcesApi = {
    */
   getStrategy: (strategyId: string) =>
     api.get<DisputeStrategy>(`/disputes/strategies/${strategyId}`),
+
+  /**
+   * Get all available dispute reasons
+   */
+  getReasons: () =>
+    api.get<{ reasons: DisputeReason[] }>('/disputes/reasons', {
+      enableCache: true,
+      cacheTime: 60 * 60 * 1000, // Cache for 1 hour
+    }),
 };
 
 export default {

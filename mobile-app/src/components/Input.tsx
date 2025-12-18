@@ -14,7 +14,7 @@ export function Input({ label, error, containerStyle, style, ...props }: InputPr
       <TextInput
         style={[
           styles.input,
-          error && styles.inputError,
+          error ? styles.inputError : undefined,
           style,
         ]}
         placeholderTextColor={theme.colors.textSecondary}

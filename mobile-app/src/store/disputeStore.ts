@@ -221,12 +221,31 @@ export const useDisputeStore = create<DisputeState>()(
       generateAILetter: async (params) => {
         set({ isGeneratingLetter: true, error: null, generatedLetter: null });
         try {
-          const response = await disputeLetterApi.generateAILetter(params);
-          if (response.success && response.data) {
-            set({ generatedLetter: response.data.letter, isGeneratingLetter: false });
-            return response.data.letter;
+          // Get current dispute ID or use the disputeType to find/create one
+          const currentDispute = get().currentDispute;
+          const disputeId = currentDispute?.id;
+
+          if (!disputeId) {
+            // If no current dispute, create a temporary one or use template generation
+            const response = await disputeLetterApi.generateFromTemplate(
+              params.disputeType,
+              {
+                bureau: params.bureau,
+                ...params.accountInfo as Record<string, string>,
+              }
+            );
+            if (response.success && response.data) {
+              set({ generatedLetter: response.data.letter, isGeneratingLetter: false });
+              return response.data.letter;
+            }
+          } else {
+            const response = await disputeLetterApi.generateAILetter(disputeId);
+            if (response.success && response.data) {
+              set({ generatedLetter: response.data.letter, isGeneratingLetter: false });
+              return response.data.letter;
+            }
           }
-          set({ error: response.error?.message, isGeneratingLetter: false });
+          set({ error: 'Failed to generate letter', isGeneratingLetter: false });
           return null;
         } catch (error) {
           set({
@@ -274,9 +293,13 @@ export const useDisputeStore = create<DisputeState>()(
 
       getStrategyRecommendations: async (disputeType) => {
         try {
-          const response = await disputeLetterApi.getStrategyRecommendations(disputeType);
+          const response = await disputeLetterApi.getStrategyRecommendations({ disputeType });
           if (response.success && response.data) {
-            return response.data.strategies;
+            // Map recommendations to strategies
+            const strategies = get().strategies;
+            return response.data.recommendations
+              .map(rec => strategies.find(s => s.id === rec.strategyId))
+              .filter((s): s is DisputeStrategy => s !== undefined);
           }
           return [];
         } catch {

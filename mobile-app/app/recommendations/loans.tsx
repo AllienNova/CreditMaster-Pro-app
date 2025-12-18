@@ -74,7 +74,7 @@ export default function LoansScreen() {
         {/* Pre-qualification Summary */}
         <Card style={styles.summaryCard}>
           <View style={styles.summaryIcon}>
-            <Ionicons name="checkmark-shield" size={24} color="#22C55E" />
+            <Ionicons name="shield-checkmark" size={24} color="#22C55E" />
           </View>
           <Text style={styles.summaryTitle}>Pre-Qualified Offers</Text>
           <Text style={styles.summaryText}>Based on your credit profile, you're pre-qualified for {LOAN_OFFERS.filter(o => o.prequalified).length} loan offers with no impact to your credit score</Text>
