@@ -3,8 +3,13 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  dateOfBirth?: string;
   avatar_url?: string;
   subscription_tier: 'free' | 'basic' | 'premium' | 'enterprise';
+  goals?: string[];
   created_at: string;
   updated_at: string;
 }

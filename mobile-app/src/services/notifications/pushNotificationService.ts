@@ -8,7 +8,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiClient } from '../api/client';
+import { api as apiClient } from '../api/client';
 
 const PUSH_TOKEN_KEY = '@cpfi_push_token';
 

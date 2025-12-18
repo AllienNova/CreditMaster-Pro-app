@@ -7,11 +7,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  creditScoreApi,
-  creditMonitoringApi,
-  creditReportApi,
-} from '../services/api';
+import { creditScoreApi, creditMonitoringApi } from '../services/api';
 import type {
   CreditScore,
   CreditFactor,
@@ -28,6 +24,7 @@ interface CreditState {
   factors: CreditFactor[];
   lastScoreUpdate: string | null;
   lastScoreFetch: string | null;
+  currentScore: number | null; // Computed from scores
 
   // Monitoring
   monitoringStatus: MonitoringStatus | null;
@@ -53,7 +50,7 @@ interface CreditState {
   // Actions - Scores
   fetchScores: () => Promise<void>;
   fetchScoreHistory: (months?: number) => Promise<void>;
-  fetchFactors: (bureau?: string) => Promise<void>;
+  fetchFactors: () => Promise<void>;
   refreshScores: () => Promise<void>;
   simulateImpact: (scenarios: {
     payOffDebt?: number;
@@ -72,6 +69,9 @@ interface CreditState {
   acknowledgeAlert: (alertId: string) => Promise<void>;
   acknowledgeAllAlerts: () => Promise<void>;
   toggleBureauMonitoring: (bureau: string, enabled: boolean) => Promise<void>;
+  deleteAlert: (alertId: string) => Promise<void>;
+  updateAlertPreferences: (preferences: Record<string, boolean>) => Promise<void>;
+  toggleMonitoring: (enabled: boolean) => Promise<void>;
 
   // Actions - Real-time Updates
   enableBackgroundSync: (intervalMs?: number) => void;
@@ -85,25 +85,28 @@ interface CreditState {
   resetStore: () => void;
 }
 
+export type { CreditState };
+
 const initialState = {
-  scores: [],
-  scoreHistory: null,
-  factors: [],
-  lastScoreUpdate: null,
-  lastScoreFetch: null,
-  monitoringStatus: null,
-  alerts: [],
+  scores: [] as CreditScore[],
+  scoreHistory: null as CreditScoreHistory | null,
+  factors: [] as CreditFactor[],
+  lastScoreUpdate: null as string | null,
+  lastScoreFetch: null as string | null,
+  currentScore: null as number | null,
+  monitoringStatus: null as MonitoringStatus | null,
+  alerts: [] as CreditMonitoringAlert[],
   unreadAlertCount: 0,
-  lastAlertFetch: null,
+  lastAlertFetch: null as string | null,
   isBackgroundSyncEnabled: false,
   backgroundSyncInterval: 5 * 60 * 1000, // 5 minutes default
-  lastBackgroundSync: null,
+  lastBackgroundSync: null as string | null,
   isLoadingScores: false,
   isLoadingAlerts: false,
   isRefreshing: false,
   isSyncingInBackground: false,
-  scoreError: null,
-  alertError: null,
+  scoreError: null as string | null,
+  alertError: null as string | null,
 };
 
 // Background sync timer
@@ -120,10 +123,15 @@ export const useCreditStore = create<CreditState>()(
           const oldScores = get().scores;
           const response = await creditScoreApi.getScores();
           if (response.success && response.data) {
-            const newScores = response.data.scores;
+            const newScores = response.data;
             const now = new Date().toISOString();
+            // Calculate average score
+            const avgScore = newScores.length > 0
+              ? Math.round(newScores.reduce((sum, s) => sum + s.score, 0) / newScores.length)
+              : null;
             set({
               scores: newScores,
+              currentScore: avgScore,
               lastScoreUpdate: now,
               lastScoreFetch: now,
               isLoadingScores: false,
@@ -135,7 +143,7 @@ export const useCreditStore = create<CreditState>()(
             }
           } else {
             set({
-              scoreError: response.error?.message || 'Failed to fetch scores',
+              scoreError: (response.error as { message?: string })?.message || 'Failed to fetch scores',
               isLoadingScores: false,
             });
           }
@@ -151,9 +159,20 @@ export const useCreditStore = create<CreditState>()(
       fetchScoreHistory: async (months = 6) => {
         set({ isLoadingScores: true });
         try {
-          const response = await creditScoreApi.getHistory({ months });
+          const response = await creditScoreApi.getHistory(months);
           if (response.success && response.data) {
-            set({ scoreHistory: response.data, isLoadingScores: false });
+            // Convert array to history format
+            const scores = response.data;
+            const history: CreditScoreHistory = {
+              history: scores.map(s => ({ date: s.date, score: s.score, bureau: s.bureau })),
+              averageScore: scores.reduce((sum, s) => sum + s.score, 0) / (scores.length || 1),
+              highestScore: Math.max(...scores.map(s => s.score), 0),
+              lowestScore: Math.min(...scores.map(s => s.score), 850),
+              trend: 'stable',
+              periodStart: scores[scores.length - 1]?.date || new Date().toISOString(),
+              periodEnd: scores[0]?.date || new Date().toISOString(),
+            };
+            set({ scoreHistory: history, isLoadingScores: false });
           } else {
             set({ isLoadingScores: false });
           }
@@ -162,11 +181,19 @@ export const useCreditStore = create<CreditState>()(
         }
       },
 
-      fetchFactors: async (bureau) => {
+      fetchFactors: async () => {
         try {
-          const response = await creditScoreApi.getFactors(bureau);
+          const response = await creditScoreApi.getFactors();
           if (response.success && response.data) {
-            set({ factors: response.data.factors });
+            // Transform API response to CreditFactor[]
+            const factors: CreditFactor[] = response.data.map((f, index) => ({
+              id: `factor-${index}`,
+              name: f.factor,
+              impact: f.impact > 0 ? 'positive' : f.impact < 0 ? 'negative' : 'neutral',
+              category: 'payment_history' as const,
+              description: f.status,
+            }));
+            set({ factors });
           }
         } catch (error) {
           console.error('Failed to fetch factors:', error);
@@ -224,11 +251,12 @@ export const useCreditStore = create<CreditState>()(
           const oldAlerts = get().alerts;
           const response = await creditMonitoringApi.getAlerts(params);
           if (response.success && response.data) {
-            const alerts = response.data.items;
+            const paginatedData = response.data;
+            const alerts = paginatedData.items;
             const now = new Date().toISOString();
             set({
               alerts,
-              unreadAlertCount: alerts.filter((a) => !a.acknowledged).length,
+              unreadAlertCount: alerts.filter((a: CreditMonitoringAlert) => !a.acknowledged).length,
               lastAlertFetch: now,
               isLoadingAlerts: false,
             });
@@ -236,7 +264,7 @@ export const useCreditStore = create<CreditState>()(
             // Check for new alerts and notify
             if (oldAlerts.length > 0) {
               const newAlerts = alerts.filter(
-                (alert) => !oldAlerts.some((old) => old.id === alert.id)
+                (alert: CreditMonitoringAlert) => !oldAlerts.some((old) => old.id === alert.id)
               );
               for (const alert of newAlerts) {
                 await get().handleNewAlert(alert);
@@ -244,7 +272,7 @@ export const useCreditStore = create<CreditState>()(
             }
           } else {
             set({
-              alertError: response.error?.message,
+              alertError: (response.error as { message?: string })?.message || 'Failed to fetch alerts',
               isLoadingAlerts: false,
             });
           }
@@ -408,6 +436,43 @@ export const useCreditStore = create<CreditState>()(
         );
 
         console.log(`🔔 New alert notification sent: ${alert.title}`);
+      },
+
+      deleteAlert: async (alertId: string) => {
+        try {
+          const response = await creditMonitoringApi.acknowledgeAlert(alertId);
+          if (response.success) {
+            set((state) => ({
+              alerts: state.alerts.filter((a) => a.id !== alertId),
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to delete alert:', error);
+        }
+      },
+
+      updateAlertPreferences: async (preferences: Record<string, boolean>) => {
+        try {
+          const response = await creditMonitoringApi.updatePreferences(preferences);
+          if (response.success) {
+            // Refresh monitoring status to get updated preferences
+            await get().fetchMonitoringStatus();
+          }
+        } catch (error) {
+          console.error('Failed to update alert preferences:', error);
+        }
+      },
+
+      toggleMonitoring: async (enabled: boolean) => {
+        try {
+          // Toggle all bureaus
+          const bureaus = ['experian', 'equifax', 'transunion'];
+          for (const bureau of bureaus) {
+            await get().toggleBureauMonitoring(bureau, enabled);
+          }
+        } catch (error) {
+          console.error('Failed to toggle monitoring:', error);
+        }
       },
 
       clearErrors: () => set({ scoreError: null, alertError: null }),

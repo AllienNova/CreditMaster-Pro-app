@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../src/services/supabase';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.CPFI.pro';
 

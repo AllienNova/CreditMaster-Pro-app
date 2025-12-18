@@ -20,7 +20,7 @@ export const creditScoreApi = {
    * Get all current credit scores from connected bureaus
    */
   getScores: () =>
-    api.get<{ scores: CreditScore[] }>('/credit/scores', { cache: true, cacheTime: 5 * 60 * 1000 }),
+    api.get<CreditScore[]>('/credit/scores', { enableCache: true, cacheTime: 5 * 60 * 1000 }),
 
   /**
    * Get credit score from specific bureau
@@ -31,19 +31,14 @@ export const creditScoreApi = {
   /**
    * Get credit score history
    */
-  getHistory: (params?: { months?: number; bureau?: string }) => {
-    const queryParams = new URLSearchParams();
-    if (params?.months) queryParams.append('months', params.months.toString());
-    if (params?.bureau) queryParams.append('bureau', params.bureau);
-    const query = queryParams.toString();
-    return api.get<CreditScoreHistory>(`/credit/scores/history${query ? `?${query}` : ''}`);
-  },
+  getHistory: (months?: number) =>
+    api.get<CreditScore[]>(`/credit/scores/history${months ? `?months=${months}` : ''}`),
 
   /**
    * Get credit score factors analysis
    */
-  getFactors: (bureau?: string) =>
-    api.get<{ factors: CreditFactor[] }>(`/credit/factors${bureau ? `?bureau=${bureau}` : ''}`),
+  getFactors: () =>
+    api.get<{ factor: string; impact: number; status: string }[]>('/credit/factors'),
 
   /**
    * Simulate score impact for potential actions

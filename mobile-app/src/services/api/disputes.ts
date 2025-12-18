@@ -156,7 +156,7 @@ export const disputeResourcesApi = {
   getTemplates: (category?: string) =>
     api.get<{ templates: DisputeTemplate[] }>(
       `/disputes/templates${category ? `?category=${category}` : ''}`,
-      { cache: true, cacheTime: 30 * 60 * 1000 } // Cache for 30 minutes
+      { enableCache: true, cacheTime: 30 * 60 * 1000 } // Cache for 30 minutes
     ),
 
   /**
@@ -171,7 +171,7 @@ export const disputeResourcesApi = {
   getStrategies: (difficulty?: string) =>
     api.get<{ strategies: DisputeStrategy[] }>(
       `/disputes/strategies${difficulty ? `?difficulty=${difficulty}` : ''}`,
-      { cache: true, cacheTime: 30 * 60 * 1000 }
+      { enableCache: true, cacheTime: 30 * 60 * 1000 }
     ),
 
   /**

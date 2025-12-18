@@ -151,4 +151,5 @@ const styles = StyleSheet.create({
   },
 });
 
+export { Skeleton as LoadingSkeleton };
 export default Skeleton;

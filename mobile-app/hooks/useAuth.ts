@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { router } from 'expo-router';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../src/services/supabase';
 import { useStore } from '../store/useStore';
 import { authAPI } from '../services/api';
+import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 export function useAuth() {
   const { user, setUser, logout: storeLogout, hasCompletedOnboarding } = useStore();
@@ -11,7 +12,7 @@ export function useAuth() {
 
   useEffect(() => {
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
       if (session?.user) {
         setUser({
           id: session.user.id,
@@ -26,7 +27,7 @@ export function useAuth() {
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       if (session?.user) {
         setUser({
           id: session.user.id,

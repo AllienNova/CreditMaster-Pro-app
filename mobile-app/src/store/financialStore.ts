@@ -68,6 +68,7 @@ interface FinancialState {
   debtOverview: DebtOverview | null;
   
   // Loading states
+  isLoading: boolean; // General loading state
   isLoadingDashboard: boolean;
   isLoadingAccounts: boolean;
   isLoadingTransactions: boolean;
@@ -139,6 +140,7 @@ const initialState = {
   budgetAlerts: [],
   goals: [],
   debtOverview: null,
+  isLoading: false,
   isLoadingDashboard: false,
   isLoadingAccounts: false,
   isLoadingTransactions: false,

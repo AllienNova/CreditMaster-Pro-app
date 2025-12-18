@@ -14,7 +14,7 @@ interface DataPoint {
   date?: Date;
 }
 
-interface LineChartProps {
+export interface LineChartProps {
   data: DataPoint[];
   width?: number;
   height?: number;
@@ -23,6 +23,7 @@ interface LineChartProps {
   showGrid?: boolean;
   showLabels?: boolean;
   showValues?: boolean;
+  showArea?: boolean; // Show filled area under the line
   minValue?: number;
   maxValue?: number;
   yAxisLabels?: number[];
@@ -41,6 +42,7 @@ export function LineChart({
   showGrid = true,
   showLabels = true,
   showValues = false,
+  showArea = false,
   minValue,
   maxValue,
   yAxisLabels,

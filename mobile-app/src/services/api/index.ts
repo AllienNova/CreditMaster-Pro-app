@@ -13,6 +13,7 @@
 // Core client
 export {
   api,
+  api as apiClient, // Alias for backward compatibility
   apiRequest,
   initializeApiClient,
   processOfflineQueue,
@@ -29,6 +30,8 @@ export {
   financialGoalsApi,
   debtApi,
   billsApi,
+  type PlaidLinkToken,
+  type PlaidExchangeResult,
 } from './financial';
 export {
   userProfileApi,
@@ -39,36 +42,49 @@ export {
   documentApi,
   settingsApi,
 } from './user';
-export { investmentsApi } from './investments';
+export {
+  investmentsApi,
+  type AssetType,
+  type Holding,
+  type PortfolioSummary,
+  type AllocationItem,
+  type PerformancePoint,
+  type PortfolioResponse,
+  type StockAnalysis,
+  type StockAnalysisApiResponse,
+  type CreateHoldingInput,
+  type UpdateHoldingInput,
+  type PortfolioAnalysisResponse,
+} from './investments';
 
 // Type exports
 export * from './types';
 
 // Default exports for convenience
-import creditApi from './credit';
-import disputesApi from './disputes';
-import financialApi from './financial';
-import userApi from './user';
-import investmentsApi from './investments';
+import creditApiDefault from './credit';
+import disputesApiDefault from './disputes';
+import financialApiDefault from './financial';
+import userApiDefault from './user';
+import investmentsApiDefault from './investments';
 
 /**
  * Unified API object for easy access to all services
  */
 export const cpfiApi = {
   // Credit services
-  credit: creditApi,
+  credit: creditApiDefault,
 
   // Dispute services
-  disputes: disputesApi,
+  disputes: disputesApiDefault,
 
   // Financial services
-  financial: financialApi,
+  financial: financialApiDefault,
 
   // User services
-  user: userApi,
+  user: userApiDefault,
 
   // Investment services
-  investments: investmentsApi,
+  investments: investmentsApiDefault,
 };
 
 export default cpfiApi;

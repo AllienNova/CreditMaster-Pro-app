@@ -134,7 +134,7 @@ export const transactionApi = {
    * Get transaction categories
    */
   getCategories: () =>
-    api.get<{ categories: string[] }>('/financial/transactions/categories', { cache: true }),
+    api.get<{ categories: string[] }>('/financial/transactions/categories', { enableCache: true }),
 
   /**
    * Update transaction category

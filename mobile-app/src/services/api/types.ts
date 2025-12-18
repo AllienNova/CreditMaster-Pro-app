@@ -74,43 +74,67 @@ export interface CreditScoreHistory {
 }
 
 // Credit Monitoring Types
+export type AlertType =
+  | 'new_account'
+  | 'score_change'
+  | 'inquiry'
+  | 'address_change'
+  | 'fraud_alert'
+  | 'derogatory';
+
 export interface CreditMonitoringAlert {
   id: string;
   userId: string;
   bureau: string;
-  alertType:
-    | 'new_account'
-    | 'score_change'
-    | 'inquiry'
-    | 'address_change'
-    | 'fraud_alert'
-    | 'derogatory';
+  alertType: AlertType;
+  type: AlertType; // Alias for alertType for backward compatibility
   severity: 'low' | 'medium' | 'high' | 'critical';
   title: string;
   description: string;
+  message?: string; // Alias for description
   data?: Record<string, unknown>;
+  details?: Record<string, unknown>; // Alias for data
   createdAt: string;
   acknowledged: boolean;
   acknowledgedAt?: string;
+  isRead?: boolean; // Alias for acknowledged
+}
+
+export interface BureauStatus {
+  connected: boolean;
+  enabled?: boolean;
+  lastSync?: string;
 }
 
 export interface MonitoringStatus {
   isActive: boolean;
   bureaus: {
-    experian: { connected: boolean; lastSync?: string };
-    equifax: { connected: boolean; lastSync?: string };
-    transunion: { connected: boolean; lastSync?: string };
+    experian: BureauStatus;
+    equifax: BureauStatus;
+    transunion: BureauStatus;
+    [key: string]: BureauStatus; // Index signature for dynamic access
   };
   alertsCount: { total: number; unread: number };
   nextScheduledSync?: string;
 }
 
 // Dispute Types
+export type DisputeStatus =
+  | 'draft'
+  | 'pending'
+  | 'in_progress'
+  | 'ready'
+  | 'sent'
+  | 'under_review'
+  | 'resolved'
+  | 'rejected'
+  | 'deleted';
+
 export interface Dispute {
   id: string;
   userId: string;
   bureau: 'experian' | 'equifax' | 'transunion';
-  status: 'draft' | 'ready' | 'sent' | 'under_review' | 'resolved' | 'rejected';
+  status: DisputeStatus;
   itemType: string;
   creditorName: string;
   accountNumber?: string;
@@ -150,12 +174,16 @@ export interface DisputeStrategy {
 }
 
 // Financial Types
+export type AccountType = 'checking' | 'savings' | 'credit' | 'investment' | 'loan';
+
 export interface BankAccount {
   id: string;
   userId: string;
   institutionName: string;
-  accountType: 'checking' | 'savings' | 'credit' | 'investment' | 'loan';
+  accountType: AccountType;
+  type: AccountType; // Alias for accountType
   accountName: string;
+  name: string; // Alias for accountName
   balance: number;
   availableBalance?: number;
   lastSynced: string;
@@ -183,13 +211,27 @@ export interface Budget {
   period: 'weekly' | 'monthly' | 'yearly';
 }
 
+export type GoalType =
+  | 'emergency_fund'
+  | 'debt_payoff'
+  | 'savings'
+  | 'investment'
+  | 'retirement'
+  | 'education'
+  | 'home'
+  | 'vacation'
+  | 'other';
+
 export interface FinancialGoal {
   id: string;
   userId: string;
   name: string;
+  type?: GoalType;
   targetAmount: number;
   currentAmount: number;
   deadline?: string;
+  targetDate?: string; // Alias for deadline
+  monthlyContribution?: number;
   status: 'active' | 'completed' | 'paused';
 }
 
@@ -336,9 +378,11 @@ export interface RequestConfig {
   retryCount?: number;
   retryDelay?: number;
   headers?: Record<string, string>;
-  cache?: boolean;
+  enableCache?: boolean; // Renamed from 'cache' to avoid conflict with native RequestCache type
   cacheTime?: number;
   offlineSupport?: boolean;
+  method?: string;
+  body?: string;
 }
 
 // Re-export investment types for convenience

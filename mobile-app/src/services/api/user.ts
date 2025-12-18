@@ -98,7 +98,7 @@ export const subscriptionApi = {
    * Get available plans
    */
   getPlans: () =>
-    api.get<{ plans: SubscriptionPlan[] }>('/subscription/plans', { cache: true, cacheTime: 60 * 60 * 1000 }),
+    api.get<{ plans: SubscriptionPlan[] }>('/subscription/plans', { enableCache: true, cacheTime: 60 * 60 * 1000 }),
 
   /**
    * Create checkout session

@@ -7,14 +7,18 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
-  
+
   // Actions
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
   clearError: () => void;
+  updateProfile: (updates: Partial<User>) => Promise<void>;
+  completeOnboarding: () => Promise<void>;
 }
+
+export type { AuthState };
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -144,5 +148,43 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  updateProfile: async (updates: Partial<User>) => {
+    const currentUser = useAuthStore.getState().user;
+    if (!currentUser) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', currentUser.id);
+
+      if (error) throw error;
+
+      set({
+        user: { ...currentUser, ...updates },
+      });
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      throw error;
+    }
+  },
+
+  completeOnboarding: async () => {
+    const currentUser = useAuthStore.getState().user;
+    if (!currentUser) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ onboarding_completed: true })
+        .eq('id', currentUser.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Failed to complete onboarding:', error);
+      throw error;
+    }
+  },
 }));
 

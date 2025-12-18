@@ -4,7 +4,32 @@
  * Mobile app client for interacting with the AI Financial Coach backend services.
  */
 
-import { apiClient } from './api';
+import { api } from './api';
+
+// Wrapper to extract data from ApiResponse
+const apiClient = {
+  get: async <T>(url: string): Promise<T> => {
+    const response = await api.get<T>(url);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error((response.error as { message?: string })?.message || 'API request failed');
+  },
+  post: async <T>(url: string, data?: unknown): Promise<T> => {
+    const response = await api.post<T>(url, data);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error((response.error as { message?: string })?.message || 'API request failed');
+  },
+  patch: async <T>(url: string, data?: unknown): Promise<T> => {
+    const response = await api.patch<T>(url, data);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error((response.error as { message?: string })?.message || 'API request failed');
+  },
+};
 import {
   Recommendation,
   RecommendationType,

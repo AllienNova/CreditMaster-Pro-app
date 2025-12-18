@@ -126,7 +126,7 @@ export const investmentsApi = {
     api.get<PortfolioResponse>(
       `/investments/portfolio${period ? `?period=${period}` : ''}`,
       {
-        cache: true,
+        enableCache: true,
         cacheTime: 60000, // Cache for 1 minute
         ...config,
       }
@@ -199,7 +199,7 @@ export const investmentsApi = {
     config?: RequestConfig
   ): Promise<ApiResponse<StockAnalysisApiResponse>> =>
     api.get<StockAnalysisApiResponse>(`/investments/analyze/${symbol}`, {
-      cache: true,
+      enableCache: true,
       cacheTime: 300000, // Cache for 5 minutes
       ...config,
     }),
@@ -262,7 +262,7 @@ export const investmentsApi = {
     config?: RequestConfig
   ): Promise<ApiResponse<PortfolioAnalysisResponse>> =>
     api.get<PortfolioAnalysisResponse>('/investments/portfolio/analyze', {
-      cache: true,
+      enableCache: true,
       cacheTime: 60000, // Cache for 1 minute
       ...config,
     }),

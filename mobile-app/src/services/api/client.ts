@@ -198,7 +198,7 @@ export async function apiRequest<T>(
     timeout = DEFAULT_TIMEOUT,
     retryCount = MAX_RETRIES,
     retryDelay = RETRY_DELAY,
-    cache = false,
+    enableCache = false,
     cacheTime = 5 * 60 * 1000, // 5 minutes default
     offlineSupport = true,
     ...fetchOptions
@@ -206,7 +206,7 @@ export async function apiRequest<T>(
 
   // Check cache for GET requests
   const cacheKey = `${fetchOptions.method || 'GET'}_${endpoint}`;
-  if (cache && (!fetchOptions.method || fetchOptions.method === 'GET')) {
+  if (enableCache && (!fetchOptions.method || fetchOptions.method === 'GET')) {
     const cached = await getCachedResponse<T>(cacheKey);
     if (cached) {
       return { success: true, data: cached, timestamp: new Date().toISOString() };
@@ -287,7 +287,7 @@ export async function apiRequest<T>(
       }
 
       // Success - cache if applicable
-      if (cache && (!fetchOptions.method || fetchOptions.method === 'GET')) {
+      if (enableCache && (!fetchOptions.method || fetchOptions.method === 'GET')) {
         await setCachedResponse(cacheKey, responseData, cacheTime);
       }
 
