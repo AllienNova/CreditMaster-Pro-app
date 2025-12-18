@@ -12,15 +12,21 @@ import type { Database } from '../supabase/types';
 
 // Type helpers for Supabase operations
 type NotificationRow = Database['public']['Tables']['notifications']['Row'];
-type NotificationInsert = Database['public']['Tables']['notifications']['Insert'];
-type NotificationUpdate = Database['public']['Tables']['notifications']['Update'];
+type NotificationInsert =
+  Database['public']['Tables']['notifications']['Insert'];
+type NotificationUpdate =
+  Database['public']['Tables']['notifications']['Update'];
 
 // Helper to get typed table reference
 const notifications = () => getSupabase().from('notifications');
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build');
 
-export type NotificationType = 'dispute_update' | 'payment_success' | 'document_uploaded' | 'tip';
+export type NotificationType =
+  | 'dispute_update'
+  | 'payment_success'
+  | 'document_uploaded'
+  | 'tip';
 
 export interface Notification {
   id: string;
@@ -47,7 +53,7 @@ class NotificationServiceDB {
   ): Promise<void> {
     try {
       await resend.emails.send({
-        from: from || process.env.EMAIL_FROM || 'CreditMaster Pro <noreply@creditmaster-pro.com>',
+        from: from || process.env.EMAIL_FROM || 'CPFI <noreply@CPFI-pro.com>',
         to,
         subject,
         html,
@@ -93,7 +99,10 @@ class NotificationServiceDB {
   /**
    * Get user notifications
    */
-  async getUserNotifications(userId: string, limit: number = 50): Promise<Notification[]> {
+  async getUserNotifications(
+    userId: string,
+    limit: number = 50
+  ): Promise<Notification[]> {
     const { data, error } = await notifications()
       .select('*')
       .eq('user_id', userId)
@@ -114,7 +123,7 @@ class NotificationServiceDB {
   async markAsRead(notificationId: string): Promise<boolean> {
     const updateData: NotificationUpdate = { read: true };
     const query = notifications();
-    // @ts-ignore - Supabase types issue with update operations
+    // @ts-expect-error - Supabase types issue with update operations
     const { error } = await query.update(updateData).eq('id', notificationId);
 
     if (error) {
@@ -131,8 +140,12 @@ class NotificationServiceDB {
   async markAllAsRead(userId: string): Promise<number> {
     const updateData: NotificationUpdate = { read: true };
     const query2 = notifications();
-    // @ts-ignore - Supabase types issue with update operations
-    const { data, error } = await query2.update(updateData).eq('user_id', userId).eq('read', false).select();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (query2 as any)
+      .update(updateData)
+      .eq('user_id', userId)
+      .eq('read', false)
+      .select();
 
     if (error) {
       console.error('Failed to mark all as read:', error);
@@ -146,9 +159,7 @@ class NotificationServiceDB {
    * Delete notification
    */
   async deleteNotification(notificationId: string): Promise<boolean> {
-    const { error } = await notifications()
-      .delete()
-      .eq('id', notificationId);
+    const { error } = await notifications().delete().eq('id', notificationId);
 
     if (error) {
       console.error('Failed to delete notification:', error);
@@ -181,12 +192,12 @@ class NotificationServiceDB {
    * Send welcome email
    */
   async sendWelcomeEmail(to: string, name: string): Promise<void> {
-    const subject = 'Welcome to CreditMaster Pro!';
+    const subject = 'Welcome to CPFI!';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #4F46E5;">Welcome to CreditMaster Pro!</h1>
+        <h1 style="color: #4F46E5;">Welcome to CPFI!</h1>
         <p>Hi ${name},</p>
-        <p>We're excited to have you on board! CreditMaster Pro uses advanced AI to help you repair your credit and achieve your financial goals.</p>
+        <p>We're excited to have you on board! CPFI uses advanced AI to help you repair your credit and achieve your financial goals.</p>
         <h2>Get Started:</h2>
         <ol>
           <li>Upload your credit report</li>
@@ -300,7 +311,9 @@ class NotificationServiceDB {
   /**
    * Map database row to Notification interface
    */
-  private mapToNotification(row: Database['public']['Tables']['notifications']['Row']): Notification {
+  private mapToNotification(
+    row: Database['public']['Tables']['notifications']['Row']
+  ): Notification {
     return {
       id: row.id,
       userId: row.user_id,

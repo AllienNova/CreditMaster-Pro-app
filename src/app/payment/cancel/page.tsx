@@ -41,7 +41,7 @@ export default function PaymentCancelPage() {
           {/* Why Subscribe Section */}
           <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 mb-8 text-left">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Why Choose CreditMaster Pro?
+              Why Choose CPFI?
             </h2>
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
@@ -148,8 +148,8 @@ export default function PaymentCancelPage() {
               Contact Support
             </Link>{' '}
             or email{' '}
-            <a href="mailto:support@creditmaster-pro.com" className="text-indigo-600 hover:text-indigo-700 font-medium">
-              support@creditmaster-pro.com
+            <a href="mailto:support@CPFI-pro.com" className="text-indigo-600 hover:text-indigo-700 font-medium">
+              support@CPFI-pro.com
             </a>
           </p>
         </div>

@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import FinancialReports from '@/components/financial/FinancialReports';
 
 export const metadata: Metadata = {
-  title: 'Financial Reports | CreditMaster Pro',
+  title: 'Financial Reports | CPFI',
   description: 'Generate and export financial reports',
 };
 

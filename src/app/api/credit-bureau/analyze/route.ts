@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase';
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate user
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },

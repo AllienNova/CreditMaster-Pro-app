@@ -8,7 +8,12 @@
  * - Document categorization
  */
 
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { getSupabase } from '../supabase/client';
 import type { Database } from '../supabase/types';
@@ -30,9 +35,13 @@ const s3Client = new S3Client({
   },
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'creditmaster-pro-documents';
+const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'CPFI-pro-documents';
 
-export type DocumentType = 'credit_report' | 'id' | 'proof_of_address' | 'supporting_doc';
+export type DocumentType =
+  | 'credit_report'
+  | 'id'
+  | 'proof_of_address'
+  | 'supporting_doc';
 
 export interface Document {
   id: string;
@@ -136,7 +145,8 @@ class DocumentServiceDB {
     // Check if URL needs refresh (older than 6 days)
     const uploadedAt = new Date(docData.uploaded_at);
     const now = new Date();
-    const daysSinceUpload = (now.getTime() - uploadedAt.getTime()) / (1000 * 60 * 60 * 24);
+    const daysSinceUpload =
+      (now.getTime() - uploadedAt.getTime()) / (1000 * 60 * 60 * 24);
 
     let url = docData.s3_url;
 
@@ -152,7 +162,7 @@ class DocumentServiceDB {
       // Update URL in database
       const updateData: DocumentUpdate = { s3_url: url };
       const query = documents();
-      // @ts-ignore - Supabase types issue with update operations
+      // @ts-expect-error - Supabase types issue with update operations
       await query.update(updateData).eq('id', documentId);
 
       docData.s3_url = url;
@@ -164,7 +174,10 @@ class DocumentServiceDB {
   /**
    * Get user documents
    */
-  async getUserDocuments(userId: string, type?: DocumentType): Promise<Document[]> {
+  async getUserDocuments(
+    userId: string,
+    type?: DocumentType
+  ): Promise<Document[]> {
     let query = documents()
       .select('*')
       .eq('user_id', userId)
@@ -215,9 +228,7 @@ class DocumentServiceDB {
     }
 
     // Delete from database
-    const { error: dbError } = await documents()
-      .delete()
-      .eq('id', documentId);
+    const { error: dbError } = await documents().delete().eq('id', documentId);
 
     if (dbError) {
       console.error('Failed to delete document from database:', dbError);
@@ -240,7 +251,7 @@ class DocumentServiceDB {
     const byType: Record<string, number> = {};
     let totalSize = 0;
 
-    documents.forEach(doc => {
+    documents.forEach((doc) => {
       byType[doc.type] = (byType[doc.type] || 0) + 1;
       totalSize += doc.size;
     });
@@ -271,7 +282,9 @@ class DocumentServiceDB {
       ContentType: mimeType,
     });
 
-    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // 1 hour
+    const uploadUrl = await getSignedUrl(s3Client, command, {
+      expiresIn: 3600,
+    }); // 1 hour
 
     // Create pending document record
     const insertData: DocumentInsert = {
@@ -307,10 +320,7 @@ class DocumentServiceDB {
   /**
    * Confirm upload and update document record
    */
-  async confirmUpload(
-    documentId: string,
-    size: number
-  ): Promise<Document> {
+  async confirmUpload(documentId: string, size: number): Promise<Document> {
     // Get document to get S3 key
     const { data: doc, error: fetchError } = await documents()
       .select('*')
@@ -338,8 +348,13 @@ class DocumentServiceDB {
     };
 
     const query2 = documents();
-    // @ts-ignore - Supabase types issue with update operations
-    const { data, error } = await query2.update(updateData).eq('id', documentId).select().single();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateResult = await (query2 as any)
+      .update(updateData)
+      .eq('id', documentId)
+      .select()
+      .single();
+    const { data, error } = updateResult;
 
     if (error) {
       console.error('Failed to confirm upload:', error);
@@ -381,7 +396,9 @@ class DocumentServiceDB {
   /**
    * Map database row to Document interface
    */
-  private mapToDocument(row: Database['public']['Tables']['documents']['Row']): Document {
+  private mapToDocument(
+    row: Database['public']['Tables']['documents']['Row']
+  ): Document {
     return {
       id: row.id,
       userId: row.user_id,

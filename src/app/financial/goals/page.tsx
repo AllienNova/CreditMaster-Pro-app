@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import FinancialGoals from '@/components/financial/FinancialGoals';
 
 export const metadata: Metadata = {
-  title: 'Financial Goals | CreditMaster Pro',
+  title: 'Financial Goals | CPFI',
   description: 'Set and track your financial goals',
 };
 

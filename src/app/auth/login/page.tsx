@@ -3,8 +3,8 @@ import { Metadata } from 'next';
 import LoginForm from '@/components/auth/LoginForm';
 
 export const metadata: Metadata = {
-  title: 'Login | CreditMaster Pro',
-  description: 'Sign in to your CreditMaster Pro account',
+  title: 'Login | CPFI',
+  description: 'Sign in to your CPFI account',
 };
 
 function LoginLoadingSkeleton() {

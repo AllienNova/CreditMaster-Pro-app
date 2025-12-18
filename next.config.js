@@ -106,8 +106,8 @@ const nextConfig = {
       // Redirect www to non-www
       {
         source: '/:path*',
-        has: [{ type: 'host', value: 'www.creditmaster.pro' }],
-        destination: 'https://creditmaster.pro/:path*',
+        has: [{ type: 'host', value: 'www.CPFI.pro' }],
+        destination: 'https://CPFI.pro/:path*',
         permanent: true,
       },
     ];

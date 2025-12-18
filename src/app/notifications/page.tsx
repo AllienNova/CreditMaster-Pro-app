@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 
 export const metadata = {
-  title: 'Notifications | CreditMaster Pro',
+  title: 'Notifications | CPFI',
   description: 'View your notifications',
 };
 

@@ -594,7 +594,7 @@ export default function CreditBuilderLoanPage() {
               </button>
 
               <p className="text-xs text-gray-500 text-center mt-4">
-                This will open {selectedLoan.provider}'s secure application page. CreditMaster Pro may receive a commission.
+                This will open {selectedLoan.provider}'s secure application page. CPFI may receive a commission.
               </p>
             </div>
           </div>

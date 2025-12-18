@@ -20,7 +20,7 @@ const s3Client = new S3Client({
   },
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'creditmaster-pro-documents';
+const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'CPFI-pro-documents';
 
 export type DocumentType = 
   | 'credit_report'

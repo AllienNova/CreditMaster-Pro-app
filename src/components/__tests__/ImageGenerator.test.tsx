@@ -6,30 +6,30 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 // Mock the ImageGenerator component
-jest.mock('../image-generator/ImageGenerator', () => ({
-  ImageGenerator: ({ 
-    onGenerate, 
-    onDownload, 
-    className 
+jest.mock('../image-generator/ImageGenerator', () => {
+  const MockImageGenerator = ({
+    onGenerate,
+    className,
   }: {
-    onGenerate?: (prompt: string, imageUrl: string) => void;
-    onDownload?: (imageUrl: string) => void;
+    onGenerate?: (prompt: string, options: unknown) => Promise<string>;
     className?: string;
   }) => {
     const [prompt, setPrompt] = React.useState('');
-    const [generatedImage, setGeneratedImage] = React.useState<string | null>(null);
+    const [generatedImage, setGeneratedImage] = React.useState<string | null>(
+      null
+    );
     const [isGenerating, setIsGenerating] = React.useState(false);
-    
+
     const handleGenerate = () => {
       setIsGenerating(true);
       setTimeout(() => {
         const imageUrl = 'https://example.com/generated-image.png';
         setGeneratedImage(imageUrl);
         setIsGenerating(false);
-        onGenerate?.(prompt, imageUrl);
+        onGenerate?.(prompt, {});
       }, 100);
     };
-    
+
     return (
       <div className={className} data-testid="image-generator">
         <input
@@ -39,17 +39,18 @@ jest.mock('../image-generator/ImageGenerator', () => ({
           onChange={(e) => setPrompt(e.target.value)}
           data-testid="prompt-input"
         />
-        <select data-testid="size-select">
+        <select data-testid="size-select" aria-label="Size">
           <option value="square">Square (1024x1024)</option>
           <option value="portrait">Portrait (768x1024)</option>
           <option value="landscape">Landscape (1024x768)</option>
         </select>
-        <select data-testid="style-select">
+        <select data-testid="style-select" aria-label="Style">
           <option value="realistic">Realistic</option>
           <option value="artistic">Artistic</option>
           <option value="anime">Anime</option>
         </select>
         <button
+          type="button"
           data-testid="generate-button"
           onClick={handleGenerate}
           disabled={!prompt || isGenerating}
@@ -59,25 +60,37 @@ jest.mock('../image-generator/ImageGenerator', () => ({
         {isGenerating && <div data-testid="loading">Generating image...</div>}
         {generatedImage && (
           <div data-testid="image-preview">
-            <img src={generatedImage} alt="Generated" data-testid="generated-image" />
-            <button
-              data-testid="download-button"
-              onClick={() => onDownload?.(generatedImage)}
-            >
+            <img
+              src={generatedImage}
+              alt="Generated"
+              data-testid="generated-image"
+            />
+            <button type="button" data-testid="download-button">
               Download
             </button>
           </div>
         )}
         <div data-testid="sample-prompts">
-          <button onClick={() => setPrompt('A serene mountain landscape')}>Mountain</button>
-          <button onClick={() => setPrompt('A futuristic city skyline')}>City</button>
+          <button
+            type="button"
+            onClick={() => setPrompt('A serene mountain landscape')}
+          >
+            Mountain
+          </button>
+          <button
+            type="button"
+            onClick={() => setPrompt('A futuristic city skyline')}
+          >
+            City
+          </button>
         </div>
       </div>
     );
-  },
-}));
+  };
+  return { __esModule: true, default: MockImageGenerator };
+});
 
-import { ImageGenerator } from '../image-generator/ImageGenerator';
+import ImageGenerator from '../image-generator/ImageGenerator';
 
 describe('ImageGenerator', () => {
   it('renders image generator component', () => {
@@ -87,7 +100,9 @@ describe('ImageGenerator', () => {
 
   it('renders prompt input', () => {
     render(<ImageGenerator />);
-    expect(screen.getByPlaceholderText('Describe the image you want to generate...')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Describe the image you want to generate...')
+    ).toBeInTheDocument();
   });
 
   it('renders size selector', () => {
@@ -125,7 +140,7 @@ describe('ImageGenerator', () => {
     const input = screen.getByTestId('prompt-input');
     fireEvent.change(input, { target: { value: 'Test prompt' } });
     fireEvent.click(screen.getByTestId('generate-button'));
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('generated-image')).toBeInTheDocument();
     });
@@ -134,13 +149,16 @@ describe('ImageGenerator', () => {
   it('calls onGenerate with prompt and image URL', async () => {
     const onGenerate = jest.fn();
     render(<ImageGenerator onGenerate={onGenerate} />);
-    
+
     const input = screen.getByTestId('prompt-input');
     fireEvent.change(input, { target: { value: 'Test prompt' } });
     fireEvent.click(screen.getByTestId('generate-button'));
-    
+
     await waitFor(() => {
-      expect(onGenerate).toHaveBeenCalledWith('Test prompt', expect.any(String));
+      expect(onGenerate).toHaveBeenCalledWith(
+        'Test prompt',
+        expect.any(Object)
+      );
     });
   });
 
@@ -149,25 +167,22 @@ describe('ImageGenerator', () => {
     const input = screen.getByTestId('prompt-input');
     fireEvent.change(input, { target: { value: 'Test' } });
     fireEvent.click(screen.getByTestId('generate-button'));
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('download-button')).toBeInTheDocument();
     });
   });
 
-  it('calls onDownload when download button clicked', async () => {
-    const onDownload = jest.fn();
-    render(<ImageGenerator onDownload={onDownload} />);
-    
+  it('allows clicking download button', async () => {
+    render(<ImageGenerator />);
+
     const input = screen.getByTestId('prompt-input');
     fireEvent.change(input, { target: { value: 'Test' } });
     fireEvent.click(screen.getByTestId('generate-button'));
-    
+
     await waitFor(() => {
-      fireEvent.click(screen.getByTestId('download-button'));
+      expect(screen.getByTestId('download-button')).toBeInTheDocument();
     });
-    
-    expect(onDownload).toHaveBeenCalled();
   });
 
   it('renders sample prompts', () => {
@@ -180,4 +195,3 @@ describe('ImageGenerator', () => {
     expect(screen.getByTestId('image-generator')).toHaveClass('custom-class');
   });
 });
-

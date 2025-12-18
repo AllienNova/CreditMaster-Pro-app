@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import FinancialDashboard from '@/components/financial/FinancialDashboard';
 
 export const metadata: Metadata = {
-  title: 'Financial Dashboard | CreditMaster Pro',
+  title: 'Financial Dashboard | CPFI',
   description: 'Track your finances, manage budgets, and achieve your financial goals',
 };
 

@@ -1,6 +1,6 @@
 /**
  * A/B Testing Framework
- * 
+ *
  * Feature flag experiments with variant assignment and tracking
  */
 
@@ -42,7 +42,7 @@ export interface ExperimentAssignment {
 }
 
 // In-memory cache for experiments
-let experimentsCache: Map<string, Experiment> = new Map();
+const experimentsCache: Map<string, Experiment> = new Map();
 let cacheExpiry = 0;
 const CACHE_TTL = 60 * 1000; // 1 minute
 
@@ -71,7 +71,7 @@ async function loadExperiments(): Promise<void> {
   }
 
   experimentsCache.clear();
-  data?.forEach(exp => experimentsCache.set(exp.id, exp));
+  data?.forEach((exp) => experimentsCache.set(exp.id, exp));
   cacheExpiry = Date.now() + CACHE_TTL;
 }
 
@@ -100,7 +100,9 @@ export async function getVariant(
     .single();
 
   if (existing) {
-    return experiment.variants.find(v => v.id === existing.variant_id) || null;
+    return (
+      experiment.variants.find((v) => v.id === existing.variant_id) || null
+    );
   }
 
   // Assign new variant
@@ -112,7 +114,7 @@ export async function getVariant(
     experiment_id: experimentId,
     variant_id: variant.id,
     user_id: userId,
-    assigned_at: new Date().toISOString()
+    assigned_at: new Date().toISOString(),
   });
 
   return variant;
@@ -125,7 +127,7 @@ function assignVariant(experiment: Experiment, userId: string): Variant | null {
   // Check if user is in target percentage
   const hash = hashString(`${experiment.id}:${userId}`);
   const bucket = hash % 100;
-  
+
   if (bucket >= experiment.targetPercentage) {
     return null; // User not in experiment
   }
@@ -151,7 +153,7 @@ function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash;
   }
   return Math.abs(hash);
@@ -172,7 +174,7 @@ export async function trackConversion(
     user_id: userId,
     event_name: eventName,
     value,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
   });
 }
 
@@ -199,4 +201,3 @@ export async function getFeatureConfig<T>(
   const variant = await getVariant(featureKey, userId);
   return (variant?.config as T) ?? defaultConfig;
 }
-

@@ -1,6 +1,7 @@
 {
-  "name": "agentic-credit-repair-web",
+  "name": "cpfi-credit-pro-financial-intelligence",
   "version": "1.0.0",
+  "description": "CPFI - Credit Pro & Financial Intelligence: AI-powered credit repair and financial wellness platform",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -28,12 +29,14 @@
     "@supabase/ssr": "^0.7.0",
     "@types/multer": "^2.0.0",
     "@types/nodemailer": "^7.0.3",
+    "lightweight-charts": "^5.1.0",
     "multer": "^2.0.2",
     "next": "^15.5.6",
     "nodemailer": "^7.0.10",
     "openai": "^4.77.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "recharts": "^3.5.1",
     "resend": "^6.2.2",
     "stripe": "^19.1.0",
     "zod": "^3.25.76"

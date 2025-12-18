@@ -1,6 +1,6 @@
 /**
  * Marketplace Service
- * 
+ *
  * Core marketplace operations: getProducts, getCategories, search, filter
  */
 
@@ -85,10 +85,7 @@ class MarketplaceService {
   }
 
   async getProductById(id: string): Promise<MarketplaceProduct | null> {
-    const { data, error } = await products()
-      .select('*')
-      .eq('id', id)
-      .single();
+    const { data, error } = await products().select('*').eq('id', id).single();
 
     if (error || !data) {
       return null;
@@ -106,8 +103,9 @@ class MarketplaceService {
       return [];
     }
 
-    // @ts-ignore - Supabase type issue
-    const categorySet = new Set<string>(data.map((p: { category: string }) => p.category));
+    const categorySet = new Set<string>(
+      data.map((p: { category: string }) => p.category)
+    );
     const categories = Array.from(categorySet);
     return categories.sort();
   }
@@ -162,4 +160,3 @@ class MarketplaceService {
 }
 
 export const marketplaceService = new MarketplaceService();
-

@@ -1,5 +1,5 @@
 /**
- * Analytics Module for CreditMaster Pro
+ * Analytics Module for CPFI
  * 
  * Tracks user interactions, conversions, and feature usage.
  * Supports Google Analytics 4 and custom event tracking.

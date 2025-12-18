@@ -10,7 +10,10 @@ describe('Rate Limiter', () => {
       lastRefill: number;
     }
 
-    const createBucket = (maxTokens: number, refillRate: number): TokenBucket => ({
+    const createBucket = (
+      maxTokens: number,
+      refillRate: number
+    ): TokenBucket => ({
       tokens: maxTokens,
       maxTokens,
       refillRate,
@@ -21,7 +24,7 @@ describe('Rate Limiter', () => {
       const now = Date.now();
       const elapsed = (now - bucket.lastRefill) / 1000;
       const tokensToAdd = elapsed * bucket.refillRate;
-      
+
       return {
         ...bucket,
         tokens: Math.min(bucket.maxTokens, bucket.tokens + tokensToAdd),
@@ -29,16 +32,18 @@ describe('Rate Limiter', () => {
       };
     };
 
-    const consumeToken = (bucket: TokenBucket): { success: boolean; bucket: TokenBucket } => {
+    const consumeToken = (
+      bucket: TokenBucket
+    ): { success: boolean; bucket: TokenBucket } => {
       const refilled = refillBucket(bucket);
-      
+
       if (refilled.tokens >= 1) {
         return {
           success: true,
           bucket: { ...refilled, tokens: refilled.tokens - 1 },
         };
       }
-      
+
       return { success: false, bucket: refilled };
     };
 
@@ -49,7 +54,7 @@ describe('Rate Limiter', () => {
     });
 
     it('should consume tokens successfully', () => {
-      let bucket = createBucket(10, 1);
+      const bucket = createBucket(10, 1);
       const result = consumeToken(bucket);
       expect(result.success).toBe(true);
       expect(result.bucket.tokens).toBeLessThan(10);
@@ -74,17 +79,23 @@ describe('Rate Limiter', () => {
       maxRequests: number;
     }
 
-    const createWindow = (windowMs: number, maxRequests: number): WindowCounter => ({
+    const createWindow = (
+      windowMs: number,
+      maxRequests: number
+    ): WindowCounter => ({
       requests: [],
       windowMs,
       maxRequests,
     });
 
-    const isAllowed = (counter: WindowCounter, now: number): { allowed: boolean; counter: WindowCounter } => {
+    const isAllowed = (
+      counter: WindowCounter,
+      now: number
+    ): { allowed: boolean; counter: WindowCounter } => {
       // Remove old requests
       const cutoff = now - counter.windowMs;
-      const validRequests = counter.requests.filter(t => t > cutoff);
-      
+      const validRequests = counter.requests.filter((t) => t > cutoff);
+
       if (validRequests.length < counter.maxRequests) {
         return {
           allowed: true,
@@ -94,7 +105,7 @@ describe('Rate Limiter', () => {
           },
         };
       }
-      
+
       return {
         allowed: false,
         counter: { ...counter, requests: validRequests },
@@ -104,7 +115,7 @@ describe('Rate Limiter', () => {
     it('should allow requests within limit', () => {
       let counter = createWindow(60000, 10);
       const now = Date.now();
-      
+
       for (let i = 0; i < 10; i++) {
         const result = isAllowed(counter, now + i);
         expect(result.allowed).toBe(true);
@@ -115,12 +126,12 @@ describe('Rate Limiter', () => {
     it('should reject requests over limit', () => {
       let counter = createWindow(60000, 5);
       const now = Date.now();
-      
+
       for (let i = 0; i < 5; i++) {
         const result = isAllowed(counter, now + i);
         counter = result.counter;
       }
-      
+
       const result = isAllowed(counter, now + 100);
       expect(result.allowed).toBe(false);
     });
@@ -128,13 +139,13 @@ describe('Rate Limiter', () => {
     it('should allow requests after window expires', () => {
       let counter = createWindow(1000, 2); // 1 second window
       const now = Date.now();
-      
+
       // Fill window
       for (let i = 0; i < 2; i++) {
         const result = isAllowed(counter, now);
         counter = result.counter;
       }
-      
+
       // After window expires
       const result = isAllowed(counter, now + 2000);
       expect(result.allowed).toBe(true);
@@ -142,11 +153,18 @@ describe('Rate Limiter', () => {
   });
 
   describe('Rate Limit Headers', () => {
-    const generateHeaders = (remaining: number, limit: number, resetTime: number) => ({
+    const generateHeaders = (
+      remaining: number,
+      limit: number,
+      resetTime: number
+    ) => ({
       'X-RateLimit-Limit': String(limit),
       'X-RateLimit-Remaining': String(remaining),
       'X-RateLimit-Reset': String(resetTime),
-      'Retry-After': remaining === 0 ? String(Math.ceil((resetTime - Date.now()) / 1000)) : undefined,
+      'Retry-After':
+        remaining === 0
+          ? String(Math.ceil((resetTime - Date.now()) / 1000))
+          : undefined,
     });
 
     it('should generate correct headers', () => {
@@ -172,16 +190,16 @@ describe('Rate Limiter', () => {
     const checkIpLimit = (ip: string, limit: number, windowMs: number) => {
       const now = Date.now();
       const existing = ipLimits.get(ip);
-      
+
       if (!existing || existing.resetAt < now) {
         ipLimits.set(ip, { count: 1, resetAt: now + windowMs });
         return { allowed: true, remaining: limit - 1 };
       }
-      
+
       if (existing.count >= limit) {
         return { allowed: false, remaining: 0 };
       }
-      
+
       existing.count++;
       return { allowed: true, remaining: limit - existing.count };
     };
@@ -193,7 +211,7 @@ describe('Rate Limiter', () => {
     it('should track requests per IP', () => {
       const result1 = checkIpLimit('192.168.1.1', 10, 60000);
       const result2 = checkIpLimit('192.168.1.1', 10, 60000);
-      
+
       expect(result1.remaining).toBe(9);
       expect(result2.remaining).toBe(8);
     });
@@ -205,4 +223,3 @@ describe('Rate Limiter', () => {
     });
   });
 });
-

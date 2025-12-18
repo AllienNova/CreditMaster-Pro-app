@@ -13,7 +13,10 @@ export async function POST(request: NextRequest) {
   try {
     // Get authenticated user
     const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json(
@@ -34,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get or create user profile
-    let profile = await subscriptionService.getUserProfile(user.id);
+    const profile = await subscriptionService.getUserProfile(user.id);
 
     // Get or create Stripe customer
     let stripeCustomerId = profile?.stripeCustomerId;
@@ -50,9 +53,11 @@ export async function POST(request: NextRequest) {
       stripeCustomerId = customer.id;
 
       // Update profile with Stripe customer ID
-      const updateData: ProfileUpdate = { stripe_customer_id: stripeCustomerId };
+      const updateData: ProfileUpdate = {
+        stripe_customer_id: stripeCustomerId,
+      };
       const query = profiles();
-      // @ts-ignore - Supabase types issue with update operations
+      // @ts-expect-error - Supabase types issue with update operations
       await query.update(updateData).eq('id', user.id);
     }
 
@@ -69,9 +74,13 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Checkout error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create checkout session' },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to create checkout session',
+      },
       { status: 500 }
     );
   }
 }
-

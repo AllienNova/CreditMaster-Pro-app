@@ -32,7 +32,8 @@ $nodeProcess = Get-Process -Name "node" -ErrorAction SilentlyContinue | Select-O
 
 if ($nodeProcess) {
     Write-Host "✅ Found Node.js process (PID: $($nodeProcess.Id))" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "⚠️  Node.js process not found. Monitoring system-wide metrics." -ForegroundColor Yellow
 }
 
@@ -65,7 +66,8 @@ try {
             $diskCounter = Get-Counter '\PhysicalDisk(_Total)\Disk Read Bytes/sec', '\PhysicalDisk(_Total)\Disk Write Bytes/sec' -ErrorAction SilentlyContinue
             $diskRead = ($diskCounter.CounterSamples[0].CookedValue / 1MB)
             $diskWrite = ($diskCounter.CounterSamples[1].CookedValue / 1MB)
-        } catch {
+        }
+        catch {
             # Disk counters not available
         }
         
@@ -76,7 +78,8 @@ try {
             $networkCounter = Get-Counter '\Network Interface(*)\Bytes Sent/sec', '\Network Interface(*)\Bytes Received/sec' -ErrorAction SilentlyContinue
             $networkSent = ($networkCounter.CounterSamples | Where-Object { $_.Path -like "*Bytes Sent*" } | Measure-Object -Property CookedValue -Sum).Sum / 1MB
             $networkReceived = ($networkCounter.CounterSamples | Where-Object { $_.Path -like "*Bytes Received*" } | Measure-Object -Property CookedValue -Sum).Sum / 1MB
-        } catch {
+        }
+        catch {
             # Network counters not available
         }
         
@@ -105,7 +108,8 @@ try {
         $samples++
         Start-Sleep -Seconds $sampleInterval
     }
-} catch {
+}
+catch {
     Write-Host ""
     Write-Host "⚠️  Monitoring interrupted" -ForegroundColor Yellow
 }

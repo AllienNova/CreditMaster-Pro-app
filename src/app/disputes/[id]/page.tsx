@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import DisputeDetail from '@/components/disputes/DisputeDetail';
 
 export const metadata = {
-  title: 'Dispute Details | CreditMaster Pro',
+  title: 'Dispute Details | CPFI',
   description: 'View and manage dispute details',
 };
 

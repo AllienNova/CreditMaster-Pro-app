@@ -56,7 +56,8 @@ if ($LASTEXITCODE -eq 0) {
     $apiHtml = "$reportsDir/api-tests_$timestamp.html"
     npx artillery report $apiReport --output $apiHtml
     Write-Host "📄 Report saved: $apiHtml" -ForegroundColor Cyan
-} else {
+}
+else {
     Write-Host "❌ API tests failed" -ForegroundColor Red
 }
 
@@ -81,7 +82,8 @@ if ($LASTEXITCODE -eq 0) {
     $loadHtml = "$reportsDir/load-tests_$timestamp.html"
     npx artillery report $loadReport --output $loadHtml
     Write-Host "📄 Report saved: $loadHtml" -ForegroundColor Cyan
-} else {
+}
+else {
     Write-Host "❌ Load tests failed" -ForegroundColor Red
 }
 
@@ -109,10 +111,12 @@ if ($stressConfirm -eq "y") {
         $stressHtml = "$reportsDir/stress-tests_$timestamp.html"
         npx artillery report $stressReport --output $stressHtml
         Write-Host "📄 Report saved: $stressHtml" -ForegroundColor Cyan
-    } else {
+    }
+    else {
         Write-Host "❌ Stress tests failed" -ForegroundColor Red
     }
-} else {
+}
+else {
     Write-Host "⏭️  Stress tests skipped" -ForegroundColor Yellow
 }
 

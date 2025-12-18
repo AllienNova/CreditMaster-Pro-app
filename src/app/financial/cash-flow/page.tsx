@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import CashFlowAnalysis from '@/components/financial/CashFlowAnalysis';
 
 export const metadata: Metadata = {
-  title: 'Cash Flow | CreditMaster Pro',
+  title: 'Cash Flow | CPFI',
   description: 'Analyze your cash flow and financial health',
 };
 

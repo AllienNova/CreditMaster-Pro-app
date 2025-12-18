@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import InvestmentPortfolio from '@/components/financial/InvestmentPortfolio';
 
 export const metadata: Metadata = {
-  title: 'Investments | CreditMaster Pro',
+  title: 'Investments | CPFI',
   description: 'Track your investment portfolio and performance',
 };
 

@@ -15,7 +15,7 @@ const FAQ_ITEMS = [
 
 const CONTACT_OPTIONS = [
   { id: 'chat', label: 'Live Chat', description: 'Chat with our support team', icon: 'chatbubbles-outline', available: true },
-  { id: 'email', label: 'Email Support', description: 'support@creditmaster.pro', icon: 'mail-outline', available: true },
+  { id: 'email', label: 'Email Support', description: 'support@CPFI.pro', icon: 'mail-outline', available: true },
   { id: 'phone', label: 'Phone Support', description: 'Premium members only', icon: 'call-outline', available: false },
 ];
 
@@ -31,7 +31,7 @@ export default function HelpScreen() {
 
   const handleContact = (optionId: string) => {
     if (optionId === 'email') {
-      Linking.openURL('mailto:support@creditmaster.pro');
+      Linking.openURL('mailto:support@CPFI.pro');
     } else if (optionId === 'chat') {
       // Open chat widget
       console.log('Open chat');
@@ -112,7 +112,7 @@ export default function HelpScreen() {
 
         <View style={styles.resourcesSection}>
           <Text style={styles.sectionTitle}>Resources</Text>
-          <TouchableOpacity style={styles.resourceItem} onPress={() => Linking.openURL('https://creditmaster.pro/guides')}>
+          <TouchableOpacity style={styles.resourceItem} onPress={() => Linking.openURL('https://CPFI.pro/guides')}>
             <Ionicons name="book-outline" size={24} color={lightTheme.colors.primary} />
             <View style={styles.resourceInfo}>
               <Text style={styles.resourceLabel}>Credit Guides</Text>
@@ -120,7 +120,7 @@ export default function HelpScreen() {
             </View>
             <Ionicons name="open-outline" size={20} color={lightTheme.colors.textSecondary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.resourceItem} onPress={() => Linking.openURL('https://creditmaster.pro/blog')}>
+          <TouchableOpacity style={styles.resourceItem} onPress={() => Linking.openURL('https://CPFI.pro/blog')}>
             <Ionicons name="newspaper-outline" size={24} color={lightTheme.colors.primary} />
             <View style={styles.resourceInfo}>
               <Text style={styles.resourceLabel}>Blog</Text>
@@ -128,7 +128,7 @@ export default function HelpScreen() {
             </View>
             <Ionicons name="open-outline" size={20} color={lightTheme.colors.textSecondary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.resourceItem} onPress={() => Linking.openURL('https://www.youtube.com/@creditmaster')}>
+          <TouchableOpacity style={styles.resourceItem} onPress={() => Linking.openURL('https://www.youtube.com/@CPFI')}>
             <Ionicons name="logo-youtube" size={24} color="#FF0000" />
             <View style={styles.resourceInfo}>
               <Text style={styles.resourceLabel}>Video Tutorials</Text>

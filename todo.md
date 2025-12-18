@@ -1,4 +1,4 @@
-# CreditMaster Pro - TODO List
+# CPFI (Credit Pro & Financial Intelligence) - TODO List
 
 ## Completed Features ✅
 

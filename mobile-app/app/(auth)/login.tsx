@@ -22,7 +22,7 @@ export default function LoginScreen() {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.header}>
         <Text style={styles.logo}>💳</Text>
-        <Text style={styles.title}>CreditMaster Pro</Text>
+        <Text style={styles.title}>CPFI</Text>
         <Text style={styles.subtitle}>Sign in to your account</Text>
       </View>
 

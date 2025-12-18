@@ -1,7 +1,8 @@
 {
   "app": {
-    "name": "CreditMaster Pro",
-    "tagline": "AI-Powered Credit Repair"
+    "name": "CPFI",
+    "fullName": "Credit Pro & Financial Intelligence",
+    "tagline": "AI-Powered Credit Repair & Financial Wellness"
   },
   "tabs": {
     "home": "Home",

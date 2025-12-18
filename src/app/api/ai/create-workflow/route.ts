@@ -1,6 +1,6 @@
 /**
  * AI Automation Workflow API
- * 
+ *
  * Creates automated workflows for student loan strategies
  */
 
@@ -13,7 +13,7 @@ import { logAIInteraction } from '@/lib/security/audit-logging';
 export async function POST(request: NextRequest) {
   try {
     // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -78,9 +78,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Workflow creation error:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to create workflow' 
+        error:
+          error instanceof Error ? error.message : 'Failed to create workflow',
       },
       { status: 500 }
     );
@@ -97,4 +98,3 @@ export async function GET() {
     description: 'Creates automated workflows for student loan strategies',
   });
 }
-

@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.creditmaster.pro';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.CPFI.pro';
 
 // Generic API request helper
 async function apiRequest<T>(

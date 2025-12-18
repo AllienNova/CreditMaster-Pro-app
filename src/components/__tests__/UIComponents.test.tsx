@@ -3,18 +3,38 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 
 // Mock Loading components
 jest.mock('../ui/Loading', () => ({
-  Spinner: ({ size = 'md', color = 'blue' }: { size?: string; color?: string }) => (
-    <div data-testid="spinner" data-size={size} data-color={color}>Loading...</div>
+  Spinner: ({
+    size = 'md',
+    color = 'blue',
+  }: {
+    size?: string;
+    color?: string;
+  }) => (
+    <div data-testid="spinner" data-size={size} data-color={color}>
+      Loading...
+    </div>
   ),
   Skeleton: ({ className }: { className?: string }) => (
     <div data-testid="skeleton" className={className} />
   ),
   SkeletonText: ({ lines = 3 }: { lines?: number }) => (
-    <div data-testid="skeleton-text">{Array(lines).fill(null).map((_, i) => <div key={i} />)}</div>
+    <div data-testid="skeleton-text">
+      {Array(lines)
+        .fill(null)
+        .map((_, i) => (
+          <div key={i} />
+        ))}
+    </div>
   ),
   SkeletonCard: () => <div data-testid="skeleton-card" />,
   LoadingOverlay: ({ message }: { message?: string }) => (
@@ -23,12 +43,20 @@ jest.mock('../ui/Loading', () => ({
   LoadingPage: ({ message }: { message?: string }) => (
     <div data-testid="loading-page">{message || 'Loading...'}</div>
   ),
-  LoadingButton: ({ loading, children, onClick, disabled }: { 
-    loading: boolean; children: React.ReactNode; onClick?: () => void; disabled?: boolean 
+  LoadingButton: ({
+    loading,
+    children,
+    onClick,
+    disabled,
+  }: {
+    loading: boolean;
+    children: React.ReactNode;
+    onClick?: () => void;
+    disabled?: boolean;
   }) => (
-    <button 
-      data-testid="loading-button" 
-      data-loading={loading} 
+    <button
+      data-testid="loading-button"
+      data-loading={loading}
       onClick={onClick}
       disabled={loading || disabled}
     >
@@ -36,36 +64,87 @@ jest.mock('../ui/Loading', () => ({
     </button>
   ),
   ProgressBar: ({ progress }: { progress: number }) => (
-    <div data-testid="progress-bar" data-progress={progress} style={{ width: `${progress}%` }} />
+    <div
+      data-testid="progress-bar"
+      data-progress={progress}
+      style={{ width: `${progress}%` }}
+    />
   ),
 }));
 
 // Mock Toast components
 jest.mock('../ui/Toast', () => {
   const React = require('react');
-  const ToastContext = React.createContext<any>(null);
-  
+  const ToastContext = React.createContext(null);
+
   return {
     ToastProvider: ({ children }: { children: React.ReactNode }) => {
-      const [toasts, setToasts] = React.useState<any[]>([]);
-      const addToast = (toast: any) => setToasts(prev => [...prev, { ...toast, id: Date.now().toString() }]);
-      const removeToast = (id: string) => setToasts(prev => prev.filter(t => t.id !== id));
-      const success = (title: string, message?: string) => addToast({ type: 'success', title, message });
-      const error = (title: string, message?: string) => addToast({ type: 'error', title, message });
-      const warning = (title: string, message?: string) => addToast({ type: 'warning', title, message });
-      const info = (title: string, message?: string) => addToast({ type: 'info', title, message });
-      
+      const [toasts, setToasts] = React.useState([]);
+      const addToast = (toast: {
+        type: string;
+        title: string;
+        message?: string;
+      }) =>
+        setToasts(
+          (
+            prev: Array<{
+              id: string;
+              type: string;
+              title: string;
+              message?: string;
+            }>
+          ) => [...prev, { ...toast, id: Date.now().toString() }]
+        );
+      const removeToast = (id: string) =>
+        setToasts(
+          (
+            prev: Array<{
+              id: string;
+              type: string;
+              title: string;
+              message?: string;
+            }>
+          ) => prev.filter((t: { id: string }) => t.id !== id)
+        );
+      const success = (title: string, message?: string) =>
+        addToast({ type: 'success', title, message });
+      const error = (title: string, message?: string) =>
+        addToast({ type: 'error', title, message });
+      const warning = (title: string, message?: string) =>
+        addToast({ type: 'warning', title, message });
+      const info = (title: string, message?: string) =>
+        addToast({ type: 'info', title, message });
+
       return (
-        <ToastContext.Provider value={{ toasts, addToast, removeToast, success, error, warning, info }}>
+        <ToastContext.Provider
+          value={{
+            toasts,
+            addToast,
+            removeToast,
+            success,
+            error,
+            warning,
+            info,
+          }}
+        >
           {children}
           <div data-testid="toast-container">
-            {toasts.map(t => (
-              <div key={t.id} data-testid={`toast-${t.type}`}>
-                <span>{t.title}</span>
-                {t.message && <span>{t.message}</span>}
-                <button onClick={() => removeToast(t.id)}>Close</button>
-              </div>
-            ))}
+            {toasts.map(
+              (t: {
+                id: string;
+                type: string;
+                title: string;
+                message?: string;
+              }) => (
+                <div key={t.id} data-testid={`toast-${t.type}`}>
+                  <span>{t.title}</span>
+                  {t.message && <span>{t.message}</span>}
+                  <button type="button" onClick={() => removeToast(t.id)}>
+                    Close
+                  </button>
+                </div>
+              )
+            )}
           </div>
         </ToastContext.Provider>
       );
@@ -74,7 +153,14 @@ jest.mock('../ui/Toast', () => {
   };
 });
 
-import { Spinner, Skeleton, SkeletonCard, LoadingOverlay, LoadingButton, ProgressBar } from '../ui/Loading';
+import {
+  Spinner,
+  Skeleton,
+  SkeletonCard,
+  LoadingOverlay,
+  LoadingButton,
+  ProgressBar,
+} from '../ui/Loading';
 import { ToastProvider, useToast } from '../ui/Toast';
 
 describe('Loading Components', () => {
@@ -93,7 +179,10 @@ describe('Loading Components', () => {
 
     it('renders with custom color', () => {
       render(<Spinner color="white" />);
-      expect(screen.getByTestId('spinner')).toHaveAttribute('data-color', 'white');
+      expect(screen.getByTestId('spinner')).toHaveAttribute(
+        'data-color',
+        'white'
+      );
     });
   });
 
@@ -114,12 +203,16 @@ describe('Loading Components', () => {
   describe('LoadingOverlay', () => {
     it('renders with default message', () => {
       render(<LoadingOverlay />);
-      expect(screen.getByTestId('loading-overlay')).toHaveTextContent('Loading...');
+      expect(screen.getByTestId('loading-overlay')).toHaveTextContent(
+        'Loading...'
+      );
     });
 
     it('renders with custom message', () => {
       render(<LoadingOverlay message="Please wait..." />);
-      expect(screen.getByTestId('loading-overlay')).toHaveTextContent('Please wait...');
+      expect(screen.getByTestId('loading-overlay')).toHaveTextContent(
+        'Please wait...'
+      );
     });
   });
 
@@ -131,7 +224,9 @@ describe('Loading Components', () => {
 
     it('shows loading text when loading', () => {
       render(<LoadingButton loading={true}>Submit</LoadingButton>);
-      expect(screen.getByTestId('loading-button')).toHaveTextContent('Loading...');
+      expect(screen.getByTestId('loading-button')).toHaveTextContent(
+        'Loading...'
+      );
     });
 
     it('is disabled when loading', () => {
@@ -141,7 +236,11 @@ describe('Loading Components', () => {
 
     it('calls onClick when clicked', () => {
       const onClick = jest.fn();
-      render(<LoadingButton loading={false} onClick={onClick}>Submit</LoadingButton>);
+      render(
+        <LoadingButton loading={false} onClick={onClick}>
+          Submit
+        </LoadingButton>
+      );
       fireEvent.click(screen.getByTestId('loading-button'));
       expect(onClick).toHaveBeenCalled();
     });
@@ -150,7 +249,10 @@ describe('Loading Components', () => {
   describe('ProgressBar', () => {
     it('renders with progress value', () => {
       render(<ProgressBar progress={75} />);
-      expect(screen.getByTestId('progress-bar')).toHaveAttribute('data-progress', '75');
+      expect(screen.getByTestId('progress-bar')).toHaveAttribute(
+        'data-progress',
+        '75'
+      );
     });
   });
 });
@@ -160,8 +262,14 @@ describe('Toast Components', () => {
     const toast = useToast();
     return (
       <div>
-        <button onClick={() => toast.success('Success!', 'Operation completed')}>Success</button>
-        <button onClick={() => toast.error('Error!', 'Something went wrong')}>Error</button>
+        <button
+          onClick={() => toast.success('Success!', 'Operation completed')}
+        >
+          Success
+        </button>
+        <button onClick={() => toast.error('Error!', 'Something went wrong')}>
+          Error
+        </button>
         <button onClick={() => toast.warning('Warning!')}>Warning</button>
         <button onClick={() => toast.info('Info!')}>Info</button>
       </div>
@@ -169,29 +277,44 @@ describe('Toast Components', () => {
   }
 
   it('renders ToastProvider', () => {
-    render(<ToastProvider><div>Content</div></ToastProvider>);
+    render(
+      <ToastProvider>
+        <div>Content</div>
+      </ToastProvider>
+    );
     expect(screen.getByText('Content')).toBeInTheDocument();
   });
 
   it('shows success toast', () => {
-    render(<ToastProvider><ToastTester /></ToastProvider>);
+    render(
+      <ToastProvider>
+        <ToastTester />
+      </ToastProvider>
+    );
     fireEvent.click(screen.getByText('Success'));
     expect(screen.getByTestId('toast-success')).toBeInTheDocument();
     expect(screen.getByText('Success!')).toBeInTheDocument();
   });
 
   it('shows error toast', () => {
-    render(<ToastProvider><ToastTester /></ToastProvider>);
+    render(
+      <ToastProvider>
+        <ToastTester />
+      </ToastProvider>
+    );
     fireEvent.click(screen.getByText('Error'));
     expect(screen.getByTestId('toast-error')).toBeInTheDocument();
   });
 
   it('removes toast when close clicked', () => {
-    render(<ToastProvider><ToastTester /></ToastProvider>);
+    render(
+      <ToastProvider>
+        <ToastTester />
+      </ToastProvider>
+    );
     fireEvent.click(screen.getByText('Info'));
     expect(screen.getByTestId('toast-info')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Close'));
     expect(screen.queryByTestId('toast-info')).not.toBeInTheDocument();
   });
 });
-

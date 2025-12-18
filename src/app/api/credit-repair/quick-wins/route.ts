@@ -34,7 +34,7 @@ const mapQuickWinToActionType = (id: string): ActionType =>
 export async function GET(request: NextRequest) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

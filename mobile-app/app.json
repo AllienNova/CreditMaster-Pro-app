@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "CreditMaster Pro",
-    "slug": "creditmaster-pro",
+    "name": "CPFI - Credit Pro & Financial Intelligence",
+    "slug": "cpfi-credit-pro",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "creditmaster",
+    "scheme": "cpfi",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash.png",
@@ -17,20 +17,20 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.creditmaster.pro",
+      "bundleIdentifier": "com.cpfi.app",
       "buildNumber": "1",
       "config": {
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "NSCameraUsageDescription": "CreditMaster Pro needs camera access to scan credit reports and documents for analysis",
-        "NSPhotoLibraryUsageDescription": "CreditMaster Pro needs photo library access to upload credit reports and supporting documents",
-        "NSFaceIDUsageDescription": "CreditMaster Pro uses Face ID to secure your financial data",
+        "NSCameraUsageDescription": "CPFI needs camera access to scan credit reports and documents for analysis",
+        "NSPhotoLibraryUsageDescription": "CPFI needs photo library access to upload credit reports and supporting documents",
+        "NSFaceIDUsageDescription": "CPFI uses Face ID to secure your financial data",
         "ITSAppUsesNonExemptEncryption": false
       },
       "associatedDomains": [
-        "applinks:creditmaster.pro",
-        "webcredentials:creditmaster.pro"
+        "applinks:cpfi.com",
+        "webcredentials:cpfi.com"
       ],
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [
@@ -48,7 +48,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#3B82F6"
       },
-      "package": "com.creditmaster.pro",
+      "package": "com.cpfi.app",
       "versionCode": 1,
       "permissions": [
         "CAMERA",
@@ -66,7 +66,7 @@
           "data": [
             {
               "scheme": "https",
-              "host": "creditmaster.pro",
+              "host": "cpfi.com",
               "pathPrefix": "/app"
             }
           ],
@@ -99,7 +99,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow CreditMaster Pro to access your camera to scan documents"
+          "cameraPermission": "Allow CPFI to access your camera to scan documents"
         }
       ],
       [
@@ -118,12 +118,12 @@
         "origin": false
       },
       "eas": {
-        "projectId": "creditmaster-pro-app"
+        "projectId": "cpfi-app"
       }
     },
-    "owner": "creditmaster",
+    "owner": "cpfi",
     "updates": {
-      "url": "https://u.expo.dev/creditmaster-pro-app",
+      "url": "https://u.expo.dev/cpfi-app",
       "fallbackToCacheTimeout": 30000,
       "checkAutomatically": "ON_LOAD"
     },

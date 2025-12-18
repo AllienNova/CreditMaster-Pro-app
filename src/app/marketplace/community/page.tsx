@@ -32,7 +32,7 @@ interface SuccessStory {
 }
 
 const mockPosts: Post[] = [
-  { id: '1', title: '📌 Welcome! Read the community guidelines', author: 'Admin', category: 'Announcements', content: 'Welcome to the CreditMaster Pro community...', likes: 245, replies: 12, date: '2024-01-01', pinned: true },
+  { id: '1', title: '📌 Welcome! Read the community guidelines', author: 'Admin', category: 'Announcements', content: 'Welcome to the CPFI community...', likes: 245, replies: 12, date: '2024-01-01', pinned: true },
   { id: '2', title: 'How I removed 5 collections in 30 days', author: 'CreditWarrior', category: 'Success Stories', content: 'I want to share my journey...', likes: 189, replies: 47, date: '2024-01-15' },
   { id: '3', title: 'Best dispute letter template for late payments?', author: 'NewToCredit', category: 'Questions', content: 'Looking for advice on disputing...', likes: 34, replies: 23, date: '2024-01-18' },
   { id: '4', title: 'Goodwill letter success with Chase!', author: 'DebtFreeJourney', category: 'Success Stories', content: 'Just wanted to share that my goodwill letter worked...', likes: 156, replies: 38, date: '2024-01-17' },

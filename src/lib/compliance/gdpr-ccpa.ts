@@ -389,7 +389,7 @@ export const PRIVACY_POLICY_TEMPLATE = {
     },
     {
       title: 'Contact Us',
-      content: 'For privacy inquiries, contact privacy@creditmaster-pro.com',
+      content: 'For privacy inquiries, contact privacy@CPFI-pro.com',
     },
   ],
 };

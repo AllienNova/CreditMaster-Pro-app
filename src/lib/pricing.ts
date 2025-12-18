@@ -1,7 +1,7 @@
 /**
  * Pricing Module
  *
- * Defines subscription pricing tiers for CreditMaster Pro.
+ * Defines subscription pricing tiers for CPFI.
  * Integrates with Stripe for payment processing.
  *
  * @module pricing

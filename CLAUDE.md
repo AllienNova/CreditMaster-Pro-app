@@ -1,13 +1,13 @@
 # CLAUDE.md - Pair Programming Guide
 
-> **This document is specifically designed for Claude (or other AI assistants) to understand the CreditMaster Pro platform for effective pair programming.**
+> **This document is specifically designed for Claude (or other AI assistants) to understand the CPFI (Credit Pro & Financial Intelligence) platform for effective pair programming.**
 
 ---
 
 ## 🎯 Quick Context
 
-**Project**: CreditMaster Pro - AI-Powered Credit Repair Platform  
-**Repository**: https://github.com/AllienNova/CreditMaster-Pro-app  
+**Project**: CPFI (Credit Pro & Financial Intelligence) - AI-Powered Credit Repair Platform  
+**Repository**: https://github.com/AllienNova/CPFI-Pro-app  
 **Status**: 100/110 complete (90.9%) - Production Ready  
 **Your Role**: Pair programming partner for feature development, bug fixes, and enhancements
 
@@ -37,9 +37,9 @@
 
 ## 🌟 Project Overview
 
-### What is CreditMaster Pro?
+### What is CPFI (Credit Pro & Financial Intelligence)?
 
-CreditMaster Pro is a production-ready SaaS platform that helps users repair their credit through AI-powered tools. It's the world's most advanced credit repair platform with access to 300+ AI models.
+CPFI (Credit Pro & Financial Intelligence) is a production-ready SaaS platform that helps users repair their credit through AI-powered tools. It's the world's most advanced credit repair platform with access to 300+ AI models.
 
 ### Key Statistics
 
@@ -743,7 +743,7 @@ const session = await stripeService.createCheckoutSession({
 **Configuration**:
 ```env
 RESEND_API_KEY=re_xxx
-EMAIL_FROM=CreditMaster Pro <noreply@creditmaster-pro.com>
+EMAIL_FROM=CPFI (Credit Pro & Financial Intelligence) <noreply@CPFI-pro.com>
 ```
 
 **Usage**:
@@ -779,7 +779,7 @@ await notificationService.sendWelcomeEmail(
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=AKIA...
 AWS_SECRET_ACCESS_KEY=xxx
-AWS_S3_BUCKET=creditmaster-pro-documents
+AWS_S3_BUCKET=CPFI-pro-documents
 ```
 
 **Usage**:
@@ -1557,8 +1557,8 @@ A git worktree allows you to have multiple working directories for the same repo
 
 ### Current Setup
 
-**Main Repository**: `C:\Githhub\CreditMaster-Pro-app`
-**Worktree Location**: `C:\Users\khono\.claude-worktrees\CreditMaster-Pro-app\vigilant-albattani`
+**Main Repository**: `C:\Githhub\CPFI-Pro-app`
+**Worktree Location**: `C:\Users\khono\.claude-worktrees\CPFI-Pro-app\vigilant-albattani`
 **Branch**: `vigilant-albattani`
 **Main Branch**: `main`
 
@@ -1572,7 +1572,7 @@ git worktree list
 **Create New Worktree**:
 ```bash
 # From main repository
-cd C:\Githhub\CreditMaster-Pro-app
+cd C:\Githhub\CPFI-Pro-app
 git worktree add ../worktrees/feature-name -b feature-name
 ```
 
@@ -1589,10 +1589,10 @@ git worktree prune
 **Move Between Worktrees**:
 ```bash
 # Switch to main repository
-cd C:\Githhub\CreditMaster-Pro-app
+cd C:\Githhub\CPFI-Pro-app
 
 # Switch to worktree
-cd C:\Users\khono\.claude-worktrees\CreditMaster-Pro-app\vigilant-albattani
+cd C:\Users\khono\.claude-worktrees\CPFI-Pro-app\vigilant-albattani
 ```
 
 ### Workflow Best Practices
@@ -1641,7 +1641,7 @@ git push origin vigilant-albattani
 # Create PR on GitHub and merge there
 
 # Option 2: Direct merge (use with caution)
-cd C:\Githhub\CreditMaster-Pro-app
+cd C:\Githhub\CPFI-Pro-app
 git checkout main
 git merge vigilant-albattani
 git push origin main
@@ -2196,7 +2196,7 @@ Follow conventional commits:
 
 ## 🎉 Conclusion
 
-You now have complete context about CreditMaster Pro! This document should help you:
+You now have complete context about CPFI (Credit Pro & Financial Intelligence)! This document should help you:
 
 1. **Understand the architecture**: How everything fits together
 2. **Navigate the codebase**: Where to find what you need
@@ -2212,7 +2212,7 @@ You now have complete context about CreditMaster Pro! This document should help 
 
 **Last Updated**: November 29, 2025
 **Version**: 1.1.0
-**Maintained by**: CreditMaster Pro Team
+**Maintained by**: CPFI (Credit Pro & Financial Intelligence) Team
 
 ### Version History
 

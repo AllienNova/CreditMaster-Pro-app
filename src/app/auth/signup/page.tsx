@@ -3,8 +3,8 @@ import { Metadata } from 'next';
 import SignUpForm from '@/components/auth/SignUpForm';
 
 export const metadata: Metadata = {
-  title: 'Sign Up | CreditMaster Pro',
-  description: 'Create your CreditMaster Pro account',
+  title: 'Sign Up | CPFI',
+  description: 'Create your CPFI account',
 };
 
 function SignUpLoadingSkeleton() {

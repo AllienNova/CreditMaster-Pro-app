@@ -3,7 +3,7 @@ import DocumentLibrary from '@/components/documents/DocumentLibrary';
 import DocumentStats from '@/components/documents/DocumentStats';
 
 export const metadata = {
-  title: 'Documents | CreditMaster Pro',
+  title: 'Documents | CPFI',
   description: 'Manage your credit repair documents',
 };
 

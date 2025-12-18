@@ -1,10 +1,10 @@
 /**
  * Individual Dispute API Route
- * 
+ *
  * GET /api/credit-repair/disputes/[id] - Get single dispute
  * PUT /api/credit-repair/disputes/[id] - Update dispute
  * DELETE /api/credit-repair/disputes/[id] - Delete dispute
- * 
+ *
  * Features:
  * - Full CRUD operations
  * - Database integration
@@ -19,7 +19,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtValidation } from '@/lib/auth/jwt-validation';
 import { db } from '@/lib/credit-repair/db';
 import { auditLogger } from '@/lib/security/audit-logging';
-import type { DisputeStrategy, DisputeStatus, Bureau } from '@/lib/credit-repair/db/types';
+import type {
+  DisputeStrategy,
+  DisputeStatus,
+  Bureau,
+} from '@/lib/credit-repair/db/types';
 
 interface DisputeUpdatePayload {
   itemType?: string;
@@ -48,7 +52,7 @@ export async function GET(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -60,10 +64,7 @@ export async function GET(
     const dispute = await db.disputes.getDispute(disputeId, user.id);
 
     if (!dispute) {
-      return NextResponse.json(
-        { error: 'Dispute not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Dispute not found' }, { status: 404 });
     }
 
     // 3. Audit log
@@ -100,7 +101,7 @@ export async function PUT(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -181,7 +182,8 @@ export async function PUT(
     // 3. Update dispute in database
     const updates: DisputeUpdatePayload = {};
     if (itemType !== undefined) updates.itemType = itemType;
-    if (itemDescription !== undefined) updates.itemDescription = itemDescription;
+    if (itemDescription !== undefined)
+      updates.itemDescription = itemDescription;
     if (creditorName !== undefined) updates.creditorName = creditorName;
     if (accountNumber !== undefined) updates.accountNumber = accountNumber;
     if (balance !== undefined) updates.balance = balance;
@@ -191,12 +193,15 @@ export async function PUT(
     if (status !== undefined) updates.status = status;
     if (bureau !== undefined) updates.bureau = bureau;
     if (sentAt !== undefined) updates.sentAt = new Date(sentAt);
-    if (responseReceivedAt !== undefined) updates.responseReceivedAt = new Date(responseReceivedAt);
+    if (responseReceivedAt !== undefined)
+      updates.responseReceivedAt = new Date(responseReceivedAt);
     if (outcome !== undefined) updates.outcome = outcome;
     if (notes !== undefined) updates.notes = notes;
 
     // Parse expectedUpdatedAt for optimistic locking
-    const expectedDate = expectedUpdatedAt ? new Date(expectedUpdatedAt) : undefined;
+    const expectedDate = expectedUpdatedAt
+      ? new Date(expectedUpdatedAt)
+      : undefined;
 
     const dispute = await db.disputes.updateDispute(
       disputeId,
@@ -225,7 +230,10 @@ export async function PUT(
     // Check for optimistic locking error
     if ((error as Error).message.includes('modified by another process')) {
       return NextResponse.json(
-        { error: 'Dispute has been modified by another process. Please refresh and try again.' },
+        {
+          error:
+            'Dispute has been modified by another process. Please refresh and try again.',
+        },
         { status: 409 }
       );
     }
@@ -247,7 +255,7 @@ export async function DELETE(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -259,10 +267,7 @@ export async function DELETE(
     const deleted = await db.disputes.deleteDispute(disputeId, user.id);
 
     if (!deleted) {
-      return NextResponse.json(
-        { error: 'Dispute not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Dispute not found' }, { status: 404 });
     }
 
     // 3. Audit log

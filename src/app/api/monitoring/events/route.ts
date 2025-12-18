@@ -8,7 +8,7 @@ import { RealtimeMonitoringService, type EventType } from '@/lib/monitoring/real
  */
 export async function GET(request: NextRequest) {
   // Validate JWT token
-  const validation = await jwtValidation.validateFromHeaders(request.headers);
+  const validation = await jwtValidation.validateFromHeaders(request);
   
   if (!validation.valid || !validation.user) {
     return new Response('Unauthorized', { status: 401 });

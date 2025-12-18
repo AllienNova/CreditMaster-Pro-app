@@ -19,7 +19,7 @@ export default function TermsOfServicePage() {
         <div className="bg-blue-50 border-l-4 border-blue-500 p-6 mb-8">
           <h2 className="text-xl font-bold text-blue-900 mb-3">Important Notice</h2>
           <p className="text-blue-800 leading-relaxed">
-            CreditMaster Pro is a <strong>self-service software platform</strong> that provides AI-powered tools, 
+            CPFI is a <strong>self-service software platform</strong> that provides AI-powered tools, 
             templates, calculators, and educational resources. <strong>We do not provide credit repair services.</strong> You 
             maintain full control over all actions taken with your credit profile. We are a technology provider, 
             not a credit repair organization as defined by the Credit Repair Organizations Act (CROA).
@@ -49,7 +49,7 @@ export default function TermsOfServicePage() {
         <section id="acceptance" className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Acceptance of Terms</h2>
           <p className="text-gray-700 leading-relaxed mb-4">
-            By accessing or using CreditMaster Pro ("the Platform," "we," "us," or "our"), you agree to be bound 
+            By accessing or using CPFI ("the Platform," "we," "us," or "our"), you agree to be bound 
             by these Terms of Service. If you do not agree to these terms, you may not use the Platform.
           </p>
           <p className="text-gray-700 leading-relaxed">
@@ -62,7 +62,7 @@ export default function TermsOfServicePage() {
         <section id="description" className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Description of Service</h2>
           <p className="text-gray-700 leading-relaxed mb-4">
-            CreditMaster Pro is a <strong>software-as-a-service (SaaS) platform</strong> that provides:
+            CPFI is a <strong>software-as-a-service (SaaS) platform</strong> that provides:
           </p>
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4 mb-4">
             <li>AI-powered document generation tools (dispute letters, goodwill letters, etc.)</li>
@@ -105,7 +105,7 @@ export default function TermsOfServicePage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Not a Credit Repair Service</h2>
           <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
             <p className="text-red-800 font-semibold mb-2">
-              CREDITMASTER PRO IS NOT A CREDIT REPAIR ORGANIZATION
+              CPFI IS NOT A CREDIT REPAIR ORGANIZATION
             </p>
             <p className="text-red-700 text-sm">
               We do not provide credit repair services as defined by the Credit Repair Organizations Act (CROA) 
@@ -220,7 +220,7 @@ export default function TermsOfServicePage() {
         <section id="intellectual-property" className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Intellectual Property</h2>
           <p className="text-gray-700 leading-relaxed mb-4">
-            The Platform, including all software, content, designs, and trademarks, is owned by CreditMaster Pro
+            The Platform, including all software, content, designs, and trademarks, is owned by CPFI
             and protected by intellectual property laws.
           </p>
           <p className="text-gray-700 leading-relaxed mb-4">
@@ -280,7 +280,7 @@ export default function TermsOfServicePage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">12. Governing Law</h2>
           <p className="text-gray-700 leading-relaxed mb-4">
             These Terms of Service are governed by the laws of the United States and the state in which
-            CreditMaster Pro is registered, without regard to conflict of law principles.
+            CPFI is registered, without regard to conflict of law principles.
           </p>
           <p className="text-gray-700 leading-relaxed">
             Any disputes arising from these terms or your use of the Platform shall be resolved through
@@ -321,15 +321,15 @@ export default function TermsOfServicePage() {
             If you have questions about these Terms of Service, please contact us at:
           </p>
           <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-gray-700"><strong>Email:</strong> legal@creditmaster-pro.com</p>
-            <p className="text-gray-700"><strong>Address:</strong> CreditMaster Pro Legal Department</p>
+            <p className="text-gray-700"><strong>Email:</strong> legal@CPFI-pro.com</p>
+            <p className="text-gray-700"><strong>Address:</strong> CPFI Legal Department</p>
           </div>
         </section>
 
         {/* Acceptance */}
         <div className="border-t-2 border-gray-200 pt-6">
           <p className="text-sm text-gray-600 italic">
-            By using CreditMaster Pro, you acknowledge that you have read, understood, and agree to be bound
+            By using CPFI, you acknowledge that you have read, understood, and agree to be bound
             by these Terms of Service. If you do not agree, you must discontinue use of the Platform immediately.
           </p>
         </div>

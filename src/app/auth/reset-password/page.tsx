@@ -3,8 +3,8 @@ import { Metadata } from 'next';
 import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
 
 export const metadata: Metadata = {
-  title: 'Reset Password | CreditMaster Pro',
-  description: 'Reset your CreditMaster Pro password',
+  title: 'Reset Password | CPFI',
+  description: 'Reset your CPFI password',
 };
 
 function ResetPasswordLoadingSkeleton() {

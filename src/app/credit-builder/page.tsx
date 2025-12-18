@@ -14,7 +14,7 @@ import { redirect } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Credit Builder | CreditMaster Pro',
+  title: 'Credit Builder | CPFI',
   description: 'Build your credit with AI-powered tools and recommendations',
 };
 

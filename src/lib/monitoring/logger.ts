@@ -51,7 +51,7 @@ class Logger {
   private environment: string;
   private minLevel: LogLevel;
   
-  constructor(serviceName: string = 'creditmaster-pro') {
+  constructor(serviceName: string = 'CPFI-pro') {
     this.serviceName = serviceName;
     this.environment = process.env.NODE_ENV || 'development';
     this.minLevel = this.getMinLevel();

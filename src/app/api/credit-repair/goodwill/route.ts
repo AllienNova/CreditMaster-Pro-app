@@ -27,7 +27,7 @@ import { auditLogger } from '@/lib/security/audit-logging';
 export async function GET(request: NextRequest) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -37,7 +37,13 @@ export async function GET(request: NextRequest) {
     // 2. Parse query parameters
     const { searchParams } = new URL(request.url);
     const statusParam = searchParams.get('status');
-    const validStatuses = ['draft', 'sent', 'response_received', 'approved', 'denied'] as const;
+    const validStatuses = [
+      'draft',
+      'sent',
+      'response_received',
+      'approved',
+      'denied',
+    ] as const;
     let status: (typeof validStatuses)[number] | undefined;
     if (statusParam) {
       const normalized = statusParam === 'rejected' ? 'denied' : statusParam;
@@ -53,11 +59,14 @@ export async function GET(request: NextRequest) {
     const offset = Number.parseInt(searchParams.get('offset') || '0');
 
     // 3. Get goodwill letters from database
-    const { letters, total } = await db.goodwill.getGoodwillLettersByUser(user.id, {
-      status,
-      limit,
-      offset,
-    });
+    const { letters, total } = await db.goodwill.getGoodwillLettersByUser(
+      user.id,
+      {
+        status,
+        limit,
+        offset,
+      }
+    );
 
     // 4. Get statistics
     const stats = await db.goodwill.getGoodwillLetterStats(user.id);
@@ -112,7 +121,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -150,7 +159,7 @@ export async function POST(request: NextRequest) {
         creditorName,
         new Date(latePaymentDate),
         reason,
-        { name: user.name, email: user.email }
+        { name: user.name || 'User', email: user.email }
       );
       letterContent = letterResult.letter;
     }
@@ -183,10 +192,13 @@ export async function POST(request: NextRequest) {
     });
 
     // 6. Return response
-    return NextResponse.json({
-      success: true,
-      data: letter,
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: letter,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating goodwill letter:', error);
 

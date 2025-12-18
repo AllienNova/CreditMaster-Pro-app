@@ -140,7 +140,7 @@ export const useStore = create<AppState>()(
       setHasCompletedOnboarding: (hasCompletedOnboarding) => set({ hasCompletedOnboarding }),
     }),
     {
-      name: 'creditmaster-storage',
+      name: 'CPFI-storage',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         user: state.user,

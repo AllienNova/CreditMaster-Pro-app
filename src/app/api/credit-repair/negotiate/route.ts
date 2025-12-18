@@ -39,7 +39,7 @@ interface SettlementSummary {
 export async function GET(request: NextRequest) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -49,7 +49,10 @@ export async function GET(request: NextRequest) {
     // 2. Parse query parameters
     const { searchParams } = new URL(request.url);
     const statusParam = searchParams.get('status');
-    const statusMap: Record<string, 'pending' | 'negotiating' | 'agreed' | 'paid' | 'completed' | 'failed'> = {
+    const statusMap: Record<
+      string,
+      'pending' | 'negotiating' | 'agreed' | 'paid' | 'completed' | 'failed'
+    > = {
       pending: 'pending',
       draft: 'pending',
       sent: 'pending',
@@ -61,7 +64,14 @@ export async function GET(request: NextRequest) {
       failed: 'failed',
       rejected: 'failed',
     };
-    let statusFilter: 'pending' | 'negotiating' | 'agreed' | 'paid' | 'completed' | 'failed' | undefined;
+    let statusFilter:
+      | 'pending'
+      | 'negotiating'
+      | 'agreed'
+      | 'paid'
+      | 'completed'
+      | 'failed'
+      | undefined;
     if (statusParam) {
       statusFilter = statusMap[statusParam];
       if (!statusFilter) {
@@ -75,11 +85,14 @@ export async function GET(request: NextRequest) {
     const offset = Number.parseInt(searchParams.get('offset') || '0');
 
     // 3. Get negotiations from database
-    const { negotiations, total } = await db.negotiations.getNegotiationsByUser(user.id, {
-      status: statusFilter,
-      limit,
-      offset,
-    });
+    const { negotiations, total } = await db.negotiations.getNegotiationsByUser(
+      user.id,
+      {
+        status: statusFilter,
+        limit,
+        offset,
+      }
+    );
 
     // 4. Get statistics
     const stats = await db.negotiations.getNegotiationStats(user.id);
@@ -134,7 +147,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -169,10 +182,11 @@ export async function POST(request: NextRequest) {
     // 3. Generate negotiation scripts if requested
     let scripts: NegotiationScripts | undefined;
     const settlementPercentage = targetSettlement ?? 40;
-    const settlement: SettlementSummary = negotiationService.calculateSettlement(
-      currentBalance,
-      settlementPercentage
-    );
+    const settlement: SettlementSummary =
+      negotiationService.calculateSettlement(
+        currentBalance,
+        settlementPercentage
+      );
     if (generateScript) {
       const result = await negotiationService.generateNegotiationScript(
         collectionId,
@@ -180,7 +194,7 @@ export async function POST(request: NextRequest) {
         originalCreditor || 'Unknown',
         originalBalance || currentBalance,
         currentBalance,
-        { name: user.name, email: user.email }
+        { name: user.name || 'User', email: user.email }
       );
       // result contains phoneScript, emailScript, letterScript directly
       scripts = result;
@@ -219,13 +233,16 @@ export async function POST(request: NextRequest) {
     });
 
     // 6. Return response
-    return NextResponse.json({
-      success: true,
-      data: {
-        negotiation,
-        settlement,
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          negotiation,
+          settlement,
+        },
       },
-    }, { status: 201 });
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating negotiation:', error);
 

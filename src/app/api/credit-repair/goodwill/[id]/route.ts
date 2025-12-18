@@ -1,10 +1,10 @@
 /**
  * Individual Goodwill Letter API Route
- * 
+ *
  * GET /api/credit-repair/goodwill/[id] - Get single goodwill letter
  * PUT /api/credit-repair/goodwill/[id] - Update goodwill letter
  * DELETE /api/credit-repair/goodwill/[id] - Delete goodwill letter
- * 
+ *
  * Features:
  * - Full CRUD operations
  * - Database integration
@@ -44,7 +44,7 @@ export async function GET(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -96,7 +96,7 @@ export async function PUT(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -146,12 +146,17 @@ export async function PUT(
     if (creditorName !== undefined) updates.creditorName = creditorName;
     if (accountNumber !== undefined) updates.accountNumber = accountNumber;
     if (balance !== undefined) updates.balance = balance;
-    if (latePaymentDate !== undefined) updates.latePaymentDate = new Date(latePaymentDate);
+    if (latePaymentDate !== undefined)
+      updates.latePaymentDate = new Date(latePaymentDate);
     if (reason !== undefined) updates.reason = reason;
     if (letterContent !== undefined) updates.letterContent = letterContent;
     let normalizedOutcome: GoodwillUpdatePayload['outcome'] | undefined;
     if (outcome) {
-      const validOutcomes: GoodwillUpdatePayload['outcome'][] = ['removed', 'denied', 'pending'];
+      const validOutcomes: GoodwillUpdatePayload['outcome'][] = [
+        'removed',
+        'denied',
+        'pending',
+      ];
       if (!validOutcomes.includes(outcome)) {
         return NextResponse.json(
           { error: 'Invalid outcome', validOutcomes },
@@ -163,7 +168,8 @@ export async function PUT(
 
     if (normalizedStatus !== undefined) updates.status = normalizedStatus;
     if (sentAt !== undefined) updates.sentAt = new Date(sentAt);
-    if (responseReceivedAt !== undefined) updates.responseReceivedAt = new Date(responseReceivedAt);
+    if (responseReceivedAt !== undefined)
+      updates.responseReceivedAt = new Date(responseReceivedAt);
     if (normalizedOutcome !== undefined) updates.outcome = normalizedOutcome;
     if (notes !== undefined) updates.notes = notes;
 
@@ -207,7 +213,7 @@ export async function DELETE(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

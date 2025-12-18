@@ -1,9 +1,9 @@
 /**
  * Individual Credit Report API Route
- * 
+ *
  * GET /api/credit-repair/reports/[id] - Get single credit report
  * DELETE /api/credit-repair/reports/[id] - Delete credit report
- * 
+ *
  * Features:
  * - Database integration
  * - Authentication required
@@ -26,7 +26,7 @@ export async function GET(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -78,7 +78,7 @@ export async function DELETE(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -87,7 +87,10 @@ export async function DELETE(
     const { id: reportId } = await params;
 
     // 2. Delete credit report from database
-    const deleted = await db.creditReports.deleteCreditReport(reportId, user.id);
+    const deleted = await db.creditReports.deleteCreditReport(
+      reportId,
+      user.id
+    );
 
     if (!deleted) {
       return NextResponse.json(
@@ -119,4 +122,3 @@ export async function DELETE(
     );
   }
 }
-

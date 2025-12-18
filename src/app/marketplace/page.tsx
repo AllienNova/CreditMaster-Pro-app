@@ -8,7 +8,7 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Marketplace | CreditMaster Pro',
+  title: 'Marketplace | CPFI',
   description: 'Discover trusted products and services for credit building',
 };
 

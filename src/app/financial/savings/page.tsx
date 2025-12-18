@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import SavingsTracker from '@/components/financial/SavingsTracker';
 
 export const metadata: Metadata = {
-  title: 'Savings Tracker | CreditMaster Pro',
+  title: 'Savings Tracker | CPFI',
   description: 'Track your savings and watch your money grow',
 };
 

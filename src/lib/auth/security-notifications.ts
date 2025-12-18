@@ -37,7 +37,7 @@ class SecurityNotificationsService {
       const location = metadata?.location || 'Unknown location';
       const timestamp = metadata?.timestamp || new Date();
 
-      const subject = '🔐 New Login to Your CreditMaster Pro Account';
+      const subject = '🔐 New Login to Your CPFI Account';
       const html = `
         <!DOCTYPE html>
         <html>
@@ -62,7 +62,7 @@ class SecurityNotificationsService {
             </div>
             <div class="content">
               <p>Hi ${event.userName},</p>
-              <p>We detected a new login to your CreditMaster Pro account.</p>
+              <p>We detected a new login to your CPFI account.</p>
               
               <div class="info-box">
                 <div class="info-item">
@@ -95,7 +95,7 @@ class SecurityNotificationsService {
               </a>
 
               <div class="footer">
-                <p>This is an automated security notification from CreditMaster Pro.</p>
+                <p>This is an automated security notification from CPFI.</p>
                 <p>If you have any concerns, please contact our support team.</p>
               </div>
             </div>
@@ -121,7 +121,7 @@ class SecurityNotificationsService {
    */
   async sendPasswordChangedNotification(event: SecurityEvent): Promise<{ success: boolean; error?: string }> {
     try {
-      const subject = '🔑 Your CreditMaster Pro Password Was Changed';
+      const subject = '🔑 Your CPFI Password Was Changed';
       const html = `
         <!DOCTYPE html>
         <html>
@@ -166,7 +166,7 @@ class SecurityNotificationsService {
               </a>
 
               <div class="footer">
-                <p>This is an automated security notification from CreditMaster Pro.</p>
+                <p>This is an automated security notification from CPFI.</p>
                 <p>If you have any concerns, please contact our support team immediately.</p>
               </div>
             </div>
@@ -232,7 +232,7 @@ class SecurityNotificationsService {
               <p><strong>Important:</strong> Make sure you have access to your authenticator app. If you lose access, you may not be able to log in.</p>
 
               <div class="footer">
-                <p>This is an automated security notification from CreditMaster Pro.</p>
+                <p>This is an automated security notification from CPFI.</p>
               </div>
             </div>
           </div>
@@ -298,7 +298,7 @@ class SecurityNotificationsService {
               </a>
 
               <div class="footer">
-                <p>This is an automated security notification from CreditMaster Pro.</p>
+                <p>This is an automated security notification from CPFI.</p>
               </div>
             </div>
           </div>

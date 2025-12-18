@@ -14,8 +14,8 @@ interface Settings {
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Settings>({
-    siteName: 'CreditMaster Pro',
-    supportEmail: 'support@creditmaster.pro',
+    siteName: 'CPFI',
+    supportEmail: 'support@CPFI.pro',
     maxDisputesPerMonth: 10,
     aiModelDefault: 'gpt-4',
     maintenanceMode: false,

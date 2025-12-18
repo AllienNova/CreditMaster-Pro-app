@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import CreateDisputeForm from '@/components/disputes/CreateDisputeForm';
 
 export const metadata = {
-  title: 'Create Dispute | CreditMaster Pro',
+  title: 'Create Dispute | CPFI',
   description: 'Create a new credit dispute',
 };
 

@@ -1,0 +1,356 @@
+/**
+ * CPFI Mobile API Types
+ * Comprehensive type definitions for all API interactions
+ */
+
+// Base API Response Types
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: ApiError;
+  message?: string;
+  timestamp?: string;
+}
+
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+  retryable?: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+// Credit Score Types
+export interface CreditScore {
+  id: string;
+  userId: string;
+  bureau: 'experian' | 'equifax' | 'transunion';
+  score: number;
+  previousScore?: number;
+  change?: number;
+  date: string;
+  lastUpdated?: string; // ISO timestamp of last update
+  factors?: CreditFactor[];
+}
+
+export interface CreditFactor {
+  id: string; // Factor identifier (payment_history, credit_utilization, etc.)
+  name: string; // Display name
+  impact:
+    | 'high_positive'
+    | 'positive'
+    | 'neutral'
+    | 'negative'
+    | 'high_negative';
+  category:
+    | 'payment_history'
+    | 'credit_utilization'
+    | 'credit_age'
+    | 'credit_mix'
+    | 'new_credit';
+  status?: 'excellent' | 'good' | 'fair' | 'poor' | 'very_poor'; // Overall status
+  value?: string; // Current value (e.g., "18% utilization", "100% on-time")
+  description: string;
+  recommendation?: string;
+  percentImpact?: number; // FICO weight percentage (35, 30, 15, 10, 10)
+}
+
+export interface CreditScoreHistory {
+  history: Array<{ date: string; score: number; bureau?: string }>; // Historical score data points
+  scores?: CreditScore[]; // Legacy field for compatibility
+  averageScore: number;
+  highestScore: number;
+  lowestScore: number;
+  trend: 'improving' | 'declining' | 'stable';
+  periodStart: string;
+  periodEnd: string;
+}
+
+// Credit Monitoring Types
+export interface CreditMonitoringAlert {
+  id: string;
+  userId: string;
+  bureau: string;
+  alertType:
+    | 'new_account'
+    | 'score_change'
+    | 'inquiry'
+    | 'address_change'
+    | 'fraud_alert'
+    | 'derogatory';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description: string;
+  data?: Record<string, unknown>;
+  createdAt: string;
+  acknowledged: boolean;
+  acknowledgedAt?: string;
+}
+
+export interface MonitoringStatus {
+  isActive: boolean;
+  bureaus: {
+    experian: { connected: boolean; lastSync?: string };
+    equifax: { connected: boolean; lastSync?: string };
+    transunion: { connected: boolean; lastSync?: string };
+  };
+  alertsCount: { total: number; unread: number };
+  nextScheduledSync?: string;
+}
+
+// Dispute Types
+export interface Dispute {
+  id: string;
+  userId: string;
+  bureau: 'experian' | 'equifax' | 'transunion';
+  status: 'draft' | 'ready' | 'sent' | 'under_review' | 'resolved' | 'rejected';
+  itemType: string;
+  creditorName: string;
+  accountNumber?: string;
+  disputeReason: string;
+  letterContent?: string;
+  documents?: string[];
+  createdAt: string;
+  updatedAt: string;
+  sentAt?: string;
+  resolvedAt?: string;
+  outcome?: 'removed' | 'updated' | 'verified' | 'pending';
+  responseDetails?: string;
+  followUpDate?: string;
+}
+
+export interface DisputeTemplate {
+  id: string;
+  name: string;
+  category: string;
+  scenario: string;
+  successRate: number;
+  tone: 'formal' | 'humble' | 'assertive' | 'legal';
+  letterText: string;
+  requiredDocuments: string[];
+  placeholders: string[];
+}
+
+export interface DisputeStrategy {
+  id: string;
+  name: string;
+  description: string;
+  successRate: number;
+  difficulty: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  riskLevel: 'low' | 'medium' | 'high';
+  timeline: string;
+  steps: { step: number; title: string; description: string }[];
+}
+
+// Financial Types
+export interface BankAccount {
+  id: string;
+  userId: string;
+  institutionName: string;
+  accountType: 'checking' | 'savings' | 'credit' | 'investment' | 'loan';
+  accountName: string;
+  balance: number;
+  availableBalance?: number;
+  lastSynced: string;
+  isConnected: boolean;
+}
+
+export interface Transaction {
+  id: string;
+  accountId: string;
+  amount: number;
+  category: string;
+  merchantName: string;
+  date: string;
+  pending: boolean;
+  type: 'income' | 'expense' | 'transfer';
+}
+
+export interface Budget {
+  id: string;
+  userId: string;
+  category: string;
+  limit: number;
+  spent: number;
+  remaining: number;
+  period: 'weekly' | 'monthly' | 'yearly';
+}
+
+export interface FinancialGoal {
+  id: string;
+  userId: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline?: string;
+  status: 'active' | 'completed' | 'paused';
+}
+
+// User Types
+export interface UserProfile {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  address?: Address;
+  subscriptionTier: 'free' | 'basic' | 'premium' | 'enterprise';
+  subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'trialing';
+  createdAt: string;
+  updatedAt: string;
+  onboardingCompleted: boolean;
+  goals?: string[];
+}
+
+export interface Address {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+}
+
+// Notification Types
+export interface Notification {
+  id: string;
+  userId: string;
+  type:
+    | 'dispute_update'
+    | 'score_change'
+    | 'alert'
+    | 'recommendation'
+    | 'payment'
+    | 'system';
+  title: string;
+  body: string;
+  data?: Record<string, unknown>;
+  read: boolean;
+  createdAt: string;
+  expiresAt?: string;
+}
+
+export interface NotificationPreferences {
+  pushEnabled: boolean;
+  emailEnabled: boolean;
+  smsEnabled: boolean;
+  categories: {
+    disputes: boolean;
+    scoreChanges: boolean;
+    alerts: boolean;
+    recommendations: boolean;
+    payments: boolean;
+    marketing: boolean;
+  };
+}
+
+// Subscription Types
+export interface Subscription {
+  id: string;
+  userId: string;
+  plan: 'free' | 'basic' | 'premium' | 'enterprise';
+  status: 'active' | 'canceled' | 'past_due' | 'trialing';
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+  features: string[];
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  interval: 'month' | 'year';
+  features: string[];
+  highlighted?: boolean;
+}
+
+// Recommendation Types
+export interface Recommendation {
+  id: string;
+  userId: string;
+  type: 'credit_card' | 'loan' | 'action' | 'insight';
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  potentialImpact?: number;
+  actionUrl?: string;
+  expiresAt?: string;
+  dismissed: boolean;
+}
+
+// Identity Protection Types
+export interface IdentityProtectionStatus {
+  isActive: boolean;
+  darkWebMonitoring: boolean;
+  lastScan?: string;
+  exposedDataCount: number;
+  alerts: IdentityAlert[];
+}
+
+export interface IdentityAlert {
+  id: string;
+  type: 'breach' | 'dark_web' | 'fraud_attempt';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description: string;
+  exposedData?: string[];
+  recommendations: string[];
+  createdAt: string;
+  resolved: boolean;
+}
+
+// Document Types
+export interface Document {
+  id: string;
+  userId: string;
+  name: string;
+  type: 'credit_report' | 'dispute_response' | 'identity' | 'income' | 'other';
+  fileUrl: string;
+  fileSize: number;
+  mimeType: string;
+  status: 'processing' | 'analyzed' | 'error';
+  uploadedAt: string;
+  analysisResult?: DocumentAnalysis;
+}
+
+export interface DocumentAnalysis {
+  bureau?: string;
+  score?: number;
+  accountsCount: number;
+  disputableItems: number;
+  recommendations: string[];
+}
+
+// API Request Config Types
+export interface RequestConfig {
+  timeout?: number;
+  retryCount?: number;
+  retryDelay?: number;
+  headers?: Record<string, string>;
+  cache?: boolean;
+  cacheTime?: number;
+  offlineSupport?: boolean;
+}
+
+// Re-export investment types for convenience
+export type {
+  AssetType,
+  Holding,
+  PortfolioSummary,
+  AllocationItem,
+  PerformancePoint,
+  PortfolioResponse,
+  StockAnalysis,
+  StockAnalysisApiResponse,
+  CreateHoldingInput,
+  UpdateHoldingInput,
+} from './investments';

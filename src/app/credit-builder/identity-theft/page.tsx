@@ -254,7 +254,7 @@ export default function IdentityTheftRecovery() {
         completed: false,
         priority: 'high',
         estimatedTime: '30 minutes',
-        resources: ['CreditMaster Pro monitoring', 'Free bureau monitoring services'],
+        resources: ['CPFI monitoring', 'Free bureau monitoring services'],
       },
       {
         id: 'review_mail',

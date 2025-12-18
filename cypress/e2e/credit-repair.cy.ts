@@ -20,7 +20,7 @@ describe('Credit Repair - Complete User Workflows', () => {
 
   describe('Landing Page', () => {
     it('should display the landing page correctly', () => {
-      cy.contains('CreditMaster Pro').should('be.visible');
+      cy.contains('CPFI').should('be.visible');
       cy.contains('AI-Powered Credit Repair').should('be.visible');
       
       // Check for key features

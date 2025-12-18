@@ -1,4 +1,4 @@
--- CreditMaster Pro - Production Enhancements
+-- CPFI - Production Enhancements
 -- Migration: 002_production_enhancements
 -- Created: 2025-12-04
 -- Description: Add production tables, audit logging, and enhanced security

@@ -2,18 +2,18 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "CreditMaster Pro - AI-Powered Credit Repair & Financial Wellness",
+  title: "CPFI - Credit Pro & Financial Intelligence | AI-Powered Credit Repair",
   description: "Transform your credit score with AI-powered dispute automation, personalized strategies, and real-time monitoring. Join 50,000+ users who improved their credit by an average of 100+ points.",
   openGraph: {
-    title: "CreditMaster Pro - AI-Powered Credit Repair",
+    title: "CPFI - Credit Pro & Financial Intelligence",
     description: "Transform your credit score with AI-powered dispute automation and personalized strategies.",
     type: "website",
-    url: "https://creditmasterpro.com",
+    url: "https://cpfi.com",
     images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CreditMaster Pro - AI-Powered Credit Repair",
+    title: "CPFI - Credit Pro & Financial Intelligence",
     description: "Transform your credit score with AI-powered dispute automation.",
   },
 };
@@ -124,7 +124,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-emerald-500 to-blue-600 bg-clip-text text-transparent">
-              CreditMaster Pro
+              CPFI
             </Link>
             <div className="hidden md:flex items-center space-x-8">
               <Link href="#features" className="text-gray-600 hover:text-gray-900">Features</Link>
@@ -247,7 +247,7 @@ export default function HomePage() {
             <p className="mt-4 text-xl text-gray-600">Join thousands of satisfied customers</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            <TestimonialCard image="JD" name="James D." score="+142 points in 90 days" quote="I was skeptical at first, but CreditMaster Pro helped me remove 5 negative items and my score jumped from 580 to 722!" />
+            <TestimonialCard image="JD" name="James D." score="+142 points in 90 days" quote="I was skeptical at first, but CPFI helped me remove 5 negative items and my score jumped from 580 to 722!" />
             <TestimonialCard image="SM" name="Sarah M." score="+98 points in 60 days" quote="The AI dispute letters are incredible. I got approved for my first mortgage after using this service for just 2 months." />
             <TestimonialCard image="RK" name="Robert K." score="+115 points in 45 days" quote="Best investment I've made. The personalized strategies and real-time monitoring made all the difference." />
           </div>
@@ -294,7 +294,7 @@ export default function HomePage() {
       <section className="py-20 px-4 bg-gradient-to-r from-emerald-500 to-blue-600">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold text-white">Ready to Transform Your Credit?</h2>
-          <p className="mt-4 text-xl text-white/90">Join 50,000+ users who have improved their credit scores with CreditMaster Pro</p>
+          <p className="mt-4 text-xl text-white/90">Join 50,000+ users who have improved their credit scores with CPFI</p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth/signup" className="bg-white text-emerald-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition">
               Start Your Free Trial
@@ -311,8 +311,8 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-2xl font-bold text-white mb-4">CreditMaster Pro</h3>
-              <p className="text-sm">AI-powered credit repair and financial wellness platform.</p>
+              <h3 className="text-2xl font-bold text-white mb-4">CPFI</h3>
+              <p className="text-sm">Credit Pro & Financial Intelligence - AI-powered credit repair and financial wellness platform.</p>
               <div className="flex gap-4 mt-4">
                 <a href="#" className="hover:text-white">𝕏</a>
                 <a href="#" className="hover:text-white">in</a>
@@ -348,7 +348,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-12 pt-8 text-sm text-center">
-            <p>© 2024 CreditMaster Pro. All rights reserved.</p>
+            <p>© 2024 CPFI - Credit Pro & Financial Intelligence. All rights reserved.</p>
           </div>
         </div>
       </footer>

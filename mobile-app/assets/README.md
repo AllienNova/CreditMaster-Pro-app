@@ -1,4 +1,4 @@
-# CreditMaster Pro Mobile App Assets
+# CPFI (Credit Pro & Financial Intelligence) Mobile App Assets
 
 This directory contains all the visual assets for the mobile app.
 
@@ -27,13 +27,13 @@ This directory contains all the visual assets for the mobile app.
 
 ### Icon Requirements
 - App icon should be square with no transparency
-- Use the CreditMaster Pro logo centered
+- Use the CPFI (Credit Pro & Financial Intelligence) logo centered
 - Include appropriate padding (20% of icon size)
 
 ### Splash Screen
 - Center the logo vertically
 - Use brand primary color as background
-- Include "CreditMaster Pro" text below logo
+- Include "CPFI (Credit Pro & Financial Intelligence)" text below logo
 - Tagline: "AI-Powered Credit Repair"
 
 ## Asset Generation

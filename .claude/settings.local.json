@@ -4,7 +4,13 @@
       "Bash(npm run test:coverage:*)",
       "Bash(findstr:*)",
       "Bash(cat:*)",
-      "Bash(npm run type-check:*)"
+      "Bash(npm run type-check:*)",
+      "Bash(find:*)",
+      "Bash(npm test:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm outdated:*)",
+      "Bash(npm run lint)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []

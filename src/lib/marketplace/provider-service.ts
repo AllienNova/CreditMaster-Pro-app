@@ -1,6 +1,6 @@
 /**
  * Provider Service
- * 
+ *
  * Provider operations: getProviders, getProviderDetails, searchProviders
  */
 
@@ -20,7 +20,13 @@ export interface Provider {
   bbbRating: string | null;
   yearsInBusiness: number | null;
   verified: boolean;
-  category: 'tradeline' | 'credit_repair' | 'monitoring' | 'education' | 'legal' | 'coaching';
+  category:
+    | 'tradeline'
+    | 'credit_repair'
+    | 'monitoring'
+    | 'education'
+    | 'legal'
+    | 'coaching';
   createdAt: Date;
 }
 
@@ -38,7 +44,6 @@ class ProviderService {
     let query = providers().select('*');
 
     if (filters?.category) {
-      // @ts-ignore - Supabase type issue
       query = query.eq('category', filters.category);
     }
     if (filters?.minRating !== undefined) {
@@ -62,10 +67,7 @@ class ProviderService {
   }
 
   async getProviderById(id: string): Promise<Provider | null> {
-    const { data, error } = await providers()
-      .select('*')
-      .eq('id', id)
-      .single();
+    const { data, error } = await providers().select('*').eq('id', id).single();
 
     if (error || !data) {
       return null;
@@ -77,7 +79,6 @@ class ProviderService {
   async getProvidersByCategory(category: string): Promise<Provider[]> {
     const { data, error } = await providers()
       .select('*')
-      // @ts-ignore - Supabase type issue
       .eq('category', category)
       .eq('verified', true)
       .order('rating', { ascending: false });
@@ -140,4 +141,3 @@ class ProviderService {
 }
 
 export const providerService = new ProviderService();
-

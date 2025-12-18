@@ -1,6 +1,6 @@
-# CreditMaster Pro - AI Features User Guide
+# CPFI (Credit Pro & Financial Intelligence) - AI Features User Guide
 
-This guide covers all AI-powered features in CreditMaster Pro, helping you maximize your credit repair journey.
+This guide covers all AI-powered features in CPFI (Credit Pro & Financial Intelligence), helping you maximize your credit repair journey.
 
 ## Table of Contents
 
@@ -238,7 +238,7 @@ Choose the optimal AI model for your specific task based on speed, cost, and qua
 
 For additional help:
 - **Help Center**: In-app help documentation
-- **Email**: support@creditmaster.pro
+- **Email**: support@CPFI.pro
 - **Chat**: 24/7 AI support available
 
 ---

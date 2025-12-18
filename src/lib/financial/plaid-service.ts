@@ -123,7 +123,7 @@ class PlaidService {
         },
         body: JSON.stringify({
           user: { client_user_id: userId },
-          client_name: 'CreditMaster Pro',
+          client_name: 'CPFI',
           products: ['transactions', 'auth', 'identity'],
           country_codes: ['US'],
           language: 'en',

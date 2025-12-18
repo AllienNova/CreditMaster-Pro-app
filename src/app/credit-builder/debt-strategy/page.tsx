@@ -8,7 +8,13 @@ import Link from 'next/link';
 interface Debt {
   id: string;
   name: string;
-  type: 'credit_card' | 'personal_loan' | 'auto_loan' | 'student_loan' | 'medical' | 'other';
+  type:
+    | 'credit_card'
+    | 'personal_loan'
+    | 'auto_loan'
+    | 'student_loan'
+    | 'medical'
+    | 'other';
   balance: number;
   interestRate: number;
   minimumPayment: number;
@@ -52,9 +58,13 @@ export default function DebtStrategyAnalyzer() {
 
   const [debts, setDebts] = useState<Debt[]>([]);
   const [monthlyBudget, setMonthlyBudget] = useState(500);
-  const [selectedStrategy, setSelectedStrategy] = useState<'snowball' | 'avalanche' | 'hybrid' | 'consolidation'>('avalanche');
+  const [selectedStrategy, setSelectedStrategy] = useState<
+    'snowball' | 'avalanche' | 'hybrid' | 'consolidation'
+  >('avalanche');
   const [results, setResults] = useState<StrategyResult[]>([]);
-  const [consolidationOptions, setConsolidationOptions] = useState<ConsolidationOption[]>([]);
+  const [consolidationOptions, setConsolidationOptions] = useState<
+    ConsolidationOption[]
+  >([]);
   const [showAddDebt, setShowAddDebt] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
 
@@ -142,7 +152,7 @@ export default function DebtStrategyAnalyzer() {
         cons: [
           'May require good credit',
           'Origination fees (1-8%)',
-          'Doesn\'t address spending habits',
+          "Doesn't address spending habits",
           'Hard inquiry on credit',
         ],
       },
@@ -156,7 +166,10 @@ export default function DebtStrategyAnalyzer() {
         monthlyPayment: 0,
         totalCost: 0,
         creditImpact: 'positive',
-        requirements: ['Good to excellent credit (700+)', 'Low utilization on current cards'],
+        requirements: [
+          'Good to excellent credit (700+)',
+          'Low utilization on current cards',
+        ],
         pros: [
           '0% APR for 12-21 months',
           'Can save significant interest',
@@ -180,7 +193,12 @@ export default function DebtStrategyAnalyzer() {
         monthlyPayment: 0,
         totalCost: 0,
         creditImpact: 'neutral',
-        requirements: ['Home ownership', '20%+ equity', 'Good credit', 'Stable income'],
+        requirements: [
+          'Home ownership',
+          '20%+ equity',
+          'Good credit',
+          'Stable income',
+        ],
         pros: [
           'Lowest interest rates',
           'Tax deductible (sometimes)',
@@ -204,7 +222,10 @@ export default function DebtStrategyAnalyzer() {
         monthlyPayment: 0,
         totalCost: 0,
         creditImpact: 'negative',
-        requirements: ['Unsecured debt only', 'Ability to make monthly payments'],
+        requirements: [
+          'Unsecured debt only',
+          'Ability to make monthly payments',
+        ],
         pros: [
           'Reduced interest rates (6-10%)',
           'Single monthly payment',
@@ -225,7 +246,10 @@ export default function DebtStrategyAnalyzer() {
 
   const calculateStrategies = () => {
     const totalDebt = debts.reduce((sum, debt) => sum + debt.balance, 0);
-    const totalMinimum = debts.reduce((sum, debt) => sum + debt.minimumPayment, 0);
+    const totalMinimum = debts.reduce(
+      (sum, debt) => sum + debt.minimumPayment,
+      0
+    );
     const extraPayment = Math.max(0, monthlyBudget - totalMinimum);
 
     // Avalanche Method (highest interest first)
@@ -261,23 +285,26 @@ export default function DebtStrategyAnalyzer() {
     budget: number,
     strategyName: string
   ): StrategyResult => {
-    let remainingDebts = sortedDebts.map(d => ({ ...d }));
+    const remainingDebts = sortedDebts.map((d) => ({ ...d }));
     let month = 0;
     let totalInterest = 0;
     let totalPrincipal = 0;
     const schedule: StrategyResult['payoffSchedule'] = [];
 
-    while (remainingDebts.some(d => d.balance > 0) && month < 600) {
+    while (remainingDebts.some((d) => d.balance > 0) && month < 600) {
       month++;
       let budgetRemaining = budget;
       let monthInterest = 0;
       let monthPrincipal = 0;
 
       // Pay minimum on all debts
-      remainingDebts.forEach(debt => {
+      remainingDebts.forEach((debt) => {
         if (debt.balance > 0) {
           const interest = (debt.balance * (debt.interestRate / 100)) / 12;
-          const principal = Math.min(debt.minimumPayment - interest, debt.balance);
+          const principal = Math.min(
+            debt.minimumPayment - interest,
+            debt.balance
+          );
 
           debt.balance -= principal;
           budgetRemaining -= debt.minimumPayment;
@@ -288,9 +315,12 @@ export default function DebtStrategyAnalyzer() {
 
       // Apply extra payment to priority debt
       if (budgetRemaining > 0) {
-        const priorityDebt = remainingDebts.find(d => d.balance > 0);
+        const priorityDebt = remainingDebts.find((d) => d.balance > 0);
         if (priorityDebt) {
-          const extraPrincipal = Math.min(budgetRemaining, priorityDebt.balance);
+          const extraPrincipal = Math.min(
+            budgetRemaining,
+            priorityDebt.balance
+          );
           priorityDebt.balance -= extraPrincipal;
           monthPrincipal += extraPrincipal;
         }
@@ -299,7 +329,10 @@ export default function DebtStrategyAnalyzer() {
       totalInterest += monthInterest;
       totalPrincipal += monthPrincipal;
 
-      const totalRemaining = remainingDebts.reduce((sum, d) => sum + d.balance, 0);
+      const totalRemaining = remainingDebts.reduce(
+        (sum, d) => sum + d.balance,
+        0
+      );
 
       if (month % 6 === 0 || totalRemaining === 0) {
         schedule.push({
@@ -358,14 +391,8 @@ export default function DebtStrategyAnalyzer() {
         'Targets medium-sized high-interest debts',
         'Good compromise approach',
       ];
-      cons = [
-        'Not optimal for any single metric',
-        'More complex to calculate',
-      ];
-      bestFor = [
-        'Mixed debt portfolio',
-        'Want balance of both methods',
-      ];
+      cons = ['Not optimal for any single metric', 'More complex to calculate'];
+      bestFor = ['Mixed debt portfolio', 'Want balance of both methods'];
     }
 
     return {
@@ -390,17 +417,24 @@ export default function DebtStrategyAnalyzer() {
       type: newDebt.type || 'credit_card',
       balance: newDebt.balance,
       interestRate: newDebt.interestRate,
-      minimumPayment: newDebt.minimumPayment || Math.max(25, newDebt.balance * 0.025),
+      minimumPayment:
+        newDebt.minimumPayment || Math.max(25, newDebt.balance * 0.025),
       priority: debts.length + 1,
     };
 
     setDebts([...debts, debt]);
-    setNewDebt({ name: '', type: 'credit_card', balance: 0, interestRate: 0, minimumPayment: 0 });
+    setNewDebt({
+      name: '',
+      type: 'credit_card',
+      balance: 0,
+      interestRate: 0,
+      minimumPayment: 0,
+    });
     setShowAddDebt(false);
   };
 
   const removeDebt = (id: string) => {
-    setDebts(debts.filter(d => d.id !== id));
+    setDebts(debts.filter((d) => d.id !== id));
   };
 
   if (authLoading) {
@@ -408,7 +442,9 @@ export default function DebtStrategyAnalyzer() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-600 mx-auto"></div>
-          <p className="mt-6 text-lg text-gray-700 font-medium">Loading Debt Strategy Analyzer...</p>
+          <p className="mt-6 text-lg text-gray-700 font-medium">
+            Loading Debt Strategy Analyzer...
+          </p>
         </div>
       </div>
     );
@@ -416,9 +452,11 @@ export default function DebtStrategyAnalyzer() {
 
   const totalDebt = debts.reduce((sum, d) => sum + d.balance, 0);
   const totalMinimum = debts.reduce((sum, d) => sum + d.minimumPayment, 0);
-  const weightedAPR = debts.length > 0
-    ? debts.reduce((sum, d) => sum + (d.interestRate * d.balance), 0) / totalDebt
-    : 0;
+  const weightedAPR =
+    debts.length > 0
+      ? debts.reduce((sum, d) => sum + d.interestRate * d.balance, 0) /
+        totalDebt
+      : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -435,7 +473,8 @@ export default function DebtStrategyAnalyzer() {
             Debt Strategy Analyzer 📊
           </h1>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Compare settlement, consolidation, snowball, and avalanche methods. Find the optimal debt payoff strategy for your situation.
+            Compare settlement, consolidation, snowball, and avalanche methods.
+            Find the optimal debt payoff strategy for your situation.
           </p>
         </div>
 
@@ -444,11 +483,15 @@ export default function DebtStrategyAnalyzer() {
           <div className="grid md:grid-cols-4 gap-6">
             <div className="text-center">
               <p className="text-sm opacity-90 mb-1">Total Debt</p>
-              <p className="text-3xl font-bold">${totalDebt.toLocaleString()}</p>
+              <p className="text-3xl font-bold">
+                ${totalDebt.toLocaleString()}
+              </p>
             </div>
             <div className="text-center">
               <p className="text-sm opacity-90 mb-1">Monthly Minimum</p>
-              <p className="text-3xl font-bold">${totalMinimum.toLocaleString()}</p>
+              <p className="text-3xl font-bold">
+                ${totalMinimum.toLocaleString()}
+              </p>
             </div>
             <div className="text-center">
               <p className="text-sm opacity-90 mb-1">Weighted APR</p>
@@ -483,12 +526,16 @@ export default function DebtStrategyAnalyzer() {
                       type="text"
                       placeholder="Debt name (e.g., Chase Card)"
                       value={newDebt.name}
-                      onChange={(e) => setNewDebt({ ...newDebt, name: e.target.value })}
+                      onChange={(e) =>
+                        setNewDebt({ ...newDebt, name: e.target.value })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     />
                     <select
                       value={newDebt.type}
-                      onChange={(e) => setNewDebt({ ...newDebt, type: e.target.value as any })}
+                      onChange={(e) =>
+                        setNewDebt({ ...newDebt, type: e.target.value as any })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     >
                       <option value="credit_card">Credit Card</option>
@@ -502,7 +549,12 @@ export default function DebtStrategyAnalyzer() {
                       type="number"
                       placeholder="Balance ($)"
                       value={newDebt.balance || ''}
-                      onChange={(e) => setNewDebt({ ...newDebt, balance: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) =>
+                        setNewDebt({
+                          ...newDebt,
+                          balance: parseFloat(e.target.value) || 0,
+                        })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     />
                     <input
@@ -510,14 +562,24 @@ export default function DebtStrategyAnalyzer() {
                       step="0.01"
                       placeholder="Interest Rate (%)"
                       value={newDebt.interestRate || ''}
-                      onChange={(e) => setNewDebt({ ...newDebt, interestRate: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) =>
+                        setNewDebt({
+                          ...newDebt,
+                          interestRate: parseFloat(e.target.value) || 0,
+                        })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     />
                     <input
                       type="number"
                       placeholder="Minimum Payment ($)"
                       value={newDebt.minimumPayment || ''}
-                      onChange={(e) => setNewDebt({ ...newDebt, minimumPayment: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) =>
+                        setNewDebt({
+                          ...newDebt,
+                          minimumPayment: parseFloat(e.target.value) || 0,
+                        })
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     />
                     <button
@@ -538,8 +600,12 @@ export default function DebtStrategyAnalyzer() {
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <p className="font-semibold text-gray-900">{debt.name}</p>
-                        <p className="text-sm text-gray-600">{debt.type.replace('_', ' ')}</p>
+                        <p className="font-semibold text-gray-900">
+                          {debt.name}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {debt.type.replace('_', ' ')}
+                        </p>
                       </div>
                       <button
                         onClick={() => removeDebt(debt.id)}
@@ -551,7 +617,9 @@ export default function DebtStrategyAnalyzer() {
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
                         <p className="text-gray-600">Balance</p>
-                        <p className="font-semibold">${debt.balance.toLocaleString()}</p>
+                        <p className="font-semibold">
+                          ${debt.balance.toLocaleString()}
+                        </p>
                       </div>
                       <div>
                         <p className="text-gray-600">APR</p>
@@ -559,7 +627,9 @@ export default function DebtStrategyAnalyzer() {
                       </div>
                       <div className="col-span-2">
                         <p className="text-gray-600">Minimum Payment</p>
-                        <p className="font-semibold">${debt.minimumPayment.toLocaleString()}/mo</p>
+                        <p className="font-semibold">
+                          ${debt.minimumPayment.toLocaleString()}/mo
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -587,7 +657,9 @@ export default function DebtStrategyAnalyzer() {
                   <input
                     type="number"
                     value={monthlyBudget}
-                    onChange={(e) => setMonthlyBudget(parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setMonthlyBudget(parseFloat(e.target.value) || 0)
+                    }
                     className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg text-2xl font-bold focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
@@ -603,7 +675,9 @@ export default function DebtStrategyAnalyzer() {
 
               <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
                 <p className="text-sm text-orange-900">
-                  <strong>Extra payment:</strong> ${Math.max(0, monthlyBudget - totalMinimum).toLocaleString()}/mo
+                  <strong>Extra payment:</strong> $
+                  {Math.max(0, monthlyBudget - totalMinimum).toLocaleString()}
+                  /mo
                 </p>
                 <p className="text-xs text-orange-700 mt-1">
                   This extra amount accelerates your debt payoff significantly
@@ -628,24 +702,31 @@ export default function DebtStrategyAnalyzer() {
                         key={result.strategyName}
                         className="p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl border-2 border-orange-200"
                       >
-                        <h3 className="font-bold text-gray-900 mb-3">{result.strategyName}</h3>
+                        <h3 className="font-bold text-gray-900 mb-3">
+                          {result.strategyName}
+                        </h3>
 
                         <div className="space-y-2 text-sm">
                           <div>
                             <p className="text-gray-600">Time to payoff</p>
                             <p className="text-xl font-bold text-orange-600">
-                              {Math.floor(result.timeToPayoff / 12)}y {result.timeToPayoff % 12}m
+                              {Math.floor(result.timeToPayoff / 12)}y{' '}
+                              {result.timeToPayoff % 12}m
                             </p>
                           </div>
 
                           <div>
                             <p className="text-gray-600">Total interest</p>
-                            <p className="font-semibold">${result.totalInterestPaid.toLocaleString()}</p>
+                            <p className="font-semibold">
+                              ${result.totalInterestPaid.toLocaleString()}
+                            </p>
                           </div>
 
                           <div>
                             <p className="text-gray-600">Total paid</p>
-                            <p className="font-semibold">${result.totalPaid.toLocaleString()}</p>
+                            <p className="font-semibold">
+                              ${result.totalPaid.toLocaleString()}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -655,7 +736,9 @@ export default function DebtStrategyAnalyzer() {
                   {/* Best Strategy Recommendation */}
                   {(() => {
                     const best = results.reduce((prev, current) =>
-                      current.totalInterestPaid < prev.totalInterestPaid ? current : prev
+                      current.totalInterestPaid < prev.totalInterestPaid
+                        ? current
+                        : prev
                     );
                     return (
                       <div className="p-4 bg-green-50 border-2 border-green-300 rounded-lg">
@@ -663,8 +746,14 @@ export default function DebtStrategyAnalyzer() {
                           💡 Recommended: {best.strategyName}
                         </p>
                         <p className="text-sm text-green-800">
-                          Saves ${(results.reduce((max, r) => Math.max(max, r.totalInterestPaid), 0) - best.totalInterestPaid).toLocaleString()}
-                          {' '}in interest compared to other strategies
+                          Saves $
+                          {(
+                            results.reduce(
+                              (max, r) => Math.max(max, r.totalInterestPaid),
+                              0
+                            ) - best.totalInterestPaid
+                          ).toLocaleString()}{' '}
+                          in interest compared to other strategies
                         </p>
                       </div>
                     );
@@ -673,7 +762,10 @@ export default function DebtStrategyAnalyzer() {
 
                 {/* Detailed Strategy Breakdown */}
                 {results.map((result) => (
-                  <div key={result.strategyName} className="bg-white rounded-xl shadow-lg p-6">
+                  <div
+                    key={result.strategyName}
+                    className="bg-white rounded-xl shadow-lg p-6"
+                  >
                     <h3 className="text-xl font-bold text-gray-900 mb-4">
                       {result.strategyName} - Detailed Analysis
                     </h3>
@@ -707,7 +799,9 @@ export default function DebtStrategyAnalyzer() {
                     </div>
 
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-semibold text-blue-900 mb-2">Best For:</h4>
+                      <h4 className="font-semibold text-blue-900 mb-2">
+                        Best For:
+                      </h4>
                       <ul className="space-y-1">
                         {result.bestFor.map((item, idx) => (
                           <li key={idx} className="text-sm text-blue-800">
@@ -728,7 +822,8 @@ export default function DebtStrategyAnalyzer() {
                   <div className="grid md:grid-cols-2 gap-4">
                     {consolidationOptions.map((option) => {
                       const monthlyPayment = totalDebt / option.term;
-                      const totalInterest = (monthlyPayment * option.term) - totalDebt + option.fee;
+                      const totalInterest =
+                        monthlyPayment * option.term - totalDebt + option.fee;
 
                       return (
                         <div
@@ -736,12 +831,18 @@ export default function DebtStrategyAnalyzer() {
                           className="p-4 bg-gray-50 rounded-lg border-2 border-gray-200"
                         >
                           <div className="flex justify-between items-start mb-3">
-                            <h3 className="font-bold text-gray-900">{option.name}</h3>
-                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                              option.creditImpact === 'positive' ? 'bg-green-100 text-green-800' :
-                              option.creditImpact === 'neutral' ? 'bg-gray-100 text-gray-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
+                            <h3 className="font-bold text-gray-900">
+                              {option.name}
+                            </h3>
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-semibold ${
+                                option.creditImpact === 'positive'
+                                  ? 'bg-green-100 text-green-800'
+                                  : option.creditImpact === 'neutral'
+                                    ? 'bg-gray-100 text-gray-800'
+                                    : 'bg-red-100 text-red-800'
+                              }`}
+                            >
                               {option.creditImpact} impact
                             </span>
                           </div>
@@ -749,24 +850,34 @@ export default function DebtStrategyAnalyzer() {
                           <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
                             <div>
                               <p className="text-gray-600">APR</p>
-                              <p className="font-semibold">{option.interestRate}%</p>
+                              <p className="font-semibold">
+                                {option.interestRate}%
+                              </p>
                             </div>
                             <div>
                               <p className="text-gray-600">Term</p>
-                              <p className="font-semibold">{option.term} months</p>
+                              <p className="font-semibold">
+                                {option.term} months
+                              </p>
                             </div>
                             <div>
                               <p className="text-gray-600">Monthly</p>
-                              <p className="font-semibold">${monthlyPayment.toFixed(0)}</p>
+                              <p className="font-semibold">
+                                ${monthlyPayment.toFixed(0)}
+                              </p>
                             </div>
                             <div>
                               <p className="text-gray-600">Total Interest</p>
-                              <p className="font-semibold">${totalInterest.toFixed(0)}</p>
+                              <p className="font-semibold">
+                                ${totalInterest.toFixed(0)}
+                              </p>
                             </div>
                           </div>
 
                           <div className="mb-3">
-                            <p className="text-xs font-semibold text-gray-700 mb-1">Requirements:</p>
+                            <p className="text-xs font-semibold text-gray-700 mb-1">
+                              Requirements:
+                            </p>
                             <ul className="text-xs text-gray-600 space-y-1">
                               {option.requirements.map((req, idx) => (
                                 <li key={idx}>• {req}</li>
@@ -780,7 +891,9 @@ export default function DebtStrategyAnalyzer() {
                             </summary>
                             <div className="mt-2 space-y-2">
                               <div>
-                                <p className="font-semibold text-green-700">Pros:</p>
+                                <p className="font-semibold text-green-700">
+                                  Pros:
+                                </p>
                                 <ul className="text-gray-600">
                                   {option.pros.slice(0, 2).map((pro, idx) => (
                                     <li key={idx}>• {pro}</li>
@@ -788,7 +901,9 @@ export default function DebtStrategyAnalyzer() {
                                 </ul>
                               </div>
                               <div>
-                                <p className="font-semibold text-red-700">Cons:</p>
+                                <p className="font-semibold text-red-700">
+                                  Cons:
+                                </p>
                                 <ul className="text-gray-600">
                                   {option.cons.slice(0, 2).map((con, idx) => (
                                     <li key={idx}>• {con}</li>
@@ -809,7 +924,8 @@ export default function DebtStrategyAnalyzer() {
               <div className="bg-white rounded-xl shadow-lg p-12 text-center">
                 <span className="text-6xl mb-4 block">📊</span>
                 <p className="text-gray-500">
-                  Add your debts and set a monthly budget to see personalized strategies
+                  Add your debts and set a monthly budget to see personalized
+                  strategies
                 </p>
               </div>
             )}
@@ -825,19 +941,22 @@ export default function DebtStrategyAnalyzer() {
             <div>
               <p className="font-semibold mb-1">Avalanche Method</p>
               <p>
-                Pay minimums on all debts, put extra toward highest interest rate. Mathematically optimal - saves most money.
+                Pay minimums on all debts, put extra toward highest interest
+                rate. Mathematically optimal - saves most money.
               </p>
             </div>
             <div>
               <p className="font-semibold mb-1">Snowball Method</p>
               <p>
-                Pay minimums on all debts, put extra toward smallest balance. Provides quick wins for motivation.
+                Pay minimums on all debts, put extra toward smallest balance.
+                Provides quick wins for motivation.
               </p>
             </div>
             <div>
               <p className="font-semibold mb-1">Consolidation</p>
               <p>
-                Combine multiple debts into one loan with lower interest. Simplifies payments but requires good credit.
+                Combine multiple debts into one loan with lower interest.
+                Simplifies payments but requires good credit.
               </p>
             </div>
           </div>

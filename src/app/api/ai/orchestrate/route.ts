@@ -1,6 +1,6 @@
 /**
  * AI Strategy Orchestration API
- * 
+ *
  * Orchestrates multiple strategies in parallel for optimal results
  */
 
@@ -13,7 +13,7 @@ import { logAIInteraction } from '@/lib/security/audit-logging';
 export async function POST(request: NextRequest) {
   try {
     // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -77,9 +77,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Strategy orchestration error:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to orchestrate strategies' 
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to orchestrate strategies',
       },
       { status: 500 }
     );
@@ -93,7 +96,7 @@ export async function GET() {
     endpoint: '/api/ai/orchestrate',
     requiredFields: ['strategies', 'loans'],
     optionalFields: ['portfolio_analysis'],
-    description: 'Orchestrates multiple strategies in parallel for optimal results',
+    description:
+      'Orchestrates multiple strategies in parallel for optimal results',
   });
 }
-

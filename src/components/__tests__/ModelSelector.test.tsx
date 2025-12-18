@@ -6,45 +6,78 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 // Mock the ModelSelector component
-jest.mock('../model-selector/ModelSelector', () => ({
-  ModelSelector: ({ 
-    models, 
-    selectedModel, 
-    onSelect, 
-    category, 
-    showPricing, 
-    className 
+jest.mock('../model-selector/ModelSelector', () => {
+  interface Model {
+    id: string;
+    name: string;
+    provider: string;
+    category: string;
+    description: string;
+    inputCost: number;
+    outputCost: number;
+    recommended?: boolean;
+  }
+  const MockModelSelector = ({
+    models,
+    selectedModel,
+    onSelect,
+    category,
+    showPricing,
+    className,
   }: {
-    models?: Array<{
-      id: string;
-      name: string;
-      provider: string;
-      category: string;
-      description: string;
-      inputCost: number;
-      outputCost: number;
-      recommended?: boolean;
-    }>;
+    models?: Model[];
     selectedModel?: string;
     onSelect: (modelId: string) => void;
     category?: string;
     showPricing?: boolean;
     className?: string;
   }) => {
-    const defaultModels = [
-      { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', category: 'chat', description: 'Best for complex tasks', inputCost: 5, outputCost: 15, recommended: true },
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', category: 'chat', description: 'Fast and efficient', inputCost: 0.15, outputCost: 0.6 },
-      { id: 'claude-3-opus', name: 'Claude 3 Opus', provider: 'Anthropic', category: 'chat', description: 'Detailed analysis', inputCost: 15, outputCost: 75 },
+    const defaultModels: Model[] = [
+      {
+        id: 'gpt-4o',
+        name: 'GPT-4o',
+        provider: 'OpenAI',
+        category: 'chat',
+        description: 'Best for complex tasks',
+        inputCost: 5,
+        outputCost: 15,
+        recommended: true,
+      },
+      {
+        id: 'gpt-4o-mini',
+        name: 'GPT-4o Mini',
+        provider: 'OpenAI',
+        category: 'chat',
+        description: 'Fast and efficient',
+        inputCost: 0.15,
+        outputCost: 0.6,
+      },
+      {
+        id: 'claude-3-opus',
+        name: 'Claude 3 Opus',
+        provider: 'Anthropic',
+        category: 'chat',
+        description: 'Detailed analysis',
+        inputCost: 15,
+        outputCost: 75,
+      },
     ];
     const displayModels = models || defaultModels;
-    const filteredModels = category ? displayModels.filter(m => m.category === category) : displayModels;
-    
+    const filteredModels = category
+      ? displayModels.filter((m) => m.category === category)
+      : displayModels;
+
     return (
       <div className={className} data-testid="model-selector">
-        <input type="text" placeholder="Search models..." data-testid="search-input" />
+        <input
+          type="text"
+          placeholder="Search models..."
+          data-testid="search-input"
+        />
         <div data-testid="model-list">
-          {filteredModels.map(model => (
-            <div
+          {filteredModels.map((model) => (
+            <button
+              type="button"
               key={model.id}
               data-testid={`model-${model.id}`}
               className={selectedModel === model.id ? 'selected' : ''}
@@ -52,17 +85,24 @@ jest.mock('../model-selector/ModelSelector', () => ({
             >
               <span>{model.name}</span>
               <span>{model.provider}</span>
-              {model.recommended && <span data-testid="recommended-badge">Recommended</span>}
-              {showPricing && <span data-testid="pricing">${model.inputCost}/${model.outputCost}</span>}
-            </div>
+              {model.recommended && (
+                <span data-testid="recommended-badge">Recommended</span>
+              )}
+              {showPricing && (
+                <span data-testid="pricing">
+                  ${model.inputCost}/${model.outputCost}
+                </span>
+              )}
+            </button>
           ))}
         </div>
       </div>
     );
-  },
-}));
+  };
+  return { __esModule: true, default: MockModelSelector };
+});
 
-import { ModelSelector } from '../model-selector/ModelSelector';
+import ModelSelector from '../model-selector/ModelSelector';
 
 describe('ModelSelector', () => {
   it('renders model selector', () => {
@@ -84,7 +124,7 @@ describe('ModelSelector', () => {
   it('calls onSelect when model clicked', () => {
     const onSelect = jest.fn();
     render(<ModelSelector onSelect={onSelect} />);
-    
+
     fireEvent.click(screen.getByTestId('model-gpt-4o'));
     expect(onSelect).toHaveBeenCalledWith('gpt-4o');
   });
@@ -119,4 +159,3 @@ describe('ModelSelector', () => {
     expect(screen.getAllByText('OpenAI').length).toBeGreaterThan(0);
   });
 });
-

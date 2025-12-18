@@ -5,7 +5,7 @@ import { billingProfileStore } from '@/lib/payment/billing-profile-store';
 
 export async function POST(request: NextRequest) {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

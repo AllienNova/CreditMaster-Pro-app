@@ -133,7 +133,7 @@ export default function SettingsScreen() {
         ))}
 
         <View style={styles.footer}>
-          <Text style={styles.version}>CreditMaster Pro v1.0.0</Text>
+          <Text style={styles.version}>CPFI v1.0.0</Text>
           <View style={styles.footerLinks}>
             <TouchableOpacity><Text style={styles.footerLink}>Terms of Service</Text></TouchableOpacity>
             <Text style={styles.footerDivider}>•</Text>

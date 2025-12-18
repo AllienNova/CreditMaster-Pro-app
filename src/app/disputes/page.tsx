@@ -3,7 +3,7 @@ import DisputeList from '@/components/disputes/DisputeList';
 import DisputeStats from '@/components/disputes/DisputeStats';
 
 export const metadata = {
-  title: 'Disputes | CreditMaster Pro',
+  title: 'Disputes | CPFI',
   description: 'Manage your credit report disputes',
 };
 

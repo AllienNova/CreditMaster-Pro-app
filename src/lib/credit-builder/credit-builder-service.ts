@@ -255,7 +255,9 @@ class CreditBuilderService {
    * Calculate Credit Builder Score (0-100)
    * Higher score = better credit building practices
    */
-  async calculateCreditBuilderScore(userId: string): Promise<CreditBuilderScore> {
+  async calculateCreditBuilderScore(
+    userId: string
+  ): Promise<CreditBuilderScore> {
     // TODO: Implement actual calculation based on user's credit data
     // For now, return mock data
     return {
@@ -478,7 +480,9 @@ class CreditBuilderService {
       },
     ];
 
-    return loans.sort((a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0));
+    return loans.sort(
+      (a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0)
+    );
   }
 
   /**
@@ -496,7 +500,8 @@ class CreditBuilderService {
         maxDeposit: 2500,
         apr: 28.24,
         annualFee: 0,
-        rewards: '2% cash back at gas stations and restaurants (up to $1,000 in combined purchases each quarter), 1% on all other purchases',
+        rewards:
+          '2% cash back at gas stations and restaurants (up to $1,000 in combined purchases each quarter), 1% on all other purchases',
         graduationPath: true,
         creditLineIncrease: true,
         reporting: ['Experian', 'Equifax', 'TransUnion'],
@@ -507,7 +512,8 @@ class CreditBuilderService {
           'Free FICO® Score',
         ],
         recommended: true,
-        aiReasoning: 'Best overall secured card with rewards and graduation path',
+        aiReasoning:
+          'Best overall secured card with rewards and graduation path',
       },
       {
         id: 'sc-2',
@@ -531,7 +537,9 @@ class CreditBuilderService {
       },
     ];
 
-    return cards.sort((a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0));
+    return cards.sort(
+      (a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0)
+    );
   }
 
   /**
@@ -542,7 +550,8 @@ class CreditBuilderService {
       {
         strategy: 'family',
         title: 'Family Member Strategy',
-        description: 'Get added to a family member\'s credit card as an authorized user',
+        description:
+          "Get added to a family member's credit card as an authorized user",
         pros: [
           'Easiest to arrange',
           'Inherit account history',
@@ -570,7 +579,8 @@ class CreditBuilderService {
           'Confirm they report to all 3 bureaus',
           'Monitor for account to appear on your report',
         ],
-        aiRecommendation: 'Best option for quick, significant boost with minimal risk',
+        aiRecommendation:
+          'Best option for quick, significant boost with minimal risk',
       },
       {
         strategy: 'professional',
@@ -603,7 +613,8 @@ class CreditBuilderService {
           'Wait for account to be added',
           'Monitor credit report for appearance',
         ],
-        aiRecommendation: 'Use for specific goals (mortgage, auto loan) with time constraints',
+        aiRecommendation:
+          'Use for specific goals (mortgage, auto loan) with time constraints',
       },
     ];
   }
@@ -611,7 +622,10 @@ class CreditBuilderService {
   /**
    * Analyze credit utilization and provide recommendations
    */
-  async analyzeUtilization(userId: string, cards: CardUtilization[]): Promise<UtilizationAnalysis> {
+  async analyzeUtilization(
+    userId: string,
+    cards: CardUtilization[]
+  ): Promise<UtilizationAnalysis> {
     const totalBalance = cards.reduce((sum, card) => sum + card.balance, 0);
     const totalLimit = cards.reduce((sum, card) => sum + card.limit, 0);
     const currentUtilization = (totalBalance / totalLimit) * 100;
@@ -621,16 +635,23 @@ class CreditBuilderService {
     const optimalBalance = (totalLimit * optimalUtilization) / 100;
 
     // Calculate per-card status
-    const cardsWithStatus = cards.map(card => ({
+    const cardsWithStatus = cards.map((card) => ({
       ...card,
-      status: card.utilization < 30 ? 'good' : card.utilization < 50 ? 'warning' : 'danger' as 'good' | 'warning' | 'danger',
+      status:
+        card.utilization < 30
+          ? 'good'
+          : card.utilization < 50
+            ? 'warning'
+            : ('danger' as 'good' | 'warning' | 'danger'),
     }));
 
     // Generate recommendations
     const recommendations: UtilizationRecommendation[] = [];
 
     // Focus on high-utilization cards first
-    const sortedCards = [...cards].sort((a, b) => b.utilization - a.utilization);
+    const sortedCards = [...cards].sort(
+      (a, b) => b.utilization - a.utilization
+    );
 
     for (const card of sortedCards) {
       if (card.utilization > 30) {
@@ -645,13 +666,19 @@ class CreditBuilderService {
           recommendedBalance: targetBalance,
           amountToPay,
           reasoning: `Reduce utilization from ${card.utilization.toFixed(1)}% to ${targetUtilization}% for maximum score impact`,
-          impact: Math.min(30, Math.floor((card.utilization - targetUtilization) / 2)),
+          impact: Math.min(
+            30,
+            Math.floor((card.utilization - targetUtilization) / 2)
+          ),
         });
       }
     }
 
     // Calculate projected impact
-    const projectedImpact = recommendations.reduce((sum, rec) => sum + rec.impact, 0);
+    const projectedImpact = recommendations.reduce(
+      (sum, rec) => sum + rec.impact,
+      0
+    );
 
     return {
       current: currentUtilization,
@@ -671,7 +698,7 @@ class CreditBuilderService {
     strategy: 'avalanche' | 'snowball' | 'utilization' | 'custom' = 'avalanche'
   ): Promise<PaymentOptimization> {
     // Sort accounts based on strategy
-    let sortedAccounts = [...accounts];
+    const sortedAccounts = [...accounts];
 
     switch (strategy) {
       case 'avalanche':
@@ -692,7 +719,7 @@ class CreditBuilderService {
 
     // Generate payment plan
     const plan: PaymentPlan[] = [];
-    let remainingAccounts = sortedAccounts.map(acc => ({ ...acc }));
+    let remainingAccounts = sortedAccounts.map((acc) => ({ ...acc }));
     let month = 1;
     let currentScore = 650; // TODO: Get from user profile
 
@@ -718,10 +745,15 @@ class CreditBuilderService {
         const priorityAccount = remainingAccounts[0];
         const extraPayment = Math.min(budgetRemaining, priorityAccount.balance);
 
-        const existingPayment = monthlyPayments.find(p => p.accountId === priorityAccount.id);
+        const existingPayment = monthlyPayments.find(
+          (p) => p.accountId === priorityAccount.id
+        );
         if (existingPayment) {
           existingPayment.amount += extraPayment;
-          existingPayment.type = existingPayment.amount >= priorityAccount.balance + extraPayment ? 'payoff' : 'extra';
+          existingPayment.type =
+            existingPayment.amount >= priorityAccount.balance + extraPayment
+              ? 'payoff'
+              : 'extra';
         }
 
         priorityAccount.balance -= extraPayment;
@@ -729,10 +761,10 @@ class CreditBuilderService {
       }
 
       // Remove paid-off accounts
-      remainingAccounts = remainingAccounts.filter(acc => acc.balance > 0);
+      remainingAccounts = remainingAccounts.filter((acc) => acc.balance > 0);
 
       // Estimate score increase (simplified)
-      if (monthlyPayments.some(p => p.type === 'payoff')) {
+      if (monthlyPayments.some((p) => p.type === 'payoff')) {
         currentScore += 5;
       } else {
         currentScore += 2;
@@ -742,7 +774,10 @@ class CreditBuilderService {
         month,
         payments: monthlyPayments,
         totalPayment: monthlyBudget - budgetRemaining,
-        remainingDebt: remainingAccounts.reduce((sum, acc) => sum + acc.balance, 0),
+        remainingDebt: remainingAccounts.reduce(
+          (sum, acc) => sum + acc.balance,
+          0
+        ),
         estimatedScore: Math.min(850, currentScore),
       });
 
@@ -757,7 +792,9 @@ class CreditBuilderService {
       monthlyBudget,
       accounts: sortedAccounts,
       plan,
-      projectedCompletion: new Date(Date.now() + plan.length * 30 * 24 * 60 * 60 * 1000),
+      projectedCompletion: new Date(
+        Date.now() + plan.length * 30 * 24 * 60 * 60 * 1000
+      ),
       totalInterestSaved,
       creditScoreImpact: plan[plan.length - 1]?.estimatedScore - 650 || 0,
     };
@@ -806,14 +843,22 @@ class CreditBuilderService {
       });
     }
 
-    const score = Math.min(100, ((current.installment + current.revolving + current.mortgage) / (ideal.installment + ideal.revolving + ideal.mortgage)) * 100);
+    const score = Math.min(
+      100,
+      ((current.installment + current.revolving + current.mortgage) /
+        (ideal.installment + ideal.revolving + ideal.mortgage)) *
+        100
+    );
 
     return {
       current,
       ideal,
       score,
       recommendations,
-      projectedImpact: recommendations.reduce((sum, rec) => sum + rec.impact, 0),
+      projectedImpact: recommendations.reduce(
+        (sum, rec) => sum + rec.impact,
+        0
+      ),
     };
   }
 

@@ -1,7 +1,8 @@
 {
   "app": {
-    "name": "CreditMaster Pro",
-    "tagline": "Reparación de Crédito con IA"
+    "name": "CPFI",
+    "fullName": "Credit Pro & Financial Intelligence",
+    "tagline": "Reparación de Crédito e Inteligencia Financiera con IA"
   },
   "tabs": {
     "home": "Inicio",

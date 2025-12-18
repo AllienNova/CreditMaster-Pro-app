@@ -6,7 +6,7 @@
 
 1. Go to [https://supabase.com/dashboard](https://supabase.com/dashboard)
 2. Click "New Project"
-3. Name: `creditmaster-pro-dev` (or your preferred name)
+3. Name: `CPFI-pro-dev` (or your preferred name)
 4. Database Password: Generate strong password and **save it**
 5. Region: Choose closest to you
 6. Click "Create new project"
@@ -189,10 +189,10 @@ supabase db push
 
 In Supabase Dashboard > Authentication > Settings:
 
-1. **Site URL**: `https://creditmaster.pro`
+1. **Site URL**: `https://CPFI.pro`
 2. **Redirect URLs**:
-   - `https://creditmaster.pro/auth/callback`
-   - `https://creditmaster.pro/dashboard`
+   - `https://CPFI.pro/auth/callback`
+   - `https://CPFI.pro/dashboard`
 3. **Rate Limits**: Configure for production load
 
 ### Step 4: Configure Storage Buckets

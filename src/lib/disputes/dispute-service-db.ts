@@ -27,10 +27,7 @@ export type DisputeStatus =
   | 'resolved'
   | 'rejected';
 
-export type DisputeOutcome =
-  | 'removed'
-  | 'updated'
-  | 'verified';
+export type DisputeOutcome = 'removed' | 'updated' | 'verified';
 
 export type Bureau = 'experian' | 'equifax' | 'transunion';
 
@@ -119,7 +116,10 @@ class DisputeServiceDB {
   /**
    * Get user disputes
    */
-  async getUserDisputes(userId: string, status?: DisputeStatus): Promise<Dispute[]> {
+  async getUserDisputes(
+    userId: string,
+    status?: DisputeStatus
+  ): Promise<Dispute[]> {
     let query = disputes()
       .select('*')
       .eq('user_id', userId)
@@ -151,8 +151,12 @@ class DisputeServiceDB {
     };
 
     const query = disputes();
-    // @ts-ignore - Supabase types issue with update operations
-    const { data, error } = await query.update(updateData).eq('id', disputeId).select().single();
+    const { data, error } = await query
+      // @ts-ignore - Supabase types issue with update operations
+      .update(updateData)
+      .eq('id', disputeId)
+      .select()
+      .single();
 
     if (error) {
       console.error('Failed to send dispute:', error);
@@ -176,8 +180,12 @@ class DisputeServiceDB {
     }
 
     const query2 = disputes();
-    // @ts-ignore - Supabase types issue with update operations
-    const { data, error } = await query2.update(updates).eq('id', disputeId).select().single();
+    const { data, error } = await query2
+      // @ts-ignore - Supabase types issue with update operations
+      .update(updates)
+      .eq('id', disputeId)
+      .select()
+      .single();
 
     if (error) {
       console.error('Failed to update dispute status:', error);
@@ -201,8 +209,12 @@ class DisputeServiceDB {
     };
 
     const query3 = disputes();
-    // @ts-ignore - Supabase types issue with update operations
-    const { data, error } = await query3.update(updateData).eq('id', disputeId).select().single();
+    const { data, error } = await query3
+      // @ts-ignore - Supabase types issue with update operations
+      .update(updateData)
+      .eq('id', disputeId)
+      .select()
+      .single();
 
     if (error) {
       console.error('Failed to resolve dispute:', error);
@@ -217,33 +229,33 @@ class DisputeServiceDB {
    */
   async getUserDisputeStats(userId: string): Promise<DisputeStats> {
     const disputes = await this.getUserDisputes(userId);
-    const resolved = disputes.filter(d => d.status === 'resolved');
-    const successful = resolved.filter(d =>
-      d.outcome === 'removed' || d.outcome === 'updated'
+    const resolved = disputes.filter((d) => d.status === 'resolved');
+    const successful = resolved.filter(
+      (d) => d.outcome === 'removed' || d.outcome === 'updated'
     );
 
     // Calculate average resolution time
     const resolutionTimes = resolved
-      .filter(d => d.sentAt && d.resolvedAt)
-      .map(d => {
+      .filter((d) => d.sentAt && d.resolvedAt)
+      .map((d) => {
         const sent = d.sentAt!.getTime();
         const resolvedTime = d.resolvedAt!.getTime();
         return (resolvedTime - sent) / (1000 * 60 * 60 * 24); // Days
       });
 
-    const averageResolutionDays = resolutionTimes.length > 0
-      ? resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length
-      : 0;
+    const averageResolutionDays =
+      resolutionTimes.length > 0
+        ? resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length
+        : 0;
 
     return {
       total: disputes.length,
-      active: disputes.filter(d =>
-        d.status === 'sent' || d.status === 'under_review'
+      active: disputes.filter(
+        (d) => d.status === 'sent' || d.status === 'under_review'
       ).length,
       resolved: resolved.length,
-      successRate: resolved.length > 0
-        ? (successful.length / resolved.length) * 100
-        : 0,
+      successRate:
+        resolved.length > 0 ? (successful.length / resolved.length) * 100 : 0,
       averageResolutionDays: Math.round(averageResolutionDays),
     };
   }
@@ -251,7 +263,10 @@ class DisputeServiceDB {
   /**
    * Get disputes by bureau
    */
-  async getDisputesByBureau(userId: string, bureau: Bureau): Promise<Dispute[]> {
+  async getDisputesByBureau(
+    userId: string,
+    bureau: Bureau
+  ): Promise<Dispute[]> {
     const { data, error } = await disputes()
       .select('*')
       .eq('user_id', userId)
@@ -270,9 +285,7 @@ class DisputeServiceDB {
    * Delete dispute
    */
   async deleteDispute(disputeId: string): Promise<boolean> {
-    const { error } = await disputes()
-      .delete()
-      .eq('id', disputeId);
+    const { error } = await disputes().delete().eq('id', disputeId);
 
     if (error) {
       console.error('Failed to delete dispute:', error);
@@ -285,7 +298,9 @@ class DisputeServiceDB {
   /**
    * Map database row to Dispute interface
    */
-  private mapToDispute(row: Database['public']['Tables']['disputes']['Row']): Dispute {
+  private mapToDispute(
+    row: Database['public']['Tables']['disputes']['Row']
+  ): Dispute {
     return {
       id: row.id,
       userId: row.user_id,

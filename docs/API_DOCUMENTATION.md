@@ -1,8 +1,8 @@
-# CreditMaster Pro - API Documentation
+# CPFI (Credit Pro & Financial Intelligence) - API Documentation
 
 ## Base URL
 ```
-Production: https://api.creditmaster.pro
+Production: https://api.CPFI.pro
 Development: http://localhost:3000/api
 ```
 
@@ -205,8 +205,8 @@ Get model performance metrics.
 | 500 | Internal Server Error |
 
 ## SDKs
-- JavaScript/TypeScript: `@creditmaster/sdk`
-- Python: `creditmaster-sdk`
+- JavaScript/TypeScript: `@CPFI/sdk`
+- Python: `CPFI-sdk`
 
 ---
 

@@ -11,7 +11,7 @@ import { cookies } from 'next/headers';
 
 // Admin email whitelist (in production, use database roles)
 const ADMIN_EMAILS = [
-  'admin@creditmaster.pro',
+  'admin@CPFI.pro',
   'khonour@yahoo.com',
 ];
 

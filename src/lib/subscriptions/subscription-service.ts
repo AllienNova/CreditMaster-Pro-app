@@ -16,8 +16,10 @@ import type Stripe from 'stripe';
 
 // Type helpers for Supabase operations
 type SubscriptionRow = Database['public']['Tables']['subscriptions']['Row'];
-type SubscriptionInsert = Database['public']['Tables']['subscriptions']['Insert'];
-type SubscriptionUpdate = Database['public']['Tables']['subscriptions']['Update'];
+type SubscriptionInsert =
+  Database['public']['Tables']['subscriptions']['Insert'];
+type SubscriptionUpdate =
+  Database['public']['Tables']['subscriptions']['Update'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
@@ -25,7 +27,11 @@ type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 const subscriptions = () => getSupabase().from('subscriptions');
 const profiles = () => getSupabase().from('profiles');
 
-export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing';
+export type SubscriptionStatus =
+  | 'active'
+  | 'canceled'
+  | 'past_due'
+  | 'trialing';
 export type SubscriptionTier = 'free' | 'basic' | 'premium' | 'enterprise';
 
 export interface Subscription {
@@ -126,7 +132,11 @@ class SubscriptionService {
 
     // Update profile subscription tier
     const tier = this.getTierFromPriceId(priceId);
-    await this.updateProfileSubscriptionTier(userId, tier, stripeSubscription.status);
+    await this.updateProfileSubscriptionTier(
+      userId,
+      tier,
+      stripeSubscription.status
+    );
 
     return {
       subscription: this.mapToSubscription(data as SubscriptionRow),
@@ -161,7 +171,9 @@ class SubscriptionService {
   /**
    * Get subscription by Stripe subscription ID
    */
-  async getSubscriptionByStripeId(stripeSubscriptionId: string): Promise<Subscription | null> {
+  async getSubscriptionByStripeId(
+    stripeSubscriptionId: string
+  ): Promise<Subscription | null> {
     const { data, error } = await subscriptions()
       .select('*')
       .eq('stripe_subscription_id', stripeSubscriptionId)
@@ -191,18 +203,26 @@ class SubscriptionService {
     const updates: SubscriptionUpdate = { status };
 
     if (currentPeriodStart) {
-      updates.current_period_start = new Date(currentPeriodStart * 1000).toISOString();
+      updates.current_period_start = new Date(
+        currentPeriodStart * 1000
+      ).toISOString();
     }
     if (currentPeriodEnd) {
-      updates.current_period_end = new Date(currentPeriodEnd * 1000).toISOString();
+      updates.current_period_end = new Date(
+        currentPeriodEnd * 1000
+      ).toISOString();
     }
     if (cancelAtPeriodEnd !== undefined) {
       updates.cancel_at_period_end = cancelAtPeriodEnd;
     }
 
     const query1 = subscriptions();
-    // @ts-ignore - Supabase types issue with update operations
-    const { data, error } = await query1.update(updates).eq('stripe_subscription_id', stripeSubscriptionId).select().single();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (query1 as any)
+      .update(updates)
+      .eq('stripe_subscription_id', stripeSubscriptionId)
+      .select()
+      .single();
 
     if (error) {
       console.error('Failed to update subscription:', error);
@@ -241,8 +261,12 @@ class SubscriptionService {
     };
 
     const query2 = subscriptions();
-    // @ts-ignore - Supabase types issue with update operations
-    const { data, error } = await query2.update(updateData).eq('stripe_subscription_id', subscription.stripeSubscriptionId).select().single();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (query2 as any)
+      .update(updateData)
+      .eq('stripe_subscription_id', subscription.stripeSubscriptionId)
+      .select()
+      .single();
 
     if (error) {
       console.error('Failed to update canceled subscription:', error);
@@ -253,7 +277,10 @@ class SubscriptionService {
     if (immediately) {
       await this.updateProfileSubscriptionTier(userId, 'free', 'canceled');
     } else {
-      await this.updateProfileSubscriptionStatus(userId, stripeSubscription.status);
+      await this.updateProfileSubscriptionStatus(
+        userId,
+        stripeSubscription.status
+      );
     }
 
     return this.mapToSubscription(data as SubscriptionRow);
@@ -280,8 +307,12 @@ class SubscriptionService {
     };
 
     const query3 = subscriptions();
-    // @ts-ignore - Supabase types issue with update operations
-    const { data, error } = await query3.update(updateData).eq('stripe_subscription_id', subscription.stripeSubscriptionId).select().single();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (query3 as any)
+      .update(updateData)
+      .eq('stripe_subscription_id', subscription.stripeSubscriptionId)
+      .select()
+      .single();
 
     if (error) {
       console.error('Failed to update reactivated subscription:', error);
@@ -289,7 +320,10 @@ class SubscriptionService {
     }
 
     // Update profile
-    await this.updateProfileSubscriptionStatus(userId, stripeSubscription.status);
+    await this.updateProfileSubscriptionStatus(
+      userId,
+      stripeSubscription.status
+    );
 
     return this.mapToSubscription(data as SubscriptionRow);
   }
@@ -319,8 +353,12 @@ class SubscriptionService {
     };
 
     const query4 = subscriptions();
-    // @ts-ignore - Supabase types issue with update operations
-    const { data, error } = await query4.update(updateData2).eq('stripe_subscription_id', subscription.stripeSubscriptionId).select().single();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (query4 as any)
+      .update(updateData2)
+      .eq('stripe_subscription_id', subscription.stripeSubscriptionId)
+      .select()
+      .single();
 
     if (error) {
       console.error('Failed to update subscription plan:', error);
@@ -329,7 +367,11 @@ class SubscriptionService {
 
     // Update profile tier
     const tier = this.getTierFromPriceId(newPriceId);
-    await this.updateProfileSubscriptionTier(userId, tier, stripeSubscription.status);
+    await this.updateProfileSubscriptionTier(
+      userId,
+      tier,
+      stripeSubscription.status
+    );
 
     return this.mapToSubscription(data as SubscriptionRow);
   }
@@ -363,8 +405,8 @@ class SubscriptionService {
   ): Promise<void> {
     const updateData: ProfileUpdate = { stripe_customer_id: stripeCustomerId };
     const query5 = profiles();
-    // @ts-ignore - Supabase types issue with update operations
-    const { error } = await query5.update(updateData).eq('id', userId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (query5 as any).update(updateData).eq('id', userId);
 
     if (error) {
       console.error('Failed to update profile Stripe customer:', error);
@@ -385,8 +427,8 @@ class SubscriptionService {
       subscription_status: status as 'active' | 'canceled' | 'past_due',
     };
     const query6 = profiles();
-    // @ts-ignore - Supabase types issue with update operations
-    const { error } = await query6.update(updateData).eq('id', userId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (query6 as any).update(updateData).eq('id', userId);
 
     if (error) {
       console.error('Failed to update profile subscription tier:', error);
@@ -405,8 +447,8 @@ class SubscriptionService {
       subscription_status: status as 'active' | 'canceled' | 'past_due',
     };
     const query7 = profiles();
-    // @ts-ignore - Supabase types issue with update operations
-    const { error } = await query7.update(updateData).eq('id', userId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (query7 as any).update(updateData).eq('id', userId);
 
     if (error) {
       console.error('Failed to update profile subscription status:', error);
@@ -440,7 +482,9 @@ class SubscriptionService {
       const confirmationSecret = invoice.confirmation_secret;
       if (confirmationSecret && typeof confirmationSecret === 'object') {
         // The confirmation_secret object contains the client_secret
-        return (confirmationSecret as { client_secret?: string }).client_secret || '';
+        return (
+          (confirmationSecret as { client_secret?: string }).client_secret || ''
+        );
       }
     }
     return '';
@@ -449,7 +493,9 @@ class SubscriptionService {
   /**
    * Webhook handler: Subscription created
    */
-  async handleSubscriptionCreated(stripeSubscription: Stripe.Subscription): Promise<void> {
+  async handleSubscriptionCreated(
+    stripeSubscription: Stripe.Subscription
+  ): Promise<void> {
     const userId = stripeSubscription.metadata?.userId;
     if (!userId) {
       console.error('No userId in subscription metadata');
@@ -457,7 +503,9 @@ class SubscriptionService {
     }
 
     // Check if already exists
-    const existing = await this.getSubscriptionByStripeId(stripeSubscription.id);
+    const existing = await this.getSubscriptionByStripeId(
+      stripeSubscription.id
+    );
     if (existing) {
       console.log('Subscription already exists, skipping');
       return;
@@ -479,8 +527,7 @@ class SubscriptionService {
       cancel_at_period_end: stripeSubscription.cancel_at_period_end,
     };
 
-    const { error } = await subscriptions()
-      .insert(insertData as any);
+    const { error } = await subscriptions().insert(insertData as any);
 
     if (error) {
       console.error('Failed to save subscription from webhook:', error);
@@ -489,13 +536,19 @@ class SubscriptionService {
 
     // Update profile
     const tier = this.getTierFromPriceId(firstItem.price.id);
-    await this.updateProfileSubscriptionTier(userId, tier, stripeSubscription.status);
+    await this.updateProfileSubscriptionTier(
+      userId,
+      tier,
+      stripeSubscription.status
+    );
   }
 
   /**
    * Webhook handler: Subscription updated
    */
-  async handleSubscriptionUpdated(stripeSubscription: Stripe.Subscription): Promise<void> {
+  async handleSubscriptionUpdated(
+    stripeSubscription: Stripe.Subscription
+  ): Promise<void> {
     const firstItem = stripeSubscription.items.data[0];
     await this.updateSubscriptionStatus(
       stripeSubscription.id,
@@ -509,35 +562,46 @@ class SubscriptionService {
   /**
    * Webhook handler: Subscription deleted
    */
-  async handleSubscriptionDeleted(stripeSubscription: Stripe.Subscription): Promise<void> {
-    const subscription = await this.getSubscriptionByStripeId(stripeSubscription.id);
+  async handleSubscriptionDeleted(
+    stripeSubscription: Stripe.Subscription
+  ): Promise<void> {
+    const subscription = await this.getSubscriptionByStripeId(
+      stripeSubscription.id
+    );
     if (!subscription) {
       console.error('Subscription not found for deletion');
       return;
     }
 
     // Update status to canceled
-    await this.updateSubscriptionStatus(
-      stripeSubscription.id,
-      'canceled'
-    );
+    await this.updateSubscriptionStatus(stripeSubscription.id, 'canceled');
 
     // Update profile to free tier
-    await this.updateProfileSubscriptionTier(subscription.userId, 'free', 'canceled');
+    await this.updateProfileSubscriptionTier(
+      subscription.userId,
+      'free',
+      'canceled'
+    );
   }
 
   /**
    * Map database row to Subscription interface
    */
-  private mapToSubscription(row: Database['public']['Tables']['subscriptions']['Row']): Subscription {
+  private mapToSubscription(
+    row: Database['public']['Tables']['subscriptions']['Row']
+  ): Subscription {
     return {
       id: row.id,
       userId: row.user_id,
       stripeSubscriptionId: row.stripe_subscription_id,
       stripePriceId: row.stripe_price_id,
       status: row.status,
-      currentPeriodStart: row.current_period_start ? new Date(row.current_period_start) : undefined,
-      currentPeriodEnd: row.current_period_end ? new Date(row.current_period_end) : undefined,
+      currentPeriodStart: row.current_period_start
+        ? new Date(row.current_period_start)
+        : undefined,
+      currentPeriodEnd: row.current_period_end
+        ? new Date(row.current_period_end)
+        : undefined,
       cancelAtPeriodEnd: row.cancel_at_period_end,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
@@ -547,7 +611,9 @@ class SubscriptionService {
   /**
    * Map database row to UserProfile interface
    */
-  private mapToUserProfile(row: Database['public']['Tables']['profiles']['Row']): UserProfile {
+  private mapToUserProfile(
+    row: Database['public']['Tables']['profiles']['Row']
+  ): UserProfile {
     return {
       id: row.id,
       fullName: row.full_name,

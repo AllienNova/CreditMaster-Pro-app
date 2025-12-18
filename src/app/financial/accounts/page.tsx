@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import BankAccountsList from '@/components/financial/BankAccountsList';
 
 export const metadata: Metadata = {
-  title: 'Bank Accounts | CreditMaster Pro',
+  title: 'Bank Accounts | CPFI',
   description: 'Manage your connected bank accounts and view balances',
 };
 

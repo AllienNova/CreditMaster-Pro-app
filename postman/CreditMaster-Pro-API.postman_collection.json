@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "CreditMaster Pro - Credit Repair API",
-    "description": "Complete API collection for testing CreditMaster Pro credit repair endpoints",
+    "name": "CPFI - Credit Repair API",
+    "description": "Complete API collection for testing CPFI credit repair endpoints",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "version": "1.0.0"
   },

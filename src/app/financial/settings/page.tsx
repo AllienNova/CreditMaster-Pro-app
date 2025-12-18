@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import FinancialSettings from '@/components/financial/FinancialSettings';
 
 export const metadata: Metadata = {
-  title: 'Financial Settings | CreditMaster Pro',
+  title: 'Financial Settings | CPFI',
   description: 'Manage your financial preferences and settings',
 };
 

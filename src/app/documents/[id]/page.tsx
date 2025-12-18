@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import DocumentViewer from '@/components/documents/DocumentViewer';
 
 export const metadata = {
-  title: 'Document Viewer | CreditMaster Pro',
+  title: 'Document Viewer | CPFI',
   description: 'View document details',
 };
 

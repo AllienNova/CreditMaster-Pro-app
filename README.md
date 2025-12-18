@@ -1,4 +1,4 @@
-# CreditMaster Pro - Web Application
+# CPFI (Credit Pro & Financial Intelligence) - Web Application
 
 AI-powered credit repair platform built with Next.js 15, React 19, Supabase, and **AIML API (300+ AI models)**.
 
@@ -134,8 +134,8 @@ AI-powered credit repair platform built with Next.js 15, React 19, Supabase, and
 
 ```bash
 # Clone repository
-git clone https://github.com/AllienNova/CreditMaster-Pro-app.git
-cd CreditMaster-Pro-app
+git clone https://github.com/AllienNova/CPFI-Pro-app.git
+cd CPFI-Pro-app
 
 # Install dependencies
 npm install
@@ -368,7 +368,7 @@ Proprietary - All rights reserved
 
 ## 🔗 Links
 
-- **GitHub:** [https://github.com/AllienNova/CreditMaster-Pro-app](https://github.com/AllienNova/CreditMaster-Pro-app)
+- **GitHub:** [https://github.com/AllienNova/CPFI-Pro-app](https://github.com/AllienNova/CPFI-Pro-app)
 - **AIML API:** [https://aimlapi.com/](https://aimlapi.com/)
 - **Documentation:** [https://docs.aimlapi.com/](https://docs.aimlapi.com/)
 
@@ -383,5 +383,5 @@ For support, please visit [https://help.manus.im](https://help.manus.im)
 **Last Updated:** October 24, 2025  
 **Built with:** Next.js 15, React 19, AIML API (300+ models)
 
-🎉 **CreditMaster Pro - The most advanced AI-powered credit repair platform** 🎉
+🎉 **CPFI (Credit Pro & Financial Intelligence) - The most advanced AI-powered credit repair platform** 🎉
 

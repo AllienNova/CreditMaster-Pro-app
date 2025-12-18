@@ -1,7 +1,7 @@
 {
-  "name": "CreditMaster Pro",
-  "short_name": "CreditMaster",
-  "description": "AI-powered credit repair and financial wellness platform",
+  "name": "CPFI - Credit Pro & Financial Intelligence",
+  "short_name": "CPFI",
+  "description": "CPFI - Credit Pro & Financial Intelligence: AI-powered credit repair and financial wellness platform",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

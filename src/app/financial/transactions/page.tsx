@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import TransactionsList from '@/components/financial/TransactionsList';
 
 export const metadata: Metadata = {
-  title: 'Transactions | CreditMaster Pro',
+  title: 'Transactions | CPFI',
   description: 'View and manage your financial transactions',
 };
 

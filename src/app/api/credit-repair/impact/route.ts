@@ -24,7 +24,7 @@ import type { OpportunityType } from '@/lib/credit-repair';
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

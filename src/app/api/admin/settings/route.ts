@@ -8,8 +8,8 @@ import { NextResponse } from 'next/server';
 
 // In production, these would be stored in database or environment
 let settings = {
-  siteName: 'CreditMaster Pro',
-  supportEmail: 'support@creditmaster.pro',
+  siteName: 'CPFI',
+  supportEmail: 'support@CPFI.pro',
   maxDisputesPerMonth: 10,
   aiModelDefault: 'gpt-4',
   maintenanceMode: false,

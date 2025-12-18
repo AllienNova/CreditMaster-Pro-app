@@ -38,7 +38,7 @@ const mockAlerts: CreditAlert[] = [
 ];
 
 const monitoringServices = [
-  { name: 'CreditMaster Pro', price: 29.99, bureaus: 3, alerts: true, identity: true, score: true },
+  { name: 'CPFI', price: 29.99, bureaus: 3, alerts: true, identity: true, score: true },
   { name: 'Experian', price: 24.99, bureaus: 1, alerts: true, identity: true, score: true },
   { name: 'Credit Karma', price: 0, bureaus: 2, alerts: true, identity: false, score: true },
   { name: 'myFICO', price: 39.99, bureaus: 3, alerts: true, identity: false, score: true },

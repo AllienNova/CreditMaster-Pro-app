@@ -54,7 +54,7 @@ function PaymentSuccessContent() {
             Payment Successful!
           </h1>
           <p className="text-lg text-gray-600 mb-8">
-            Thank you for subscribing to CreditMaster Pro. Your account has been activated and you now have full access to all features.
+            Thank you for subscribing to CPFI. Your account has been activated and you now have full access to all features.
           </p>
 
           {/* What's Next */}
@@ -159,8 +159,8 @@ function PaymentSuccessContent() {
               Support Center
             </Link>{' '}
             or email us at{' '}
-            <a href="mailto:support@creditmaster-pro.com" className="text-indigo-600 hover:text-indigo-700 font-medium">
-              support@creditmaster-pro.com
+            <a href="mailto:support@CPFI-pro.com" className="text-indigo-600 hover:text-indigo-700 font-medium">
+              support@CPFI-pro.com
             </a>
           </p>
         </div>

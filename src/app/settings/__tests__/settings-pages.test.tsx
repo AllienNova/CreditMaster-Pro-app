@@ -4,24 +4,47 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
     replace: jest.fn(),
-    prefetch: jest.fn()
+    prefetch: jest.fn(),
   }),
-  usePathname: () => '/settings'
+  usePathname: () => '/settings',
 }));
+
+// Mock window.matchMedia for theme detection
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation((query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
 
 // Mock fetch
 global.fetch = jest.fn();
 
+// Helper to wrap components with ThemeProvider
+const renderWithTheme = (component: React.ReactElement) => {
+  return render(
+    <ThemeProvider defaultTheme="light">{component}</ThemeProvider>
+  );
+};
+
 describe('Settings Hub Page', () => {
   it('renders settings hub with all sections', () => {
     const SettingsPage = require('../page').default;
-    render(<SettingsPage />);
+    renderWithTheme(<SettingsPage />);
 
     // Use queryAllBy to handle multiple matches
     expect(screen.queryAllByText(/Settings/i).length).toBeGreaterThan(0);
@@ -41,16 +64,16 @@ describe('Profile Settings Page', () => {
         profile: {
           full_name: 'Test User',
           email: 'test@example.com',
-          phone: '555-1234'
-        }
-      })
+          phone: '555-1234',
+        },
+      }),
     });
   });
 
   it('renders profile form', async () => {
     const ProfilePage = require('../profile/page').default;
     render(<ProfilePage />);
-    
+
     expect(screen.getByText(/Profile Settings/i)).toBeInTheDocument();
   });
 
@@ -74,10 +97,10 @@ describe('Notifications Settings Page', () => {
           notifications: {
             email_disputes: true,
             email_scores: true,
-            push_enabled: false
-          }
-        }
-      })
+            push_enabled: false,
+          },
+        },
+      }),
     });
   });
 
@@ -94,7 +117,9 @@ describe('Notifications Settings Page', () => {
     render(<NotificationsPage />);
 
     // Check for toggle switches or buttons that control notifications
-    const toggles = document.querySelectorAll('input[type="checkbox"], [role="switch"], button');
+    const toggles = document.querySelectorAll(
+      'input[type="checkbox"], [role="switch"], button'
+    );
     expect(toggles.length).toBeGreaterThan(0);
   });
 });
@@ -127,9 +152,9 @@ describe('Billing Settings Page', () => {
         subscription: {
           plan: 'premium',
           status: 'active',
-          current_period_end: '2024-12-31'
-        }
-      })
+          current_period_end: '2024-12-31',
+        },
+      }),
     });
   });
 
@@ -168,8 +193,10 @@ describe('Connected Accounts Page', () => {
     render(<ConnectedAccountsPage />);
 
     // Check for bureau-related content
-    const bureauContent = screen.queryByText(/Experian/i) || screen.queryByText(/Bureau/i) || screen.queryByText(/Credit/i);
+    const bureauContent =
+      screen.queryByText(/Experian/i) ||
+      screen.queryByText(/Bureau/i) ||
+      screen.queryByText(/Credit/i);
     expect(bureauContent).toBeTruthy();
   });
 });
-

@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import CreditMonitoringDashboard from '@/components/credit-monitoring/CreditMonitoringDashboard';
 
 export const metadata = {
-  title: 'Credit Monitoring | CreditMaster Pro',
+  title: 'Credit Monitoring | CPFI',
   description: 'Monitor your credit scores across all three bureaus',
 };
 

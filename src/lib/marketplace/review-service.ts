@@ -1,6 +1,6 @@
 /**
  * Review Service
- * 
+ *
  * Review operations: getReviews, createReview, markHelpful
  */
 
@@ -75,7 +75,10 @@ class ReviewService {
     return (data || []).map(this.mapToReview);
   }
 
-  async createReview(userId: string, input: CreateReviewInput): Promise<Review | null> {
+  async createReview(
+    userId: string,
+    input: CreateReviewInput
+  ): Promise<Review | null> {
     if (!input.productId && !input.providerId) {
       console.error('Review must have either productId or providerId');
       return null;
@@ -93,7 +96,7 @@ class ReviewService {
     };
 
     const query = reviews();
-    // @ts-ignore - Supabase type issue
+    // @ts-expect-error - Supabase type issue
     const { data, error } = await query.insert(insertData).select().single();
 
     if (error) {
@@ -116,13 +119,18 @@ class ReviewService {
 
     const currentCount = (current as { helpful_count: number }).helpful_count;
     const query = reviews();
-    // @ts-ignore - Supabase type issue with update
-    const { error } = await query.update({ helpful_count: currentCount + 1 }).eq('id', reviewId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (query as any)
+      .update({ helpful_count: currentCount + 1 })
+      .eq('id', reviewId);
 
     return !error;
   }
 
-  async getAverageRating(productId?: string, providerId?: string): Promise<number> {
+  async getAverageRating(
+    productId?: string,
+    providerId?: string
+  ): Promise<number> {
     let query = reviews().select('rating');
 
     if (productId) {
@@ -139,7 +147,6 @@ class ReviewService {
       return 0;
     }
 
-    // @ts-ignore - Supabase type issue
     const ratings = data as { rating: number }[];
     const sum = ratings.reduce((acc, r) => acc + r.rating, 0);
     return Math.round((sum / ratings.length) * 10) / 10;
@@ -162,4 +169,3 @@ class ReviewService {
 }
 
 export const reviewService = new ReviewService();
-

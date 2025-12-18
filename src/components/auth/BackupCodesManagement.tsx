@@ -67,7 +67,7 @@ export default function BackupCodesManagement() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'creditmaster-pro-backup-codes.txt';
+    a.download = 'CPFI-pro-backup-codes.txt';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -86,7 +86,7 @@ export default function BackupCodesManagement() {
       printWindow.document.write(`
         <html>
           <head>
-            <title>CreditMaster Pro - Backup Codes</title>
+            <title>CPFI - Backup Codes</title>
             <style>
               body { font-family: Arial, sans-serif; padding: 20px; }
               h1 { color: #667eea; }
@@ -96,7 +96,7 @@ export default function BackupCodesManagement() {
             </style>
           </head>
           <body>
-            <h1>CreditMaster Pro - Backup Codes</h1>
+            <h1>CPFI - Backup Codes</h1>
             <p>Generated: ${new Date().toLocaleString()}</p>
             <div class="warning">
               <strong>⚠️ Important:</strong> Store these codes in a secure place. Each code can only be used once.

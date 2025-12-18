@@ -1,10 +1,10 @@
 /**
  * Individual Credit Card API Route
- * 
+ *
  * GET /api/credit-repair/cards/[id] - Get single credit card
  * PUT /api/credit-repair/cards/[id] - Update credit card
  * DELETE /api/credit-repair/cards/[id] - Delete credit card
- * 
+ *
  * Features:
  * - Full CRUD operations
  * - Database integration
@@ -39,7 +39,7 @@ export async function GET(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -91,7 +91,7 @@ export async function PUT(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -127,7 +127,10 @@ export async function PUT(
     }
 
     // Validate statement closing day if provided
-    if (statementClosingDay !== undefined && (statementClosingDay < 1 || statementClosingDay > 31)) {
+    if (
+      statementClosingDay !== undefined &&
+      (statementClosingDay < 1 || statementClosingDay > 31)
+    ) {
       return NextResponse.json(
         { error: 'Statement closing day must be between 1 and 31' },
         { status: 400 }
@@ -135,7 +138,10 @@ export async function PUT(
     }
 
     // Validate payment due day if provided
-    if (paymentDueDay !== undefined && (paymentDueDay < 1 || paymentDueDay > 31)) {
+    if (
+      paymentDueDay !== undefined &&
+      (paymentDueDay < 1 || paymentDueDay > 31)
+    ) {
       return NextResponse.json(
         { error: 'Payment due day must be between 1 and 31' },
         { status: 400 }
@@ -148,7 +154,8 @@ export async function PUT(
     if (lastFourDigits !== undefined) updates.lastFourDigits = lastFourDigits;
     if (creditLimit !== undefined) updates.creditLimit = creditLimit;
     if (currentBalance !== undefined) updates.currentBalance = currentBalance;
-    if (statementClosingDay !== undefined) updates.statementClosingDay = statementClosingDay;
+    if (statementClosingDay !== undefined)
+      updates.statementClosingDay = statementClosingDay;
     if (paymentDueDay !== undefined) updates.paymentDueDay = paymentDueDay;
 
     const card = await db.creditCards.updateCreditCard(
@@ -191,7 +198,7 @@ export async function DELETE(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

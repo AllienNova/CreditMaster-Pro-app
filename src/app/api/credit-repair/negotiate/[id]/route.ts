@@ -1,10 +1,10 @@
 /**
  * Individual Negotiation API Route
- * 
+ *
  * GET /api/credit-repair/negotiate/[id] - Get single negotiation
  * PUT /api/credit-repair/negotiate/[id] - Update negotiation
  * DELETE /api/credit-repair/negotiate/[id] - Delete negotiation
- * 
+ *
  * Features:
  * - Full CRUD operations
  * - Database integration
@@ -30,7 +30,7 @@ export async function GET(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -39,7 +39,10 @@ export async function GET(
     const { id: negotiationId } = await params;
 
     // 2. Get negotiation from database
-    const negotiation = await db.negotiations.getNegotiation(negotiationId, user.id);
+    const negotiation = await db.negotiations.getNegotiation(
+      negotiationId,
+      user.id
+    );
 
     if (!negotiation) {
       return NextResponse.json(
@@ -82,7 +85,7 @@ export async function PUT(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -130,13 +133,18 @@ export async function PUT(
 
     // 3. Update negotiation in database
     const updates: UpdateNegotiationInput = {};
-    if (collectionAgency !== undefined) updates.collectionAgency = collectionAgency;
-    if (originalCreditor !== undefined) updates.originalCreditor = originalCreditor;
+    if (collectionAgency !== undefined)
+      updates.collectionAgency = collectionAgency;
+    if (originalCreditor !== undefined)
+      updates.originalCreditor = originalCreditor;
     if (accountNumber !== undefined) updates.accountNumber = accountNumber;
-    if (originalBalance !== undefined) updates.originalBalance = originalBalance;
+    if (originalBalance !== undefined)
+      updates.originalBalance = originalBalance;
     if (currentBalance !== undefined) updates.currentBalance = currentBalance;
-    if (targetSettlement !== undefined) updates.settlementAmount = targetSettlement;
-    if (scripts !== undefined) updates.scripts = scripts as Record<string, string>;
+    if (targetSettlement !== undefined)
+      updates.settlementAmount = targetSettlement;
+    if (scripts !== undefined)
+      updates.scripts = scripts as Record<string, string>;
     if (normalizedStatus !== undefined) updates.status = normalizedStatus;
     if (notes !== undefined) updates.notes = notes;
 
@@ -180,7 +188,7 @@ export async function DELETE(
 ) {
   try {
     // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request.headers);
+    const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -189,7 +197,10 @@ export async function DELETE(
     const { id: negotiationId } = await params;
 
     // 2. Delete negotiation from database
-    const deleted = await db.negotiations.deleteNegotiation(negotiationId, user.id);
+    const deleted = await db.negotiations.deleteNegotiation(
+      negotiationId,
+      user.id
+    );
 
     if (!deleted) {
       return NextResponse.json(

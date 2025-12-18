@@ -1,4 +1,4 @@
--- CreditMaster Pro - Initial Database Schema
+-- CPFI - Initial Database Schema
 -- Migration: 001_initial_schema
 -- Created: 2025-11-29
 -- Description: Creates all core tables for MVP launch

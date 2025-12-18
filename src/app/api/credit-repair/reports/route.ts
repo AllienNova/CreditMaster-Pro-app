@@ -19,12 +19,10 @@ export async function GET(request: NextRequest) {
     // Validate authentication
     const authResult = await jwtValidation.validateFromHeaders(request);
     if (!authResult.valid || !authResult.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const user = authResult.user;
     const { searchParams } = request.nextUrl;
     const bureau = searchParams.get('bureau');
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
@@ -34,19 +32,32 @@ export async function GET(request: NextRequest) {
     let reports;
     if (bureau && VALID_BUREAUS.includes(bureau)) {
       reports = await db.creditReports.getCreditReportsByBureau(
-        authResult.user.id,
-        bureau,
-        { limit, offset }
+        user.id,
+        bureau as 'experian' | 'equifax' | 'transunion',
+        limit
       );
     } else {
-      reports = await db.creditReports.getCreditReportsByUser(
-        authResult.user.id,
-        { limit, offset }
-      );
+      reports = await db.creditReports.getCreditReportsByUser(user.id, {
+        limit,
+      });
     }
 
-    // Get latest report for summary
-    const latestReport = await db.creditReports.getLatestCreditReport(authResult.user.id);
+    // Get latest report for summary (check all bureaus and get the most recent)
+    const bureaus: ('experian' | 'equifax' | 'transunion')[] = [
+      'experian',
+      'equifax',
+      'transunion',
+    ];
+    const latestReports = await Promise.all(
+      bureaus.map((b) => db.creditReports.getLatestCreditReport(user.id, b))
+    );
+    const latestReport =
+      latestReports
+        .filter((r): r is NonNullable<typeof r> => r !== null)
+        .sort(
+          (a, b) =>
+            new Date(b.reportDate).getTime() - new Date(a.reportDate).getTime()
+        )[0] || null;
 
     // Log access
     auditLogger.logAIInteraction({
@@ -87,10 +98,7 @@ export async function POST(request: NextRequest) {
     // Validate authentication
     const authResult = await jwtValidation.validateFromHeaders(request);
     if (!authResult.valid || !authResult.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -106,10 +114,7 @@ export async function POST(request: NextRequest) {
 
     // Validate bureau
     if (!VALID_BUREAUS.includes(bureau)) {
-      return NextResponse.json(
-        { error: 'Invalid bureau' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid bureau' }, { status: 400 });
     }
 
     // Validate score range (300-850)
@@ -121,11 +126,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the report
-    const report = await db.creditReports.createCreditReport(authResult.user.id, {
+    const report = await db.creditReports.createCreditReport({
+      userId: authResult.user.id,
       bureau,
-      reportDate,
+      reportDate: new Date(reportDate),
       score,
-      reportData,
+      reportData: reportData || {},
     });
 
     // Log upload
@@ -152,4 +158,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import IncomeTracking from '@/components/financial/IncomeTracking';
 
 export const metadata: Metadata = {
-  title: 'Income Tracking | CreditMaster Pro',
+  title: 'Income Tracking | CPFI',
   description: 'Track and analyze your income sources',
 };
 
