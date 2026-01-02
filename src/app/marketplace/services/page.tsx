@@ -1,13 +1,13 @@
 /**
  * Credit Repair Services Directory
- * 
+ *
  * Vetted credit repair companies directory with provider listing,
  * comparison table, reviews, and filtering.
  */
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface CreditRepairService {
   id: string;
@@ -22,6 +22,7 @@ interface CreditRepairService {
   verified: boolean;
 }
 
+// Fallback mock data for development/offline mode
 const mockServices: CreditRepairService[] = [
   { id: '1', name: 'Lexington Law', rating: 4.5, reviewCount: 12500, bbbRating: 'A+', yearsInBusiness: 18, priceRange: '$89-$129/mo', services: ['Disputes', 'Monitoring', 'Identity Protection'], guarantee: '90-day money back', verified: true },
   { id: '2', name: 'Credit Saint', rating: 4.7, reviewCount: 8200, bbbRating: 'A', yearsInBusiness: 15, priceRange: '$79-$119/mo', services: ['Disputes', 'Score Tracking', 'Creditor Intervention'], guarantee: '90-day money back', verified: true },
@@ -29,6 +30,22 @@ const mockServices: CreditRepairService[] = [
   { id: '4', name: 'The Credit People', rating: 4.3, reviewCount: 5400, bbbRating: 'A', yearsInBusiness: 12, priceRange: '$69-$99/mo', services: ['Disputes', 'Score Analysis', 'Credit Education'], guarantee: '60-day money back', verified: true },
   { id: '5', name: 'Ovation Credit', rating: 4.2, reviewCount: 4100, bbbRating: 'A-', yearsInBusiness: 10, priceRange: '$89-$149/mo', services: ['Disputes', 'Personal Case Manager', 'Unlimited Challenges'], guarantee: '30-day money back', verified: false },
 ];
+
+// Map API provider to CreditRepairService format
+function mapProviderToService(provider: Record<string, unknown>): CreditRepairService {
+  return {
+    id: String(provider.id || ''),
+    name: String(provider.name || ''),
+    rating: Number(provider.rating || 0),
+    reviewCount: Number(provider.reviewCount || 0),
+    bbbRating: String(provider.bbbRating || 'N/A'),
+    yearsInBusiness: Number(provider.yearsInBusiness || 0),
+    priceRange: String(provider.priceRange || 'Contact for pricing'),
+    services: Array.isArray(provider.services) ? provider.services.map(String) : [],
+    guarantee: String(provider.guarantee || 'Contact for details'),
+    verified: Boolean(provider.verified),
+  };
+}
 
 function ServiceCard({ service }: { service: CreditRepairService }) {
   return (
@@ -102,16 +119,67 @@ export default function ServicesPage() {
   const [view, setView] = useState<'cards' | 'table'>('cards');
   const [sortBy, setSortBy] = useState<'rating' | 'price' | 'reviews'>('rating');
   const [filterVerified, setFilterVerified] = useState(false);
+  const [services, setServices] = useState<CreditRepairService[]>(mockServices);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredServices = mockServices
-    .filter(s => !filterVerified || s.verified)
-    .sort((a, b) => sortBy === 'rating' ? b.rating - a.rating : sortBy === 'reviews' ? b.reviewCount - a.reviewCount : 0);
+  // Fetch services from API
+  const fetchServices = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams();
+      params.append('category', 'credit_repair');
+      if (filterVerified) {
+        params.append('verified', 'true');
+      }
+
+      const response = await fetch(`/api/marketplace/providers?${params.toString()}`);
+      const result = await response.json();
+
+      if (result.success && result.data && result.data.length > 0) {
+        setServices(result.data.map(mapProviderToService));
+      } else {
+        // Fallback to mock data
+        setServices(mockServices);
+        if (!result.success) {
+          setError('Unable to load from server. Showing sample data.');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch services:', err);
+      setServices(mockServices);
+      setError('Unable to load from server. Showing sample data.');
+    } finally {
+      setLoading(false);
+    }
+  }, [filterVerified]);
+
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
+
+  const filteredServices = services
+    .filter((s) => !filterVerified || s.verified)
+    .sort((a, b) =>
+      sortBy === 'rating'
+        ? b.rating - a.rating
+        : sortBy === 'reviews'
+          ? b.reviewCount - a.reviewCount
+          : 0
+    );
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Credit Repair Services</h1>
         <p className="text-gray-600">Vetted credit repair companies to help improve your score</p>
+        {error && (
+          <p className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+            {error}
+          </p>
+        )}
       </div>
 
       {/* Controls */}
@@ -139,9 +207,16 @@ export default function ServicesPage() {
       </div>
 
       {/* Content */}
-      {view === 'cards' ? (
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <span className="ml-3 text-gray-600">Loading services...</span>
+        </div>
+      ) : view === 'cards' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredServices.map((s) => <ServiceCard key={s.id} service={s} />)}
+          {filteredServices.map((s) => (
+            <ServiceCard key={s.id} service={s} />
+          ))}
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">

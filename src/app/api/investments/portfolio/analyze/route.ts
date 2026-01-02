@@ -1,12 +1,11 @@
 /**
  * Portfolio Analysis API
- * 
+ *
  * Comprehensive portfolio risk and performance analysis
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { jwtValidation } from '@/lib/auth/jwt-validation';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -20,20 +19,29 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const validation = await jwtValidation.validateFromHeaders(request);
+    if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { holdings, includeStressTest = false, includeRebalance = false, targetAllocation } = body;
+    const {
+      holdings,
+      includeStressTest = false,
+      includeRebalance = false,
+      targetAllocation,
+    } = body;
 
     if (!holdings || !Array.isArray(holdings) || holdings.length === 0) {
-      return NextResponse.json({ error: 'Holdings array required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Holdings array required' },
+        { status: 400 }
+      );
     }
 
     // Import portfolio analysis service
-    const { PortfolioAnalysisService } = await import('@/lib/investments/services/PortfolioAnalysisService');
+    const { PortfolioAnalysisService } =
+      await import('@/lib/investments/services/PortfolioAnalysisService');
     const portfolioService = new PortfolioAnalysisService();
 
     // Run main analysis
@@ -51,7 +59,11 @@ export async function POST(request: NextRequest) {
     // Optional rebalancing recommendation
     let rebalanceRecommendation = null;
     if (includeRebalance && targetAllocation) {
-      rebalanceRecommendation = portfolioService.generateRebalanceRecommendation(holdings, targetAllocation);
+      rebalanceRecommendation =
+        portfolioService.generateRebalanceRecommendation(
+          holdings,
+          targetAllocation
+        );
     }
 
     return NextResponse.json({
@@ -64,12 +76,20 @@ export async function POST(request: NextRequest) {
         totalGainLoss: metrics.totalGainLoss,
         sharpeRatio: metrics.sharpeRatio,
         diversificationScore: diversification.score,
-        riskLevel: metrics.volatility > 0.25 ? 'high' : metrics.volatility > 0.15 ? 'moderate' : 'low',
+        riskLevel:
+          metrics.volatility > 0.25
+            ? 'high'
+            : metrics.volatility > 0.15
+              ? 'moderate'
+              : 'low',
       },
     });
   } catch (error) {
     console.error('Portfolio analysis error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -79,20 +99,24 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const validation = await jwtValidation.validateFromHeaders(request);
+    if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const userId = validation.user.id;
 
     // Fetch user's holdings from database
     const { data: holdingsData, error } = await supabase
       .from('investment_holdings')
       .select('*')
-      .eq('user_id', session.user.id);
+      .eq('user_id', userId);
 
     if (error) {
       console.error('Error fetching holdings:', error);
-      return NextResponse.json({ error: 'Failed to fetch holdings' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch holdings' },
+        { status: 500 }
+      );
     }
 
     if (!holdingsData || holdingsData.length === 0) {
@@ -104,7 +128,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform to PortfolioHolding format
-    const holdings = holdingsData.map(h => ({
+    const holdings = holdingsData.map((h) => ({
       symbol: h.symbol,
       shares: h.shares,
       costBasis: h.cost_basis,
@@ -114,7 +138,8 @@ export async function GET(request: NextRequest) {
     }));
 
     // Run analysis
-    const { PortfolioAnalysisService } = await import('@/lib/investments/services/PortfolioAnalysisService');
+    const { PortfolioAnalysisService } =
+      await import('@/lib/investments/services/PortfolioAnalysisService');
     const portfolioService = new PortfolioAnalysisService();
 
     const metrics = portfolioService.analyzePortfolio(holdings);
@@ -133,7 +158,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Portfolio GET error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
-

@@ -1,18 +1,19 @@
 /**
  * CPFI Mobile Store Layer
- * 
+ *
  * Comprehensive state management with:
  * - Zustand stores with persistence
  * - Offline support with sync queue
  * - Type-safe selectors
  * - Automatic data synchronization
+ * - Modular architecture (split from monolithic financialStore)
  */
 
 // Auth Store
 export { useAuthStore } from './authStore';
 
 // Credit Store
-export { 
+export {
   useCreditStore,
   selectScores,
   selectAverageScore,
@@ -31,18 +32,74 @@ export {
   selectDisputeStats,
 } from './disputeStore';
 
-// Financial Store
+// Dashboard Store (formerly part of financialStore)
 export {
-  useFinancialStore,
+  useDashboardStore,
+  selectDashboard,
   selectNetWorth,
   selectTotalAssets,
   selectTotalLiabilities,
   selectSavingsRate,
+  selectMonthlyIncome,
+  selectMonthlyExpenses,
+  selectCashFlow,
+} from './dashboardStore';
+
+// Account Store (split from financialStore)
+export {
+  useAccountStore,
+  selectAccounts,
+  selectSelectedAccount,
   selectAccountsByType,
   selectTotalBalance,
+} from './accountStore';
+
+// Transaction Store (split from financialStore)
+export {
+  useTransactionStore,
+  selectTransactions,
+  selectCategories,
+  selectTransactionsByCategory,
+  selectTransactionsByAccount,
+  selectRecentTransactions,
+} from './transactionStore';
+
+// Budget Store (split from financialStore)
+export {
+  useBudgetStore,
+  selectBudgets,
+  selectAlerts as selectBudgetAlerts,
+  selectBudgetByCategory,
+  selectOverBudgetAlerts,
+  selectWarningAlerts,
   selectBudgetProgress,
+} from './budgetStore';
+
+// Goal Store (split from financialStore)
+export {
+  useGoalStore,
+  selectGoals,
+  selectActiveGoals,
+  selectCompletedGoals,
+  selectGoalById,
   selectGoalProgress,
-} from './financialStore';
+  selectTotalGoalProgress,
+} from './goalStore';
+
+// Debt Store (split from financialStore)
+export {
+  useDebtStore,
+  selectDebtOverview,
+  selectTotalDebt,
+  selectDebts,
+  selectMonthlyPayments,
+  selectPayoffCalculation,
+  selectDebtsByType,
+  selectHighestInterestDebt,
+  selectSmallestDebt,
+  selectDebtFreeDate,
+  selectInterestSavings,
+} from './debtStore';
 
 // Notification Store
 export {
@@ -64,6 +121,66 @@ export {
   selectHasPendingChanges,
 } from './syncStore';
 
+// Investment Store
+export {
+  useInvestmentStore,
+  selectPortfolio,
+  selectPortfolioAnalysis,
+  selectHoldings,
+  selectWatchlist,
+  selectCurrentRecommendation,
+  selectCurrentPatternScan,
+  selectIsLoading as selectInvestmentLoading,
+  selectError as selectInvestmentError,
+  selectRecommendationForSymbol,
+  selectPatternScanForSymbol,
+} from './investmentStore';
+
+// Coach Store
+export { useCoachStore } from './coachStore';
+
+// Student Loan Store
+export {
+  useStudentLoanStore,
+  selectLoans as selectStudentLoans,
+  selectSelectedLoan,
+  selectPortfolioStats as selectStudentLoanStats,
+  selectStrategies as selectRepaymentStrategies,
+  selectSelectedStrategy,
+  selectFinancialSituation,
+  selectEligibilityResults,
+  selectTotalDebt as selectStudentLoanTotalDebt,
+  selectTotalMonthlyPayment as selectStudentLoanMonthlyPayment,
+  selectAverageInterestRate as selectStudentLoanAvgRate,
+  selectLoansByType,
+  selectLoansByStatus,
+  selectFederalLoans,
+  selectPrivateLoans,
+  selectLoansInRepayment,
+  selectHighestInterestLoan,
+  selectSmallestBalanceLoan,
+  selectRecommendedStrategy,
+  selectPSLFEligibleLoans,
+  selectIDREligibleLoans,
+  selectIsLoading as selectStudentLoanLoading,
+  selectError as selectStudentLoanError,
+} from './studentLoanStore';
+
+// Re-export student loan types
+export type {
+  StudentLoan,
+  PortfolioStats as StudentLoanPortfolioStats,
+  AIStrategyRecommendation,
+  CreateLoanInput,
+  UpdateLoanInput,
+  FinancialSituation,
+  LoanStatus,
+  LoanType,
+} from './studentLoanStore';
+
+// DEPRECATED: For backward compatibility only - remove in next major version
+export { useDashboardStore as useFinancialStore } from './dashboardStore';
+
 /**
  * Initialize all stores and listeners
  * Call this on app startup
@@ -84,38 +201,79 @@ export async function initializeStores(): Promise<void> {
 
 /**
  * Reset all stores (for logout)
+ * Updated to include new modular stores
  */
 export async function resetAllStores(): Promise<void> {
   const { useCreditStore } = await import('./creditStore');
   const { useDisputeStore } = await import('./disputeStore');
-  const { useFinancialStore } = await import('./financialStore');
+  const { useDashboardStore } = await import('./dashboardStore');
+  const { useAccountStore } = await import('./accountStore');
+  const { useTransactionStore } = await import('./transactionStore');
+  const { useBudgetStore } = await import('./budgetStore');
+  const { useGoalStore } = await import('./goalStore');
+  const { useDebtStore } = await import('./debtStore');
   const { useNotificationStore } = await import('./notificationStore');
   const { useSyncStore } = await import('./syncStore');
-  
+  const { useInvestmentStore } = await import('./investmentStore');
+  const { useStudentLoanStore } = await import('./studentLoanStore');
+
+  // Reset all stores
   useCreditStore.getState().resetStore();
   useDisputeStore.getState().resetStore();
-  useFinancialStore.getState().resetStore();
+  useDashboardStore.getState().resetStore();
+  useAccountStore.getState().resetStore();
+  useTransactionStore.getState().resetStore();
+  useBudgetStore.getState().resetStore();
+  useGoalStore.getState().resetStore();
+  useDebtStore.getState().resetStore();
   useNotificationStore.getState().resetStore();
   useSyncStore.getState().resetStore();
+  useInvestmentStore.getState().reset();
+  useStudentLoanStore.getState().resetStore();
 }
 
 /**
  * Fetch all initial data after login
+ * Updated to use new modular stores
  */
 export async function fetchInitialData(): Promise<void> {
   const { useCreditStore } = await import('./creditStore');
   const { useDisputeStore } = await import('./disputeStore');
-  const { useFinancialStore } = await import('./financialStore');
+  const { useDashboardStore } = await import('./dashboardStore');
+  const { useAccountStore } = await import('./accountStore');
+  const { useTransactionStore } = await import('./transactionStore');
+  const { useBudgetStore } = await import('./budgetStore');
+  const { useGoalStore } = await import('./goalStore');
+  const { useDebtStore } = await import('./debtStore');
   const { useNotificationStore } = await import('./notificationStore');
-  
+  const { useInvestmentStore } = await import('./investmentStore');
+  const { useStudentLoanStore } = await import('./studentLoanStore');
+
   // Fetch data in parallel
   await Promise.all([
+    // Credit data
     useCreditStore.getState().fetchScores(),
     useCreditStore.getState().fetchMonitoringStatus(),
+
+    // Dispute data
     useDisputeStore.getState().fetchDisputes(),
     useDisputeStore.getState().fetchTemplates(),
-    useFinancialStore.getState().fetchDashboard(),
-    useFinancialStore.getState().fetchAccounts(),
+
+    // Financial data (modular)
+    useDashboardStore.getState().fetchDashboard(),
+    useAccountStore.getState().fetchAccounts(),
+    useTransactionStore.getState().fetchTransactions(),
+    useBudgetStore.getState().fetchBudgets(),
+    useGoalStore.getState().fetchGoals(),
+    useDebtStore.getState().fetchOverview(),
+
+    // Investment data
+    useInvestmentStore.getState().fetchPortfolio(),
+
+    // Student loan data
+    useStudentLoanStore.getState().fetchLoans(),
+
+    // Notifications
     useNotificationStore.getState().fetchNotifications(),
     useNotificationStore.getState().fetchPreferences(),
   ]);

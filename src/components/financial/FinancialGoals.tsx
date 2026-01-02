@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import AIGoalsOptimizer from './AIGoalsOptimizer';
 
 interface FinancialGoal {
   id: string;
@@ -163,6 +164,9 @@ export default function FinancialGoals() {
 
   return (
     <div className="space-y-6">
+      {/* AI Goals Optimizer - NEW */}
+      <AIGoalsOptimizer />
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg shadow p-6">

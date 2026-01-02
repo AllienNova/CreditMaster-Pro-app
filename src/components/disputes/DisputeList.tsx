@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Dispute, DisputeStatus, Bureau } from '@/lib/disputes/dispute-service';
+import AIDisputeStrategy from './AIDisputeStrategy';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function DisputeList() {
@@ -94,9 +95,13 @@ export default function DisputeList() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      {/* Filters and Search */}
-      <div className="p-6 border-b border-gray-200">
+    <>
+      {/* AI Dispute Strategy */}
+      <AIDisputeStrategy />
+
+      <div className="bg-white rounded-lg shadow mt-6">
+        {/* Filters and Search */}
+        <div className="p-6 border-b border-gray-200">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Search */}
           <div className="flex-1 max-w-md">
@@ -199,7 +204,8 @@ export default function DisputeList() {
           )}
         </>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 

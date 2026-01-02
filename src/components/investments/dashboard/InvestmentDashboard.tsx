@@ -2,7 +2,7 @@
 
 /**
  * Investment Dashboard
- * 
+ *
  * Comprehensive investment analysis and monitoring dashboard:
  * - Portfolio overview and metrics
  * - Multi-asset scanner
@@ -42,17 +42,26 @@ interface PortfolioSummary {
   dayChangePercent: number;
 }
 
-type DashboardTab = 'overview' | 'scanner' | 'analysis' | 'recommendations' | 'alerts';
+type DashboardTab =
+  | 'overview'
+  | 'scanner'
+  | 'analysis'
+  | 'recommendations'
+  | 'alerts';
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
-export function InvestmentDashboard({ userId, className = '' }: DashboardProps) {
+export function InvestmentDashboard({
+  userId,
+  className = '',
+}: DashboardProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [selectedSymbol, setSelectedSymbol] = useState('AAPL');
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
-  const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(null);
+  const [portfolioSummary, setPortfolioSummary] =
+    useState<PortfolioSummary | null>(null);
   const [alertsPanelOpen, setAlertsPanelOpen] = useState(false);
   const [patternData, setPatternData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -67,19 +76,49 @@ export function InvestmentDashboard({ userId, className = '' }: DashboardProps) 
     try {
       // Load watchlist (mock data for now)
       setWatchlist([
-        { symbol: 'AAPL', name: 'Apple Inc.', price: 178.50, change: 2.30, changePercent: 1.31 },
-        { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 141.25, change: -0.75, changePercent: -0.53 },
-        { symbol: 'MSFT', name: 'Microsoft Corp.', price: 378.90, change: 4.20, changePercent: 1.12 },
-        { symbol: 'TSLA', name: 'Tesla Inc.', price: 248.30, change: -3.50, changePercent: -1.39 },
-        { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 495.20, change: 12.80, changePercent: 2.65 },
+        {
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          price: 178.5,
+          change: 2.3,
+          changePercent: 1.31,
+        },
+        {
+          symbol: 'GOOGL',
+          name: 'Alphabet Inc.',
+          price: 141.25,
+          change: -0.75,
+          changePercent: -0.53,
+        },
+        {
+          symbol: 'MSFT',
+          name: 'Microsoft Corp.',
+          price: 378.9,
+          change: 4.2,
+          changePercent: 1.12,
+        },
+        {
+          symbol: 'TSLA',
+          name: 'Tesla Inc.',
+          price: 248.3,
+          change: -3.5,
+          changePercent: -1.39,
+        },
+        {
+          symbol: 'NVDA',
+          name: 'NVIDIA Corp.',
+          price: 495.2,
+          change: 12.8,
+          changePercent: 2.65,
+        },
       ]);
 
       // Load portfolio summary (mock data)
       setPortfolioSummary({
-        totalValue: 125750.00,
-        totalGainLoss: 15250.00,
+        totalValue: 125750.0,
+        totalGainLoss: 15250.0,
         totalGainLossPercent: 13.8,
-        dayChange: 1250.50,
+        dayChange: 1250.5,
         dayChangePercent: 1.0,
       });
     } catch (error) {
@@ -101,7 +140,9 @@ export function InvestmentDashboard({ userId, className = '' }: DashboardProps) 
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Investment Intelligence</h1>
-            <p className="text-sm text-gray-400">AI-powered analysis and recommendations</p>
+            <p className="text-sm text-gray-400">
+              AI-powered analysis and recommendations
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <button
@@ -120,7 +161,15 @@ export function InvestmentDashboard({ userId, className = '' }: DashboardProps) 
       {/* Navigation Tabs */}
       <nav className="bg-gray-800/50 border-b border-gray-700 px-6">
         <div className="flex gap-1">
-          {(['overview', 'scanner', 'analysis', 'recommendations', 'alerts'] as DashboardTab[]).map(tab => (
+          {(
+            [
+              'overview',
+              'scanner',
+              'analysis',
+              'recommendations',
+              'alerts',
+            ] as DashboardTab[]
+          ).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -251,7 +300,7 @@ function OverviewTab({
               </tr>
             </thead>
             <tbody>
-              {watchlist.map(item => (
+              {watchlist.map((item) => (
                 <tr
                   key={item.symbol}
                   className="border-b border-gray-700/50 hover:bg-gray-700/30 cursor-pointer"
@@ -260,8 +309,11 @@ function OverviewTab({
                   <td className="py-3 font-medium">{item.symbol}</td>
                   <td className="py-3 text-gray-400">{item.name}</td>
                   <td className="py-3 text-right">${item.price.toFixed(2)}</td>
-                  <td className={`py-3 text-right ${item.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {item.change >= 0 ? '+' : ''}{item.change.toFixed(2)} ({item.changePercent.toFixed(2)}%)
+                  <td
+                    className={`py-3 text-right ${item.change >= 0 ? 'text-green-400' : 'text-red-400'}`}
+                  >
+                    {item.change >= 0 ? '+' : ''}
+                    {item.change.toFixed(2)} ({item.changePercent.toFixed(2)}%)
                   </td>
                   <td className="py-3 text-right">
                     <button className="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs">
@@ -293,30 +345,61 @@ function SummaryCard({
     <div className="bg-gray-800 rounded-lg p-4">
       <p className="text-sm text-gray-400">{title}</p>
       <p className="text-2xl font-bold mt-1">{value}</p>
-      <p className={`text-sm mt-1 ${
-        positive === undefined ? 'text-gray-400' :
-        positive ? 'text-green-400' : 'text-red-400'
-      }`}>
+      <p
+        className={`text-sm mt-1 ${
+          positive === undefined
+            ? 'text-gray-400'
+            : positive
+              ? 'text-green-400'
+              : 'text-red-400'
+        }`}
+      >
         {subtitle}
       </p>
     </div>
   );
 }
 
-function ScannerTab({ onSymbolSelect }: { onSymbolSelect: (symbol: string) => void }) {
+function ScannerTab({
+  onSymbolSelect,
+}: {
+  onSymbolSelect: (symbol: string) => void;
+}) {
   const [scanResults, setScanResults] = useState<any[]>([]);
   const [scanning, setScanning] = useState(false);
-  const [scanType, setScanType] = useState<'patterns' | 'breakouts' | 'oversold' | 'overbought'>('patterns');
+  const [scanType, setScanType] = useState<
+    'patterns' | 'breakouts' | 'oversold' | 'overbought'
+  >('patterns');
 
   const runScan = async () => {
     setScanning(true);
     // Mock scan results
     setTimeout(() => {
       setScanResults([
-        { symbol: 'AAPL', pattern: 'Double Bottom', reliability: 78, direction: 'bullish' },
-        { symbol: 'NVDA', pattern: 'Bull Flag', reliability: 82, direction: 'bullish' },
-        { symbol: 'TSLA', pattern: 'Head & Shoulders', reliability: 65, direction: 'bearish' },
-        { symbol: 'AMD', pattern: 'Ascending Triangle', reliability: 71, direction: 'bullish' },
+        {
+          symbol: 'AAPL',
+          pattern: 'Double Bottom',
+          reliability: 78,
+          direction: 'bullish',
+        },
+        {
+          symbol: 'NVDA',
+          pattern: 'Bull Flag',
+          reliability: 82,
+          direction: 'bullish',
+        },
+        {
+          symbol: 'TSLA',
+          pattern: 'Head & Shoulders',
+          reliability: 65,
+          direction: 'bearish',
+        },
+        {
+          symbol: 'AMD',
+          pattern: 'Ascending Triangle',
+          reliability: 71,
+          direction: 'bullish',
+        },
       ]);
       setScanning(false);
     }, 1500);
@@ -327,17 +410,21 @@ function ScannerTab({ onSymbolSelect }: { onSymbolSelect: (symbol: string) => vo
       <div className="bg-gray-800 rounded-lg p-4">
         <h3 className="text-lg font-semibold mb-4">Market Scanner</h3>
         <div className="flex gap-4 mb-4">
-          {(['patterns', 'breakouts', 'oversold', 'overbought'] as const).map(type => (
-            <button
-              key={type}
-              onClick={() => setScanType(type)}
-              className={`px-4 py-2 rounded-lg capitalize ${
-                scanType === type ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
-              }`}
-            >
-              {type}
-            </button>
-          ))}
+          {(['patterns', 'breakouts', 'oversold', 'overbought'] as const).map(
+            (type) => (
+              <button
+                key={type}
+                onClick={() => setScanType(type)}
+                className={`px-4 py-2 rounded-lg capitalize ${
+                  scanType === type
+                    ? 'bg-blue-600'
+                    : 'bg-gray-700 hover:bg-gray-600'
+                }`}
+              >
+                {type}
+              </button>
+            )
+          )}
         </div>
         <button
           onClick={runScan}
@@ -363,9 +450,13 @@ function ScannerTab({ onSymbolSelect }: { onSymbolSelect: (symbol: string) => vo
                     <p className="font-semibold">{result.symbol}</p>
                     <p className="text-sm text-gray-400">{result.pattern}</p>
                   </div>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    result.direction === 'bullish' ? 'bg-green-600' : 'bg-red-600'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 rounded text-xs ${
+                      result.direction === 'bullish'
+                        ? 'bg-green-600'
+                        : 'bg-red-600'
+                    }`}
+                  >
                     {result.direction}
                   </span>
                 </div>
@@ -435,17 +526,19 @@ function AnalysisTab({
       <div className="bg-gray-800 rounded-lg p-4">
         <AdvancedChartContainer
           symbol={symbol}
-          timeframe="1d"
+          initialTimeframe="1d"
           height={500}
-          showVolume={true}
-          showIndicators={true}
+          showToolbar={true}
+          showIndicatorPanel={true}
         />
       </div>
 
       {/* Pattern Results */}
       {patternData && patternData.patterns && (
         <div className="bg-gray-800 rounded-lg p-4">
-          <h4 className="font-semibold mb-4">Detected Patterns ({patternData.patterns.length})</h4>
+          <h4 className="font-semibold mb-4">
+            Detected Patterns ({patternData.patterns.length})
+          </h4>
           {patternData.patterns.length === 0 ? (
             <p className="text-gray-400">No patterns detected</p>
           ) : (
@@ -454,12 +547,19 @@ function AnalysisTab({
                 <div key={idx} className="p-3 bg-gray-700/50 rounded-lg">
                   <div className="flex justify-between">
                     <span className="font-medium">{pattern.type}</span>
-                    <span className={pattern.direction === 'bullish' ? 'text-green-400' : 'text-red-400'}>
+                    <span
+                      className={
+                        pattern.direction === 'bullish'
+                          ? 'text-green-400'
+                          : 'text-red-400'
+                      }
+                    >
                       {pattern.direction}
                     </span>
                   </div>
                   <p className="text-sm text-gray-400 mt-1">
-                    Target: ${pattern.priceTarget?.toFixed(2)} | Reliability: {pattern.reliability}%
+                    Target: ${pattern.priceTarget?.toFixed(2)} | Reliability:{' '}
+                    {pattern.reliability}%
                   </p>
                 </div>
               ))}
@@ -500,12 +600,18 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
 
   const getActionColor = (action: string) => {
     switch (action) {
-      case 'strong_buy': return 'bg-green-600';
-      case 'buy': return 'bg-green-500';
-      case 'hold': return 'bg-yellow-500';
-      case 'sell': return 'bg-red-500';
-      case 'strong_sell': return 'bg-red-600';
-      default: return 'bg-gray-500';
+      case 'strong_buy':
+        return 'bg-green-600';
+      case 'buy':
+        return 'bg-green-500';
+      case 'hold':
+        return 'bg-yellow-500';
+      case 'sell':
+        return 'bg-red-500';
+      case 'strong_sell':
+        return 'bg-red-600';
+      default:
+        return 'bg-gray-500';
     }
   };
 
@@ -530,28 +636,45 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
           <div className="bg-gray-800 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h4 className="font-semibold">Recommendation</h4>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getActionColor(recommendation.recommendation.action)}`}>
-                {recommendation.recommendation.action.replace('_', ' ').toUpperCase()}
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium ${getActionColor(recommendation.recommendation.action)}`}
+              >
+                {recommendation.recommendation.action
+                  .replace('_', ' ')
+                  .toUpperCase()}
               </span>
             </div>
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-400">Confidence</span>
-                <span>{recommendation.recommendation.confidence.toFixed(1)}%</span>
+                <span>
+                  {recommendation.recommendation.confidence.toFixed(1)}%
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Price Target</span>
-                <span>${recommendation.recommendation.priceTarget.toFixed(2)}</span>
+                <span>
+                  ${recommendation.recommendation.priceTarget.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Expected Return</span>
-                <span className={recommendation.recommendation.expectedReturn >= 0 ? 'text-green-400' : 'text-red-400'}>
-                  {recommendation.recommendation.expectedReturn >= 0 ? '+' : ''}{recommendation.recommendation.expectedReturn.toFixed(2)}%
+                <span
+                  className={
+                    recommendation.recommendation.expectedReturn >= 0
+                      ? 'text-green-400'
+                      : 'text-red-400'
+                  }
+                >
+                  {recommendation.recommendation.expectedReturn >= 0 ? '+' : ''}
+                  {recommendation.recommendation.expectedReturn.toFixed(2)}%
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Risk Score</span>
-                <span>{recommendation.recommendation.riskScore.toFixed(0)}/100</span>
+                <span>
+                  {recommendation.recommendation.riskScore.toFixed(0)}/100
+                </span>
               </div>
             </div>
           </div>
@@ -562,19 +685,27 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-400">Entry Price</span>
-                <span className="text-blue-400">${recommendation.recommendation.entryPrice.toFixed(2)}</span>
+                <span className="text-blue-400">
+                  ${recommendation.recommendation.entryPrice.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Stop Loss</span>
-                <span className="text-red-400">${recommendation.recommendation.stopLoss.toFixed(2)}</span>
+                <span className="text-red-400">
+                  ${recommendation.recommendation.stopLoss.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Take Profit 1</span>
-                <span className="text-green-400">${recommendation.recommendation.takeProfit[0]?.toFixed(2)}</span>
+                <span className="text-green-400">
+                  ${recommendation.recommendation.takeProfit[0]?.toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Take Profit 2</span>
-                <span className="text-green-400">${recommendation.recommendation.takeProfit[1]?.toFixed(2)}</span>
+                <span className="text-green-400">
+                  ${recommendation.recommendation.takeProfit[1]?.toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
@@ -584,15 +715,22 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
             <div className="bg-gray-800 rounded-lg p-6">
               <h4 className="font-semibold mb-4">Analysis Factors</h4>
               <div className="space-y-2">
-                {recommendation.recommendation.reasons.map((reason: any, idx: number) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${
-                      reason.impact === 'positive' ? 'bg-green-400' :
-                      reason.impact === 'negative' ? 'bg-red-400' : 'bg-yellow-400'
-                    }`} />
-                    <span className="text-sm">{reason.description}</span>
-                  </div>
-                ))}
+                {recommendation.recommendation.reasons.map(
+                  (reason: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          reason.impact === 'positive'
+                            ? 'bg-green-400'
+                            : reason.impact === 'negative'
+                              ? 'bg-red-400'
+                              : 'bg-yellow-400'
+                        }`}
+                      />
+                      <span className="text-sm">{reason.description}</span>
+                    </div>
+                  )
+                )}
               </div>
             </div>
           )}
@@ -602,12 +740,14 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
             <div className="bg-gray-800 rounded-lg p-6">
               <h4 className="font-semibold mb-4">Risk Factors</h4>
               <div className="space-y-2">
-                {recommendation.recommendation.risks.map((risk: string, idx: number) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="text-red-400">⚠</span>
-                    <span className="text-sm">{risk}</span>
-                  </div>
-                ))}
+                {recommendation.recommendation.risks.map(
+                  (risk: string, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="text-red-400">⚠</span>
+                      <span className="text-sm">{risk}</span>
+                    </div>
+                  )
+                )}
               </div>
             </div>
           )}
@@ -633,4 +773,3 @@ function AlertsTab({ userId, symbol }: { userId: string; symbol: string }) {
 }
 
 export default InvestmentDashboard;
-

@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useCoachStore } from '../../src/stores/coachStore';
+import { useCoachStore } from '../../src/store';
 
 export default function GoalDetailScreen() {
   const { colors } = useTheme();

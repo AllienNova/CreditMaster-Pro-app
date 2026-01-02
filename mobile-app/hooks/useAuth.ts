@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { router } from 'expo-router';
 import { supabase } from '../src/services/supabase';
-import { useStore } from '../store/useStore';
+import { useAuthStore } from '../src/store';
 import { authAPI } from '../services/api';
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 export function useAuth() {
-  const { user, setUser, logout: storeLogout, hasCompletedOnboarding } = useStore();
+  const { user, setUser, logout: storeLogout, onboardingCompleted } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,32 +17,36 @@ export function useAuth() {
         setUser({
           id: session.user.id,
           email: session.user.email || '',
+          name: session.user.user_metadata.name || `${session.user.user_metadata.firstName || ''} ${session.user.user_metadata.lastName || ''}`.trim(),
           firstName: session.user.user_metadata.firstName || '',
           lastName: session.user.user_metadata.lastName || '',
-          subscription: 'free',
-          createdAt: session.user.created_at,
+          subscription_tier: 'free',
+          created_at: session.user.created_at,
+          updated_at: session.user.updated_at || session.user.created_at,
         });
       }
       setLoading(false);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       if (session?.user) {
         setUser({
           id: session.user.id,
           email: session.user.email || '',
+          name: session.user.user_metadata.name || `${session.user.user_metadata.firstName || ''} ${session.user.user_metadata.lastName || ''}`.trim(),
           firstName: session.user.user_metadata.firstName || '',
           lastName: session.user.user_metadata.lastName || '',
-          subscription: 'free',
-          createdAt: session.user.created_at,
+          subscription_tier: 'free',
+          created_at: session.user.created_at,
+          updated_at: session.user.updated_at || session.user.created_at,
         });
       } else {
         setUser(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => authSubscription.unsubscribe();
   }, [setUser]);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -58,15 +62,15 @@ export function useAuth() {
     }
 
     setLoading(false);
-    
-    if (!hasCompletedOnboarding) {
+
+    if (!onboardingCompleted) {
       router.replace('/onboarding');
     } else {
       router.replace('/(tabs)');
     }
-    
+
     return { success: true, error: null };
-  }, [hasCompletedOnboarding]);
+  }, [onboardingCompleted]);
 
   const register = useCallback(async (
     email: string,

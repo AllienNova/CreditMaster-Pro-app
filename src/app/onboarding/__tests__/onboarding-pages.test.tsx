@@ -16,7 +16,8 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock fetch
-global.fetch = jest.fn();
+const mockFetch = jest.fn();
+global.fetch = mockFetch as any;
 
 describe('Onboarding Welcome Page', () => {
   it('renders welcome page', () => {
@@ -105,7 +106,7 @@ describe('Onboarding Goals Page', () => {
 describe('Onboarding Connect Page', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ success: true })
     });

@@ -1,354 +1,706 @@
-import Link from "next/link";
-import type { Metadata } from "next";
+/**
+ * CPFI Landing Page - Apple-Inspired Design
+ *
+ * Clean, minimal, elegant design with:
+ * - White/light backgrounds
+ * - Large, bold typography
+ * - Generous white space
+ * - Sophisticated animations
+ */
+
+import Link from 'next/link';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "CPFI - Credit Pro & Financial Intelligence | AI-Powered Credit Repair",
-  description: "Transform your credit score with AI-powered dispute automation, personalized strategies, and real-time monitoring. Join 50,000+ users who improved their credit by an average of 100+ points.",
+  title: 'CPFI - Financial Intelligence Platform',
+  description:
+    'Take control of your financial life. Credit, budgeting, investments, and loans — unified in one AI-powered platform.',
   openGraph: {
-    title: "CPFI - Credit Pro & Financial Intelligence",
-    description: "Transform your credit score with AI-powered dispute automation and personalized strategies.",
-    type: "website",
-    url: "https://cpfi.com",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "CPFI - Credit Pro & Financial Intelligence",
-    description: "Transform your credit score with AI-powered dispute automation.",
+    title: 'CPFI - Financial Intelligence Platform',
+    description: 'Your complete AI-powered financial command center.',
+    type: 'website',
+    url: 'https://cpfi.com',
+    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
   },
 };
 
-// Animated Credit Score Component
-function AnimatedCreditScore() {
-  return (
-    <div className="relative w-64 h-64 mx-auto">
-      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" strokeWidth="8" />
-        <circle
-          cx="50" cy="50" r="45" fill="none"
-          stroke="url(#gradient)" strokeWidth="8"
-          strokeDasharray="283" strokeDashoffset="70"
-          strokeLinecap="round"
-          className="animate-pulse"
-        />
-        <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#10b981" />
-            <stop offset="100%" stopColor="#3b82f6" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-5xl font-bold bg-gradient-to-r from-emerald-500 to-blue-500 bg-clip-text text-transparent">
-          750
-        </span>
-        <span className="text-sm text-gray-500 mt-1">Excellent</span>
-        <span className="text-xs text-emerald-500 mt-1">+127 points</span>
-      </div>
-    </div>
-  );
-}
+// Product cards for the main showcase
+const products = [
+  {
+    title: 'Credit Intelligence',
+    subtitle: 'Monitor. Repair. Optimize.',
+    description: 'AI-powered credit management across all three bureaus.',
+    gradient: 'from-blue-600 to-indigo-600',
+    light: false,
+    href: '/credit',
+  },
+  {
+    title: 'Financial Hub',
+    subtitle: 'Budget. Save. Thrive.',
+    description: 'Complete control over your money with intelligent insights.',
+    gradient: 'from-emerald-500 to-teal-500',
+    light: false,
+    href: '/financial-hub',
+  },
+  {
+    title: 'Investments',
+    subtitle: 'Analyze. Grow. Prosper.',
+    description: 'Professional portfolio management powered by AI.',
+    gradient: 'from-purple-600 to-violet-600',
+    light: false,
+    href: '/invest',
+  },
+  {
+    title: 'Student Loans',
+    subtitle: 'Navigate. Optimize. Forgive.',
+    description: 'Smart strategies for federal loan repayment and forgiveness.',
+    gradient: 'from-orange-500 to-amber-500',
+    light: false,
+    href: '/loans',
+  },
+];
 
-// Feature Card Component
-function FeatureCard({ icon, title, description }: { icon: string; title: string; description: string }) {
-  return (
-    <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow border border-gray-100">
-      <div className="text-4xl mb-4">{icon}</div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-gray-600">{description}</p>
-    </div>
-  );
-}
+// Features for each product section
+const features = {
+  credit: [
+    { title: 'Real-time Monitoring', desc: 'Track changes across Experian, Equifax, and TransUnion' },
+    { title: 'AI Dispute Letters', desc: 'Legally-crafted letters that get results' },
+    { title: 'Score Simulator', desc: 'See the impact before you act' },
+    { title: 'Credit Building', desc: 'Strategic plans to improve your score' },
+  ],
+  financial: [
+    { title: 'Smart Budgets', desc: 'AI learns your spending patterns' },
+    { title: 'Debt Strategies', desc: 'Avalanche or snowball — optimized for you' },
+    { title: 'Savings Goals', desc: 'Automated tracking and recommendations' },
+    { title: 'Cash Flow', desc: 'Predict and plan with confidence' },
+  ],
+  invest: [
+    { title: 'Portfolio Analytics', desc: 'Deep insights into your holdings' },
+    { title: 'Risk Assessment', desc: 'Understand your exposure' },
+    { title: 'Rebalancing', desc: 'Keep your allocation on target' },
+    { title: 'Market Intelligence', desc: 'AI-powered market analysis' },
+  ],
+  loans: [
+    { title: 'PSLF Tracker', desc: 'Track qualifying payments automatically' },
+    { title: 'IDR Optimizer', desc: 'Find the best repayment plan' },
+    { title: 'Forgiveness Calculator', desc: 'See your potential savings' },
+    { title: 'Federal Programs', desc: 'Never miss an opportunity' },
+  ],
+};
 
-// Testimonial Card Component
-function TestimonialCard({ quote, name, score, image }: { quote: string; name: string; score: string; image: string }) {
-  return (
-    <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-      <div className="flex items-center mb-4">
-        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-emerald-400 to-blue-500 flex items-center justify-center text-white font-bold">
-          {image}
-        </div>
-        <div className="ml-4">
-          <p className="font-semibold text-gray-900">{name}</p>
-          <p className="text-sm text-emerald-500">{score}</p>
-        </div>
-      </div>
-      <p className="text-gray-600 italic">&ldquo;{quote}&rdquo;</p>
-      <div className="flex mt-4 text-yellow-400">
-        {"★★★★★".split("").map((star, i) => <span key={i}>{star}</span>)}
-      </div>
-    </div>
-  );
-}
+// Pricing
+const pricing = [
+  {
+    name: 'Free',
+    price: '$0',
+    description: 'Get started with the basics',
+    features: ['Credit score tracking', 'Basic budgeting', 'Limited AI chat', 'Mobile app access'],
+    cta: 'Get Started',
+    featured: false,
+  },
+  {
+    name: 'Pro',
+    price: '$29',
+    description: 'Everything you need',
+    features: [
+      'All credit bureaus',
+      'Unlimited AI disputes',
+      'Full financial suite',
+      'Investment tracking',
+      'Student loan tools',
+      'Priority support',
+    ],
+    cta: 'Start Free Trial',
+    featured: true,
+  },
+  {
+    name: 'Family',
+    price: '$49',
+    description: 'For the whole household',
+    features: [
+      'Everything in Pro',
+      'Up to 5 users',
+      'Family dashboard',
+      'Shared goals',
+      'Joint account tracking',
+      'Dedicated advisor',
+    ],
+    cta: 'Start Free Trial',
+    featured: false,
+  },
+];
 
-// Pricing Card Component
-function PricingCard({ name, price, features, popular }: { name: string; price: string; features: string[]; popular?: boolean }) {
+export default function LandingPage() {
   return (
-    <div className={`rounded-xl p-6 ${popular ? "bg-gradient-to-br from-emerald-500 to-blue-600 text-white scale-105" : "bg-white border border-gray-200"}`}>
-      {popular && <span className="text-xs font-semibold bg-white text-emerald-600 px-3 py-1 rounded-full">MOST POPULAR</span>}
-      <h3 className={`text-xl font-bold mt-4 ${popular ? "text-white" : "text-gray-900"}`}>{name}</h3>
-      <p className={`text-3xl font-bold mt-2 ${popular ? "text-white" : "text-gray-900"}`}>{price}<span className="text-sm font-normal">/mo</span></p>
-      <ul className="mt-6 space-y-3">
-        {features.map((feature, i) => (
-          <li key={i} className="flex items-center">
-            <span className={`mr-2 ${popular ? "text-emerald-200" : "text-emerald-500"}`}>✓</span>
-            <span className={popular ? "text-white/90" : "text-gray-600"}>{feature}</span>
-          </li>
-        ))}
-      </ul>
-      <Link href="/auth/signup" className={`block mt-6 py-3 px-6 rounded-lg text-center font-semibold transition ${popular ? "bg-white text-emerald-600 hover:bg-gray-100" : "bg-emerald-500 text-white hover:bg-emerald-600"}`}>
-        Get Started
-      </Link>
-    </div>
-  );
-}
-
-// FAQ Item Component
-function FAQItem({ question, answer }: { question: string; answer: string }) {
-  return (
-    <details className="group bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <summary className="flex items-center justify-between p-4 cursor-pointer font-semibold text-gray-900 hover:bg-gray-50">
-        {question}
-        <span className="ml-4 text-emerald-500 group-open:rotate-180 transition-transform">▼</span>
-      </summary>
-      <p className="px-4 pb-4 text-gray-600">{answer}</p>
-    </details>
-  );
-}
-
-export default function HomePage() {
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-emerald-500 to-blue-600 bg-clip-text text-transparent">
+    <div className="min-h-screen bg-[#fbfbfd]">
+      {/* Navigation - Apple Style */}
+      <nav className="fixed top-0 w-full z-50 bg-[#fbfbfd]/80 backdrop-blur-xl border-b border-gray-200/50">
+        <div className="max-w-[980px] mx-auto px-6">
+          <div className="flex justify-between items-center h-12">
+            <Link href="/" className="text-xl font-semibold text-gray-900 tracking-tight">
               CPFI
             </Link>
-            <div className="hidden md:flex items-center space-x-8">
-              <Link href="#features" className="text-gray-600 hover:text-gray-900">Features</Link>
-              <Link href="#how-it-works" className="text-gray-600 hover:text-gray-900">How It Works</Link>
-              <Link href="/pricing" className="text-gray-600 hover:text-gray-900">Pricing</Link>
-              <Link href="/auth/login" className="text-gray-600 hover:text-gray-900">Login</Link>
-              <Link href="/auth/signup" className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition">
-                Start Free Trial
+            <div className="hidden md:flex items-center gap-8">
+              <Link href="/credit" className="text-xs text-gray-600 hover:text-gray-900 transition-colors">
+                Credit
+              </Link>
+              <Link href="/financial-hub" className="text-xs text-gray-600 hover:text-gray-900 transition-colors">
+                Financial
+              </Link>
+              <Link href="/invest" className="text-xs text-gray-600 hover:text-gray-900 transition-colors">
+                Invest
+              </Link>
+              <Link href="/loans" className="text-xs text-gray-600 hover:text-gray-900 transition-colors">
+                Loans
+              </Link>
+              <Link href="/pricing" className="text-xs text-gray-600 hover:text-gray-900 transition-colors">
+                Pricing
+              </Link>
+            </div>
+            <div className="flex items-center gap-4">
+              <Link href="/login" className="text-xs text-gray-600 hover:text-gray-900 transition-colors">
+                Sign In
+              </Link>
+              <Link
+                href="/auth/signup"
+                className="text-xs bg-gray-900 text-white px-4 py-1.5 rounded-full hover:bg-gray-800 transition-colors"
+              >
+                Get Started
               </Link>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
-                Transform Your <span className="bg-gradient-to-r from-emerald-500 to-blue-600 bg-clip-text text-transparent">Credit Score</span> with AI
-              </h1>
-              <p className="mt-6 text-xl text-gray-600">
-                Join 50,000+ users who improved their credit by an average of 100+ points using our AI-powered dispute automation and personalized strategies.
-              </p>
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                <Link href="/auth/signup" className="bg-emerald-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-emerald-600 transition text-center">
-                  Start Free 7-Day Trial
-                </Link>
-                <Link href="#demo" className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold hover:border-emerald-500 hover:text-emerald-500 transition text-center">
-                  Watch Demo
-                </Link>
-              </div>
-              <div className="mt-8 flex items-center gap-6 text-sm text-gray-500">
-                <span className="flex items-center"><span className="text-emerald-500 mr-1">✓</span> No credit card required</span>
-                <span className="flex items-center"><span className="text-emerald-500 mr-1">✓</span> Cancel anytime</span>
-              </div>
-            </div>
-            <div className="flex justify-center">
-              <AnimatedCreditScore />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Trust Badges */}
-      <section className="py-12 bg-gray-50 border-y border-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 text-gray-400">
-            <div className="text-center">
-              <p className="text-3xl font-bold text-gray-900">50K+</p>
-              <p className="text-sm">Active Users</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-gray-900">100+</p>
-              <p className="text-sm">Avg Point Increase</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-gray-900">85%</p>
-              <p className="text-sm">Dispute Success Rate</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-gray-900">4.9★</p>
-              <p className="text-sm">User Rating</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900">Powerful Features for Credit Success</h2>
-            <p className="mt-4 text-xl text-gray-600">Everything you need to repair, build, and maintain excellent credit</p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard icon="🤖" title="AI-Powered Disputes" description="Generate legally-compliant dispute letters in seconds using advanced AI trained on thousands of successful cases." />
-            <FeatureCard icon="📊" title="Real-Time Monitoring" description="Track your credit score across all three bureaus with instant alerts for any changes or suspicious activity." />
-            <FeatureCard icon="🎯" title="Personalized Strategies" description="Get custom action plans based on your unique credit profile and financial goals." />
-            <FeatureCard icon="📈" title="Score Simulator" description="See how different actions will impact your score before you take them." />
-            <FeatureCard icon="💳" title="Credit Building Tools" description="Access secured cards, credit builder loans, and authorized user strategies." />
-            <FeatureCard icon="🔒" title="Bank-Level Security" description="Your data is protected with 256-bit encryption and SOC 2 compliance." />
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 px-4 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900">How It Works</h2>
-            <p className="mt-4 text-xl text-gray-600">Three simple steps to better credit</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto bg-emerald-100 rounded-full flex items-center justify-center text-2xl font-bold text-emerald-600">1</div>
-              <h3 className="mt-6 text-xl font-semibold text-gray-900">Connect</h3>
-              <p className="mt-2 text-gray-600">Securely link your credit reports from all three bureaus in minutes.</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center text-2xl font-bold text-blue-600">2</div>
-              <h3 className="mt-6 text-xl font-semibold text-gray-900">Analyze</h3>
-              <p className="mt-2 text-gray-600">Our AI scans your reports to identify errors, inaccuracies, and opportunities.</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto bg-purple-100 rounded-full flex items-center justify-center text-2xl font-bold text-purple-600">3</div>
-              <h3 className="mt-6 text-xl font-semibold text-gray-900">Repair</h3>
-              <p className="mt-2 text-gray-600">Generate and send dispute letters automatically, then track results in real-time.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900">What Our Users Say</h2>
-            <p className="mt-4 text-xl text-gray-600">Join thousands of satisfied customers</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <TestimonialCard image="JD" name="James D." score="+142 points in 90 days" quote="I was skeptical at first, but CPFI helped me remove 5 negative items and my score jumped from 580 to 722!" />
-            <TestimonialCard image="SM" name="Sarah M." score="+98 points in 60 days" quote="The AI dispute letters are incredible. I got approved for my first mortgage after using this service for just 2 months." />
-            <TestimonialCard image="RK" name="Robert K." score="+115 points in 45 days" quote="Best investment I've made. The personalized strategies and real-time monitoring made all the difference." />
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Preview Section */}
-      <section className="py-20 px-4 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900">Simple, Transparent Pricing</h2>
-            <p className="mt-4 text-xl text-gray-600">Choose the plan that fits your needs</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <PricingCard name="Basic" price="$29" features={["3 Dispute Letters/Month", "Credit Monitoring", "Score Simulator", "Email Support"]} />
-            <PricingCard name="Premium" price="$79" features={["Unlimited Disputes", "All 3 Bureau Monitoring", "AI Strategy Engine", "Priority Support", "Goodwill Letters"]} popular />
-            <PricingCard name="Enterprise" price="$199" features={["Everything in Premium", "Dedicated Account Manager", "White-Label Options", "API Access", "Custom Integrations"]} />
-          </div>
-          <div className="text-center mt-8">
-            <Link href="/pricing" className="text-emerald-500 hover:text-emerald-600 font-semibold">
-              View Full Pricing Details →
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900">Frequently Asked Questions</h2>
-          </div>
-          <div className="space-y-4">
-            <FAQItem question="How long does it take to see results?" answer="Most users see their first dispute results within 30-45 days. Significant score improvements typically occur within 60-90 days of consistent use." />
-            <FAQItem question="Is this legal?" answer="Absolutely! We help you exercise your legal rights under the Fair Credit Reporting Act (FCRA) to dispute inaccurate, incomplete, or unverifiable information on your credit reports." />
-            <FAQItem question="Will this hurt my credit score?" answer="No. Disputing items on your credit report does not negatively impact your score. In fact, successful disputes often lead to score improvements." />
-            <FAQItem question="Can I cancel anytime?" answer="Yes! There are no long-term contracts. You can cancel your subscription at any time with no cancellation fees." />
-            <FAQItem question="Is my data secure?" answer="Yes. We use bank-level 256-bit encryption and are SOC 2 compliant. We never sell your data to third parties." />
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-4 bg-gradient-to-r from-emerald-500 to-blue-600">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-white">Ready to Transform Your Credit?</h2>
-          <p className="mt-4 text-xl text-white/90">Join 50,000+ users who have improved their credit scores with CPFI</p>
+      {/* Hero - Cinematic Apple Style */}
+      <section className="pt-32 pb-8 px-6">
+        <div className="max-w-[980px] mx-auto text-center">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold text-gray-900 tracking-tight leading-[1.05]">
+            Financial Intelligence.
+            <br />
+            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Brilliantly Simple.
+            </span>
+          </h1>
+          <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            One platform for credit, budgeting, investments, and loans. Powered by 300+ AI models.
+          </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/signup" className="bg-white text-emerald-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition">
-              Start Your Free Trial
+            <Link
+              href="/auth/signup"
+              className="inline-flex items-center justify-center px-7 py-3 rounded-full bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Start Free Trial
             </Link>
-            <Link href="/contact" className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white/10 transition">
-              Contact Sales
+            <Link
+              href="/credit"
+              className="inline-flex items-center justify-center px-7 py-3 rounded-full bg-transparent text-blue-600 text-sm font-medium hover:bg-blue-50 transition-colors"
+            >
+              Learn more
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-16 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-4">CPFI</h3>
-              <p className="text-sm">Credit Pro & Financial Intelligence - AI-powered credit repair and financial wellness platform.</p>
-              <div className="flex gap-4 mt-4">
-                <a href="#" className="hover:text-white">𝕏</a>
-                <a href="#" className="hover:text-white">in</a>
-                <a href="#" className="hover:text-white">f</a>
+      {/* Product Grid - Apple Card Style */}
+      <section className="py-4 px-6">
+        <div className="max-w-[980px] mx-auto">
+          <div className="grid md:grid-cols-2 gap-3">
+            {products.map((product) => (
+              <div
+                key={product.title}
+                className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${product.gradient} p-8 min-h-[400px] flex flex-col justify-between`}
+              >
+                <div>
+                  <p className="text-white/80 text-sm font-medium">{product.subtitle}</p>
+                  <h2 className="text-3xl font-semibold text-white mt-1">{product.title}</h2>
+                  <p className="text-white/80 text-base mt-3 max-w-xs">{product.description}</p>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <Link
+                    href="/auth/signup"
+                    className="text-sm font-medium text-white bg-white/20 backdrop-blur-sm px-5 py-2 rounded-full hover:bg-white/30 transition-colors"
+                  >
+                    Get Started
+                  </Link>
+                  <Link
+                    href={product.href}
+                    className="text-sm font-medium text-white hover:text-white/80 transition-colors flex items-center"
+                  >
+                    Learn more
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Credit Section */}
+      <section id="credit" className="py-24 px-6 bg-white">
+        <div className="max-w-[980px] mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-blue-600 text-sm font-medium mb-2">Credit Intelligence</p>
+            <h2 className="text-4xl sm:text-5xl font-semibold text-gray-900 tracking-tight">
+              Your credit score,
+              <br />
+              elevated.
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-xl mx-auto">
+              Monitor all three bureaus, dispute errors with AI-generated letters, and watch your
+              score climb.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.credit.map((feature) => (
+              <div key={feature.title} className="text-center p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-sm text-gray-600">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Score Display Mock */}
+          <div className="mt-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl p-8 sm:p-12">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-8">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Your Credit Score</p>
+                <p className="text-7xl font-semibold text-gray-900">742</p>
+                <p className="text-green-600 text-sm font-medium mt-2">↑ 28 points this month</p>
+              </div>
+              <div className="flex gap-8">
+                <div className="text-center">
+                  <p className="text-3xl font-semibold text-gray-900">738</p>
+                  <p className="text-xs text-gray-500 mt-1">Experian</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-3xl font-semibold text-gray-900">745</p>
+                  <p className="text-xs text-gray-500 mt-1">Equifax</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-3xl font-semibold text-gray-900">743</p>
+                  <p className="text-xs text-gray-500 mt-1">TransUnion</p>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Financial Section */}
+      <section id="financial" className="py-24 px-6 bg-[#fbfbfd]">
+        <div className="max-w-[980px] mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-emerald-600 text-sm font-medium mb-2">Financial Hub</p>
+            <h2 className="text-4xl sm:text-5xl font-semibold text-gray-900 tracking-tight">
+              Every dollar,
+              <br />
+              accounted for.
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-xl mx-auto">
+              Intelligent budgeting that learns your habits. Debt strategies that actually work.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.financial.map((feature) => (
+              <div key={feature.title} className="text-center p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-sm text-gray-600">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Budget Display Mock */}
+          <div className="mt-16 bg-white rounded-3xl p-8 sm:p-12 shadow-sm border border-gray-100">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-8">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Net Worth</p>
+                <p className="text-5xl font-semibold text-gray-900">$124,350</p>
+                <p className="text-emerald-600 text-sm font-medium mt-2">↑ $3,240 this month</p>
+              </div>
+              <div className="flex gap-8">
+                <div className="text-center">
+                  <p className="text-2xl font-semibold text-gray-900">$8,420</p>
+                  <p className="text-xs text-gray-500 mt-1">Income</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-semibold text-gray-900">$5,180</p>
+                  <p className="text-xs text-gray-500 mt-1">Spending</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-semibold text-emerald-600">$3,240</p>
+                  <p className="text-xs text-gray-500 mt-1">Saved</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Investments Section */}
+      <section id="invest" className="py-24 px-6 bg-white">
+        <div className="max-w-[980px] mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-purple-600 text-sm font-medium mb-2">Investments</p>
+            <h2 className="text-4xl sm:text-5xl font-semibold text-gray-900 tracking-tight">
+              Your portfolio,
+              <br />
+              professional-grade.
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-xl mx-auto">
+              Track, analyze, and optimize your investments with institutional-level tools.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.invest.map((feature) => (
+              <div key={feature.title} className="text-center p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-sm text-gray-600">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Student Loans Section */}
+      <section id="loans" className="py-24 px-6 bg-[#fbfbfd]">
+        <div className="max-w-[980px] mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-orange-600 text-sm font-medium mb-2">Student Loans</p>
+            <h2 className="text-4xl sm:text-5xl font-semibold text-gray-900 tracking-tight">
+              Student debt,
+              <br />
+              strategically managed.
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-xl mx-auto">
+              Navigate forgiveness programs, optimize repayment, and track every qualifying payment.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.loans.map((feature) => (
+              <div key={feature.title} className="text-center p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-sm text-gray-600">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* AI Section */}
+      <section className="py-24 px-6 bg-gray-900">
+        <div className="max-w-[980px] mx-auto text-center">
+          <p className="text-blue-400 text-sm font-medium mb-2">Powered by AI</p>
+          <h2 className="text-4xl sm:text-5xl font-semibold text-white tracking-tight">
+            300+ AI models.
+            <br />
+            One intelligent platform.
+          </h2>
+          <p className="mt-4 text-lg text-gray-400 max-w-xl mx-auto">
+            Claude, GPT-4, Gemini, and more — automatically routed for the best results.
+          </p>
+
+          <div className="mt-16 grid sm:grid-cols-3 gap-8">
             <div>
-              <h4 className="font-semibold text-white mb-4">Product</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/features" className="hover:text-white">Features</Link></li>
-                <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
-                <li><Link href="/integrations" className="hover:text-white">Integrations</Link></li>
-                <li><Link href="/api" className="hover:text-white">API</Link></li>
+              <p className="text-4xl font-semibold text-white">24/7</p>
+              <p className="text-gray-400 text-sm mt-2">AI Financial Coach</p>
+            </div>
+            <div>
+              <p className="text-4xl font-semibold text-white">300+</p>
+              <p className="text-gray-400 text-sm mt-2">AI Models Available</p>
+            </div>
+            <div>
+              <p className="text-4xl font-semibold text-white">&lt;1s</p>
+              <p className="text-gray-400 text-sm mt-2">Average Response Time</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Mobile App Section */}
+      <section className="py-24 px-6 bg-white">
+        <div className="max-w-[980px] mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <p className="text-gray-500 text-sm font-medium mb-2">Mobile App</p>
+              <h2 className="text-4xl sm:text-5xl font-semibold text-gray-900 tracking-tight">
+                CPFI in
+                <br />
+                your pocket.
+              </h2>
+              <p className="mt-4 text-lg text-gray-600">
+                Full-featured iOS and Android apps. Real-time alerts, document scanning, and AI chat
+                — wherever you are.
+              </p>
+
+              <div className="mt-8 flex gap-4">
+                <button className="flex items-center gap-3 px-5 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09997 22C7.78997 22.05 6.79997 20.68 5.95997 19.47C4.24997 17 2.93997 12.45 4.69997 9.39C5.56997 7.87 7.12997 6.91 8.81997 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z" />
+                  </svg>
+                  <div className="text-left">
+                    <p className="text-[10px] text-gray-400">Download on the</p>
+                    <p className="text-sm font-medium">App Store</p>
+                  </div>
+                </button>
+                <button className="flex items-center gap-3 px-5 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 20.5V3.5C3 2.91 3.34 2.39 3.84 2.15L13.69 12L3.84 21.85C3.34 21.6 3 21.09 3 20.5ZM16.81 15.12L6.05 21.34L14.54 12.85L16.81 15.12ZM20.16 10.81C20.5 11.08 20.75 11.5 20.75 12C20.75 12.5 20.53 12.9 20.18 13.18L17.89 14.5L15.39 12L17.89 9.5L20.16 10.81ZM6.05 2.66L16.81 8.88L14.54 11.15L6.05 2.66Z" />
+                  </svg>
+                  <div className="text-left">
+                    <p className="text-[10px] text-gray-400">Get it on</p>
+                    <p className="text-sm font-medium">Google Play</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Phone Mockup */}
+            <div className="flex justify-center">
+              <div className="relative w-64 h-[520px] bg-gray-900 rounded-[3rem] p-3 shadow-2xl">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-2xl"></div>
+                <div className="w-full h-full bg-gradient-to-b from-blue-600 to-purple-600 rounded-[2.25rem] overflow-hidden">
+                  <div className="p-6 pt-10">
+                    <p className="text-white/80 text-xs">Good morning</p>
+                    <p className="text-white text-xl font-semibold mt-1">Your Score</p>
+                    <p className="text-white text-6xl font-bold mt-4">742</p>
+                    <p className="text-green-300 text-sm mt-2">↑ 12 pts this month</p>
+
+                    <div className="mt-8 space-y-3">
+                      <div className="bg-white/10 backdrop-blur rounded-xl p-4">
+                        <div className="flex justify-between">
+                          <span className="text-white/80 text-xs">Net Worth</span>
+                          <span className="text-white text-sm font-medium">$124,350</span>
+                        </div>
+                      </div>
+                      <div className="bg-white/10 backdrop-blur rounded-xl p-4">
+                        <div className="flex justify-between">
+                          <span className="text-white/80 text-xs">This Month</span>
+                          <span className="text-green-300 text-sm font-medium">+$2,430</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-24 px-6 bg-[#fbfbfd]">
+        <div className="max-w-[980px] mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-semibold text-gray-900 tracking-tight">
+              Simple pricing.
+              <br />
+              No surprises.
+            </h2>
+            <p className="mt-4 text-lg text-gray-600">Start free. Upgrade when you&apos;re ready.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {pricing.map((plan) => (
+              <div
+                key={plan.name}
+                className={`rounded-2xl p-8 ${
+                  plan.featured
+                    ? 'bg-gray-900 text-white ring-2 ring-gray-900'
+                    : 'bg-white border border-gray-200'
+                }`}
+              >
+                <h3 className={`text-lg font-semibold ${plan.featured ? 'text-white' : 'text-gray-900'}`}>
+                  {plan.name}
+                </h3>
+                <div className="mt-4">
+                  <span className={`text-4xl font-semibold ${plan.featured ? 'text-white' : 'text-gray-900'}`}>
+                    {plan.price}
+                  </span>
+                  <span className={`text-sm ${plan.featured ? 'text-gray-400' : 'text-gray-500'}`}>/month</span>
+                </div>
+                <p className={`mt-2 text-sm ${plan.featured ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {plan.description}
+                </p>
+
+                <ul className="mt-8 space-y-3">
+                  {plan.features.map((feature) => (
+                    <li
+                      key={feature}
+                      className={`flex items-center gap-2 text-sm ${
+                        plan.featured ? 'text-gray-300' : 'text-gray-600'
+                      }`}
+                    >
+                      <svg
+                        className={`w-4 h-4 ${plan.featured ? 'text-blue-400' : 'text-blue-600'}`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href="/auth/signup"
+                  className={`mt-8 block w-full py-3 text-center text-sm font-medium rounded-full transition-colors ${
+                    plan.featured
+                      ? 'bg-white text-gray-900 hover:bg-gray-100'
+                      : 'bg-gray-900 text-white hover:bg-gray-800'
+                  }`}
+                >
+                  {plan.cta}
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-24 px-6 bg-white">
+        <div className="max-w-[980px] mx-auto text-center">
+          <h2 className="text-4xl sm:text-5xl font-semibold text-gray-900 tracking-tight">
+            Ready to take control?
+          </h2>
+          <p className="mt-4 text-lg text-gray-600 max-w-xl mx-auto">
+            Join thousands who&apos;ve transformed their financial lives with CPFI.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/auth/signup"
+              className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-blue-600 text-white text-base font-medium hover:bg-blue-700 transition-colors"
+            >
+              Start Free Trial
+            </Link>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-transparent text-blue-600 text-base font-medium hover:bg-blue-50 transition-colors border border-blue-600"
+            >
+              View Pricing
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer - Apple Style */}
+      <footer className="py-8 px-6 bg-[#f5f5f7] border-t border-gray-200">
+        <div className="max-w-[980px] mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-8">
+            <div>
+              <p className="text-xs font-semibold text-gray-900 mb-3">Product</p>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/credit" className="text-xs text-gray-600 hover:text-gray-900">
+                    Credit
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/financial-hub" className="text-xs text-gray-600 hover:text-gray-900">
+                    Financial
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/invest" className="text-xs text-gray-600 hover:text-gray-900">
+                    Investments
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/loans" className="text-xs text-gray-600 hover:text-gray-900">
+                    Student Loans
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-white mb-4">Resources</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/help" className="hover:text-white">Help Center</Link></li>
-                <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
-                <li><Link href="/guides" className="hover:text-white">Guides</Link></li>
-                <li><Link href="/webinars" className="hover:text-white">Webinars</Link></li>
+              <p className="text-xs font-semibold text-gray-900 mb-3">Resources</p>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/help" className="text-xs text-gray-600 hover:text-gray-900">
+                    Help Center
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/pricing" className="text-xs text-gray-600 hover:text-gray-900">
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/faq" className="text-xs text-gray-600 hover:text-gray-900">
+                    FAQ
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-white mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/privacy" className="hover:text-white">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>
-                <li><Link href="/security" className="hover:text-white">Security</Link></li>
-                <li><Link href="/compliance" className="hover:text-white">Compliance</Link></li>
+              <p className="text-xs font-semibold text-gray-900 mb-3">Company</p>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/about" className="text-xs text-gray-600 hover:text-gray-900">
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="text-xs text-gray-600 hover:text-gray-900">
+                    Contact
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-900 mb-3">Legal</p>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/privacy" className="text-xs text-gray-600 hover:text-gray-900">
+                    Privacy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="text-xs text-gray-600 hover:text-gray-900">
+                    Terms
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-900 mb-3">Connect</p>
+              <ul className="space-y-2">
+                <li>
+                  <a href="#" className="text-xs text-gray-600 hover:text-gray-900">
+                    Twitter
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-xs text-gray-600 hover:text-gray-900">
+                    LinkedIn
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-xs text-gray-600 hover:text-gray-900">
+                    GitHub
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-sm text-center">
-            <p>© 2024 CPFI - Credit Pro & Financial Intelligence. All rights reserved.</p>
+
+          <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-xs text-gray-500">© 2025 CPFI. All rights reserved.</p>
+            <div className="flex gap-6 text-xs text-gray-500">
+              <span>256-bit Encryption</span>
+              <span>SOC 2 Certified</span>
+              <span>GDPR Compliant</span>
+            </div>
           </div>
         </div>
       </footer>

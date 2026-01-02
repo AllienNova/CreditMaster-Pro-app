@@ -1,14 +1,22 @@
 /**
  * Admin Stats API
- * 
+ *
  * Returns platform-wide statistics for the admin dashboard.
+ * SECURITY: Requires admin authentication
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireRole, createAuthResponse } from '@/lib/security/auth-middleware';
 
-export async function GET() {
-  try {
+export async function GET(request: NextRequest) {
+  // SECURITY: Require admin role for platform stats
+  const authResult = await requireRole(request, 'admin');
+  if (!authResult.authenticated || !authResult.user) {
+    return createAuthResponse(authResult);
+  }
+
+  try{
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

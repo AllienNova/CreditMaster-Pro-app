@@ -1,12 +1,11 @@
 /**
  * Pattern Recognition API
- * 
+ *
  * Endpoints for chart pattern detection and analysis
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { jwtValidation } from '@/lib/auth/jwt-validation';
 
 // ============================================================================
 // POST - Scan for patterns
@@ -14,8 +13,8 @@ import { authOptions } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const validation = await jwtValidation.validateFromHeaders(request);
+    if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -27,7 +26,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Import pattern recognition service dynamically for server
-    const { PatternRecognitionService } = await import('@/lib/investments/services/PatternRecognitionService');
+    const { PatternRecognitionService } =
+      await import('@/lib/investments/services/PatternRecognitionService');
     const patternService = new PatternRecognitionService();
 
     // If data is provided, scan it directly
@@ -36,22 +36,30 @@ export async function POST(request: NextRequest) {
 
     if (!candleData) {
       // Fetch market data
-      const { MarketDataService } = await import('@/lib/investments/services/MarketDataService');
-      const marketService = new MarketDataService({ provider: 'mock' });
-      
-      const result = await marketService.getHistoricalData(symbol, {
+      const { MarketDataService } =
+        await import('@/lib/investments/services/MarketDataService');
+      const marketService = new MarketDataService();
+
+      candleData = await marketService.getHistoricalData(
+        symbol,
         timeframe,
-        limit: 200,
-      });
-      candleData = result.data;
+        200
+      );
     }
 
     if (!candleData || candleData.length === 0) {
-      return NextResponse.json({ error: 'No data available for pattern scan' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'No data available for pattern scan' },
+        { status: 400 }
+      );
     }
 
     // Scan for patterns
-    const scanResult = patternService.scanForPatterns(candleData, symbol, timeframe);
+    const scanResult = patternService.scanForPatterns(
+      candleData,
+      symbol,
+      timeframe
+    );
 
     return NextResponse.json({
       symbol,
@@ -63,14 +71,23 @@ export async function POST(request: NextRequest) {
       resistanceLevels: scanResult.resistanceLevels,
       summary: {
         totalPatterns: scanResult.patterns.length,
-        bullishPatterns: scanResult.patterns.filter(p => p.direction === 'bullish').length,
-        bearishPatterns: scanResult.patterns.filter(p => p.direction === 'bearish').length,
-        highReliabilityPatterns: scanResult.patterns.filter(p => p.reliability >= 70).length,
+        bullishPatterns: scanResult.patterns.filter(
+          (p) => p.direction === 'bullish'
+        ).length,
+        bearishPatterns: scanResult.patterns.filter(
+          (p) => p.direction === 'bearish'
+        ).length,
+        highReliabilityPatterns: scanResult.patterns.filter(
+          (p) => p.reliability >= 70
+        ).length,
       },
     });
   } catch (error) {
     console.error('Pattern scan error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -83,12 +100,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const patternType = searchParams.get('type');
 
-    const { PATTERN_INFO } = await import('@/lib/investments/services/PatternRecognitionService');
+    const { PATTERN_INFO } =
+      await import('@/lib/investments/services/PatternRecognitionService');
 
     if (patternType) {
       const info = PATTERN_INFO[patternType as keyof typeof PATTERN_INFO];
       if (!info) {
-        return NextResponse.json({ error: 'Unknown pattern type' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Unknown pattern type' },
+          { status: 404 }
+        );
       }
       return NextResponse.json({ pattern: { type: patternType, ...info } });
     }
@@ -105,7 +126,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Pattern GET error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
-

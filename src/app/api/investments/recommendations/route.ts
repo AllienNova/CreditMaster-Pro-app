@@ -1,12 +1,11 @@
 /**
  * Investment Recommendations API
- * 
+ *
  * AI-powered investment recommendations and price predictions
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { jwtValidation } from '@/lib/auth/jwt-validation';
 
 // ============================================================================
 // POST - Generate Recommendation
@@ -14,8 +13,8 @@ import { authOptions } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const validation = await jwtValidation.validateFromHeaders(request);
+    if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -27,55 +26,63 @@ export async function POST(request: NextRequest) {
     }
 
     // Import services dynamically
-    const { AIRecommendationEngine } = await import('@/lib/investments/services/AIRecommendationEngine');
-    const { MarketDataService } = await import('@/lib/investments/services/MarketDataService');
+    const { AIRecommendationEngine } =
+      await import('@/lib/investments/services/AIRecommendationEngine');
+    const { MarketDataService } =
+      await import('@/lib/investments/services/MarketDataService');
 
     const recommendationEngine = new AIRecommendationEngine();
-    const marketService = new MarketDataService({ provider: 'mock' });
+    const marketService = new MarketDataService();
 
     // Get market data for technical analysis
-    const marketData = await marketService.getHistoricalData(symbol, {
-      timeframe: '1d',
-      limit: 100,
-    });
+    const marketData = await marketService.getHistoricalData(symbol, '1d', 100);
 
-    if (!marketData.data || marketData.data.length === 0) {
-      return NextResponse.json({ error: 'No market data available' }, { status: 400 });
+    if (!marketData || marketData.length === 0) {
+      return NextResponse.json(
+        { error: 'No market data available' },
+        { status: 400 }
+      );
     }
 
     // Calculate technical indicators
-    const { calculateSMA, calculateRSI, calculateMACD } = await import('@/components/investments/charts/TechnicalIndicators');
-    
-    const closes = marketData.data.map(d => d.close);
-    const currentPrice = closes[closes.length - 1];
-    const sma20 = calculateSMA(closes, 20);
-    const rsi = calculateRSI(closes, 14);
-    const macd = calculateMACD(closes);
+    const { calculateSMA, calculateRSI, calculateMACD } =
+      await import('@/components/investments/charts/TechnicalIndicators');
+
+    const currentPrice = marketData[marketData.length - 1].close;
+    const sma20 = calculateSMA(marketData, 20);
+    const rsi = calculateRSI(marketData, 14);
+    const macd = calculateMACD(marketData);
 
     // Build technical analysis object
     const technicalData = {
       price: currentPrice,
       trend: {
-        direction: sma20[sma20.length - 1]?.value < currentPrice ? 'bullish' : 'bearish' as const,
+        direction:
+          sma20[sma20.length - 1]?.value < currentPrice
+            ? 'bullish'
+            : ('bearish' as const),
         strength: 0.6,
       },
       indicators: {
         rsi: rsi[rsi.length - 1]?.value,
-        macd: macd[macd.length - 1] ? {
-          line: macd[macd.length - 1].macd,
-          signal: macd[macd.length - 1].signal,
-          histogram: macd[macd.length - 1].histogram,
-        } : undefined,
+        macd: macd[macd.length - 1]
+          ? {
+              line: macd[macd.length - 1].macd,
+              signal: macd[macd.length - 1].signal,
+              histogram: macd[macd.length - 1].histogram,
+            }
+          : undefined,
       },
-      volatility: 0.2,  // Simplified
+      volatility: 0.2, // Simplified
     };
 
     // Generate recommendation
     const recommendation = await recommendationEngine.generateRecommendation(
       symbol,
+      currentPrice,
       technicalData as any,
-      undefined,  // Fundamental data
-      undefined,  // Sentiment data
+      undefined, // Fundamental data
+      undefined, // Sentiment data
       userProfile
     );
 
@@ -100,7 +107,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Recommendation error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -110,8 +120,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const validation = await jwtValidation.validateFromHeaders(request);
+    if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -137,7 +147,9 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Recommendation GET error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
-

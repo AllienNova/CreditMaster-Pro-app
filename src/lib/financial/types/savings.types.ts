@@ -256,6 +256,160 @@ export interface AddContributionInput {
   note?: string;
 }
 
+// ============================================================================
+// SAVINGS OPTIMIZER TYPES (Phase 2.2)
+// ============================================================================
+
+// Recurring Charge Detection
+export interface RecurringCharge {
+  id: string;
+  merchantName: string;
+  category: string;
+  amount: number;
+  frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annually';
+  dayOfMonth?: number;
+  dayOfWeek?: number;
+  confidence: number; // 0-100
+  transactionCount: number;
+  firstDetectedAt: Date;
+  lastChargeAt: Date;
+  nextExpectedAt?: Date;
+  variance: number; // Amount variance
+  isSubscription: boolean;
+  subscriptionType?: 'streaming' | 'software' | 'membership' | 'utility' | 'insurance' | 'other';
+  cancellable: boolean;
+  importance?: 'essential' | 'useful' | 'optional' | 'unnecessary';
+  transactions: Array<{
+    id: string;
+    date: Date;
+    amount: number;
+  }>;
+}
+
+// Subscription Recommendation
+export interface SubscriptionRecommendation {
+  id: string;
+  recurringChargeId: string;
+  merchantName: string;
+  monthlyAmount: number;
+  annualAmount: number;
+  type: 'cancel' | 'downgrade' | 'consolidate' | 'negotiate';
+  reason: string;
+  confidence: number; // 0-100
+  potentialMonthlySavings: number;
+  potentialAnnualSavings: number;
+  importance: 'essential' | 'useful' | 'optional' | 'unnecessary';
+  usageIndicators?: {
+    lastUsed?: Date;
+    usageFrequency?: 'daily' | 'weekly' | 'monthly' | 'rarely' | 'never';
+    duplicateOf?: string; // Merchant name of duplicate service
+  };
+  alternatives?: Array<{
+    name: string;
+    monthlyCost: number;
+    savings: number;
+  }>;
+  aiGenerated: boolean;
+}
+
+// Savings Opportunity
+export interface SavingsOpportunity {
+  id: string;
+  type: 'subscription' | 'spending_reduction' | 'category_optimization' | 'recurring_charge' | 'one_time';
+  category: string;
+  title: string;
+  description: string;
+  currentMonthlySpending: number;
+  recommendedMonthlySpending: number;
+  potentialMonthlySavings: number;
+  potentialAnnualSavings: number;
+  confidence: number; // 0-100
+  difficulty: 'easy' | 'medium' | 'hard';
+  impact: 'low' | 'medium' | 'high';
+  actionable: boolean;
+  actions: Array<{
+    label: string;
+    type: 'cancel' | 'reduce' | 'switch' | 'negotiate' | 'automate';
+    data?: Record<string, unknown>;
+  }>;
+  aiGenerated: boolean;
+}
+
+// Savings Analysis
+export interface SavingsAnalysis {
+  userId: string;
+  period: 'monthly' | 'quarterly' | 'yearly';
+  periodStart: Date;
+  periodEnd: Date;
+  summary: {
+    totalSpending: number;
+    essentialSpending: number;
+    discretionarySpending: number;
+    subscriptionSpending: number;
+    recurringCharges: number;
+    potentialMonthlySavings: number;
+    potentialAnnualSavings: number;
+    savingsRate: number; // Current savings as % of income
+    recommendedSavingsRate: number; // Recommended savings rate
+  };
+  opportunities: SavingsOpportunity[];
+  recurringCharges: RecurringCharge[];
+  subscriptionRecommendations: SubscriptionRecommendation[];
+  categoryBreakdown: Array<{
+    category: string;
+    currentSpending: number;
+    recommendedSpending: number;
+    potentialSavings: number;
+    percentOfTotal: number;
+  }>;
+  trends: {
+    spendingTrend: 'increasing' | 'decreasing' | 'stable';
+    savingsTrend: 'improving' | 'declining' | 'stable';
+    topSpendingCategories: Array<{
+      category: string;
+      amount: number;
+      percentChange: number;
+    }>;
+  };
+  aiInsights: string[];
+  generatedAt: Date;
+}
+
+// Savings Goal Recommendation (AI-generated)
+export interface SavingsGoalRecommendation {
+  id: string;
+  type: 'emergency_fund' | 'vacation' | 'major_purchase' | 'debt_payoff' | 'retirement' | 'custom';
+  title: string;
+  description: string;
+  recommendedAmount: number;
+  recommendedMonthlyContribution: number;
+  targetDate?: Date;
+  priority: number; // 1 = highest
+  reasoning: string;
+  confidence: number; // 0-100
+  basedOn: Array<{
+    factor: string;
+    value: number | string;
+  }>;
+  suggestedRule?: Partial<SavingsRule>;
+  aiGenerated: boolean;
+}
+
+// Potential Savings Summary
+export interface PotentialSavingsSummary {
+  totalMonthlySavings: number;
+  totalAnnualSavings: number;
+  breakdown: {
+    subscriptions: number;
+    categoryOptimization: number;
+    recurringCharges: number;
+    oneTimeOpportunities: number;
+  };
+  topOpportunities: SavingsOpportunity[];
+  implementationDifficulty: 'easy' | 'medium' | 'hard';
+  estimatedTimeToImplement: string; // e.g., "2 hours", "1 week"
+}
+
 // Round-up calculation result
 export interface RoundUpCalculation {
   originalAmount: number;

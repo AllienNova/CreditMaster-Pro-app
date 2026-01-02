@@ -16,12 +16,12 @@ describe('HomePage', () => {
 
   it('should display the hero heading', () => {
     render(<HomePage />);
-    expect(screen.getAllByText(/Transform Your/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Financial Intelligence/i)).toBeInTheDocument();
   });
 
-  it('should display credit score text', () => {
+  it('should display credit intelligence text', () => {
     render(<HomePage />);
-    expect(screen.getAllByText(/Credit Score/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Credit Intelligence/i).length).toBeGreaterThan(0);
   });
 
   it('should have proper heading hierarchy', () => {
@@ -32,7 +32,7 @@ describe('HomePage', () => {
 
   it('should render CTA buttons', () => {
     render(<HomePage />);
-    expect(screen.getAllByText(/Start Free/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Get Started/i).length).toBeGreaterThan(0);
   });
 });
 

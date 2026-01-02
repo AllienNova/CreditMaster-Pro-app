@@ -1,5 +1,5 @@
 /**
- * Financial Context API
+ * Financial Context API - Phase 1.5
  *
  * GET /api/financial/context - Get complete financial context for authenticated user
  *   Query Parameters:
@@ -11,6 +11,44 @@
  *   - transactionDays: number - Days of transaction history (default: 30)
  *
  * POST /api/financial/context/refresh - Force refresh the financial context
+ *
+ * @swagger
+ * /api/financial/context:
+ *   get:
+ *     summary: Get financial context summary
+ *     description: Returns comprehensive financial snapshot including accounts, budgets, goals, and health score
+ *     tags: [Financial Context]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: refresh
+ *         schema:
+ *           type: boolean
+ *         description: Force refresh bypassing cache
+ *       - in: query
+ *         name: enhanced
+ *         schema:
+ *           type: boolean
+ *         description: Return enhanced context with metadata
+ *     responses:
+ *       200:
+ *         description: Financial context retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/FinancialContext'
+ *       401:
+ *         description: Unauthorized - Invalid or missing JWT token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       500:
+ *         description: Internal server error
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -129,15 +167,58 @@ export async function GET(request: NextRequest) {
       forceRefresh
     );
 
-    return NextResponse.json({
-      success: true,
-      data: context,
-    });
+    // Add caching headers (5-minute TTL with stale-while-revalidate)
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json');
+    if (!forceRefresh) {
+      headers.set('Cache-Control', 'private, max-age=300, stale-while-revalidate=60');
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          summary: {
+            totalAssets: context.accounts.reduce((sum, acc) => sum + acc.balance, 0),
+            totalLiabilities: context.accounts
+              .filter((acc) => acc.type === 'credit' || acc.type === 'loan')
+              .reduce((sum, acc) => sum + Math.abs(acc.balance), 0),
+            netWorth:
+              context.accounts.reduce((sum, acc) => sum + acc.balance, 0) -
+              context.accounts
+                .filter((acc) => acc.type === 'credit' || acc.type === 'loan')
+                .reduce((sum, acc) => sum + Math.abs(acc.balance), 0),
+          },
+          accounts: context.accounts,
+          budgetStatus: context.budgets,
+          goals: context.goals,
+          healthScore: context.healthScore,
+          insights: context.insights || [],
+        },
+        _meta: {
+          generatedAt: new Date().toISOString(),
+          cached: !forceRefresh,
+          ttl: 300,
+        },
+      },
+      { headers }
+    );
   } catch (error) {
     console.error('Error fetching financial context:', error);
+
+    // Return appropriate error status based on error type
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch financial context';
+    const statusCode = errorMessage.includes('not found') ? 404 : 500;
+
     return NextResponse.json(
-      { error: 'Failed to fetch financial context' },
-      { status: 500 }
+      {
+        success: false,
+        error: errorMessage,
+        _meta: {
+          timestamp: new Date().toISOString(),
+        },
+      },
+      { status: statusCode }
     );
   }
 }
@@ -145,6 +226,24 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/financial/context/refresh
  * Force refresh the financial context cache
+ *
+ * @swagger
+ * /api/financial/context/refresh:
+ *   post:
+ *     summary: Force refresh financial context
+ *     description: Clears cache and fetches fresh financial data
+ *     tags: [Financial Context]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Context refreshed successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       500:
+ *         description: Internal server error
  */
 export async function POST(request: NextRequest) {
   try {
@@ -152,7 +251,13 @@ export async function POST(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unauthorized - Invalid or missing JWT token',
+        },
+        { status: 401 }
+      );
     }
 
     // Check permissions
@@ -162,7 +267,13 @@ export async function POST(request: NextRequest) {
         'financial:write'
       )
     ) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Forbidden - Insufficient permissions to refresh financial context',
+        },
+        { status: 403 }
+      );
     }
 
     // Clear cache and fetch fresh data
@@ -176,11 +287,24 @@ export async function POST(request: NextRequest) {
       success: true,
       data: context,
       message: 'Financial context refreshed successfully',
+      _meta: {
+        refreshedAt: new Date().toISOString(),
+        userId: validation.user.id,
+      },
     });
   } catch (error) {
     console.error('Error refreshing financial context:', error);
+
+    const errorMessage = error instanceof Error ? error.message : 'Failed to refresh financial context';
+
     return NextResponse.json(
-      { error: 'Failed to refresh financial context' },
+      {
+        success: false,
+        error: errorMessage,
+        _meta: {
+          timestamp: new Date().toISOString(),
+        },
+      },
       { status: 500 }
     );
   }

@@ -9,7 +9,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, A
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useCoachStore } from '../../src/stores/coachStore';
+import { useCoachStore } from '../../src/store';
 
 export default function CoachDashboardScreen() {
   const router = useRouter();

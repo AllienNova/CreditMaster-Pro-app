@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
+import { Text } from 'react-native';
 import { Button } from '../Button';
 import { Card } from '../Card';
 import { Input } from '../Input';

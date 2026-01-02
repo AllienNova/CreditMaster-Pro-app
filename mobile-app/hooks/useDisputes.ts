@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useStore } from '../store/useStore';
+import { useDisputeStore, selectDisputes } from '../src/store';
 import { disputesAPI } from '../services/api';
 
 interface CreateDisputeData {
@@ -10,7 +10,8 @@ interface CreateDisputeData {
 }
 
 export function useDisputes() {
-  const { disputes, setDisputes, addDispute, updateDispute } = useStore();
+  const disputes = useDisputeStore(selectDisputes);
+  const { setDisputes, createDispute: addDispute, updateDispute } = useDisputeStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

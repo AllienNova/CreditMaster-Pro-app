@@ -1,12 +1,20 @@
 /**
  * Admin Analytics API
- * 
+ *
  * Returns analytics data for the admin dashboard.
+ * SECURITY: Requires admin authentication
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireRole, createAuthResponse } from '@/lib/security/auth-middleware';
 
 export async function GET(request: NextRequest) {
+  // SECURITY: Require admin role for analytics data
+  const authResult = await requireRole(request, 'admin');
+  if (!authResult.authenticated || !authResult.user) {
+    return createAuthResponse(authResult);
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const range = searchParams.get('range') || '30d';

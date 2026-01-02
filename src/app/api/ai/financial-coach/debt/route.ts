@@ -1,21 +1,33 @@
 /**
  * AI Financial Coach - Debt Strategy API
- * 
+ *
  * GET /api/ai/financial-coach/debt - Get debt strategy analysis
  * POST /api/ai/financial-coach/debt/analyze - Generate debt payoff strategies
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { debtStrategyEngine } from '@/lib/financial/debt-strategy-engine';
 
+async function getUser() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } }
+  );
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -23,7 +35,8 @@ export async function GET(request: NextRequest) {
     const extraMonthlyPayment = searchParams.get('extraPayment')
       ? parseFloat(searchParams.get('extraPayment')!)
       : 0;
-    const includeRefinancing = searchParams.get('includeRefinancing') !== 'false';
+    const includeRefinancing =
+      searchParams.get('includeRefinancing') !== 'false';
     const targetPayoffDate = searchParams.get('targetPayoffDate')
       ? new Date(searchParams.get('targetPayoffDate')!)
       : undefined;
@@ -47,10 +60,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -65,7 +77,9 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       extraMonthlyPayment: parseFloat(String(extraMonthlyPayment)),
       includeRefinancing,
-      targetPayoffDate: targetPayoffDate ? new Date(targetPayoffDate) : undefined,
+      targetPayoffDate: targetPayoffDate
+        ? new Date(targetPayoffDate)
+        : undefined,
     });
 
     return NextResponse.json(result);
@@ -77,4 +91,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

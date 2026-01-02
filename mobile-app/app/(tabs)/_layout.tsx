@@ -59,6 +59,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="investments"
+        options={{
+          title: 'Invest',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="trending-up" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
@@ -78,6 +87,12 @@ export default function TabLayout() {
         name="loans"
         options={{
           href: null, // Hide from tab bar
+        }}
+      />
+      <Tabs.Screen
+        name="student-loans"
+        options={{
+          href: null, // Hide from tab bar - accessed via Money tab or direct navigation
         }}
       />
     </Tabs>

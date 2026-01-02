@@ -1,27 +1,41 @@
 /**
  * AI Financial Coach - Recommendations API
- * 
+ *
  * GET /api/ai/financial-coach/recommendations - Get personalized recommendations
  * POST /api/ai/financial-coach/recommendations - Generate new recommendations
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { recommendationEngine } from '@/lib/financial/recommendation-engine';
 import { RecommendationType } from '@/lib/financial/types/ai-coach.types';
 
+async function getUser() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } }
+  );
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const types = searchParams.get('types')?.split(',') as RecommendationType[] | undefined;
+    const types = searchParams.get('types')?.split(',') as
+      | RecommendationType[]
+      | undefined;
     const limit = parseInt(searchParams.get('limit') || '10');
     const includeAI = searchParams.get('includeAI') !== 'false';
 
@@ -44,10 +58,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -71,4 +84,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -15,6 +15,7 @@ import {
   BarChartComponent,
   ChartContainer,
 } from '@/components/charts';
+import AIBudgetOptimizer from './AIBudgetOptimizer';
 
 // Types
 interface Budget {
@@ -322,6 +323,9 @@ export default function BudgetManagement() {
 
   return (
     <div className="space-y-6">
+      {/* AI Budget Optimizer - NEW */}
+      <AIBudgetOptimizer />
+
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

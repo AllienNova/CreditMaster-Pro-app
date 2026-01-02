@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useCoachStore } from '../../src/stores/coachStore';
+import { useCoachStore } from '../../src/store';
 import { BudgetOptimization } from '../../src/types/coach.types';
 
 export default function BudgetOptimizerScreen() {

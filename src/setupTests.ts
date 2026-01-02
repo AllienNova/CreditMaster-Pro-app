@@ -5,20 +5,46 @@ import 'openai/shims/node';
 
 // Polyfill fetch for tests (required by Stripe SDK, OpenAI SDK, etc.)
 import { TextEncoder, TextDecoder } from 'util';
+import fetch, { Response, Request, Headers } from 'node-fetch';
+import { ReadableStream, WritableStream, TransformStream } from 'stream/web';
 
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as typeof global.TextDecoder;
 
-// Mock fetch globally for tests
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    status: 200,
-    json: () => Promise.resolve({}),
-    text: () => Promise.resolve(''),
-    headers: new Headers(),
-  } as Response)
-);
+// Polyfill fetch, Response, Request, and Headers for MSW
+global.fetch = fetch as any;
+global.Response = Response as any;
+global.Request = Request as any;
+global.Headers = Headers as any;
+
+// Polyfill Web Streams API for MSW
+global.ReadableStream = ReadableStream as any;
+global.WritableStream = WritableStream as any;
+global.TransformStream = TransformStream as any;
+
+// Fix for MSW v2 Promise compatibility
+// Ensure Promise constructor is properly available
+if (typeof global.Promise === 'undefined') {
+  global.Promise = Promise;
+}
+
+// Polyfill BroadcastChannel for MSW
+class BroadcastChannelMock {
+  constructor(public name: string) {}
+  postMessage() {}
+  close() {}
+  addEventListener() {}
+  removeEventListener() {}
+  dispatchEvent() { return true; }
+}
+global.BroadcastChannel = BroadcastChannelMock as any;
+
+// Set base URL for tests (only in jsdom environment)
+// Skip location mocking to avoid jsdom navigation errors
+// Tests can mock window.location individually if needed
+
+// Import MSW server setup
+import './__tests__/mocks/server';
 
 // Mock Request and Response for Next.js API routes
 if (typeof Request === 'undefined') {

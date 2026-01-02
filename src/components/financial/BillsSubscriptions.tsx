@@ -16,6 +16,7 @@ import type {
   BillCategory,
   BillFrequency,
 } from '@/lib/financial/types/bill.types';
+import AIBillsOptimizer from './AIBillsOptimizer';
 
 // Extended Bill interface for UI display
 interface BillWithStatus extends Bill {
@@ -526,6 +527,9 @@ export default function BillsSubscriptions() {
 
   return (
     <div className="space-y-6">
+      {/* AI Bills Optimizer - NEW */}
+      <AIBillsOptimizer />
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">

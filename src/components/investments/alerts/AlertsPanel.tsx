@@ -2,7 +2,7 @@
 
 /**
  * Alerts Panel Component
- * 
+ *
  * UI for managing price alerts:
  * - Create new alerts
  * - View active alerts
@@ -31,7 +31,7 @@ interface AlertsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   className?: string;
-  embedded?: boolean;  // For embedding in dashboard without sidebar styling
+  embedded?: boolean; // For embedding in dashboard without sidebar styling
 }
 
 type TabType = 'active' | 'create' | 'notifications' | 'history';
@@ -61,26 +61,44 @@ export function AlertsPanel({
     if (!isOpen && !embedded) return;
 
     const userAlerts = alertService.getAlertsByUser(userId);
-    setAlerts(symbol ? userAlerts.filter(a => a.symbol === symbol) : userAlerts);
+    setAlerts(
+      symbol ? userAlerts.filter((a) => a.symbol === symbol) : userAlerts
+    );
     setNotifications(alertService.getNotifications());
     setStats(alertService.getAlertStats(userId));
   }, [isOpen, embedded, userId, symbol, alertService]);
 
-  const handleDeleteAlert = useCallback((id: string) => {
-    alertService.deleteAlert(id);
-    setAlerts(prev => prev.filter(a => a.id !== id));
-  }, [alertService]);
+  const handleDeleteAlert = useCallback(
+    (id: string) => {
+      alertService.deleteAlert(id);
+      setAlerts((prev) => prev.filter((a) => a.id !== id));
+    },
+    [alertService]
+  );
 
-  const handleToggleAlert = useCallback((id: string) => {
-    const alert = alertService.getAlert(id);
-    if (alert) {
-      const newStatus = alert.status === 'active' ? 'disabled' : 'active';
-      alertService.updateAlert(id, { status: newStatus });
-      setAlerts(prev => prev.map(a =>
-        a.id === id ? { ...a, status: newStatus } : a
-      ));
-    }
-  }, [alertService]);
+  const handleToggleAlert = useCallback(
+    (id: string) => {
+      const alert = alertService.getAlert(id);
+      if (alert) {
+        const newStatus = alert.status === 'active' ? 'disabled' : 'active';
+        alertService.updateAlert(id, { status: newStatus });
+        setAlerts((prev) =>
+          prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a))
+        );
+      }
+    },
+    [alertService]
+  );
+
+  const handleMarkRead = useCallback(
+    (id: string) => {
+      alertService.markNotificationRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      );
+    },
+    [alertService]
+  );
 
   if (!isOpen && !embedded) return null;
 
@@ -90,39 +108,55 @@ export function AlertsPanel({
       <div className={`bg-gray-800 rounded-lg ${className}`}>
         {/* Tabs */}
         <div className="flex border-b border-gray-700">
-          {(['active', 'create', 'notifications', 'history'] as TabType[]).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 px-4 py-3 text-sm font-medium capitalize transition-colors ${
-                activeTab === tab
-                  ? 'text-blue-400 border-b-2 border-blue-400'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+          {(['active', 'create', 'notifications', 'history'] as TabType[]).map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 px-4 py-3 text-sm font-medium capitalize transition-colors ${
+                  activeTab === tab
+                    ? 'text-blue-400 border-b-2 border-blue-400'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {tab}
+              </button>
+            )
+          )}
         </div>
 
         {/* Content */}
         <div className="p-4">
           {activeTab === 'active' && (
-            <AlertsList alerts={alerts} onDelete={handleDeleteAlert} onToggle={handleToggleAlert} />
+            <ActiveAlertsList
+              alerts={alerts}
+              onDelete={handleDeleteAlert}
+              onToggle={handleToggleAlert}
+            />
           )}
-          {activeTab === 'create' && (
+          {activeTab === 'create' && symbol && (
             <CreateAlertForm
               symbol={symbol}
               userId={userId}
               currentPrice={currentPrice}
-              onCreated={(alert) => setAlerts(prev => [alert, ...prev])}
+              onCreated={(alert) => setAlerts((prev) => [alert, ...prev])}
             />
           )}
-          {activeTab === 'notifications' && (
-            <NotificationsList notifications={notifications} />
+          {activeTab === 'create' && !symbol && (
+            <div className="p-4 text-center text-gray-500">
+              Please select a symbol to create an alert.
+            </div>
           )}
-          {activeTab === 'history' && stats && (
-            <AlertsHistory stats={stats} />
+          {activeTab === 'notifications' && (
+            <NotificationsList
+              notifications={notifications}
+              onMarkRead={handleMarkRead}
+            />
+          )}
+          {activeTab === 'history' && (
+            <AlertHistory
+              alerts={alerts.filter((a) => a.status !== 'active')}
+            />
           )}
         </div>
       </div>
@@ -130,12 +164,16 @@ export function AlertsPanel({
   }
 
   return (
-    <div className={`fixed right-0 top-0 h-full w-96 bg-gray-900 border-l border-gray-700 shadow-xl z-50 ${className}`}>
+    <div
+      className={`fixed right-0 top-0 h-full w-96 bg-gray-900 border-l border-gray-700 shadow-xl z-50 ${className}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
         <h2 className="text-lg font-semibold text-white">
           🔔 Price Alerts
-          {symbol && <span className="text-gray-400 ml-2 text-sm">({symbol})</span>}
+          {symbol && (
+            <span className="text-gray-400 ml-2 text-sm">({symbol})</span>
+          )}
         </h2>
         <button
           onClick={onClose}
@@ -149,62 +187,70 @@ export function AlertsPanel({
       {stats && (
         <div className="flex items-center gap-4 px-4 py-2 bg-gray-800/50 border-b border-gray-700 text-sm">
           <span className="text-green-400">● {stats.activeAlerts} Active</span>
-          <span className="text-yellow-400">⚡ {stats.triggeredToday} Today</span>
+          <span className="text-yellow-400">
+            ⚡ {stats.triggeredToday} Today
+          </span>
           <span className="text-gray-400">📊 {stats.totalAlerts} Total</span>
         </div>
       )}
 
       {/* Tabs */}
       <div className="flex border-b border-gray-700">
-        {(['active', 'create', 'notifications', 'history'] as TabType[]).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 text-sm font-medium transition-colors ${
-              activeTab === tab
-                ? 'text-blue-400 border-b-2 border-blue-400'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            {tab === 'active' && '📋'}
-            {tab === 'create' && '➕'}
-            {tab === 'notifications' && `🔔 (${notifications.filter(n => !n.read).length})`}
-            {tab === 'history' && '📜'}
-            <span className="ml-1 capitalize">{tab}</span>
-          </button>
-        ))}
+        {(['active', 'create', 'notifications', 'history'] as TabType[]).map(
+          (tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                activeTab === tab
+                  ? 'text-blue-400 border-b-2 border-blue-400'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {tab === 'active' && '📋'}
+              {tab === 'create' && '➕'}
+              {tab === 'notifications' &&
+                `🔔 (${notifications.filter((n) => !n.read).length})`}
+              {tab === 'history' && '📜'}
+              <span className="ml-1 capitalize">{tab}</span>
+            </button>
+          )
+        )}
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4" style={{ height: 'calc(100% - 140px)' }}>
+      <div
+        className="flex-1 overflow-y-auto p-4"
+        style={{ height: 'calc(100% - 140px)' }}
+      >
         {activeTab === 'active' && (
-          <ActiveAlertsList 
-            alerts={alerts.filter(a => a.status === 'active')}
+          <ActiveAlertsList
+            alerts={alerts.filter((a) => a.status === 'active')}
             onDelete={handleDeleteAlert}
             onToggle={handleToggleAlert}
           />
         )}
         {activeTab === 'create' && (
-          <CreateAlertForm 
+          <CreateAlertForm
             symbol={symbol || ''}
             userId={userId}
             currentPrice={currentPrice}
-            onCreated={(alert) => setAlerts(prev => [alert, ...prev])}
+            onCreated={(alert) => setAlerts((prev) => [alert, ...prev])}
           />
         )}
         {activeTab === 'notifications' && (
-          <NotificationsList 
+          <NotificationsList
             notifications={notifications}
             onMarkRead={(id) => {
               alertService.markNotificationRead(id);
-              setNotifications(prev => prev.map(n => 
-                n.id === id ? { ...n, read: true } : n
-              ));
+              setNotifications((prev) =>
+                prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+              );
             }}
           />
         )}
         {activeTab === 'history' && (
-          <AlertHistory alerts={alerts.filter(a => a.status !== 'active')} />
+          <AlertHistory alerts={alerts.filter((a) => a.status !== 'active')} />
         )}
       </div>
     </div>
@@ -221,7 +267,11 @@ interface ActiveAlertsListProps {
   onToggle: (id: string) => void;
 }
 
-function ActiveAlertsList({ alerts, onDelete, onToggle }: ActiveAlertsListProps) {
+function ActiveAlertsList({
+  alerts,
+  onDelete,
+  onToggle,
+}: ActiveAlertsListProps) {
   if (alerts.length === 0) {
     return (
       <div className="text-center py-8 text-gray-400">
@@ -234,7 +284,7 @@ function ActiveAlertsList({ alerts, onDelete, onToggle }: ActiveAlertsListProps)
 
   return (
     <div className="space-y-3">
-      {alerts.map(alert => (
+      {alerts.map((alert) => (
         <AlertCard
           key={alert.id}
           alert={alert}
@@ -287,11 +337,16 @@ function AlertCard({ alert, onDelete, onToggle }: AlertCardProps) {
           <div>
             <div className="font-medium text-white">{alert.symbol}</div>
             <div className="text-sm text-gray-400">
-              {alert.type === 'price_above' && `Above $${alert.condition.targetPrice?.toFixed(2)}`}
-              {alert.type === 'price_below' && `Below $${alert.condition.targetPrice?.toFixed(2)}`}
-              {alert.type === 'percent_change' && `±${alert.condition.percentChange}%`}
-              {alert.type === 'volume_spike' && `${alert.condition.volumeMultiplier}x Volume`}
-              {alert.type === 'indicator_crossover' && `${alert.condition.indicatorType} ${alert.condition.crossoverType}`}
+              {alert.type === 'price_above' &&
+                `Above $${alert.condition.targetPrice?.toFixed(2)}`}
+              {alert.type === 'price_below' &&
+                `Below $${alert.condition.targetPrice?.toFixed(2)}`}
+              {alert.type === 'percent_change' &&
+                `±${alert.condition.percentChange}%`}
+              {alert.type === 'volume_spike' &&
+                `${alert.condition.volumeMultiplier}x Volume`}
+              {alert.type === 'indicator_crossover' &&
+                `${alert.condition.indicatorType} ${alert.condition.crossoverType}`}
             </div>
           </div>
         </div>
@@ -326,7 +381,9 @@ function AlertCard({ alert, onDelete, onToggle }: AlertCardProps) {
       <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
         <span>Created: {new Date(alert.createdAt).toLocaleDateString()}</span>
         {alert.repeatEnabled && <span>🔁 Repeating</span>}
-        {alert.expiresAt && <span>Expires: {new Date(alert.expiresAt).toLocaleDateString()}</span>}
+        {alert.expiresAt && (
+          <span>Expires: {new Date(alert.expiresAt).toLocaleDateString()}</span>
+        )}
       </div>
     </div>
   );
@@ -343,9 +400,16 @@ interface CreateAlertFormProps {
   onCreated: (alert: PriceAlert) => void;
 }
 
-function CreateAlertForm({ symbol, userId, currentPrice, onCreated }: CreateAlertFormProps) {
+function CreateAlertForm({
+  symbol,
+  userId,
+  currentPrice,
+  onCreated,
+}: CreateAlertFormProps) {
   const [alertType, setAlertType] = useState<AlertType>('price_above');
-  const [targetPrice, setTargetPrice] = useState(currentPrice?.toString() || '');
+  const [targetPrice, setTargetPrice] = useState(
+    currentPrice?.toString() || ''
+  );
   const [percentChange, setPercentChange] = useState('5');
   const [priority, setPriority] = useState<AlertPriority>('medium');
   const [message, setMessage] = useState('');
@@ -363,9 +427,19 @@ function CreateAlertForm({ symbol, userId, currentPrice, onCreated }: CreateAler
       type: alertType,
       priority,
       condition: {
-        targetPrice: alertType.includes('price') ? parseFloat(targetPrice) : undefined,
-        direction: alertType === 'price_above' ? 'above' : alertType === 'price_below' ? 'below' : undefined,
-        percentChange: alertType === 'percent_change' ? parseFloat(percentChange) : undefined,
+        targetPrice: alertType.includes('price')
+          ? parseFloat(targetPrice)
+          : undefined,
+        direction:
+          alertType === 'price_above'
+            ? 'above'
+            : alertType === 'price_below'
+              ? 'below'
+              : undefined,
+        percentChange:
+          alertType === 'percent_change'
+            ? parseFloat(percentChange)
+            : undefined,
         volumeMultiplier: alertType === 'volume_spike' ? 2 : undefined,
       },
       message: message || undefined,
@@ -414,7 +488,9 @@ function CreateAlertForm({ symbol, userId, currentPrice, onCreated }: CreateAler
       {/* Price Target (for price alerts) */}
       {(alertType === 'price_above' || alertType === 'price_below') && (
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Target Price</label>
+          <label className="block text-sm text-gray-400 mb-1">
+            Target Price
+          </label>
           <div className="relative">
             <span className="absolute left-3 top-2 text-gray-400">$</span>
             <input
@@ -428,7 +504,9 @@ function CreateAlertForm({ symbol, userId, currentPrice, onCreated }: CreateAler
             />
           </div>
           {currentPrice && (
-            <p className="text-xs text-gray-500 mt-1">Current: ${currentPrice.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Current: ${currentPrice.toFixed(2)}
+            </p>
           )}
         </div>
       )}
@@ -436,7 +514,9 @@ function CreateAlertForm({ symbol, userId, currentPrice, onCreated }: CreateAler
       {/* Percent Change */}
       {alertType === 'percent_change' && (
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Percent Change</label>
+          <label className="block text-sm text-gray-400 mb-1">
+            Percent Change
+          </label>
           <div className="relative">
             <input
               type="number"
@@ -456,29 +536,36 @@ function CreateAlertForm({ symbol, userId, currentPrice, onCreated }: CreateAler
       <div>
         <label className="block text-sm text-gray-400 mb-1">Priority</label>
         <div className="flex gap-2">
-          {(['low', 'medium', 'high', 'critical'] as AlertPriority[]).map(p => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setPriority(p)}
-              className={`flex-1 py-2 text-sm rounded capitalize transition-colors ${
-                priority === p
-                  ? p === 'critical' ? 'bg-red-600 text-white' :
-                    p === 'high' ? 'bg-yellow-600 text-white' :
-                    p === 'medium' ? 'bg-blue-600 text-white' :
-                    'bg-gray-600 text-white'
-                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-              }`}
-            >
-              {p}
-            </button>
-          ))}
+          {(['low', 'medium', 'high', 'critical'] as AlertPriority[]).map(
+            (p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPriority(p)}
+                className={`flex-1 py-2 text-sm rounded capitalize transition-colors ${
+                  priority === p
+                    ? p === 'critical'
+                      ? 'bg-red-600 text-white'
+                      : p === 'high'
+                        ? 'bg-yellow-600 text-white'
+                        : p === 'medium'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-600 text-white'
+                    : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                }`}
+              >
+                {p}
+              </button>
+            )
+          )}
         </div>
       </div>
 
       {/* Message */}
       <div>
-        <label className="block text-sm text-gray-400 mb-1">Note (optional)</label>
+        <label className="block text-sm text-gray-400 mb-1">
+          Note (optional)
+        </label>
         <input
           type="text"
           value={message}
@@ -522,7 +609,10 @@ interface NotificationsListProps {
   onMarkRead: (id: string) => void;
 }
 
-function NotificationsList({ notifications, onMarkRead }: NotificationsListProps) {
+function NotificationsList({
+  notifications,
+  onMarkRead,
+}: NotificationsListProps) {
   if (notifications.length === 0) {
     return (
       <div className="text-center py-8 text-gray-400">
@@ -534,7 +624,7 @@ function NotificationsList({ notifications, onMarkRead }: NotificationsListProps
 
   return (
     <div className="space-y-2">
-      {notifications.map(notif => (
+      {notifications.map((notif) => (
         <div
           key={notif.id}
           onClick={() => onMarkRead(notif.id)}
@@ -546,7 +636,9 @@ function NotificationsList({ notifications, onMarkRead }: NotificationsListProps
         >
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
-              {!notif.read && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
+              {!notif.read && (
+                <span className="w-2 h-2 bg-blue-500 rounded-full" />
+              )}
               <span className="font-medium text-white">{notif.title}</span>
             </div>
             <span className="text-xs text-gray-500">
@@ -589,7 +681,7 @@ function AlertHistory({ alerts }: AlertHistoryProps) {
 
   return (
     <div className="space-y-2">
-      {alerts.map(alert => {
+      {alerts.map((alert) => {
         const badge = getStatusBadge(alert.status);
         return (
           <div
@@ -600,11 +692,15 @@ function AlertHistory({ alerts }: AlertHistoryProps) {
               <div>
                 <span className="font-medium text-white">{alert.symbol}</span>
                 <span className="text-sm text-gray-400 ml-2">
-                  {alert.type === 'price_above' && `Above $${alert.condition.targetPrice?.toFixed(2)}`}
-                  {alert.type === 'price_below' && `Below $${alert.condition.targetPrice?.toFixed(2)}`}
+                  {alert.type === 'price_above' &&
+                    `Above $${alert.condition.targetPrice?.toFixed(2)}`}
+                  {alert.type === 'price_below' &&
+                    `Below $${alert.condition.targetPrice?.toFixed(2)}`}
                 </span>
               </div>
-              <span className={`text-xs px-2 py-1 rounded ${badge.color} text-white`}>
+              <span
+                className={`text-xs px-2 py-1 rounded ${badge.color} text-white`}
+              >
                 {badge.label}
               </span>
             </div>
@@ -640,4 +736,3 @@ function formatTimeAgo(date: Date): string {
 }
 
 export default AlertsPanel;
-

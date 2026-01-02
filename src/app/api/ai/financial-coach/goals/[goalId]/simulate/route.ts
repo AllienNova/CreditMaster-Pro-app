@@ -1,23 +1,37 @@
 /**
  * AI Financial Coach - Goal Simulation API
- * 
+ *
  * POST /api/ai/financial-coach/goals/[goalId]/simulate - Simulate goal scenarios
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { goalPlanner } from '@/lib/financial/goal-planner';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { goalId: string } }
-) {
-  try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+interface RouteParams {
+  params: Promise<{ goalId: string }>;
+}
 
-    if (authError || !user) {
+async function getUser() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } }
+  );
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
+
+export async function POST(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { goalId } = await params;
+    const user = await getUser();
+
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -32,11 +46,13 @@ export async function POST(
     }
 
     const simulation = await goalPlanner.simulateGoal({
-      goalId: params.goalId,
-      scenarios: scenarios.map((s: { monthlyContribution: number; targetDate?: string }) => ({
-        monthlyContribution: parseFloat(String(s.monthlyContribution)),
-        targetDate: s.targetDate ? new Date(s.targetDate) : undefined,
-      })),
+      goalId,
+      scenarios: scenarios.map(
+        (s: { monthlyContribution: number; targetDate?: string }) => ({
+          monthlyContribution: parseFloat(String(s.monthlyContribution)),
+          targetDate: s.targetDate ? new Date(s.targetDate) : undefined,
+        })
+      ),
     });
 
     return NextResponse.json(simulation);
@@ -48,4 +64,3 @@ export async function POST(
     );
   }
 }
-

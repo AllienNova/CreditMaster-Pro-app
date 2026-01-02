@@ -168,6 +168,7 @@ export class FinancialContextEngine {
         loan: [],
         totalAssets: 0,
         totalLiabilities: 0,
+        totalSavings: 0,
         netWorth: 0,
         lastSyncedAt: new Date(),
       };
@@ -192,6 +193,7 @@ export class FinancialContextEngine {
           case 'savings':
             categorized.savings.push(summary);
             categorized.totalAssets += summary.currentBalance;
+            categorized.totalSavings += summary.currentBalance;
             break;
           case 'credit':
             categorized.credit.push(summary);
@@ -220,6 +222,7 @@ export class FinancialContextEngine {
         loan: [],
         totalAssets: 0,
         totalLiabilities: 0,
+        totalSavings: 0,
         netWorth: 0,
         lastSyncedAt: new Date(),
       };
@@ -443,9 +446,16 @@ export class FinancialContextEngine {
       monthlyPayments += balance * 0.03;
     }
 
+    // Calculate average interest rate
+    const averageInterestRate =
+      debts.length > 0
+        ? debts.reduce((sum, d) => sum + d.interestRate, 0) / debts.length
+        : 0;
+
     return {
       totalDebt,
       debtToIncomeRatio: 0, // Would need income data
+      averageInterestRate,
       monthlyPayments,
       debts,
       payoffStrategies: [],
@@ -693,7 +703,8 @@ export class FinancialContextEngine {
     const activeGoals = context.goals.filter((g) => g.status === 'active');
     const totalGoalProgress =
       activeGoals.length > 0
-        ? activeGoals.reduce((sum, g) => sum + g.progress, 0) / activeGoals.length
+        ? activeGoals.reduce((sum, g) => sum + g.progress, 0) /
+          activeGoals.length
         : 0;
 
     return {
@@ -705,7 +716,9 @@ export class FinancialContextEngine {
       monthlySavings: context.transactions.netCashFlow,
       savingsRate:
         context.transactions.totalIncome > 0
-          ? (context.transactions.netCashFlow / context.transactions.totalIncome) * 100
+          ? (context.transactions.netCashFlow /
+              context.transactions.totalIncome) *
+            100
           : 0,
       totalDebt: context.debts.totalDebt,
       debtToIncomeRatio: context.debts.debtToIncomeRatio,
@@ -766,8 +779,7 @@ export class FinancialContextEngine {
 
     // Determine freshness
     const lastSync = context.accounts.lastSyncedAt;
-    const hoursSinceSync =
-      (Date.now() - lastSync.getTime()) / (1000 * 60 * 60);
+    const hoursSinceSync = (Date.now() - lastSync.getTime()) / (1000 * 60 * 60);
     let freshness: DataQuality['freshness'] = 'fresh';
     if (hoursSinceSync > 24) {
       freshness = 'outdated';
@@ -796,7 +808,9 @@ export class FinancialContextEngine {
           type: 'credit_bureau',
           lastUpdated: context.creditProfile.lastUpdated,
           status:
-            context.creditProfile.currentScore > 0 ? 'connected' : 'disconnected',
+            context.creditProfile.currentScore > 0
+              ? 'connected'
+              : 'disconnected',
         },
       ],
     };

@@ -1,10 +1,12 @@
 /**
  * Admin Settings API
- * 
+ *
  * Manages platform settings.
+ * SECURITY: Requires admin authentication
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireRole, createAuthResponse } from '@/lib/security/auth-middleware';
 
 // In production, these would be stored in database or environment
 let settings = {
@@ -17,11 +19,22 @@ let settings = {
   stripeTestMode: true,
 };
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // SECURITY: Require admin role for settings
+  const authResult = await requireRole(request, 'admin');
+  if (!authResult.authenticated || !authResult.user) {
+    return createAuthResponse(authResult);
+  }
   return NextResponse.json(settings);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // SECURITY: Require admin role for modifying settings
+  const authResult = await requireRole(request, 'admin');
+  if (!authResult.authenticated || !authResult.user) {
+    return createAuthResponse(authResult);
+  }
+
   try {
     const body = await request.json();
     

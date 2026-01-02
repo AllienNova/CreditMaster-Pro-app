@@ -134,7 +134,13 @@ class SmartInsightsEngine {
       generatedAt: new Date(),
       processingTimeMs: Date.now() - startTime,
       aiModelUsed: mergedOptions.includeAI ? AI_MODEL : undefined,
-      dataSourcesUsed: ['accounts', 'transactions', 'budgets', 'bills', 'goals'],
+      dataSourcesUsed: [
+        'accounts',
+        'transactions',
+        'budgets',
+        'bills',
+        'goals',
+      ],
     };
   }
 
@@ -207,7 +213,8 @@ class SmartInsightsEngine {
       expires_at: insight.expiresAt?.toISOString(),
     }));
 
-    const { error } = await getSupabase()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (getSupabase() as any)
       .from('financial_insights')
       .upsert(records, { onConflict: 'id' });
 
@@ -220,7 +227,8 @@ class SmartInsightsEngine {
    * Dismiss an insight
    */
   async dismissInsight(insightId: string, userId: string): Promise<boolean> {
-    const { error } = await getSupabase()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (getSupabase() as any)
       .from('financial_insights')
       .update({ dismissed: true, dismissed_at: new Date().toISOString() })
       .eq('id', insightId)
@@ -237,7 +245,8 @@ class SmartInsightsEngine {
     userId: string,
     action: string
   ): Promise<boolean> {
-    const { error } = await getSupabase()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (getSupabase() as any)
       .from('financial_insights')
       .update({
         action_taken: action,
@@ -267,7 +276,10 @@ class SmartInsightsEngine {
     const categoryTotals = new Map<string, { total: number; count: number }>();
     for (const txn of transactions) {
       if (txn.amount > 0) {
-        const existing = categoryTotals.get(txn.category) || { total: 0, count: 0 };
+        const existing = categoryTotals.get(txn.category) || {
+          total: 0,
+          count: 0,
+        };
         categoryTotals.set(txn.category, {
           total: existing.total + txn.amount,
           count: existing.count + 1,
@@ -283,7 +295,7 @@ class SmartInsightsEngine {
         const average = categoryData.total / categoryData.count;
         if (txn.amount > average * 3 && txn.amount > 100) {
           insights.push({
-            id: `anomaly_${txn.transactionId}`,
+            id: `anomaly_${txn.id}`,
             userId,
             type: 'spending_anomaly',
             category: 'spending',
@@ -294,12 +306,17 @@ class SmartInsightsEngine {
             amount: txn.amount,
             comparisonValue: average,
             anomalyType: 'unusual_large',
-            transactionId: txn.transactionId,
-            merchantName: txn.merchantName,
+            transactionId: txn.id,
+            merchantName: txn.merchantName || 'Unknown',
             expectedAmount: average,
-            relatedTransactionIds: [txn.transactionId],
+            relatedTransactionIds: [txn.id],
             actions: [
-              { id: 'review', label: 'Review Transaction', type: 'link', href: `/transactions/${txn.transactionId}` },
+              {
+                id: 'review',
+                label: 'Review Transaction',
+                type: 'link',
+                href: `/transactions/${txn.id}`,
+              },
               { id: 'dismiss', label: 'Dismiss', type: 'dismiss' },
             ],
             dismissed: false,
@@ -327,9 +344,14 @@ class SmartInsightsEngine {
     // Detect potential subscription savings
     const merchantCounts = new Map<string, { count: number; total: number }>();
     for (const txn of transactions) {
-      if (txn.amount > 0 && txn.amount < 100) {
-        const existing = merchantCounts.get(txn.merchantName) || { count: 0, total: 0 };
-        merchantCounts.set(txn.merchantName, {
+      // Only process transactions with valid merchant names
+      if (txn.amount > 0 && txn.amount < 100 && txn.merchantName) {
+        const merchantName: string = txn.merchantName;
+        const existing = merchantCounts.get(merchantName) || {
+          count: 0,
+          total: 0,
+        };
+        merchantCounts.set(merchantName, {
           count: existing.count + 1,
           total: existing.total + txn.amount,
         });
@@ -337,7 +359,7 @@ class SmartInsightsEngine {
     }
 
     // Find recurring small charges (potential subscriptions)
-    for (const [merchant, data] of merchantCounts) {
+    for (const [merchant, data] of Array.from(merchantCounts.entries())) {
       if (data.count >= 2) {
         const avgAmount = data.total / data.count;
         if (avgAmount >= 5 && avgAmount <= 50) {
@@ -355,7 +377,12 @@ class SmartInsightsEngine {
             potentialSavings: avgAmount * 12,
             timeframe: 'yearly',
             actions: [
-              { id: 'review', label: 'Review Subscriptions', type: 'link', href: '/bills' },
+              {
+                id: 'review',
+                label: 'Review Subscriptions',
+                type: 'link',
+                href: '/bills',
+              },
               { id: 'dismiss', label: 'Keep Subscription', type: 'dismiss' },
             ],
             dismissed: false,
@@ -379,8 +406,17 @@ class SmartInsightsEngine {
   ): Promise<BillReminderInsight[]> {
     const insights: BillReminderInsight[] = [];
 
+    // Define bill type for database response
+    interface BillRow {
+      id: string;
+      name: string;
+      amount: number;
+      next_due_date: string;
+      status: string;
+    }
+
     // Get upcoming bills from database
-    const { data: bills } = await getSupabase()
+    const { data: billsData } = await getSupabase()
       .from('recurring_bills')
       .select('*')
       .eq('user_id', userId)
@@ -389,8 +425,9 @@ class SmartInsightsEngine {
       .order('next_due_date', { ascending: true })
       .limit(10);
 
+    const bills = (billsData || []) as BillRow[];
     const today = new Date();
-    for (const bill of bills || []) {
+    for (const bill of bills) {
       const dueDate = new Date(bill.next_due_date);
       const daysUntilDue = Math.ceil(
         (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
@@ -402,7 +439,8 @@ class SmartInsightsEngine {
           userId,
           type: 'bill_reminder',
           category: 'bills',
-          priority: daysUntilDue <= 2 ? 'high' : daysUntilDue <= 5 ? 'medium' : 'low',
+          priority:
+            daysUntilDue <= 2 ? 'high' : daysUntilDue <= 5 ? 'medium' : 'low',
           impact: 'warning',
           title: `${bill.name} Due Soon`,
           description: `Your ${bill.name} bill of $${bill.amount.toFixed(2)} is due in ${daysUntilDue} day${daysUntilDue !== 1 ? 's' : ''}.`,
@@ -413,7 +451,12 @@ class SmartInsightsEngine {
           daysUntilDue,
           relatedBillIds: [bill.id],
           actions: [
-            { id: 'pay', label: 'Pay Now', type: 'link', href: `/bills/${bill.id}/pay` },
+            {
+              id: 'pay',
+              label: 'Pay Now',
+              type: 'link',
+              href: `/bills/${bill.id}/pay`,
+            },
             { id: 'snooze', label: 'Remind Later', type: 'snooze' },
           ],
           dismissed: false,
@@ -437,7 +480,7 @@ class SmartInsightsEngine {
     const insights: BudgetAlertInsight[] = [];
 
     for (const budget of context.budgets) {
-      const percentUsed = (budget.spent / budget.budgeted) * 100;
+      const percentUsed = (budget.spentAmount / budget.budgetedAmount) * 100;
 
       if (percentUsed >= 80) {
         const daysRemaining = this.getDaysRemainingInPeriod(budget.period);
@@ -457,20 +500,30 @@ class SmartInsightsEngine {
               : `${budget.category} Budget Alert`,
           description:
             percentUsed >= 100
-              ? `You've spent $${budget.spent.toFixed(2)} of your $${budget.budgeted.toFixed(2)} ${budget.category} budget (${percentUsed.toFixed(0)}%).`
+              ? `You've spent $${budget.spentAmount.toFixed(2)} of your $${budget.budgetedAmount.toFixed(2)} ${budget.category} budget (${percentUsed.toFixed(0)}%).`
               : `You've used ${percentUsed.toFixed(0)}% of your ${budget.category} budget with ${daysRemaining} days left.`,
-          amount: budget.spent,
-          comparisonValue: budget.budgeted,
+          amount: budget.spentAmount,
+          comparisonValue: budget.budgetedAmount,
           percentage: percentUsed,
           budgetId: budget.category,
           budgetCategory: budget.category,
-          budgetedAmount: budget.budgeted,
-          spentAmount: budget.spent,
+          budgetedAmount: budget.budgetedAmount,
+          spentAmount: budget.spentAmount,
           percentUsed,
           daysRemaining,
           actions: [
-            { id: 'view', label: 'View Budget', type: 'link', href: `/budgets/${budget.category}` },
-            { id: 'adjust', label: 'Adjust Budget', type: 'link', href: `/budgets/${budget.category}/edit` },
+            {
+              id: 'view',
+              label: 'View Budget',
+              type: 'link',
+              href: `/budgets/${budget.category}`,
+            },
+            {
+              id: 'adjust',
+              label: 'Adjust Budget',
+              type: 'link',
+              href: `/budgets/${budget.category}/edit`,
+            },
           ],
           dismissed: false,
           createdAt: new Date(),
@@ -510,8 +563,18 @@ class SmartInsightsEngine {
         comparisonValue: income,
         trend: 'down',
         actions: [
-          { id: 'review', label: 'Review Spending', type: 'link', href: '/spending' },
-          { id: 'budget', label: 'Create Budget', type: 'link', href: '/budgets/new' },
+          {
+            id: 'review',
+            label: 'Review Spending',
+            type: 'link',
+            href: '/spending',
+          },
+          {
+            id: 'budget',
+            label: 'Create Budget',
+            type: 'link',
+            href: '/budgets/new',
+          },
         ],
         dismissed: false,
         createdAt: new Date(),
@@ -536,19 +599,29 @@ class SmartInsightsEngine {
     for (const account of context.accounts.savings) {
       if (account.currentBalance < 1000) {
         insights.push({
-          id: `account_low_savings_${account.accountId}`,
+          id: `account_low_savings_${account.id}`,
           userId,
           type: 'account_optimization',
           category: 'accounts',
           priority: account.currentBalance < 100 ? 'high' : 'medium',
           impact: 'warning',
           title: 'Low Savings Balance',
-          description: `Your ${account.name} account has only $${account.currentBalance.toFixed(2)}. Consider building an emergency fund.`,
+          description: `Your ${account.accountName} account has only $${account.currentBalance.toFixed(2)}. Consider building an emergency fund.`,
           amount: account.currentBalance,
-          relatedAccountIds: [account.accountId],
+          relatedAccountIds: [account.id],
           actions: [
-            { id: 'transfer', label: 'Transfer Funds', type: 'link', href: '/transfers' },
-            { id: 'goals', label: 'Set Savings Goal', type: 'link', href: '/goals/new' },
+            {
+              id: 'transfer',
+              label: 'Transfer Funds',
+              type: 'link',
+              href: '/transfers',
+            },
+            {
+              id: 'goals',
+              label: 'Set Savings Goal',
+              type: 'link',
+              href: '/goals/new',
+            },
           ],
           dismissed: false,
           createdAt: new Date(),
@@ -576,7 +649,10 @@ class SmartInsightsEngine {
       if (options.types && !options.types.includes(insight.type)) {
         return false;
       }
-      if (options.categories && !options.categories.includes(insight.category)) {
+      if (
+        options.categories &&
+        !options.categories.includes(insight.category)
+      ) {
         return false;
       }
       if (options.minPriority) {
@@ -633,25 +709,34 @@ class SmartInsightsEngine {
     return insights;
   }
 
-  private buildAIPrompt(insights: FinancialInsight[], context: FinancialContext): string {
+  private buildAIPrompt(
+    insights: FinancialInsight[],
+    context: FinancialContext
+  ): string {
     const summaries = insights.map(
       (i) => `- ID: ${i.id}, Type: ${i.type}, Title: ${i.title}`
     );
     return `Insights for user with net worth $${context.accounts.netWorth.toFixed(2)}:\n${summaries.join('\n')}`;
   }
 
-  private parseAIResponse(content: string): Array<{ insightId: string; recommendation: string }> {
+  private parseAIResponse(
+    content: string
+  ): Array<{ insightId: string; recommendation: string }> {
     try {
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       if (jsonMatch) return JSON.parse(jsonMatch[0]);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return [];
   }
 
   private getDaysRemainingInPeriod(_period: string): number {
     const now = new Date();
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return Math.ceil((endOfMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.ceil(
+      (endOfMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    );
   }
 
   private mapInsightFromDb(row: Record<string, unknown>): FinancialInsight {
@@ -672,14 +757,22 @@ class SmartInsightsEngine {
       comparisonValue: row.comparison_value as number | undefined,
       trend: row.trend as 'up' | 'down' | 'stable' | undefined,
       relatedAccountIds: row.related_account_ids as string[] | undefined,
-      relatedTransactionIds: row.related_transaction_ids as string[] | undefined,
+      relatedTransactionIds: row.related_transaction_ids as
+        | string[]
+        | undefined,
       actions: row.actions as InsightAction[] | undefined,
       dismissed: row.dismissed as boolean,
-      dismissedAt: row.dismissed_at ? new Date(row.dismissed_at as string) : undefined,
+      dismissedAt: row.dismissed_at
+        ? new Date(row.dismissed_at as string)
+        : undefined,
       actionTaken: row.action_taken as string | undefined,
-      actionTakenAt: row.action_taken_at ? new Date(row.action_taken_at as string) : undefined,
+      actionTakenAt: row.action_taken_at
+        ? new Date(row.action_taken_at as string)
+        : undefined,
       createdAt: new Date(row.created_at as string),
-      expiresAt: row.expires_at ? new Date(row.expires_at as string) : undefined,
+      expiresAt: row.expires_at
+        ? new Date(row.expires_at as string)
+        : undefined,
       confidence: row.confidence as number,
       dataSource: row.data_source as string[],
     };

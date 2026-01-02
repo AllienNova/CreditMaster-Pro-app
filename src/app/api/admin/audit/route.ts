@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireRole, createAuthResponse } from '@/lib/security/auth-middleware';
 
 function getSupabaseClient() {
   return createClient(
@@ -9,6 +10,12 @@ function getSupabaseClient() {
 }
 
 export async function GET(request: NextRequest) {
+  // SECURITY: Require admin role for audit logs
+  const authResult = await requireRole(request, 'admin');
+  if (!authResult.authenticated || !authResult.user) {
+    return createAuthResponse(authResult);
+  }
+
   const supabase = getSupabaseClient();
   try {
     const { searchParams } = new URL(request.url);

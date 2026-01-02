@@ -9,6 +9,7 @@
 import Link from 'next/link';
 import { getSupabase } from '@/lib/supabase/client';
 import { redirect } from 'next/navigation';
+import AICreditRoadmap from '@/components/credit-builder/AICreditRoadmap';
 
 // Force dynamic rendering to prevent build-time prerendering (requires auth)
 export const dynamic = 'force-dynamic';
@@ -50,6 +51,8 @@ export default async function CreditBuilderDashboard() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* AI Credit Building Roadmap */}
+        <AICreditRoadmap />
         {/* Credit Builder Score Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
           <div className="flex items-center justify-between mb-6">

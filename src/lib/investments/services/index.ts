@@ -1,17 +1,14 @@
 /**
  * Investment Services Index
- * 
+ *
  * Central export point for all investment-related services
  */
 
 // Market Data
-export { 
+export {
   MarketDataService,
-  type MarketDataConfig,
-  type CandleData,
-  type MarketDataResult,
-  type HistoricalDataOptions,
-  type QuoteData,
+  type MarketDataProvider,
+  type RealtimeUpdate,
 } from './MarketDataService';
 
 // Technical Analysis / Pattern Recognition
@@ -19,9 +16,12 @@ export {
   PatternRecognitionService,
   PATTERN_INFO,
   type DetectedPattern,
-  type ChartPattern,
+  type PatternType,
+  type PatternDirection,
+  type PatternStatus,
   type PatternScanResult,
-  type PivotPoint,
+  type PatternPoint,
+  type TrendLine,
 } from './PatternRecognitionService';
 
 // AI Recommendations
@@ -62,8 +62,19 @@ export {
   type AlertType,
   type AlertPriority,
   type AlertStatus,
-  type CreateAlertOptions,
+  type AlertCondition,
   type AlertNotification,
   type AlertStats,
 } from './PriceAlertService';
 
+// Fundamental Analysis
+export {
+  FundamentalAnalysisService,
+  getFundamentalAnalysisService,
+} from './FundamentalAnalysisService';
+
+// Sentiment Analysis
+export {
+  SentimentAnalysisService,
+  getSentimentAnalysisService,
+} from './SentimentAnalysisService';

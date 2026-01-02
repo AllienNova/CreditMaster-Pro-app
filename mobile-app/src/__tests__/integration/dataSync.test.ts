@@ -75,10 +75,26 @@ describe('Data Sync Integration', () => {
     it('should update credit score after dispute resolution', async () => {
       // Initial state
       useCreditStore.setState({
-        scores: [{ bureau: 'experian', score: 680 }],
+        scores: [{
+          id: 'score-1',
+          userId: 'user-1',
+          bureau: 'experian',
+          score: 680,
+          date: new Date().toISOString(),
+        }],
       });
       useDisputeStore.setState({
-        disputes: [{ id: '1', status: 'pending', bureau: 'experian' }],
+        disputes: [{
+          id: '1',
+          userId: 'user-1',
+          status: 'pending',
+          bureau: 'experian',
+          itemType: 'credit_card',
+          creditorName: 'Test Creditor',
+          disputeReason: 'Not mine',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }],
       });
 
       // Simulate dispute resolution
@@ -139,12 +155,20 @@ describe('Data Sync Integration', () => {
   describe('Real-time Updates', () => {
     it('should handle real-time credit alert', () => {
       const initialAlerts = useCreditStore.getState().alerts;
-      
+
       // Simulate real-time alert
       const newAlert = {
         id: 'alert-1',
-        type: 'score_change',
+        userId: 'user-1',
+        bureau: 'experian',
+        alertType: 'score_change' as const,
+        type: 'score_change' as const,
+        severity: 'medium' as const,
+        title: 'Score Change Alert',
+        description: 'Your score increased by 10 points',
         message: 'Your score increased by 10 points',
+        createdAt: new Date().toISOString(),
+        acknowledged: false,
         isRead: false,
       };
 

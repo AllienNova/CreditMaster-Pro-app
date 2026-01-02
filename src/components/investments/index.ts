@@ -1,6 +1,6 @@
 /**
  * Investment Components Index
- * 
+ *
  * Central export point for all investment-related components
  */
 
@@ -9,7 +9,7 @@ export { InvestmentDashboard } from './dashboard/InvestmentDashboard';
 
 // Charts
 export { AdvancedChartContainer } from './charts/AdvancedChartContainer';
-export { 
+export {
   calculateSMA,
   calculateEMA,
   calculateRSI,
@@ -17,7 +17,6 @@ export {
   calculateBollingerBands,
   calculateATR,
   calculateStochastic,
-  calculateOBV,
   calculateVWAP,
 } from './charts/TechnicalIndicators';
 
@@ -26,4 +25,3 @@ export { AlertsPanel } from './alerts/AlertsPanel';
 
 // Patterns
 export { PatternOverlay } from './patterns/PatternOverlay';
-

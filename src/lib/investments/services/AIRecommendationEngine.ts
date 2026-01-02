@@ -10,8 +10,8 @@
  */
 
 import { TechnicalAnalysis } from '../types/technical-analysis.types';
-import { SentimentAnalysisResult } from '../types/sentiment-analysis.types';
-import { FundamentalMetrics } from '../types/fundamental-analysis.types';
+import { SentimentAnalysis } from '../types/sentiment-analysis.types';
+import { FundamentalMetricSet } from '../types/fundamental-analysis.types';
 
 // ============================================================================
 // TYPES
@@ -124,9 +124,10 @@ export class AIRecommendationEngine {
 
   async generateRecommendation(
     symbol: string,
+    currentPrice: number,
     technicalData: TechnicalAnalysis,
-    fundamentalData?: FundamentalMetrics,
-    sentimentData?: SentimentAnalysisResult,
+    fundamentalData?: FundamentalMetricSet,
+    sentimentData?: SentimentAnalysis,
     userProfile?: UserProfile
   ): Promise<InvestmentRecommendation> {
     // Calculate component scores
@@ -144,7 +145,6 @@ export class AIRecommendationEngine {
     const action = this.scoreToAction(compositeScore);
     
     // Calculate price targets
-    const currentPrice = technicalData.price || 100;
     const targets = this.calculatePriceTargets(currentPrice, technicalData, action);
     
     // Generate reasons
@@ -188,12 +188,12 @@ export class AIRecommendationEngine {
   // SCORE CALCULATIONS
   // ============================================================================
 
-  private calculateTechnicalScore(data: TechnicalAnalysis): number {
+  private calculateTechnicalScore(data: TechnicalAnalysis | any): number {
     let score = 50;  // Neutral baseline
 
-    // Trend analysis
-    if (data.trend?.direction === 'bullish') score += 15;
-    else if (data.trend?.direction === 'bearish') score -= 15;
+    // Trend analysis (use medium-term trend as primary indicator)
+    if (data.trend?.mediumTerm === 'bullish') score += 15;
+    else if (data.trend?.mediumTerm === 'bearish') score -= 15;
 
     // RSI
     if (data.indicators?.rsi !== undefined) {
@@ -213,10 +213,10 @@ export class AIRecommendationEngine {
     // Support/Resistance
     if (data.supportResistance) {
       const price = data.price || 0;
-      const nearSupport = data.supportResistance.supports?.some(s =>
+      const nearSupport = data.supportResistance.supports?.some((s: any) =>
         Math.abs(s - price) / price < 0.02
       );
-      const nearResistance = data.supportResistance.resistances?.some(r =>
+      const nearResistance = data.supportResistance.resistances?.some((r: any) =>
         Math.abs(r - price) / price < 0.02
       );
 
@@ -227,7 +227,7 @@ export class AIRecommendationEngine {
     return Math.max(0, Math.min(100, score));
   }
 
-  private calculateFundamentalScore(data: FundamentalMetrics): number {
+  private calculateFundamentalScore(data: FundamentalMetricSet | any): number {
     let score = 50;
 
     // P/E Ratio
@@ -258,7 +258,7 @@ export class AIRecommendationEngine {
     return Math.max(0, Math.min(100, score));
   }
 
-  private calculateSentimentScore(data: SentimentAnalysisResult): number {
+  private calculateSentimentScore(data: SentimentAnalysis | any): number {
     let score = 50;
 
     // Overall sentiment
@@ -293,14 +293,15 @@ export class AIRecommendationEngine {
   private calculateRiskScore(data: TechnicalAnalysis): number {
     let risk = 50;
 
-    // Volatility
+    // Volatility (handle both number and object)
     if (data.volatility !== undefined) {
-      risk += data.volatility > 0.3 ? 20 : data.volatility > 0.2 ? 10 : 0;
+      const vol = typeof data.volatility === 'number' ? data.volatility : (data.volatility as any)?.level || 0;
+      risk += vol > 0.3 ? 20 : vol > 0.2 ? 10 : 0;
     }
 
-    // ATR relative to price
-    if (data.indicators?.atr && data.price) {
-      const atrPercent = data.indicators.atr / data.price;
+    // ATR relative to price (handle both array and object)
+    if ((data.indicators as any)?.atr && (data as any).price) {
+      const atrPercent = (data.indicators as any).atr / (data as any).price;
       risk += atrPercent > 0.05 ? 15 : atrPercent > 0.03 ? 5 : 0;
     }
 
@@ -324,7 +325,7 @@ export class AIRecommendationEngine {
     data: TechnicalAnalysis,
     action: RecommendationAction
   ): { primary: number; entry: number; stopLoss: number; takeProfit: number[] } {
-    const atr = data.indicators?.atr || currentPrice * 0.02;
+    const atr = (data.indicators as any)?.atr || currentPrice * 0.02;
     const isBullish = action === 'buy' || action === 'strong_buy';
 
     // Entry slightly below current for buys, above for sells
@@ -354,24 +355,24 @@ export class AIRecommendationEngine {
 
   private generateReasons(
     technical: TechnicalAnalysis,
-    fundamental?: FundamentalMetrics,
-    sentiment?: SentimentAnalysisResult
+    fundamental?: FundamentalMetricSet,
+    sentiment?: SentimentAnalysis
   ): RecommendationReason[] {
     const reasons: RecommendationReason[] = [];
 
     // Technical reasons
-    if (technical.trend?.direction) {
+    if (technical.trend?.mediumTerm) {
       reasons.push({
         category: 'technical',
-        description: `${technical.trend.direction.charAt(0).toUpperCase() + technical.trend.direction.slice(1)} trend detected`,
-        impact: technical.trend.direction === 'bullish' ? 'positive' :
-                technical.trend.direction === 'bearish' ? 'negative' : 'neutral',
+        description: `${technical.trend.mediumTerm.charAt(0).toUpperCase() + technical.trend.mediumTerm.slice(1)} trend detected`,
+        impact: technical.trend.mediumTerm === 'bullish' ? 'positive' :
+                technical.trend.mediumTerm === 'bearish' ? 'negative' : 'neutral',
         weight: 0.2,
       });
     }
 
-    if (technical.indicators?.rsi !== undefined) {
-      const rsi = technical.indicators.rsi;
+    if ((technical.indicators as any)?.rsi !== undefined) {
+      const rsi = (technical.indicators as any).rsi;
       if (rsi < 30) {
         reasons.push({
           category: 'technical',
@@ -390,8 +391,8 @@ export class AIRecommendationEngine {
     }
 
     // Fundamental reasons
-    if (fundamental?.valuationMetrics?.peRatio !== undefined) {
-      const pe = fundamental.valuationMetrics.peRatio;
+    if ((fundamental as any)?.valuationMetrics?.peRatio !== undefined) {
+      const pe = (fundamental as any).valuationMetrics.peRatio;
       reasons.push({
         category: 'fundamental',
         description: `P/E ratio of ${pe.toFixed(1)} is ${pe < 15 ? 'attractive' : pe > 30 ? 'expensive' : 'fair'}`,
@@ -401,12 +402,12 @@ export class AIRecommendationEngine {
     }
 
     // Sentiment reasons
-    if (sentiment?.overallSentiment) {
+    if ((sentiment as any)?.overallSentiment) {
       reasons.push({
         category: 'sentiment',
-        description: `Market sentiment is ${sentiment.overallSentiment}`,
-        impact: sentiment.overallSentiment === 'bullish' ? 'positive' :
-                sentiment.overallSentiment === 'bearish' ? 'negative' : 'neutral',
+        description: `Market sentiment is ${(sentiment as any).overallSentiment}`,
+        impact: (sentiment as any).overallSentiment === 'bullish' ? 'positive' :
+                (sentiment as any).overallSentiment === 'bearish' ? 'negative' : 'neutral',
         weight: 0.1,
       });
     }
@@ -416,19 +417,19 @@ export class AIRecommendationEngine {
 
   private identifyRisks(
     technical: TechnicalAnalysis,
-    fundamental?: FundamentalMetrics
+    fundamental?: FundamentalMetricSet
   ): string[] {
     const risks: string[] = [];
 
-    if (technical.volatility && technical.volatility > 0.3) {
+    if (technical.volatility && (typeof technical.volatility === 'number' ? technical.volatility : (technical.volatility as any)?.level || 0) > 0.3) {
       risks.push('High volatility increases potential for significant losses');
     }
 
-    if (fundamental?.leverageMetrics?.debtToEquity && fundamental.leverageMetrics.debtToEquity > 2) {
+    if ((fundamental as any)?.leverageMetrics?.debtToEquity && (fundamental as any).leverageMetrics.debtToEquity > 2) {
       risks.push('High debt levels may impact financial stability');
     }
 
-    if (technical.indicators?.rsi && (technical.indicators.rsi > 80 || technical.indicators.rsi < 20)) {
+    if ((technical.indicators as any)?.rsi && (((technical.indicators as any).rsi > 80 || (technical.indicators as any).rsi < 20))) {
       risks.push('Extreme RSI levels may indicate reversal risk');
     }
 
@@ -441,8 +442,8 @@ export class AIRecommendationEngine {
 
   private identifyCatalysts(
     technical: TechnicalAnalysis,
-    fundamental?: FundamentalMetrics,
-    sentiment?: SentimentAnalysisResult
+    fundamental?: FundamentalMetricSet,
+    sentiment?: SentimentAnalysis
   ): string[] {
     const catalysts: string[] = [];
 
@@ -453,12 +454,12 @@ export class AIRecommendationEngine {
       }
     }
 
-    if (fundamental?.growthMetrics?.revenueGrowth && fundamental.growthMetrics.revenueGrowth > 20) {
+    if ((fundamental as any)?.growthMetrics?.revenueGrowth && (fundamental as any).growthMetrics.revenueGrowth > 20) {
       catalysts.push('Strong revenue growth momentum');
     }
 
-    if (sentiment?.upcomingEvents && sentiment.upcomingEvents.length > 0) {
-      catalysts.push(`Upcoming event: ${sentiment.upcomingEvents[0]}`);
+    if ((sentiment as any)?.upcomingEvents && (sentiment as any).upcomingEvents.length > 0) {
+      catalysts.push(`Upcoming event: ${(sentiment as any).upcomingEvents[0]}`);
     }
 
     return catalysts;
@@ -501,9 +502,9 @@ export class AIRecommendationEngine {
     technicalData: TechnicalAnalysis
   ): Promise<PricePrediction> {
     // Simplified prediction model - in production use ML models
-    const trend = technicalData.trend?.direction || 'neutral';
-    const momentum = technicalData.indicators?.rsi ? (technicalData.indicators.rsi - 50) / 50 : 0;
-    const volatility = technicalData.volatility || 0.02;
+    const trend = technicalData.trend?.mediumTerm || 'neutral';
+    const momentum = (technicalData.indicators as any)?.rsi ? ((technicalData.indicators as any).rsi - 50) / 50 : 0;
+    const volatility = (typeof technicalData.volatility === 'number' ? technicalData.volatility : (technicalData.volatility as any)?.level || 0.02);
 
     const baseMomentum = trend === 'bullish' ? 0.01 : trend === 'bearish' ? -0.01 : 0;
     const adjustedMomentum = baseMomentum + (momentum * 0.005);

@@ -43,6 +43,52 @@ jest.mock('../../services/api', () => ({
 
 const { financialOverviewApi, bankAccountApi, transactionApi, budgetApi, financialGoalsApi, debtApi } = require('../../services/api');
 
+import type { BankAccount, Transaction, Budget, FinancialGoal } from '../../services/api/types';
+
+// Helper functions to create mock objects with required fields
+const createMockBankAccount = (overrides: Partial<BankAccount> = {}): BankAccount => ({
+  id: overrides.id || '1',
+  userId: overrides.userId || 'user-1',
+  institutionName: overrides.institutionName || 'Test Bank',
+  accountType: overrides.accountType || 'checking',
+  type: overrides.type || 'checking',
+  accountName: overrides.accountName || overrides.name || 'Test Account',
+  name: overrides.name || 'Test Account',
+  balance: overrides.balance ?? 1000,
+  lastSynced: overrides.lastSynced || new Date().toISOString(),
+  isConnected: overrides.isConnected ?? true,
+});
+
+const createMockTransaction = (overrides: Partial<Transaction> = {}): Transaction => ({
+  id: overrides.id || '1',
+  accountId: overrides.accountId || 'account-1',
+  amount: overrides.amount ?? -50,
+  category: overrides.category || 'Food',
+  merchantName: overrides.merchantName || 'Test Merchant',
+  date: overrides.date || new Date().toISOString(),
+  pending: overrides.pending ?? false,
+  type: overrides.type || 'expense',
+});
+
+const createMockBudget = (overrides: Partial<Budget> = {}): Budget => ({
+  id: overrides.id || '1',
+  userId: overrides.userId || 'user-1',
+  category: overrides.category || 'Food',
+  limit: overrides.limit ?? 500,
+  spent: overrides.spent ?? 250,
+  remaining: overrides.remaining ?? 250,
+  period: overrides.period || 'monthly',
+});
+
+const createMockGoal = (overrides: Partial<FinancialGoal> = {}): FinancialGoal => ({
+  id: overrides.id || '1',
+  userId: overrides.userId || 'user-1',
+  name: overrides.name || 'Test Goal',
+  targetAmount: overrides.targetAmount ?? 10000,
+  currentAmount: overrides.currentAmount ?? 0,
+  status: overrides.status || 'active',
+});
+
 describe('Financial Store', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -120,7 +166,7 @@ describe('Financial Store', () => {
 
     it('should disconnect account', async () => {
       useFinancialStore.setState({
-        accounts: [{ id: '1', name: 'Test' }],
+        accounts: [createMockBankAccount({ id: '1', name: 'Test' })],
       });
 
       bankAccountApi.disconnectAccount.mockResolvedValueOnce({ success: true });
@@ -143,8 +189,8 @@ describe('Financial Store', () => {
   describe('Transactions', () => {
     it('should fetch transactions successfully', async () => {
       const mockTransactions = [
-        { id: '1', amount: -50, category: 'Food', date: '2024-01-15' },
-        { id: '2', amount: -100, category: 'Shopping', date: '2024-01-14' },
+        createMockTransaction({ id: '1', amount: -50, category: 'Food', date: '2024-01-15' }),
+        createMockTransaction({ id: '2', amount: -100, category: 'Shopping', date: '2024-01-14' }),
       ];
 
       transactionApi.getAll.mockResolvedValueOnce({
@@ -162,12 +208,12 @@ describe('Financial Store', () => {
 
     it('should update transaction category', async () => {
       useFinancialStore.setState({
-        transactions: [{ id: '1', category: 'Food' }],
+        transactions: [createMockTransaction({ id: '1', category: 'Food' })],
       });
 
       transactionApi.updateCategory.mockResolvedValueOnce({
         success: true,
-        data: { id: '1', category: 'Dining' },
+        data: createMockTransaction({ id: '1', category: 'Dining' }),
       });
 
       let result;
@@ -183,8 +229,8 @@ describe('Financial Store', () => {
   describe('Budgets', () => {
     it('should fetch budgets successfully', async () => {
       const mockBudgets = [
-        { category: 'Food', limit: 500, spent: 250, period: 'monthly' },
-        { category: 'Entertainment', limit: 200, spent: 150, period: 'monthly' },
+        createMockBudget({ category: 'Food', limit: 500, spent: 250 }),
+        createMockBudget({ id: '2', category: 'Entertainment', limit: 200, spent: 150 }),
       ];
 
       budgetApi.getAll.mockResolvedValueOnce({
@@ -202,7 +248,7 @@ describe('Financial Store', () => {
     it('should create budget', async () => {
       budgetApi.upsert.mockResolvedValueOnce({
         success: true,
-        data: { category: 'Travel', limit: 300, spent: 0, period: 'monthly' },
+        data: createMockBudget({ category: 'Travel', limit: 300, spent: 0, remaining: 300 }),
       });
 
       let result;
@@ -220,7 +266,7 @@ describe('Financial Store', () => {
 
     it('should delete budget', async () => {
       useFinancialStore.setState({
-        budgets: [{ category: 'Food', limit: 500 }],
+        budgets: [createMockBudget({ category: 'Food', limit: 500 })],
       });
 
       budgetApi.delete.mockResolvedValueOnce({ success: true });
@@ -238,8 +284,8 @@ describe('Financial Store', () => {
   describe('Goals', () => {
     it('should fetch goals successfully', async () => {
       const mockGoals = [
-        { id: '1', name: 'Emergency Fund', targetAmount: 10000, currentAmount: 5000 },
-        { id: '2', name: 'Vacation', targetAmount: 3000, currentAmount: 1500 },
+        createMockGoal({ id: '1', name: 'Emergency Fund', targetAmount: 10000, currentAmount: 5000 }),
+        createMockGoal({ id: '2', name: 'Vacation', targetAmount: 3000, currentAmount: 1500 }),
       ];
 
       financialGoalsApi.getAll.mockResolvedValueOnce({
@@ -257,7 +303,7 @@ describe('Financial Store', () => {
     it('should create goal', async () => {
       financialGoalsApi.create.mockResolvedValueOnce({
         success: true,
-        data: { id: '1', name: 'New Car', targetAmount: 20000, currentAmount: 0 },
+        data: createMockGoal({ id: '1', name: 'New Car', targetAmount: 20000, currentAmount: 0 }),
       });
 
       let result;
@@ -274,12 +320,12 @@ describe('Financial Store', () => {
 
     it('should contribute to goal', async () => {
       useFinancialStore.setState({
-        goals: [{ id: '1', name: 'Test', currentAmount: 100 }],
+        goals: [createMockGoal({ id: '1', name: 'Test', currentAmount: 100 })],
       });
 
       financialGoalsApi.addContribution.mockResolvedValueOnce({
         success: true,
-        data: { id: '1', name: 'Test', currentAmount: 200 },
+        data: createMockGoal({ id: '1', name: 'Test', currentAmount: 200 }),
       });
 
       let result;
@@ -322,10 +368,7 @@ describe('Financial Store', () => {
         },
       });
 
-      let result;
-      await act(async () => {
-        result = await useFinancialStore.getState().calculatePayoff('avalanche', 100);
-      });
+      const result = await useFinancialStore.getState().calculatePayoff('avalanche', 100);
 
       expect(result).not.toBeNull();
       expect(result?.interestSaved).toBe(2000);

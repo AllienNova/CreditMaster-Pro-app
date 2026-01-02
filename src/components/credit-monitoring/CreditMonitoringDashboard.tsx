@@ -6,6 +6,7 @@ import CreditScoreCard from './CreditScoreCard';
 import CreditScoreChart from './CreditScoreChart';
 import CreditAlertsList from './CreditAlertsList';
 import MonitoringSettings from './MonitoringSettings';
+import AICreditInsights from './AICreditInsights';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function CreditMonitoringDashboard() {
@@ -102,6 +103,9 @@ export default function CreditMonitoringDashboard() {
           ⚙️ Settings
         </button>
       </div>
+
+      {/* AI Credit Insights */}
+      <AICreditInsights />
 
       {/* Score Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

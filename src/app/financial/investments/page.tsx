@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
 import InvestmentPortfolio from '@/components/financial/InvestmentPortfolio';
+import AIInvestmentInsights from '@/components/investments/AIInvestmentInsights';
 
 export const metadata: Metadata = {
   title: 'Investments | CPFI',
@@ -32,6 +33,9 @@ export default function InvestmentsPage() {
             Track your investment portfolio and performance
           </p>
         </div>
+
+        {/* AI Investment Insights */}
+        <AIInvestmentInsights />
 
         <Suspense fallback={<InvestmentsLoadingSkeleton />}>
           <InvestmentPortfolio />

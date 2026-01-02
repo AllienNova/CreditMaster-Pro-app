@@ -162,3 +162,172 @@ export interface MarketRateData {
   lastUpdated: Date;
 }
 
+// ============================================================================
+// ADDITIONAL TYPES FOR PHASE 2.4
+// ============================================================================
+
+export type BillType =
+  | 'telecom'
+  | 'utilities'
+  | 'insurance'
+  | 'subscription'
+  | 'internet'
+  | 'cable'
+  | 'mobile'
+  | 'electricity'
+  | 'gas'
+  | 'water'
+  | 'home_insurance'
+  | 'auto_insurance'
+  | 'streaming';
+
+export type NegotiationDifficulty = 'easy' | 'moderate' | 'difficult';
+
+export interface NegotiableBill {
+  id: string;
+  userId: string;
+  billType: BillType;
+  provider: string;
+  serviceName: string;
+  currentAmount: number;
+  billingFrequency: 'monthly' | 'quarterly' | 'annually';
+  contractEndDate?: Date;
+  isUnderContract: boolean;
+
+  // Negotiation potential
+  negotiationPotential: number; // 0-100 score
+  estimatedSavings: number;
+  difficulty: NegotiationDifficulty;
+
+  // Bill details
+  accountNumber?: string;
+  serviceAddress?: string;
+  planDetails?: string;
+
+  // Negotiation tracking
+  status: NegotiationStatus;
+  lastNegotiationDate?: Date;
+  negotiationCount: number;
+  totalSavingsAchieved: number;
+
+  // Metadata
+  detectedAt: Date;
+  lastUpdated: Date;
+}
+
+export interface MarketAnalysis {
+  billType: BillType;
+  provider: string;
+  location?: string;
+
+  // Current market data
+  averageMarketRate: number;
+  competitorRates: CompetitorRate[];
+  userCurrentRate: number;
+
+  // Analysis
+  savingsPotential: number;
+  savingsPercentage: number;
+  marketPosition: 'below_average' | 'average' | 'above_average' | 'significantly_above';
+
+  // Leverage points
+  leveragePoints: LeveragePoint[];
+  competitiveAdvantages: string[];
+
+  // Recommendations
+  recommendedAction: 'negotiate' | 'switch' | 'stay' | 'research_more';
+  confidenceScore: number; // 0-100
+
+  // Metadata
+  dataSource: string;
+  lastUpdated: Date;
+  expiresAt: Date;
+}
+
+export interface LeveragePoint {
+  type: 'loyalty' | 'competitor_pricing' | 'market_rate' | 'contract_end' | 'payment_history' | 'bundle_opportunity';
+  description: string;
+  strength: 'weak' | 'moderate' | 'strong';
+  talkingPoint: string;
+}
+
+export interface NegotiationScript {
+  billId: string;
+  provider: string;
+  billType: BillType;
+
+  // Script structure
+  opening: string;
+  mainPoints: NegotiationPoint[];
+  counterarguments: Counterargument[];
+  fallbackOptions: FallbackOption[];
+  closing: string;
+
+  // Strategy
+  strategy: 'aggressive' | 'balanced' | 'conservative';
+  targetSavings: number;
+  minimumAcceptableSavings: number;
+
+  // User profile factors
+  userTenure?: number; // months
+  paymentHistory: 'excellent' | 'good' | 'fair' | 'poor';
+  loyaltyScore: number; // 0-100
+
+  // AI metadata
+  aiModel: string;
+  confidence: number; // 0-100
+  generatedAt: Date;
+  expiresAt: Date;
+}
+
+export interface NegotiationPoint {
+  id: string;
+  order: number;
+  point: string;
+  supportingData?: string;
+  expectedResponse?: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+export interface Counterargument {
+  objection: string;
+  response: string;
+  alternativeApproach?: string;
+}
+
+export interface FallbackOption {
+  option: string;
+  description: string;
+  estimatedSavings: number;
+  likelihood: 'high' | 'medium' | 'low';
+}
+
+export interface NegotiationHistory {
+  billId: string;
+  provider: string;
+  billType: BillType;
+  attempts: NegotiationAttempt[];
+  totalSavings: number;
+  successRate: number;
+  lastAttemptDate: Date;
+}
+
+export interface SavingsEstimate {
+  userId: string;
+  totalPotentialSavings: number;
+  monthlyPotentialSavings: number;
+  annualPotentialSavings: number;
+  billCount: number;
+  highPotentialBills: NegotiableBill[];
+  confidenceScore: number;
+  generatedAt: Date;
+}
+
+export interface UserProfile {
+  userId: string;
+  tenure?: number; // months with provider
+  paymentHistory: 'excellent' | 'good' | 'fair' | 'poor';
+  loyaltyScore: number; // 0-100
+  previousNegotiations: number;
+  successRate: number;
+}

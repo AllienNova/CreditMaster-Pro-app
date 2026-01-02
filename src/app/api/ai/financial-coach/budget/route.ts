@@ -1,21 +1,33 @@
 /**
  * AI Financial Coach - Budget Optimization API
- * 
+ *
  * GET /api/ai/financial-coach/budget - Get budget optimization analysis
  * POST /api/ai/financial-coach/budget/optimize - Generate optimization recommendations
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { budgetOptimizer } from '@/lib/financial/budget-optimizer';
 
+async function getUser() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } }
+  );
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -45,10 +57,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -63,7 +74,9 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       includeTemplates,
       includeScenarios,
-      targetSavingsRate: targetSavingsRate ? parseFloat(targetSavingsRate) : undefined,
+      targetSavingsRate: targetSavingsRate
+        ? parseFloat(targetSavingsRate)
+        : undefined,
     });
 
     return NextResponse.json(result);
@@ -75,4 +88,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -5,6 +5,11 @@ import { FinancialDashboard as DashboardData } from '@/lib/financial/financial-s
 import Link from 'next/link';
 import PlaidLinkButton from './PlaidLinkButton';
 import { useAuth } from '@/hooks/useAuth';
+import AIInsightsPanel from './AIInsightsPanel';
+import HealthScoreCard from './HealthScoreCard';
+import BudgetStatusCard from './BudgetStatusCard';
+import AccountsSummaryCard from './AccountsSummaryCard';
+import QuickActionsBar from './QuickActionsBar';
 
 export default function FinancialDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -110,28 +115,29 @@ export default function FinancialDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Quick Actions */}
-      <div className="flex flex-wrap gap-3">
-        <PlaidLinkButton onSuccess={fetchDashboard} variant="secondary" />
-        <Link
-          href="/financial/transactions"
-          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          View Transactions
-        </Link>
-        <Link
-          href="/financial/budget"
-          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          Manage Budgets
-        </Link>
-        <Link
-          href="/financial/goals"
-          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          Financial Goals
-        </Link>
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Financial Dashboard</h1>
+          <p className="text-gray-600 mt-1">Your complete financial overview powered by AI</p>
+        </div>
+        <PlaidLinkButton onSuccess={fetchDashboard} variant="primary" />
       </div>
+
+      {/* Top Row: Health Score + Budget Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <HealthScoreCard />
+        <BudgetStatusCard />
+      </div>
+
+      {/* Quick Actions Bar */}
+      <QuickActionsBar />
+
+      {/* AI Insights Panel */}
+      <AIInsightsPanel />
+
+      {/* Accounts Summary */}
+      <AccountsSummaryCard />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

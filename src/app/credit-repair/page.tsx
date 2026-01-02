@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import CreditRepairDashboard from '@/components/credit-repair/CreditRepairDashboard';
+import AICreditRepairStrategy from '@/components/credit-repair/AICreditRepairStrategy';
 import Link from 'next/link';
 
 // Force dynamic rendering
@@ -120,6 +121,9 @@ export default function CreditRepairPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* AI Credit Repair Strategy */}
+        <AICreditRepairStrategy />
+
         {/* Quick Access Tools */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Credit Intelligence Tools</h2>

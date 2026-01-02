@@ -129,6 +129,109 @@ describe('HealthScoreCalculatorV2', () => {
       expect(result.dataQuality.confidenceLevel).toBeGreaterThanOrEqual(0);
     });
   });
+
+  describe('Public Benchmarking API (Phase 1.3)', () => {
+    describe('getNationalAverage', () => {
+      it('should return national average benchmark data', async () => {
+        const result = await calculator.getNationalAverage();
+
+        expect(result).toBeDefined();
+        expect(result.percentile).toBe(50);
+        expect(result.ageGroupAverage).toBeGreaterThan(0);
+        expect(result.incomeGroupAverage).toBeGreaterThan(0);
+        expect(result.comparison).toBe('average');
+      });
+    });
+
+    describe('getPeerGroupAverage', () => {
+      it('should return peer group benchmark for young low-income user', async () => {
+        const result = await calculator.getPeerGroupAverage(22, 30000);
+
+        expect(result).toBeDefined();
+        expect(result.ageGroupAverage).toBeLessThan(65); // Young users typically score lower
+        expect(result.incomeGroupAverage).toBeLessThan(65); // Low income scores lower
+      });
+
+      it('should return peer group benchmark for middle-aged high-income user', async () => {
+        const result = await calculator.getPeerGroupAverage(45, 200000);
+
+        expect(result).toBeDefined();
+        expect(result.ageGroupAverage).toBeGreaterThan(65); // Older users score higher
+        expect(result.incomeGroupAverage).toBeGreaterThan(70); // High income scores higher
+      });
+
+      it('should handle edge case ages', async () => {
+        const result1 = await calculator.getPeerGroupAverage(18, 50000);
+        const result2 = await calculator.getPeerGroupAverage(70, 50000);
+
+        expect(result1).toBeDefined();
+        expect(result2).toBeDefined();
+        expect(result2.ageGroupAverage).toBeGreaterThan(result1.ageGroupAverage);
+      });
+    });
+
+    describe('getScorePercentile', () => {
+      it('should return high percentile for excellent scores', async () => {
+        const percentile = await calculator.getScorePercentile(95);
+        expect(percentile).toBeGreaterThanOrEqual(90);
+      });
+
+      it('should return medium percentile for average scores', async () => {
+        const percentile = await calculator.getScorePercentile(65);
+        expect(percentile).toBeGreaterThanOrEqual(40);
+        expect(percentile).toBeLessThanOrEqual(70);
+      });
+
+      it('should return low percentile for poor scores', async () => {
+        const percentile = await calculator.getScorePercentile(45);
+        expect(percentile).toBeLessThanOrEqual(40);
+      });
+
+      it('should handle edge case scores', async () => {
+        const percentile0 = await calculator.getScorePercentile(0);
+        const percentile100 = await calculator.getScorePercentile(100);
+
+        expect(percentile0).toBeGreaterThanOrEqual(0);
+        expect(percentile100).toBeLessThanOrEqual(100);
+        expect(percentile100).toBeGreaterThan(percentile0);
+      });
+    });
+
+    describe('getScoreHistoryWithTrends', () => {
+      it('should return empty history for new users', async () => {
+        // Mock getScoreHistory to return empty array
+        jest.spyOn(calculator as any, 'getScoreHistory').mockResolvedValue([]);
+
+        const result = await calculator.getScoreHistoryWithTrends('new-user-123', 6);
+
+        expect(result).toBeDefined();
+        expect(result.scores).toEqual([]);
+        expect(result.trendDirection).toBe('stable');
+        expect(result.trendPercent).toBe(0);
+        expect(result.averageScore).toBe(0);
+      });
+
+      it('should calculate trend statistics correctly', async () => {
+        // Mock some historical data
+        const mockHistory = [
+          { date: new Date('2024-10-01'), score: 60, grade: 'D' as const },
+          { date: new Date('2024-11-01'), score: 65, grade: 'D' as const },
+          { date: new Date('2024-12-01'), score: 70, grade: 'C' as const },
+        ];
+
+        // Mock the getScoreHistory method to return our test data
+        jest.spyOn(calculator as any, 'getScoreHistory').mockResolvedValue(mockHistory);
+
+        const result = await calculator.getScoreHistoryWithTrends('test-user', 3);
+
+        expect(result.scores).toHaveLength(3);
+        expect(result.averageScore).toBeCloseTo(65, 0);
+        expect(result.highestScore).toBe(70);
+        expect(result.lowestScore).toBe(60);
+        expect(result.trendDirection).toBe('improving');
+      });
+    });
+  });
 });
 
 // Create a mock context that satisfies the calculator's needs

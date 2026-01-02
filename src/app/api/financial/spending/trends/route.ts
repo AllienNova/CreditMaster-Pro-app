@@ -1,60 +1,176 @@
 /**
  * Spending Trends API Endpoint
  *
- * GET /api/financial/spending/trends - Get spending trend analysis
+ * GET /api/financial/spending/trends
+ * Spending trend analysis with forecasting and seasonality
+ *
+ * Phase 2.3: Spending Intelligence
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getSpendingAnalyzer } from '@/lib/financial/spending-analyzer';
 import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { spendingAnalysisService } from '@/lib/financial/spending-analysis-service';
+import { rbac } from '@/lib/auth/rbac';
+import {
+  applyFinancialAPIMiddleware,
+  finalizeResponse,
+} from '@/lib/api/financial-api-middleware';
+import { z } from 'zod';
+
+// ============================================================================
+// VALIDATION SCHEMA
+// ============================================================================
+
+const TrendsQuerySchema = z.object({
+  period: z.string().optional().default('3m'), // e.g., "3m", "6m", "1y"
+  categories: z.string().optional(), // Comma-separated list
+  compareWith: z.enum(['previous', 'average', 'budget']).optional().default('previous'),
+});
+
+// ============================================================================
+// GET - Get Spending Trends
+// ============================================================================
 
 /**
- * GET /api/financial/spending/trends
- * Get spending trend analysis for the authenticated user
- * Query params:
- *   - months: number of months to analyze (default: 6)
- *   - compareYoY: whether to include year-over-year comparison (default: false)
- *   - categories: comma-separated list of categories to filter (optional)
+ * @swagger
+ * /api/financial/spending/trends:
+ *   get:
+ *     summary: Get spending trends
+ *     description: Analyze spending trends over time with category breakdowns, forecasting, and period comparisons
+ *     tags: [Spending Intelligence]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           default: 3m
+ *         description: Analysis period (e.g., "3m", "6m", "1y", "30d")
+ *       - in: query
+ *         name: categories
+ *         schema:
+ *           type: string
+ *         description: Comma-separated list of categories to analyze
+ *       - in: query
+ *         name: compareWith
+ *         schema:
+ *           type: string
+ *           enum: [previous, average, budget]
+ *           default: previous
+ *         description: Comparison baseline
+ *     responses:
+ *       200:
+ *         description: Spending trends retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   description: Spending trend analysis with category trends, forecasts, and comparisons
+ *       401:
+ *         description: Unauthorized - Invalid or missing JWT token
+ *       403:
+ *         description: Forbidden - Insufficient permissions
+ *       500:
+ *         description: Internal server error
  */
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+
+  // Apply middleware (auth, rate limiting, CORS, logging)
+  const middleware = await applyFinancialAPIMiddleware(request, {
+    requireAuth: true,
+    rateLimit: true,
+    cors: true,
+    logging: true,
+  });
+
+  if (middleware.error) {
+    return finalizeResponse(middleware.error, startTime);
+  }
+
+  const { userId, user } = middleware;
+
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Invalid or missing authentication' },
-        { status: 401 }
-      );
-    }
-
+    // Validate query parameters
     const { searchParams } = new URL(request.url);
-    const months = parseInt(searchParams.get('months') || '6', 10);
-    const compareYoY = searchParams.get('compareYoY') === 'true';
-    const categoriesParam = searchParams.get('categories');
-    const categories = categoriesParam ? categoriesParam.split(',') : undefined;
+    const queryParams = {
+      period: searchParams.get('period') || '3m',
+      categories: searchParams.get('categories') || undefined,
+      compareWith: searchParams.get('compareWith') || 'previous',
+    };
 
-    // Validate months parameter
-    if (isNaN(months) || months < 1 || months > 24) {
-      return NextResponse.json(
-        { error: 'Bad Request', message: 'months must be between 1 and 24' },
-        { status: 400 }
+    const validatedParams = TrendsQuerySchema.parse(queryParams);
+
+    // Check permissions
+    const hasPermission = await rbac.hasPermission(userId, 'financial:view_spending');
+    if (!hasPermission) {
+      return finalizeResponse(
+        NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'FORBIDDEN',
+              message: 'You do not have permission to view spending trends',
+            },
+          },
+          { status: 403 }
+        ),
+        startTime
       );
     }
 
-    const analysis = await spendingAnalysisService.getSpendingTrends(
-      validation.user.id,
-      { months, compareYoY, categories }
+    // Parse categories
+    const categories = validatedParams.categories
+      ? validatedParams.categories.split(',').map(c => c.trim())
+      : undefined;
+
+    // Get spending analyzer
+    const analyzer = getSpendingAnalyzer();
+
+    // Get spending trends
+    const trends = await analyzer.getSpendingTrends(
+      userId,
+      validatedParams.period,
+      categories
     );
 
-    return NextResponse.json({
-      success: true,
-      data: analysis,
-    });
+    return finalizeResponse(
+      NextResponse.json({
+        success: true,
+        data: trends,
+        meta: {
+          userId,
+          period: validatedParams.period,
+          categoriesAnalyzed: categories?.length || 'all',
+          compareWith: validatedParams.compareWith,
+          generatedAt: new Date().toISOString(),
+          processingTimeMs: Date.now() - startTime,
+        },
+      }),
+      startTime
+    );
   } catch (error) {
-    console.error('Error fetching spending trends:', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error', message: 'Failed to fetch spending trends' },
-      { status: 500 }
+    console.error('Error analyzing spending trends:', error);
+
+    return finalizeResponse(
+      NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: 'Failed to analyze spending trends',
+            details: error instanceof Error ? error.message : 'Unknown error',
+          },
+        },
+        { status: 500 }
+      ),
+      startTime
     );
   }
 }
-

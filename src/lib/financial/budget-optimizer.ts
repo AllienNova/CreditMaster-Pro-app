@@ -157,16 +157,16 @@ class BudgetOptimizer {
     for (const budget of context.budgets) {
       const benchmark = CATEGORY_BENCHMARKS[budget.category] || CATEGORY_BENCHMARKS.other;
       const idealAmount = income * benchmark.ideal;
-      const percentUsed = budget.amount > 0 ? (budget.spent / budget.amount) * 100 : 0;
+      const percentUsed = budget.budgetedAmount > 0 ? (budget.spentAmount / budget.budgetedAmount) * 100 : 0;
 
       summaries.push({
         category: budget.category,
         categoryName: this.formatCategoryName(budget.category),
-        budgeted: budget.amount,
-        spent: budget.spent,
+        budgeted: budget.budgetedAmount,
+        spent: budget.spentAmount,
         percentUsed,
-        trend: this.determineTrend(budget.spent, budget.amount),
-        benchmarkComparison: idealAmount > 0 ? ((budget.spent - idealAmount) / idealAmount) * 100 : 0,
+        trend: this.determineTrend(budget.spentAmount, budget.budgetedAmount),
+        benchmarkComparison: idealAmount > 0 ? ((budget.spentAmount - idealAmount) / idealAmount) * 100 : 0,
       });
     }
 
@@ -296,5 +296,7 @@ class BudgetOptimizer {
   }
 }
 
+// Export both class and instance for testing
+export { BudgetOptimizer };
 export const budgetOptimizer = new BudgetOptimizer();
 export default budgetOptimizer;

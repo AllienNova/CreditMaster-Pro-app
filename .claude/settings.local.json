@@ -10,7 +10,16 @@
       "Bash(npm audit:*)",
       "Bash(npm outdated:*)",
       "Bash(npm run lint)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(npx tsc:*)",
+      "Bash(grep:*)",
+      "Bash(npm search:*)",
+      "Bash(npm install:*)",
+      "Bash(node -e:*)",
+      "Bash(ls -la \"c:\\\\Githhub\\\\CreditMaster-Pro-app\\\\src\\\\app\\\\api\\\\marketplace\"\" 2>/dev/null || echo \"No marketplace API routes exist \")",
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

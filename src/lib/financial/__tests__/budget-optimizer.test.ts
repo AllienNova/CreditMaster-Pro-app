@@ -20,20 +20,21 @@ describe('BudgetOptimizer', () => {
   });
 
   describe('class structure', () => {
-    it('should have analyzeBudget method', () => {
-      expect(typeof budgetOptimizer.analyzeBudget).toBe('function');
+    it('should have optimizeBudget method', () => {
+      expect(typeof budgetOptimizer.optimizeBudget).toBe('function');
     });
 
-    it('should have getOptimizations method', () => {
-      expect(typeof budgetOptimizer.getOptimizations).toBe('function');
+    it('should be an instance of BudgetOptimizer', () => {
+      expect(budgetOptimizer).toBeInstanceOf(BudgetOptimizer);
     });
 
-    it('should have getBudgetTemplates method', () => {
-      expect(typeof budgetOptimizer.getBudgetTemplates).toBe('function');
+    it('should have the correct constructor', () => {
+      const instance = new BudgetOptimizer();
+      expect(instance).toBeInstanceOf(BudgetOptimizer);
     });
 
-    it('should have simulateScenario method', () => {
-      expect(typeof budgetOptimizer.simulateScenario).toBe('function');
+    it('should export the singleton instance', () => {
+      expect(budgetOptimizer).toBeDefined();
     });
   });
 

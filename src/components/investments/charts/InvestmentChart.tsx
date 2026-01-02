@@ -19,6 +19,14 @@ import {
   CrosshairMode,
   LineStyle,
   Time,
+  CandlestickSeries,
+  LineSeries,
+  AreaSeries,
+  HistogramSeries,
+  CandlestickSeriesPartialOptions,
+  LineSeriesPartialOptions,
+  AreaSeriesPartialOptions,
+  HistogramSeriesPartialOptions,
 } from 'lightweight-charts';
 import { CandleData, ChartType, ChartColors } from '@/lib/investments/types/charting.types';
 import { Timeframe } from '@/lib/investments/types/investment.types';
@@ -109,9 +117,9 @@ export function InvestmentChart({
 }: InvestmentChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const mainSeriesRef = useRef<ISeriesApi<'Candlestick'> | ISeriesApi<'Line'> | ISeriesApi<'Area'> | null>(null);
-  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
-  const indicatorSeriesRef = useRef<Map<string, ISeriesApi<'Line'>>>(new Map());
+  const mainSeriesRef = useRef<ISeriesApi<any> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<any> | null>(null);
+  const indicatorSeriesRef = useRef<Map<string, ISeriesApi<any>>>(new Map());
   
   const colors = theme === 'dark' ? darkTheme : lightTheme;
 
@@ -188,34 +196,37 @@ export function InvestmentChart({
     switch (chartType) {
       case 'candlestick':
       case 'heikin_ashi': {
-        const series = chart.addCandlestickSeries({
+        const options: CandlestickSeriesPartialOptions = {
           upColor: colors.bullCandle,
           downColor: colors.bearCandle,
           borderUpColor: colors.bullWick,
           borderDownColor: colors.bearWick,
           wickUpColor: colors.bullWick,
           wickDownColor: colors.bearWick,
-        });
+        };
+        const series = chart.addSeries(CandlestickSeries, options);
         series.setData(formattedData as CandlestickData<Time>[]);
         mainSeriesRef.current = series;
         break;
       }
       case 'line': {
-        const series = chart.addLineSeries({
+        const options: LineSeriesPartialOptions = {
           color: colors.bullCandle,
           lineWidth: 2,
-        });
+        };
+        const series = chart.addSeries(LineSeries, options);
         series.setData(formattedData as LineData<Time>[]);
         mainSeriesRef.current = series;
         break;
       }
       case 'area': {
-        const series = chart.addAreaSeries({
+        const options: AreaSeriesPartialOptions = {
           topColor: 'rgba(38, 166, 154, 0.4)',
           bottomColor: 'rgba(38, 166, 154, 0.0)',
           lineColor: colors.bullCandle,
           lineWidth: 2,
-        });
+        };
+        const series = chart.addSeries(AreaSeries, options);
         series.setData(formattedData as LineData<Time>[]);
         mainSeriesRef.current = series;
         break;
@@ -239,10 +250,11 @@ export function InvestmentChart({
       chartRef.current.removeSeries(volumeSeriesRef.current);
     }
 
-    const volumeSeries = chartRef.current.addHistogramSeries({
+    const options: HistogramSeriesPartialOptions = {
       priceFormat: { type: 'volume' },
       priceScaleId: 'volume',
-    });
+    };
+    const volumeSeries = chartRef.current.addSeries(HistogramSeries, options);
 
     chartRef.current.priceScale('volume').applyOptions({
       scaleMargins: { top: 0.8, bottom: 0 },

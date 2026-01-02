@@ -1,9 +1,9 @@
 /**
  * AI Recommendation Engine
- * 
+ *
  * Generates personalized financial recommendations using AI analysis
  * of user financial context, spending patterns, and goals.
- * 
+ *
  * Features:
  * - 8 recommendation types (savings, debt, investment, budget, etc.)
  * - AI-powered personalization using AIML service
@@ -77,7 +77,8 @@ class RecommendationEngine {
     const context = await financialContextEngine.getFinancialContext(userId);
 
     // Determine which recommendation types to generate
-    const typesToGenerate = types || (Object.keys(RECOMMENDATION_GENERATORS) as RecommendationType[]);
+    const typesToGenerate =
+      types || (Object.keys(RECOMMENDATION_GENERATORS) as RecommendationType[]);
 
     // Generate recommendations for each type
     const recommendations: Recommendation[] = [];
@@ -136,13 +137,17 @@ class RecommendationEngine {
     try {
       const prompt = this.buildAIPrompt(recommendations, context);
 
-      const response = await aiService.chat(AI_MODEL, [
-        {
-          role: 'system',
-          content: `You are an expert financial advisor. Analyze the user's financial situation and enhance recommendations with personalized insights. Respond in JSON format with an array of objects containing "id" and "insight" fields.`,
-        },
-        { role: 'user', content: prompt },
-      ], { temperature: 0.3, max_tokens: 1500 });
+      const response = await aiService.chat(
+        AI_MODEL,
+        [
+          {
+            role: 'system',
+            content: `You are an expert financial advisor. Analyze the user's financial situation and enhance recommendations with personalized insights. Respond in JSON format with an array of objects containing "id" and "insight" fields.`,
+          },
+          { role: 'user', content: prompt },
+        ],
+        { temperature: 0.3, max_tokens: 1500 }
+      );
 
       const content = response.choices[0]?.message?.content || '';
       const insights = this.parseAIResponse(content);
@@ -160,7 +165,10 @@ class RecommendationEngine {
     return recommendations;
   }
 
-  private buildAIPrompt(recommendations: Recommendation[], context: FinancialContext): string {
+  private buildAIPrompt(
+    recommendations: Recommendation[],
+    context: FinancialContext
+  ): string {
     const summary = `User Profile:
 - Net Worth: $${context.accounts.netWorth.toFixed(0)}
 - Monthly Income: $${context.transactions.totalIncome.toFixed(0)}
@@ -175,22 +183,31 @@ ${recommendations.map((r) => `- ID: ${r.id}, Type: ${r.type}, Title: ${r.title}`
     return summary;
   }
 
-  private parseAIResponse(content: string): Array<{ id: string; insight: string }> {
+  private parseAIResponse(
+    content: string
+  ): Array<{ id: string; insight: string }> {
     try {
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       if (jsonMatch) return JSON.parse(jsonMatch[0]);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return [];
   }
 
   /**
    * Get recommendation by ID
    */
-  async getRecommendation(userId: string, recommendationId: string): Promise<Recommendation | null> {
+  async getRecommendation(
+    userId: string,
+    recommendationId: string
+  ): Promise<Recommendation | null> {
     // In a real implementation, this would fetch from database
     // For now, generate fresh recommendations and find the one requested
     const response = await this.generateRecommendations({ userId, limit: 20 });
-    return response.recommendations.find((r) => r.id === recommendationId) || null;
+    return (
+      response.recommendations.find((r) => r.id === recommendationId) || null
+    );
   }
 
   /**
@@ -202,7 +219,9 @@ ${recommendations.map((r) => `- ID: ${r.id}, Type: ${r.type}, Title: ${r.title}`
     status: 'in_progress' | 'completed' | 'dismissed'
   ): Promise<boolean> {
     // In a real implementation, this would update the database
-    console.log(`Updating recommendation ${recommendationId} to ${status} for user ${userId}`);
+    console.log(
+      `Updating recommendation ${recommendationId} to ${status} for user ${userId}`
+    );
     return true;
   }
 }
@@ -211,10 +230,14 @@ ${recommendations.map((r) => `- ID: ${r.id}, Type: ${r.type}, Title: ${r.title}`
 // RECOMMENDATION GENERATORS
 // ============================================================================
 
-function generateSavingsRecommendation(context: FinancialContext): Recommendation | null {
-  const savingsRate = context.transactions.totalIncome > 0
-    ? (context.transactions.netCashFlow / context.transactions.totalIncome) * 100
-    : 0;
+function generateSavingsRecommendation(
+  context: FinancialContext
+): Recommendation | null {
+  const savingsRate =
+    context.transactions.totalIncome > 0
+      ? (context.transactions.netCashFlow / context.transactions.totalIncome) *
+        100
+      : 0;
 
   if (savingsRate < 20) {
     const targetSavings = context.transactions.totalIncome * 0.2;
@@ -231,18 +254,34 @@ function generateSavingsRecommendation(context: FinancialContext): Recommendatio
       timeframe: 'immediate',
       estimatedEffort: 'moderate',
       actionSteps: [
-        { title: 'Review your spending', description: 'Identify categories where you can cut back' },
-        { title: 'Set up automatic transfers', description: 'Move money to savings on payday' },
-        { title: 'Create a budget', description: 'Allocate 20% of income to savings first' },
+        {
+          title: 'Review your spending',
+          description: 'Identify categories where you can cut back',
+        },
+        {
+          title: 'Set up automatic transfers',
+          description: 'Move money to savings on payday',
+        },
+        {
+          title: 'Create a budget',
+          description: 'Allocate 20% of income to savings first',
+        },
       ],
     });
   }
   return null;
 }
 
-function generateDebtRecommendation(context: FinancialContext): Recommendation | null {
-  if (context.debts.totalDebt > 0 && context.debts.highInterestDebts.length > 0) {
-    const highInterestDebt = context.debts.highInterestDebts[0];
+function generateDebtRecommendation(
+  context: FinancialContext
+): Recommendation | null {
+  // Filter for high-interest debts (typically > 10% APR)
+  const highInterestDebts = context.debts.debts.filter(
+    (d) => d.interestRate > 10
+  );
+
+  if (context.debts.totalDebt > 0 && highInterestDebts.length > 0) {
+    const highInterestDebt = highInterestDebts[0];
     const potentialSavings = calculateInterestSavings(highInterestDebt);
 
     return createRecommendation({
@@ -256,47 +295,79 @@ function generateDebtRecommendation(context: FinancialContext): Recommendation |
       timeframe: 'short_term',
       estimatedEffort: 'significant',
       actionSteps: [
-        { title: 'List all debts by interest rate', description: 'Use the avalanche method to prioritize' },
-        { title: 'Find extra payment money', description: 'Redirect savings from other categories' },
-        { title: 'Consider balance transfer', description: 'Look for 0% APR offers if eligible' },
+        {
+          title: 'List all debts by interest rate',
+          description: 'Use the avalanche method to prioritize',
+        },
+        {
+          title: 'Find extra payment money',
+          description: 'Redirect savings from other categories',
+        },
+        {
+          title: 'Consider balance transfer',
+          description: 'Look for 0% APR offers if eligible',
+        },
       ],
     });
   }
   return null;
 }
 
-function generateInvestmentRecommendation(context: FinancialContext): Recommendation | null {
-  const hasEmergencyFund = context.accounts.totalSavings >= context.transactions.totalExpenses * 3;
+function generateInvestmentRecommendation(
+  context: FinancialContext
+): Recommendation | null {
+  const hasEmergencyFund =
+    context.accounts.totalSavings >= context.transactions.totalExpenses * 3;
   const hasDebt = context.debts.totalDebt > 0;
   const investmentTotal = context.investments.totalValue;
 
-  if (hasEmergencyFund && !hasDebt && investmentTotal < context.transactions.totalIncome * 6) {
+  if (
+    hasEmergencyFund &&
+    !hasDebt &&
+    investmentTotal < context.transactions.totalIncome * 6
+  ) {
     return createRecommendation({
       type: 'investment_suggestion',
       priority: 'medium',
       title: 'Start or Increase Investments',
-      description: 'You have a solid emergency fund and low debt. Consider investing for long-term growth.',
-      rationale: 'With your strong financial foundation, investing can help build wealth over time.',
+      description:
+        'You have a solid emergency fund and low debt. Consider investing for long-term growth.',
+      rationale:
+        'With your strong financial foundation, investing can help build wealth over time.',
       potentialReturn: context.transactions.totalIncome * 0.1 * 12 * 0.08, // Assume 8% return
       riskLevel: 'medium',
       timeframe: 'long_term',
       estimatedEffort: 'moderate',
       actionSteps: [
-        { title: 'Max out retirement accounts', description: 'Contribute to 401(k) and IRA' },
-        { title: 'Consider index funds', description: 'Low-cost diversified investments' },
-        { title: 'Automate contributions', description: 'Set up regular investment transfers' },
+        {
+          title: 'Max out retirement accounts',
+          description: 'Contribute to 401(k) and IRA',
+        },
+        {
+          title: 'Consider index funds',
+          description: 'Low-cost diversified investments',
+        },
+        {
+          title: 'Automate contributions',
+          description: 'Set up regular investment transfers',
+        },
       ],
     });
   }
   return null;
 }
 
-function generateBudgetRecommendation(context: FinancialContext): Recommendation | null {
-  const overBudgetCategories = context.budgets.filter((b) => b.status === 'over_budget');
+function generateBudgetRecommendation(
+  context: FinancialContext
+): Recommendation | null {
+  const overBudgetCategories = context.budgets.filter(
+    (b) => b.status === 'over_budget'
+  );
 
   if (overBudgetCategories.length > 0) {
     const totalOverage = overBudgetCategories.reduce(
-      (sum, b) => sum + Math.max(0, b.spent - b.amount), 0
+      (sum, b) => sum + Math.max(0, b.spentAmount - b.budgetedAmount),
+      0
     );
 
     return createRecommendation({
@@ -304,49 +375,79 @@ function generateBudgetRecommendation(context: FinancialContext): Recommendation
       priority: overBudgetCategories.length >= 3 ? 'high' : 'medium',
       title: 'Adjust Your Budget Categories',
       description: `You're over budget in ${overBudgetCategories.length} categories totaling $${totalOverage.toFixed(0)}.`,
-      rationale: 'Either adjust your budget to match reality or find ways to reduce spending.',
+      rationale:
+        'Either adjust your budget to match reality or find ways to reduce spending.',
       potentialSavings: totalOverage * 12,
       timeframe: 'immediate',
       estimatedEffort: 'minimal',
       actionSteps: [
-        { title: 'Review overspent categories', description: 'Identify why you exceeded budget' },
-        { title: 'Reallocate funds', description: 'Move money from underspent categories' },
-        { title: 'Set realistic limits', description: 'Adjust budgets based on actual spending' },
+        {
+          title: 'Review overspent categories',
+          description: 'Identify why you exceeded budget',
+        },
+        {
+          title: 'Reallocate funds',
+          description: 'Move money from underspent categories',
+        },
+        {
+          title: 'Set realistic limits',
+          description: 'Adjust budgets based on actual spending',
+        },
       ],
     });
   }
   return null;
 }
 
-function generateAccountRecommendation(context: FinancialContext): Recommendation | null {
-  const lowYieldSavings = context.accounts.accounts.filter(
-    (a) => a.type === 'savings' && (a.interestRate || 0) < 4
+function generateAccountRecommendation(
+  context: FinancialContext
+): Recommendation | null {
+  // Filter savings accounts with low interest rates (< 4%)
+  const lowYieldSavings = context.accounts.savings.filter(
+    (a) => (a.interestRate || 0) < 4
   );
 
   if (lowYieldSavings.length > 0 && context.accounts.totalSavings > 1000) {
-    const potentialEarnings = context.accounts.totalSavings * 0.04 -
-      lowYieldSavings.reduce((sum, a) => sum + a.balance * (a.interestRate || 0.01) / 100, 0);
+    const potentialEarnings =
+      context.accounts.totalSavings * 0.04 -
+      lowYieldSavings.reduce(
+        (sum, a) => sum + (a.currentBalance * (a.interestRate || 0.01)) / 100,
+        0
+      );
 
     return createRecommendation({
       type: 'account_optimization',
       priority: 'medium',
       title: 'Move Savings to High-Yield Account',
-      description: 'Your savings accounts may be earning below-market interest rates.',
-      rationale: 'High-yield savings accounts currently offer 4-5% APY vs traditional 0.01-0.5%.',
+      description:
+        'Your savings accounts may be earning below-market interest rates.',
+      rationale:
+        'High-yield savings accounts currently offer 4-5% APY vs traditional 0.01-0.5%.',
       potentialSavings: potentialEarnings,
       timeframe: 'short_term',
       estimatedEffort: 'minimal',
       actionSteps: [
-        { title: 'Research high-yield accounts', description: 'Compare rates at online banks' },
-        { title: 'Open new account', description: 'Process typically takes 10-15 minutes' },
-        { title: 'Transfer funds', description: 'Move savings to earn more interest' },
+        {
+          title: 'Research high-yield accounts',
+          description: 'Compare rates at online banks',
+        },
+        {
+          title: 'Open new account',
+          description: 'Process typically takes 10-15 minutes',
+        },
+        {
+          title: 'Transfer funds',
+          description: 'Move savings to earn more interest',
+        },
       ],
     });
   }
   return null;
 }
 
-function generateCreditRecommendation(context: FinancialContext): Recommendation | null {
+function generateCreditRecommendation(
+  context: FinancialContext
+): Recommendation | null {
   const creditScore = context.creditProfile.currentScore;
 
   if (creditScore < 740) {
@@ -361,21 +462,36 @@ function generateCreditRecommendation(context: FinancialContext): Recommendation
       rationale: topIssue
         ? `Focus on: ${topIssue.name}`
         : 'A higher score means better loan rates and more opportunities.',
-      potentialSavings: calculateCreditImprovementSavings(creditScore, context.debts.totalDebt),
+      potentialSavings: calculateCreditImprovementSavings(
+        creditScore,
+        context.debts.totalDebt
+      ),
       timeframe: 'medium_term',
       estimatedEffort: 'moderate',
       actionSteps: [
-        { title: 'Check for errors', description: 'Review credit reports for mistakes' },
-        { title: 'Pay down balances', description: 'Keep credit utilization under 30%' },
-        { title: 'Make on-time payments', description: 'Set up autopay for all accounts' },
+        {
+          title: 'Check for errors',
+          description: 'Review credit reports for mistakes',
+        },
+        {
+          title: 'Pay down balances',
+          description: 'Keep credit utilization under 30%',
+        },
+        {
+          title: 'Make on-time payments',
+          description: 'Set up autopay for all accounts',
+        },
       ],
     });
   }
   return null;
 }
 
-function generateInsuranceRecommendation(context: FinancialContext): Recommendation | null {
-  const hasEmergencyFund = context.accounts.totalSavings >= context.transactions.totalExpenses * 6;
+function generateInsuranceRecommendation(
+  context: FinancialContext
+): Recommendation | null {
+  const hasEmergencyFund =
+    context.accounts.totalSavings >= context.transactions.totalExpenses * 6;
   const netWorth = context.accounts.netWorth;
 
   if (netWorth > 100000 && !hasEmergencyFund) {
@@ -383,21 +499,34 @@ function generateInsuranceRecommendation(context: FinancialContext): Recommendat
       type: 'insurance_needs',
       priority: 'low',
       title: 'Review Your Insurance Coverage',
-      description: 'As your net worth grows, ensure you have adequate protection.',
-      rationale: 'Proper insurance protects your assets and provides peace of mind.',
+      description:
+        'As your net worth grows, ensure you have adequate protection.',
+      rationale:
+        'Proper insurance protects your assets and provides peace of mind.',
       timeframe: 'medium_term',
       estimatedEffort: 'moderate',
       actionSteps: [
-        { title: 'Review life insurance', description: 'Ensure coverage matches your needs' },
-        { title: 'Check disability insurance', description: 'Protect your income if unable to work' },
-        { title: 'Consider umbrella policy', description: 'Extra liability protection for assets' },
+        {
+          title: 'Review life insurance',
+          description: 'Ensure coverage matches your needs',
+        },
+        {
+          title: 'Check disability insurance',
+          description: 'Protect your income if unable to work',
+        },
+        {
+          title: 'Consider umbrella policy',
+          description: 'Extra liability protection for assets',
+        },
       ],
     });
   }
   return null;
 }
 
-function generateTaxRecommendation(context: FinancialContext): Recommendation | null {
+function generateTaxRecommendation(
+  context: FinancialContext
+): Recommendation | null {
   const monthlyIncome = context.transactions.totalIncome;
   const annualIncome = monthlyIncome * 12;
 
@@ -406,15 +535,26 @@ function generateTaxRecommendation(context: FinancialContext): Recommendation | 
       type: 'tax_optimization',
       priority: 'medium',
       title: 'Optimize Your Tax Strategy',
-      description: 'Your income level presents opportunities for tax optimization.',
-      rationale: 'Tax-advantaged accounts and deductions can significantly reduce your tax burden.',
+      description:
+        'Your income level presents opportunities for tax optimization.',
+      rationale:
+        'Tax-advantaged accounts and deductions can significantly reduce your tax burden.',
       potentialSavings: annualIncome * 0.05, // Estimate 5% savings potential
       timeframe: 'medium_term',
       estimatedEffort: 'moderate',
       actionSteps: [
-        { title: 'Max retirement contributions', description: 'Reduce taxable income with 401(k)/IRA' },
-        { title: 'Use HSA if eligible', description: 'Triple tax advantage for healthcare' },
-        { title: 'Review deductions', description: 'Itemize if it exceeds standard deduction' },
+        {
+          title: 'Max retirement contributions',
+          description: 'Reduce taxable income with 401(k)/IRA',
+        },
+        {
+          title: 'Use HSA if eligible',
+          description: 'Triple tax advantage for healthcare',
+        },
+        {
+          title: 'Review deductions',
+          description: 'Itemize if it exceeds standard deduction',
+        },
       ],
     });
   }
@@ -466,14 +606,21 @@ function createRecommendation(params: {
   };
 }
 
-function calculateInterestSavings(debt: { balance: number; interestRate: number }): number {
+function calculateInterestSavings(debt: {
+  balance: number;
+  interestRate: number;
+}): number {
   // Simplified calculation: estimate 1 year of interest at current rate
   return debt.balance * (debt.interestRate / 100) * 0.5; // Assume paying off in 6 months
 }
 
-function calculateCreditImprovementSavings(currentScore: number, totalDebt: number): number {
+function calculateCreditImprovementSavings(
+  currentScore: number,
+  totalDebt: number
+): number {
   // Estimate savings from better interest rates with improved credit
-  const rateImprovement = currentScore < 650 ? 0.03 : currentScore < 700 ? 0.02 : 0.01;
+  const rateImprovement =
+    currentScore < 650 ? 0.03 : currentScore < 700 ? 0.02 : 0.01;
   return totalDebt * rateImprovement;
 }
 
@@ -481,6 +628,7 @@ function calculateCreditImprovementSavings(currentScore: number, totalDebt: numb
 // EXPORT
 // ============================================================================
 
+// Export both class and instance for testing
+export { RecommendationEngine };
 export const recommendationEngine = new RecommendationEngine();
 export default recommendationEngine;
-

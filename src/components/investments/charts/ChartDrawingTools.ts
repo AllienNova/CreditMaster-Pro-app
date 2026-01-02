@@ -107,7 +107,7 @@ export function createDrawingToolManager(
       const priceLine = mainSeries.createPriceLine({
         price: point.y,
         color: mergedStyle.color,
-        lineWidth: mergedStyle.lineWidth,
+        lineWidth: mergedStyle.lineWidth as 1 | 2 | 3 | 4,
         lineStyle: toLineStyle(mergedStyle.lineStyle),
         axisLabelVisible: mergedStyle.showLabels || false,
         title: '',
@@ -128,7 +128,7 @@ export function createDrawingToolManager(
     const priceLine = mainSeries.createPriceLine({
       price,
       color: mergedStyle.color,
-      lineWidth: mergedStyle.lineWidth,
+      lineWidth: mergedStyle.lineWidth as 1 | 2 | 3 | 4,
       lineStyle: toLineStyle(mergedStyle.lineStyle),
       axisLabelVisible: mergedStyle.showLabels || false,
       title: style?.fontColor ? '' : `${price.toFixed(2)}`,
@@ -167,7 +167,7 @@ export function createDrawingToolManager(
       const priceLine = mainSeries.createPriceLine({
         price,
         color: FIBONACCI_COLORS[colorKey] || '#888888',
-        lineWidth: 1,
+        lineWidth: 1 as 1 | 2 | 3 | 4,
         lineStyle: LineStyle.Dashed,
         axisLabelVisible: true,
         title: `${(level * 100).toFixed(1)}%`,
@@ -201,7 +201,7 @@ export function createDrawingToolManager(
     const priceLine = mainSeries.createPriceLine({
       price: point.y,
       color: 'transparent',
-      lineWidth: 0,
+      lineWidth: 1 as 1 | 2 | 3 | 4,
       lineStyle: LineStyle.Solid,
       axisLabelVisible: true,
       title: text,
@@ -238,7 +238,8 @@ export function createDrawingToolManager(
 
   // Clear all drawings
   const clearAllDrawings = (): void => {
-    for (const [id] of drawings) {
+    const drawingIds = Array.from(drawings.keys());
+    for (const id of drawingIds) {
       removeDrawing(id);
     }
   };

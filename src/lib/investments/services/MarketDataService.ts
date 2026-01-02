@@ -1,11 +1,11 @@
 /**
  * Market Data Service
- * 
+ *
  * Handles real-time and historical market data from multiple providers:
  * - Alpha Vantage
  * - Yahoo Finance
  * - Polygon.io
- * 
+ *
  * Features:
  * - WebSocket support for real-time updates
  * - Caching for historical data
@@ -22,8 +22,15 @@ import { Timeframe, Quote, Asset } from '../types/investment.types';
 export interface MarketDataProvider {
   name: string;
   fetchQuote: (symbol: string) => Promise<Quote>;
-  fetchHistoricalData: (symbol: string, timeframe: Timeframe, limit?: number) => Promise<CandleData[]>;
-  subscribeToRealTime?: (symbols: string[], callback: (data: RealtimeUpdate) => void) => () => void;
+  fetchHistoricalData: (
+    symbol: string,
+    timeframe: Timeframe,
+    limit?: number
+  ) => Promise<CandleData[]>;
+  subscribeToRealTime?: (
+    symbols: string[],
+    callback: (data: RealtimeUpdate) => void
+  ) => () => void;
 }
 
 export interface RealtimeUpdate {
@@ -48,12 +55,12 @@ type RealtimeCallback = (data: RealtimeUpdate) => void;
 // ============================================================================
 
 const CACHE_TTL = {
-  quote: 60 * 1000,           // 1 minute for quotes
-  historical_1m: 60 * 1000,   // 1 minute for 1m data
+  quote: 60 * 1000, // 1 minute for quotes
+  historical_1m: 60 * 1000, // 1 minute for 1m data
   historical_5m: 5 * 60 * 1000,
   historical_15m: 15 * 60 * 1000,
   historical_1h: 60 * 60 * 1000,
-  historical_1d: 24 * 60 * 60 * 1000,  // 1 day for daily data
+  historical_1d: 24 * 60 * 60 * 1000, // 1 day for daily data
 };
 
 // ============================================================================
@@ -117,7 +124,11 @@ export class MarketDataService {
     const cached = this.getFromCache<CandleData[]>(cacheKey);
     if (cached) return cached;
 
-    const data = await this.fetchHistoricalFromProvider(symbol, timeframe, limit);
+    const data = await this.fetchHistoricalFromProvider(
+      symbol,
+      timeframe,
+      limit
+    );
     this.setCache(cacheKey, data, ttl);
     return data;
   }
@@ -148,9 +159,14 @@ export class MarketDataService {
     };
   }
 
-  subscribeToSymbols(symbols: string[], callback: RealtimeCallback): () => void {
-    const unsubscribers = symbols.map(symbol => this.subscribeToSymbol(symbol, callback));
-    return () => unsubscribers.forEach(unsub => unsub());
+  subscribeToSymbols(
+    symbols: string[],
+    callback: RealtimeCallback
+  ): () => void {
+    const unsubscribers = symbols.map((symbol) =>
+      this.subscribeToSymbol(symbol, callback)
+    );
+    return () => unsubscribers.forEach((unsub) => unsub());
   }
 
   // ============================================================================
@@ -208,7 +224,8 @@ export class MarketDataService {
         try {
           const messages = JSON.parse(event.data);
           for (const msg of messages) {
-            if (msg.ev === 'T') { // Trade event
+            if (msg.ev === 'T') {
+              // Trade event
               this.handleRealtimeUpdate({
                 symbol: msg.sym,
                 price: msg.p,
@@ -273,7 +290,7 @@ export class MarketDataService {
   private handleRealtimeUpdate(update: RealtimeUpdate): void {
     const callbacks = this.subscribers.get(update.symbol);
     if (callbacks) {
-      callbacks.forEach(callback => {
+      callbacks.forEach((callback) => {
         try {
           callback(update);
         } catch (error) {
@@ -301,7 +318,9 @@ export class MarketDataService {
       try {
         return await this.fetchAlphaVantageQuote(symbol);
       } catch (error) {
-        console.warn(`Alpha Vantage quote failed for ${symbol}, trying fallback`);
+        console.warn(
+          `Alpha Vantage quote failed for ${symbol}, trying fallback`
+        );
       }
     }
 
@@ -319,7 +338,9 @@ export class MarketDataService {
       try {
         return await this.fetchAlphaVantageHistorical(symbol, timeframe, limit);
       } catch (error) {
-        console.warn(`Alpha Vantage historical failed for ${symbol}, trying fallback`);
+        console.warn(
+          `Alpha Vantage historical failed for ${symbol}, trying fallback`
+        );
       }
     }
 
@@ -375,7 +396,9 @@ export class MarketDataService {
       throw new Error('Invalid response from Alpha Vantage');
     }
 
-    const timeSeriesKey = Object.keys(data).find(key => key.includes('Time Series'));
+    const timeSeriesKey = Object.keys(data).find((key) =>
+      key.includes('Time Series')
+    );
     if (!timeSeriesKey || !data[timeSeriesKey]) {
       throw new Error('No time series data found');
     }
@@ -383,7 +406,10 @@ export class MarketDataService {
     const timeSeries = data[timeSeriesKey];
     const candles: CandleData[] = [];
 
-    for (const [dateStr, values] of Object.entries(timeSeries).slice(0, limit)) {
+    for (const [dateStr, values] of Object.entries(timeSeries).slice(
+      0,
+      limit
+    )) {
       const v = values as any;
       candles.push({
         timestamp: new Date(dateStr).getTime(),
@@ -461,7 +487,7 @@ export class MarketDataService {
       const low = Math.min(open, close) - Math.random() * Math.abs(change);
 
       candles.push({
-        timestamp: now - (i * 24 * 60 * 60 * 1000),
+        timestamp: now - i * 24 * 60 * 60 * 1000,
         open,
         high,
         low,
@@ -496,7 +522,7 @@ export class MarketDataService {
   // ============================================================================
 
   disconnect(): void {
-    for (const [symbol] of this.wsConnections) {
+    for (const [symbol] of Array.from(this.wsConnections.entries())) {
       this.closeWebSocketConnection(symbol);
     }
     this.subscribers.clear();
@@ -515,8 +541,10 @@ export function getMarketDataService(
   polygonKey?: string
 ): MarketDataService {
   if (!marketDataServiceInstance) {
-    marketDataServiceInstance = new MarketDataService(alphaVantageKey, polygonKey);
+    marketDataServiceInstance = new MarketDataService(
+      alphaVantageKey,
+      polygonKey
+    );
   }
   return marketDataServiceInstance;
 }
-

@@ -200,7 +200,19 @@ describe('Credit Store', () => {
       // Set initial state with alerts
       useCreditStore.setState({
         alerts: [
-          { id: '1', type: 'score_change', message: 'Test', acknowledged: false },
+          {
+            id: '1',
+            userId: 'user-1',
+            bureau: 'experian',
+            alertType: 'score_change' as const,
+            type: 'score_change' as const,
+            severity: 'medium' as const,
+            title: 'Score Change',
+            description: 'Test',
+            message: 'Test',
+            createdAt: new Date().toISOString(),
+            acknowledged: false,
+          },
         ],
         unreadAlertCount: 1,
       });
@@ -219,8 +231,30 @@ describe('Credit Store', () => {
     it('should acknowledge all alerts', async () => {
       useCreditStore.setState({
         alerts: [
-          { id: '1', acknowledged: false },
-          { id: '2', acknowledged: false },
+          {
+            id: '1',
+            userId: 'user-1',
+            bureau: 'experian',
+            alertType: 'score_change' as const,
+            type: 'score_change' as const,
+            severity: 'medium' as const,
+            title: 'Alert 1',
+            description: 'Test alert 1',
+            createdAt: new Date().toISOString(),
+            acknowledged: false,
+          },
+          {
+            id: '2',
+            userId: 'user-1',
+            bureau: 'equifax',
+            alertType: 'new_account' as const,
+            type: 'new_account' as const,
+            severity: 'low' as const,
+            title: 'Alert 2',
+            description: 'Test alert 2',
+            createdAt: new Date().toISOString(),
+            acknowledged: false,
+          },
         ],
         unreadAlertCount: 2,
       });
@@ -256,8 +290,8 @@ describe('Credit Store', () => {
     it('selectScoreByBureau should find correct score', () => {
       const state = {
         scores: [
-          { bureau: 'experian', score: 720 },
-          { bureau: 'equifax', score: 710 },
+          { bureau: 'experian' as const, score: 720 },
+          { bureau: 'equifax' as const, score: 710 },
         ],
       };
       expect(selectScoreByBureau('experian')(state as any)?.score).toBe(720);
@@ -266,9 +300,42 @@ describe('Credit Store', () => {
     it('selectUnreadAlerts should filter unread', () => {
       const state = {
         alerts: [
-          { id: '1', acknowledged: false },
-          { id: '2', acknowledged: true },
-          { id: '3', acknowledged: false },
+          {
+            id: '1',
+            userId: 'user-1',
+            bureau: 'experian',
+            alertType: 'score_change' as const,
+            type: 'score_change' as const,
+            severity: 'medium' as const,
+            title: 'Alert 1',
+            description: 'Test',
+            createdAt: new Date().toISOString(),
+            acknowledged: false,
+          },
+          {
+            id: '2',
+            userId: 'user-1',
+            bureau: 'equifax',
+            alertType: 'new_account' as const,
+            type: 'new_account' as const,
+            severity: 'low' as const,
+            title: 'Alert 2',
+            description: 'Test',
+            createdAt: new Date().toISOString(),
+            acknowledged: true,
+          },
+          {
+            id: '3',
+            userId: 'user-1',
+            bureau: 'transunion',
+            alertType: 'inquiry' as const,
+            type: 'inquiry' as const,
+            severity: 'medium' as const,
+            title: 'Alert 3',
+            description: 'Test',
+            createdAt: new Date().toISOString(),
+            acknowledged: false,
+          },
         ],
       };
       expect(selectUnreadAlerts(state as any)).toHaveLength(2);
@@ -286,8 +353,25 @@ describe('Credit Store', () => {
 
     it('should reset store', () => {
       useCreditStore.setState({
-        scores: [{ bureau: 'test', score: 700 }],
-        alerts: [{ id: '1' }],
+        scores: [{
+          id: 'score-1',
+          userId: 'user-1',
+          bureau: 'experian' as const,
+          score: 700,
+          date: new Date().toISOString(),
+        }],
+        alerts: [{
+          id: '1',
+          userId: 'user-1',
+          bureau: 'experian',
+          alertType: 'score_change' as const,
+          type: 'score_change' as const,
+          severity: 'medium' as const,
+          title: 'Test',
+          description: 'Test',
+          createdAt: new Date().toISOString(),
+          acknowledged: false,
+        }],
       });
       useCreditStore.getState().resetStore();
       const state = useCreditStore.getState();

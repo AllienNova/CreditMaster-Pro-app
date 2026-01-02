@@ -7,7 +7,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, M
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useCoachStore } from '../../src/stores/coachStore';
+import { useCoachStore } from '../../src/store';
 import { FinancialGoalPlan, GoalType } from '../../src/types/coach.types';
 
 const GOAL_TYPES: { type: GoalType; label: string; icon: string }[] = [

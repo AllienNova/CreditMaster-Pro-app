@@ -1,37 +1,54 @@
 /**
  * AI Financial Coach - Individual Goal API
- * 
+ *
  * GET /api/ai/financial-coach/goals/[goalId] - Get goal details
  * PATCH /api/ai/financial-coach/goals/[goalId] - Update goal progress
  * POST /api/ai/financial-coach/goals/[goalId]/simulate - Simulate goal scenarios
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { goalPlanner } from '@/lib/financial/goal-planner';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { goalId: string } }
-) {
-  try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+interface RouteParams {
+  params: Promise<{ goalId: string }>;
+}
 
-    if (authError || !user) {
+async function getUser() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } }
+  );
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
+
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  try {
+    const { goalId } = await params;
+    const user = await getUser();
+
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const goals = await goalPlanner.getUserGoals(user.id);
-    const goal = goals.find(g => g.id === params.goalId);
+    const goal = goals.find((g) => g.id === goalId);
 
     if (!goal) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
     }
 
     // Get adjustment suggestions
-    const adjustments = await goalPlanner.getAdjustmentSuggestions(user.id, params.goalId);
+    const adjustments = await goalPlanner.getAdjustmentSuggestions(
+      user.id,
+      goalId
+    );
 
     return NextResponse.json({ goal, adjustments });
   } catch (error) {
@@ -43,15 +60,12 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { goalId: string } }
-) {
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { goalId } = await params;
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -67,7 +81,7 @@ export async function PATCH(
 
     const updatedGoal = await goalPlanner.updateGoalProgress(
       user.id,
-      params.goalId,
+      goalId,
       parseFloat(currentAmount)
     );
 
@@ -84,4 +98,3 @@ export async function PATCH(
     );
   }
 }
-

@@ -57,9 +57,9 @@ describe('Credit Score API', () => {
 
       (api.get as jest.Mock).mockResolvedValueOnce({ success: true, data: mockHistory });
 
-      await creditScoreApi.getHistory({ months: 6, bureau: 'experian' });
+      await creditScoreApi.getHistory(6);
 
-      expect(api.get).toHaveBeenCalledWith('/credit/scores/history?months=6&bureau=experian');
+      expect(api.get).toHaveBeenCalledWith('/credit/scores/history?months=6');
     });
 
     it('should fetch score history without params', async () => {
@@ -73,13 +73,13 @@ describe('Credit Score API', () => {
 
   describe('getFactors', () => {
     it('should fetch credit factors', async () => {
-      const mockFactors = { factors: [{ name: 'Payment History', impact: 'high' }] };
+      const mockFactors = [{ factor: 'Payment History', impact: 35, status: 'good' }];
 
       (api.get as jest.Mock).mockResolvedValueOnce({ success: true, data: mockFactors });
 
-      const result = await creditScoreApi.getFactors('experian');
+      const result = await creditScoreApi.getFactors();
 
-      expect(api.get).toHaveBeenCalledWith('/credit/factors?bureau=experian');
+      expect(api.get).toHaveBeenCalledWith('/credit/factors');
       expect(result.data).toEqual(mockFactors);
     });
   });

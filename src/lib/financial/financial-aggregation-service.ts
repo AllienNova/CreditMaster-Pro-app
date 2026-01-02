@@ -390,6 +390,11 @@ export class FinancialAggregationService {
       0
     );
 
+    const totalSavings = savings.reduce(
+      (sum, a) => sum + Math.max(0, a.currentBalance),
+      0
+    );
+
     return {
       checking,
       savings,
@@ -398,6 +403,7 @@ export class FinancialAggregationService {
       loan,
       totalAssets,
       totalLiabilities,
+      totalSavings,
       netWorth: totalAssets - totalLiabilities,
       lastSyncedAt: new Date(),
     };
@@ -1246,6 +1252,7 @@ export class FinancialAggregationService {
       loan: [],
       totalAssets: 0,
       totalLiabilities: 0,
+      totalSavings: 0,
       netWorth: 0,
       lastSyncedAt: new Date(),
     };
@@ -1520,9 +1527,17 @@ export class FinancialAggregationService {
       projectedPayoffDate.getMonth() + monthsToPayoff
     );
 
+    // Calculate average interest rate
+    const averageInterestRate =
+      debtItems.length > 0
+        ? debtItems.reduce((sum, d) => sum + d.interestRate, 0) /
+          debtItems.length
+        : 0;
+
     return {
       totalDebt,
       debtToIncomeRatio: overview?.debtToIncomeRatio || 0,
+      averageInterestRate,
       monthlyPayments,
       debts: debtItems,
       payoffStrategies: [

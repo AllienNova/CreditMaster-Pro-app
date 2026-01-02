@@ -1,13 +1,14 @@
 /**
  * Admin Authentication API
- * 
+ *
  * Verifies if the current user has admin privileges.
  * Used by the admin layout to protect admin routes.
  */
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { requireRole, createAuthResponse } from '@/lib/security/auth-middleware';
 
 // Admin email whitelist (in production, use database roles)
 const ADMIN_EMAILS = [
@@ -15,7 +16,12 @@ const ADMIN_EMAILS = [
   'khonour@yahoo.com',
 ];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // SECURITY: Require admin role to check admin status
+  const authResult = await requireRole(request, 'admin');
+  if (!authResult.authenticated || !authResult.user) {
+    return createAuthResponse(authResult);
+  }
   try {
     const cookieStore = await cookies();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

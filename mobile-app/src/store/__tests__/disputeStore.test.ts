@@ -28,6 +28,21 @@ jest.mock('../../services/api', () => ({
 
 const { disputeApi, disputeLetterApi, disputeResourcesApi } = require('../../services/api');
 
+import type { Dispute } from '../../services/api/types';
+
+// Helper to create mock Dispute objects with required fields
+const createMockDispute = (overrides: Partial<Dispute> = {}): Dispute => ({
+  id: overrides.id || '1',
+  userId: overrides.userId || 'user-1',
+  bureau: overrides.bureau || 'experian',
+  status: overrides.status || 'pending',
+  itemType: overrides.itemType || 'late_payment',
+  creditorName: overrides.creditorName || 'Test Creditor',
+  disputeReason: overrides.disputeReason || 'Incorrect information',
+  createdAt: overrides.createdAt || new Date().toISOString(),
+  updatedAt: overrides.updatedAt || new Date().toISOString(),
+});
+
 describe('Dispute Store', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -49,8 +64,8 @@ describe('Dispute Store', () => {
   describe('fetchDisputes', () => {
     it('should fetch disputes successfully', async () => {
       const mockDisputes = [
-        { id: '1', status: 'pending', bureau: 'experian' },
-        { id: '2', status: 'resolved', bureau: 'equifax' },
+        createMockDispute({ id: '1', status: 'pending', bureau: 'experian' }),
+        createMockDispute({ id: '2', status: 'resolved', bureau: 'equifax' }),
       ];
 
       disputeApi.getAll.mockResolvedValueOnce({
@@ -84,7 +99,7 @@ describe('Dispute Store', () => {
 
   describe('createDispute', () => {
     it('should create dispute successfully', async () => {
-      const newDispute = { id: '1', status: 'pending', bureau: 'experian' };
+      const newDispute = createMockDispute({ id: '1', status: 'pending', bureau: 'experian' });
 
       disputeApi.create.mockResolvedValueOnce({
         success: true,
@@ -97,6 +112,8 @@ describe('Dispute Store', () => {
           bureau: 'experian',
           status: 'pending',
           itemType: 'late_payment',
+          creditorName: 'Test Creditor',
+          disputeReason: 'Incorrect information',
         });
       });
 
@@ -115,6 +132,9 @@ describe('Dispute Store', () => {
         result = await useDisputeStore.getState().createDispute({
           bureau: 'experian',
           status: 'pending',
+          itemType: 'late_payment',
+          creditorName: 'Test Creditor',
+          disputeReason: 'Incorrect information',
         });
       });
 
@@ -126,12 +146,12 @@ describe('Dispute Store', () => {
   describe('updateDispute', () => {
     it('should update dispute successfully', async () => {
       useDisputeStore.setState({
-        disputes: [{ id: '1', status: 'pending', bureau: 'experian' }],
+        disputes: [createMockDispute({ id: '1', status: 'pending', bureau: 'experian' })],
       });
 
       disputeApi.update.mockResolvedValueOnce({
         success: true,
-        data: { id: '1', status: 'in_progress', bureau: 'experian' },
+        data: createMockDispute({ id: '1', status: 'in_progress', bureau: 'experian' }),
       });
 
       let result;
@@ -147,7 +167,7 @@ describe('Dispute Store', () => {
   describe('deleteDispute', () => {
     it('should delete dispute successfully', async () => {
       useDisputeStore.setState({
-        disputes: [{ id: '1' }, { id: '2' }],
+        disputes: [createMockDispute({ id: '1' }), createMockDispute({ id: '2' })],
         totalDisputes: 2,
       });
 
@@ -167,12 +187,12 @@ describe('Dispute Store', () => {
   describe('sendDispute', () => {
     it('should send dispute successfully', async () => {
       useDisputeStore.setState({
-        disputes: [{ id: '1', status: 'pending' }],
+        disputes: [createMockDispute({ id: '1', status: 'pending' })],
       });
 
       disputeApi.send.mockResolvedValueOnce({
         success: true,
-        data: { id: '1', status: 'sent' },
+        data: createMockDispute({ id: '1', status: 'sent' }),
       });
 
       let result;

@@ -1,22 +1,45 @@
 module.exports = {
   roots: ['<rootDir>/src'],
+  testEnvironmentOptions: {
+    customExportConditions: [''],
+  },
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
+    '!src/**/*.stories.{js,jsx,ts,tsx}',
+    '!src/app/**/layout.tsx',
+    '!src/app/**/loading.tsx',
+    '!src/app/**/error.tsx',
+    '!src/app/**/not-found.tsx',
+    '!src/middleware.ts',
+    '!src/setupTests.ts',
+    '!src/__mocks__/**',
+    '!src/types/**',
   ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+  coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.[jt]sx?$',
   testEnvironment: 'jsdom',
-    transform: {
-      '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
-    },
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
+    '^.+\\.jsx?$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
+  },
   transformIgnorePatterns: [
-    '[/\\\\]node_modules[/\\\\].+\\.(js|jsx|mjs|cjs|ts|tsx)$',
+    'node_modules/(?!(msw|@mswjs|@bundled-es-modules|@open-draft|strict-event-emitter|outvariant|@testing-library|until-async|undici)/)',
   ],
   modulePaths: [],
   moduleNameMapper: {
     '^react-native$': 'react-native-web',
     '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   moduleFileExtensions: [
     'web.js',
@@ -35,5 +58,8 @@ module.exports = {
     'jest-watch-typeahead/testname',
   ],
   resetMocks: true,
+  clearMocks: true,
+  restoreMocks: true,
+  testTimeout: 10000,
 };
 

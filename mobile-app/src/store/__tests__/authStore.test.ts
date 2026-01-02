@@ -167,7 +167,14 @@ describe('Auth Store', () => {
   describe('logout', () => {
     it('should logout successfully', async () => {
       useAuthStore.setState({
-        user: { id: '1', email: 'test@example.com' },
+        user: {
+          id: '1',
+          email: 'test@example.com',
+          name: 'Test User',
+          subscription_tier: 'free' as const,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
         isAuthenticated: true,
       });
 

@@ -2,14 +2,15 @@ import { render, screen } from '@testing-library/react';
 import CreditReportImport from '../CreditReportImport';
 
 // Mock fetch
-globalThis.fetch = jest.fn();
+const mockFetch = jest.fn();
+global.fetch = mockFetch;
 
 describe('CreditReportImport', () => {
   const mockOnImportComplete = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (globalThis.fetch as jest.Mock).mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ success: true, reportId: 'report-123', accountsCount: 10 }),
     });

@@ -216,6 +216,7 @@ describe('Credit Store - Real-Time Updates', () => {
         acknowledged: false,
         createdAt: '2024-01-01',
         alertType: 'fraud_alert' as const,
+        type: 'fraud_alert' as const,
       };
 
       pushNotificationService.scheduleLocalNotification.mockResolvedValue('notif-1');
@@ -245,6 +246,7 @@ describe('Credit Store - Real-Time Updates', () => {
         acknowledged: false,
         createdAt: '2024-01-01',
         alertType: 'inquiry' as const,
+        type: 'inquiry' as const,
       };
 
       pushNotificationService.scheduleLocalNotification.mockResolvedValue('notif-2');

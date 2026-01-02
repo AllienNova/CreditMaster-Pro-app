@@ -7,6 +7,7 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
+  onboardingCompleted: boolean;
 
   // Actions
   initialize: () => Promise<void>;
@@ -16,6 +17,7 @@ interface AuthState {
   clearError: () => void;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   completeOnboarding: () => Promise<void>;
+  setUser: (user: User | null) => void;
 }
 
 export type { AuthState };
@@ -25,6 +27,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
   isAuthenticated: false,
   error: null,
+  onboardingCompleted: false,
+
+  setUser: (user) => set({ user, isAuthenticated: !!user }),
 
   initialize: async () => {
     set({ isLoading: true });

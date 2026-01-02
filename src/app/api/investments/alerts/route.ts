@@ -1,12 +1,11 @@
 /**
  * Investment Alerts API
- * 
+ *
  * Endpoints for managing price alerts and notifications
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { jwtValidation } from '@/lib/auth/jwt-validation';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -20,10 +19,11 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const validation = await jwtValidation.validateFromHeaders(request);
+    if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const userId = validation.user.id;
 
     const { searchParams } = new URL(request.url);
     const symbol = searchParams.get('symbol');
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('investment_alerts')
       .select('*')
-      .eq('user_id', session.user.id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -49,7 +49,10 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching alerts:', error);
-      return NextResponse.json({ error: 'Failed to fetch alerts' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch alerts' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
@@ -58,7 +61,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Alerts GET error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -68,10 +74,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const validation = await jwtValidation.validateFromHeaders(request);
+    if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const userId = validation.user.id;
 
     const body = await request.json();
     const {
@@ -94,13 +101,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate alert type
-    const validTypes = ['price_above', 'price_below', 'percent_change', 'volume_spike', 'indicator_crossover', 'pattern_detected'];
+    const validTypes = [
+      'price_above',
+      'price_below',
+      'percent_change',
+      'volume_spike',
+      'indicator_crossover',
+      'pattern_detected',
+    ];
     if (!validTypes.includes(type)) {
-      return NextResponse.json({ error: 'Invalid alert type' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid alert type' },
+        { status: 400 }
+      );
     }
 
     const alert = {
-      user_id: session.user.id,
+      user_id: userId,
       symbol: symbol.toUpperCase(),
       type,
       status: 'active',
@@ -122,13 +139,19 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error creating alert:', error);
-      return NextResponse.json({ error: 'Failed to create alert' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to create alert' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ alert: data }, { status: 201 });
   } catch (error) {
     console.error('Alerts POST error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
@@ -138,10 +161,11 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const validation = await jwtValidation.validateFromHeaders(request);
+    if (!validation.valid || !validation.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const userId = validation.user.id;
 
     const { searchParams } = new URL(request.url);
     const alertId = searchParams.get('id');
@@ -154,17 +178,22 @@ export async function DELETE(request: NextRequest) {
       .from('investment_alerts')
       .delete()
       .eq('id', alertId)
-      .eq('user_id', session.user.id);
+      .eq('user_id', userId);
 
     if (error) {
       console.error('Error deleting alert:', error);
-      return NextResponse.json({ error: 'Failed to delete alert' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to delete alert' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Alerts DELETE error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
-

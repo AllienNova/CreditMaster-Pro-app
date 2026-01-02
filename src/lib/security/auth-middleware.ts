@@ -1,12 +1,25 @@
 /**
  * Authentication & Authorization Middleware
- * 
+ *
  * Provides:
- * - JWT token validation
+ * - JWT token validation with signature verification
  * - Session management
  * - Role-based access control (RBAC)
  * - API key authentication
+ *
+ * SECURITY: All tokens are now properly verified with cryptographic signatures
  */
+
+import jwt from 'jsonwebtoken';
+
+export interface JWTPayload {
+  userId: string;
+  email: string;
+  name?: string;
+  role?: 'user' | 'admin' | 'premium' | 'enterprise';
+  iat?: number;
+  exp?: number;
+}
 
 export interface User {
   id: string;
@@ -173,34 +186,61 @@ export async function requirePermission(
 }
 
 /**
- * Validate JWT token
- * In production, this would use a proper JWT library
+ * Validate JWT token with proper signature verification
+ * SECURITY: This function now uses cryptographic verification to prevent token tampering
  */
 async function validateToken(token: string): Promise<User | null> {
   try {
-    // This is a placeholder - in production, use proper JWT validation
-    // with jsonwebtoken or jose library
-    
-    // For now, return a mock user for development
-    if (token === 'dev-token') {
-      return {
-        id: 'dev-user-1',
-        email: 'dev@example.com',
-        name: 'Dev User',
-        role: 'premium',
-        permissions: [],
-        createdAt: new Date(),
-        lastLogin: new Date(),
-      };
+    // SECURITY FIX: Removed dev-token bypass
+    // This was a CRITICAL vulnerability allowing anyone with 'dev-token' to access the system
+
+    // Get JWT secret from environment
+    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+
+    if (!jwtSecret) {
+      console.error('SECURITY ERROR: JWT_SECRET or SUPABASE_JWT_SECRET not configured');
+      return null;
     }
-    
-    // In production, decode and verify JWT:
-    // const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // return getUserFromDatabase(decoded.userId);
-    
-    return null;
+
+    // Verify JWT signature and decode payload
+    // This throws if the signature is invalid, token is expired, or malformed
+    const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
+
+    // Validate required fields
+    if (!decoded.userId || !decoded.email) {
+      console.warn('JWT missing required fields (userId, email)');
+      return null;
+    }
+
+    // TODO: In production, you may want to fetch user from database to verify:
+    // - User still exists
+    // - User is not banned/suspended
+    // - Role hasn't changed
+    // const dbUser = await getUserFromDatabase(decoded.userId);
+
+    // Map JWT payload to User object
+    const user: User = {
+      id: decoded.userId,
+      email: decoded.email,
+      name: decoded.name,
+      role: decoded.role || 'user',
+      permissions: ROLE_PERMISSIONS[decoded.role || 'user']?.map(p => `${p.action}:${p.resource}`) || [],
+      createdAt: new Date(decoded.iat ? decoded.iat * 1000 : Date.now()),
+      lastLogin: new Date(),
+    };
+
+    return user;
   } catch (error) {
-    console.error('Token validation error:', error);
+    // Log specific JWT errors for security monitoring
+    if (error instanceof jwt.JsonWebTokenError) {
+      console.warn('Invalid JWT token:', error.message);
+    } else if (error instanceof jwt.TokenExpiredError) {
+      console.warn('JWT token expired:', error.message);
+    } else if (error instanceof jwt.NotBeforeError) {
+      console.warn('JWT not yet valid:', error.message);
+    } else {
+      console.error('Token validation error:', error);
+    }
     return null;
   }
 }

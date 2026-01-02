@@ -56,6 +56,17 @@ export {
   type UpdateHoldingInput,
   type PortfolioAnalysisResponse,
 } from './investments';
+export {
+  studentLoansApi,
+  type StudentLoan,
+  type PortfolioStats as StudentLoanPortfolioStats,
+  type AIStrategyRecommendation,
+  type CreateLoanInput,
+  type UpdateLoanInput,
+  type FinancialSituation,
+  type LoanType,
+  type LoanStatus,
+} from './studentLoans';
 
 // Type exports
 export * from './types';
@@ -66,6 +77,7 @@ import disputesApiDefault from './disputes';
 import financialApiDefault from './financial';
 import userApiDefault from './user';
 import investmentsApiDefault from './investments';
+import { studentLoansApi } from './studentLoans';
 
 /**
  * Unified API object for easy access to all services
@@ -85,6 +97,9 @@ export const cpfiApi = {
 
   // Investment services
   investments: investmentsApiDefault,
+
+  // Student loans services
+  studentLoans: studentLoansApi,
 };
 
 export default cpfiApi;

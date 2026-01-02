@@ -1,9 +1,10 @@
 import { useEffect, useCallback, useState } from 'react';
-import { useStore } from '../store/useStore';
+import { useCreditStore, selectScores } from '../src/store';
 import { creditAPI } from '../services/api';
 
 export function useCreditScores() {
-  const { creditScores, setCreditScores, updateScore } = useStore();
+  const creditScores = useCreditStore(selectScores);
+  const { setScores, updateScore } = useCreditStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,10 +21,10 @@ export function useCreditScores() {
     }
 
     if (data?.scores) {
-      setCreditScores(data.scores);
+      setScores(data.scores);
     }
     setLoading(false);
-  }, [setCreditScores]);
+  }, [setScores]);
 
   const refreshScores = useCallback(async () => {
     await fetchScores();
@@ -42,7 +43,7 @@ export function useCreditScores() {
     ? Math.min(...creditScores.map((s) => s.score))
     : 0;
 
-  const totalChange = creditScores.reduce((sum, s) => sum + s.change, 0);
+  const totalChange = creditScores.reduce((sum, s) => sum + (s.change ?? 0), 0);
 
   // Get score by bureau
   const getScoreByBureau = useCallback(

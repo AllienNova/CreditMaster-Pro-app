@@ -36,6 +36,7 @@ interface CreditState {
   isBackgroundSyncEnabled: boolean;
   backgroundSyncInterval: number; // in milliseconds
   lastBackgroundSync: string | null;
+  _backgroundSyncTimer: NodeJS.Timeout | null; // MEMORY LEAK FIX: Moved to instance scope
 
   // Loading states
   isLoadingScores: boolean;
@@ -83,6 +84,10 @@ interface CreditState {
   // Actions - Utility
   clearErrors: () => void;
   resetStore: () => void;
+
+  // Actions - Direct setters for hooks
+  setScores: (scores: CreditScore[]) => void;
+  updateScore: (bureau: string, score: number) => void;
 }
 
 export type { CreditState };
@@ -101,6 +106,7 @@ const initialState = {
   isBackgroundSyncEnabled: false,
   backgroundSyncInterval: 5 * 60 * 1000, // 5 minutes default
   lastBackgroundSync: null as string | null,
+  _backgroundSyncTimer: null as NodeJS.Timeout | null, // MEMORY LEAK FIX: Timer in state
   isLoadingScores: false,
   isLoadingAlerts: false,
   isRefreshing: false,
@@ -108,9 +114,6 @@ const initialState = {
   scoreError: null as string | null,
   alertError: null as string | null,
 };
-
-// Background sync timer
-let backgroundSyncTimer: NodeJS.Timeout | null = null;
 
 export const useCreditStore = create<CreditState>()(
   persist(
@@ -331,31 +334,37 @@ export const useCreditStore = create<CreditState>()(
 
       // Real-time update methods
       enableBackgroundSync: (intervalMs = 5 * 60 * 1000) => {
-        // Clear existing timer
-        if (backgroundSyncTimer) {
-          clearInterval(backgroundSyncTimer);
+        // MEMORY LEAK FIX: Clear existing timer from state
+        const currentTimer = get()._backgroundSyncTimer;
+        if (currentTimer) {
+          clearInterval(currentTimer);
         }
+
+        // Start background sync timer
+        const timer = setInterval(() => {
+          get().performBackgroundSync();
+        }, intervalMs);
 
         set({
           isBackgroundSyncEnabled: true,
           backgroundSyncInterval: intervalMs,
+          _backgroundSyncTimer: timer, // MEMORY LEAK FIX: Store in state
         });
-
-        // Start background sync
-        backgroundSyncTimer = setInterval(() => {
-          get().performBackgroundSync();
-        }, intervalMs);
 
         console.log(`📡 Background sync enabled (interval: ${intervalMs}ms)`);
       },
 
       disableBackgroundSync: () => {
-        if (backgroundSyncTimer) {
-          clearInterval(backgroundSyncTimer);
-          backgroundSyncTimer = null;
+        // MEMORY LEAK FIX: Clear timer from state
+        const currentTimer = get()._backgroundSyncTimer;
+        if (currentTimer) {
+          clearInterval(currentTimer);
         }
 
-        set({ isBackgroundSyncEnabled: false });
+        set({
+          isBackgroundSyncEnabled: false,
+          _backgroundSyncTimer: null, // MEMORY LEAK FIX: Clear state reference
+        });
         console.log('📡 Background sync disabled');
       },
 
@@ -478,12 +487,31 @@ export const useCreditStore = create<CreditState>()(
       clearErrors: () => set({ scoreError: null, alertError: null }),
 
       resetStore: () => {
-        // Clean up background sync
-        if (backgroundSyncTimer) {
-          clearInterval(backgroundSyncTimer);
-          backgroundSyncTimer = null;
+        // MEMORY LEAK FIX: Clean up background sync timer from state
+        const currentTimer = get()._backgroundSyncTimer;
+        if (currentTimer) {
+          clearInterval(currentTimer);
         }
         set(initialState);
+      },
+
+      setScores: (scores) => {
+        const currentScore = scores.length > 0
+          ? Math.round(scores.reduce((sum, s) => sum + s.score, 0) / scores.length)
+          : null;
+        set({ scores, currentScore, lastScoreUpdate: new Date().toISOString() });
+      },
+
+      updateScore: (bureau, score) => {
+        const scores = get().scores.map(s =>
+          s.bureau.toLowerCase() === bureau.toLowerCase()
+            ? { ...s, score, change: score - s.score }
+            : s
+        );
+        const currentScore = scores.length > 0
+          ? Math.round(scores.reduce((sum, s) => sum + s.score, 0) / scores.length)
+          : null;
+        set({ scores, currentScore, lastScoreUpdate: new Date().toISOString() });
       },
     }),
     {

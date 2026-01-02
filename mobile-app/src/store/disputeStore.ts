@@ -72,6 +72,9 @@ interface DisputeState {
   // Actions - Utility
   clearError: () => void;
   resetStore: () => void;
+
+  // Direct setters for hooks
+  setDisputes: (disputes: Dispute[]) => void;
 }
 
 const initialState = {
@@ -320,6 +323,8 @@ export const useDisputeStore = create<DisputeState>()(
       clearError: () => set({ error: null }),
 
       resetStore: () => set(initialState),
+
+      setDisputes: (disputes) => set({ disputes, totalDisputes: disputes.length }),
     }),
     {
       name: 'cpfi-dispute-store',

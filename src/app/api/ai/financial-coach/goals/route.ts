@@ -1,21 +1,33 @@
 /**
  * AI Financial Coach - Goals API
- * 
+ *
  * GET /api/ai/financial-coach/goals - Get user's financial goals
  * POST /api/ai/financial-coach/goals - Create a new goal
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { goalPlanner } from '@/lib/financial/goal-planner';
 
+async function getUser() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } }
+  );
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -32,10 +44,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const user = await getUser();
 
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -55,7 +66,10 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!type || !name || !targetAmount || !targetDate) {
       return NextResponse.json(
-        { error: 'Missing required fields: type, name, targetAmount, targetDate' },
+        {
+          error:
+            'Missing required fields: type, name, targetAmount, targetDate',
+        },
         { status: 400 }
       );
     }
@@ -67,7 +81,9 @@ export async function POST(request: NextRequest) {
       description,
       targetAmount: parseFloat(targetAmount),
       targetDate: new Date(targetDate),
-      monthlyContribution: monthlyContribution ? parseFloat(monthlyContribution) : undefined,
+      monthlyContribution: monthlyContribution
+        ? parseFloat(monthlyContribution)
+        : undefined,
       linkedAccountId,
       autoSaveEnabled,
       priority,
@@ -82,4 +98,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

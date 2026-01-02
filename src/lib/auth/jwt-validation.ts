@@ -1,7 +1,9 @@
 /**
  * JWT Validation Service
- * Handles JWT token validation from request headers
+ * Handles JWT token validation from request headers with proper signature verification
  */
+
+import jwt from 'jsonwebtoken';
 
 export interface JWTUser {
   id: string;
@@ -14,6 +16,15 @@ export interface JWTValidationResult {
   valid: boolean;
   user: JWTUser | null;
   error?: string;
+}
+
+export interface JWTPayload {
+  userId: string;
+  email: string;
+  name?: string;
+  role?: string;
+  iat?: number;
+  exp?: number;
 }
 
 /**
@@ -63,45 +74,49 @@ export const jwtValidation = {
   },
 
   /**
-   * Verify JWT token
-   * In production, use jsonwebtoken or jose library
+   * Verify JWT token with signature verification
+   * SECURITY: This now properly verifies JWT signatures to prevent token tampering
    */
   async verifyToken(token: string): Promise<JWTUser | null> {
     try {
-      // Development token for testing
-      if (token === 'dev-token') {
-        return {
-          id: 'dev-user-1',
-          email: 'dev@example.com',
-          name: 'Dev User',
-          role: 'premium',
-        };
+      // SECURITY FIX: Removed dev-token bypass
+      // This was a critical vulnerability allowing unauthenticated access
+
+      // Get JWT secret from environment
+      const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+
+      if (!jwtSecret) {
+        console.error('JWT_SECRET or SUPABASE_JWT_SECRET not configured');
+        return null;
       }
-      
-      // In production, decode and verify JWT:
-      // const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      // return { id: decoded.userId, email: decoded.email, ... };
-      
-      // For now, try to decode base64 token payload
-      try {
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-          if (payload.userId && payload.email) {
-            return {
-              id: payload.userId,
-              email: payload.email,
-              name: payload.name,
-              role: payload.role || 'user',
-            };
-          }
-        }
-      } catch {
-        // Not a valid JWT format
+
+      // Verify JWT signature and decode payload
+      const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
+
+      // Validate required fields
+      if (!decoded.userId || !decoded.email) {
+        console.warn('JWT missing required fields (userId, email)');
+        return null;
       }
-      
-      return null;
-    } catch {
+
+      // Return validated user
+      return {
+        id: decoded.userId,
+        email: decoded.email,
+        name: decoded.name,
+        role: decoded.role || 'user',
+      };
+    } catch (error) {
+      // Log specific JWT errors for debugging
+      if (error instanceof jwt.JsonWebTokenError) {
+        console.warn('Invalid JWT token:', error.message);
+      } else if (error instanceof jwt.TokenExpiredError) {
+        console.warn('JWT token expired:', error.message);
+      } else if (error instanceof jwt.NotBeforeError) {
+        console.warn('JWT not yet valid:', error.message);
+      } else {
+        console.error('JWT verification error:', error);
+      }
       return null;
     }
   },

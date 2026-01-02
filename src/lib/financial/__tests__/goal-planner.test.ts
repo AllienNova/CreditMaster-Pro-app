@@ -20,8 +20,8 @@ describe('GoalPlanner', () => {
   });
 
   describe('class structure', () => {
-    it('should have createGoal method', () => {
-      expect(typeof goalPlanner.createGoal).toBe('function');
+    it('should have createGoalPlan method', () => {
+      expect(typeof goalPlanner.createGoalPlan).toBe('function');
     });
 
     it('should have getUserGoals method', () => {
@@ -36,8 +36,8 @@ describe('GoalPlanner', () => {
       expect(typeof goalPlanner.simulateGoal).toBe('function');
     });
 
-    it('should have getGoalAdjustments method', () => {
-      expect(typeof goalPlanner.getGoalAdjustments).toBe('function');
+    it('should have getAdjustmentSuggestions method', () => {
+      expect(typeof goalPlanner.getAdjustmentSuggestions).toBe('function');
     });
   });
 

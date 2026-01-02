@@ -39,6 +39,7 @@ export interface AggregatedAccounts {
   loan: AccountSummary[];
   totalAssets: number;
   totalLiabilities: number;
+  totalSavings: number;
   netWorth: number;
   lastSyncedAt: Date;
 }
@@ -177,11 +178,17 @@ export interface GoalMilestone {
 export interface DebtAnalysis {
   totalDebt: number;
   debtToIncomeRatio: number;
+  averageInterestRate: number;
   monthlyPayments: number;
   debts: DebtItem[];
   payoffStrategies: PayoffStrategy[];
   projectedPayoffDate: Date;
   totalInterestSaved: number;
+}
+
+export interface DebtSummary {
+  debts: DebtItem[];
+  monthlyPayments: number;
 }
 
 export interface DebtItem {

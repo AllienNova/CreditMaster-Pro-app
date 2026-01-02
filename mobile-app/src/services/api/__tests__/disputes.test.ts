@@ -56,7 +56,12 @@ describe('Dispute API', () => {
 
   describe('create', () => {
     it('should create new dispute', async () => {
-      const newDispute = { bureau: 'experian', itemType: 'late_payment' };
+      const newDispute: any = {
+        bureau: 'experian' as const,
+        itemType: 'late_payment',
+        creditorName: 'Test Creditor',
+        disputeReason: 'Not mine',
+      };
       const createdDispute = { id: 'new-1', ...newDispute };
 
       (api.post as jest.Mock).mockResolvedValueOnce({ success: true, data: createdDispute });
@@ -70,7 +75,7 @@ describe('Dispute API', () => {
 
   describe('update', () => {
     it('should update dispute', async () => {
-      const updates = { status: 'in_progress' };
+      const updates: any = { status: 'in_progress' as const };
 
       (api.patch as jest.Mock).mockResolvedValueOnce({ success: true, data: { id: '1', ...updates } });
 
@@ -92,11 +97,11 @@ describe('Dispute API', () => {
 
   describe('send', () => {
     it('should send dispute', async () => {
-      (api.post as jest.Mock).mockResolvedValueOnce({ success: true, data: { status: 'sent' } });
+      (api.patch as jest.Mock).mockResolvedValueOnce({ success: true, data: { status: 'sent' } });
 
       await disputeApi.send('dispute-1');
 
-      expect(api.post).toHaveBeenCalledWith('/disputes/dispute-1/send');
+      expect(api.patch).toHaveBeenCalledWith('/disputes/dispute-1/send', { sentDate: expect.any(String) });
     });
   });
 });
@@ -108,34 +113,36 @@ describe('Dispute Letter API', () => {
 
   describe('generateAILetter', () => {
     it('should generate AI letter', async () => {
-      const params = {
-        disputeType: 'late_payment',
-        bureau: 'experian',
-        accountInfo: { accountNumber: '1234' },
-      };
+      const disputeId = 'dispute-123';
 
       (api.post as jest.Mock).mockResolvedValueOnce({
         success: true,
-        data: { letter: 'Generated letter content' },
+        data: { letter: 'Generated letter content', confidence: 0.95 },
       });
 
-      const result = await disputeLetterApi.generateAILetter(params);
+      const result = await disputeLetterApi.generateAILetter(disputeId);
 
-      expect(api.post).toHaveBeenCalledWith('/disputes/letters/generate', params);
+      expect(api.post).toHaveBeenCalledWith('/disputes/dispute-123/generate', { mode: 'ai' });
       expect(result.data?.letter).toBe('Generated letter content');
     });
   });
 
   describe('getStrategyRecommendations', () => {
     it('should get strategy recommendations', async () => {
-      (api.get as jest.Mock).mockResolvedValueOnce({
+      const scenario = {
+        disputeType: 'late_payment',
+        previousAttempts: 0,
+        hasEvidence: true,
+      };
+
+      (api.post as jest.Mock).mockResolvedValueOnce({
         success: true,
-        data: { strategies: [{ name: 'Aggressive' }] },
+        data: { recommendations: [{ strategyId: '1', name: 'Aggressive', confidence: 0.9, reasoning: 'Best approach' }] },
       });
 
-      await disputeLetterApi.getStrategyRecommendations('late_payment');
+      await disputeLetterApi.getStrategyRecommendations(scenario);
 
-      expect(api.get).toHaveBeenCalledWith('/disputes/strategies/recommend?type=late_payment');
+      expect(api.post).toHaveBeenCalledWith('/disputes/recommend-strategy', scenario);
     });
   });
 });

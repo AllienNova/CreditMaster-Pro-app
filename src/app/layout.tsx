@@ -1,11 +1,15 @@
+import type { Metadata, Viewport } from 'next';
 import { Providers } from './providers';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'CPFI - Credit Master Pro Financial Intelligence',
   description: 'AI-powered credit repair and financial management platform',
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   ),
+};
+
+export const viewport: Viewport = {
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#0f172a' },

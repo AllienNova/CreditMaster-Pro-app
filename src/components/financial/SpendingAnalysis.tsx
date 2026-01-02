@@ -9,6 +9,7 @@ import {
   AreaChartComponent,
   ChartContainer,
 } from '@/components/charts';
+import AISpendingInsights from './AISpendingInsights';
 
 interface CategorySpending {
   category: string;
@@ -382,6 +383,9 @@ export default function SpendingAnalysis() {
 
   return (
     <div className="space-y-6">
+      {/* AI Spending Insights - NEW */}
+      <AISpendingInsights />
+
       {/* Tab Selector and Date Range */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
         <div className="flex flex-col gap-4">
