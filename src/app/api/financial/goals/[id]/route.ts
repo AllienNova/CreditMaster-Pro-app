@@ -247,7 +247,7 @@ export async function PATCH(
 
     // If currentAmount was updated, update progress
     if (updates.currentAmount !== undefined) {
-      await goalTracker.updateGoalProgress(goalId, updates.currentAmount);
+      await goalTracker.updateGoalProgress(userId, goalId, updates.currentAmount);
     }
 
     // Calculate updated progress metrics
@@ -349,7 +349,7 @@ export async function DELETE(
     }
 
     // Soft delete using goal tracker
-    await goalTracker.deleteGoal(goalId);
+    await goalTracker.deleteGoal(userId, goalId);
 
     return NextResponse.json({
       success: true,

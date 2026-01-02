@@ -205,14 +205,11 @@ export async function POST(request: NextRequest) {
     const goalData = validationResult.data;
 
     // Create goal using goal tracker
-    const goal = await goalTracker.createGoal({
-      userId,
+    const goal = await goalTracker.createGoal(userId, {
       type: goalData.type,
       name: goalData.name,
       targetAmount: goalData.targetAmount,
-      currentAmount: goalData.currentAmount || 0,
       targetDate: new Date(goalData.targetDate),
-      priority: goalData.priority || 'medium',
       description: goalData.description,
     });
 

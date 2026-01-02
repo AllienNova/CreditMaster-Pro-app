@@ -366,7 +366,7 @@ export class SignalGenerator {
           socialScore: sentiment.socialSentiment.averageSentiment,
           analystRating: sentiment.analystConsensus.consensusRating,
           insiderActivity: sentiment.insiderActivity.insiderSentiment,
-          institutionalFlow: sentiment.institutionalOwnership.ownershipChange > 0 ? 'buying' : 'selling',
+          institutionalFlow: sentiment.institutionalOwnership.quarterlyChange > 0 ? 'inflow' : 'outflow',
         },
         factors,
       };
@@ -482,9 +482,9 @@ Provide 3-5 key insights about this trading opportunity. Focus on:
 Format as a JSON array of strings.`;
 
       const aimlService = getAIMLService();
-      const response = await aimlService.chat({
-        model: 'anthropic/claude-4.5-sonnet',
-        messages: [
+      const response = await aimlService.chat(
+        'anthropic/claude-4.5-sonnet',
+        [
           {
             role: 'system',
             content:
@@ -492,9 +492,11 @@ Format as a JSON array of strings.`;
           },
           { role: 'user', content: prompt },
         ],
-        temperature: 0.3,
-        max_tokens: 500,
-      });
+        {
+          temperature: 0.3,
+          max_tokens: 500,
+        }
+      );
 
       const content = response.choices[0]?.message?.content || '[]';
       const insights = JSON.parse(content);
