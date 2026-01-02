@@ -44,6 +44,7 @@ const mockFinancialContext: FinancialContext = {
     lastSyncedAt: new Date(),
   },
   transactions: {
+    recentTransactions: [],
     totalIncome: 5000,
     totalExpenses: -3500,
     netCashFlow: 1500,
@@ -54,12 +55,21 @@ const mockFinancialContext: FinancialContext = {
       { category: 'utilities', amount: -200, percentage: 5, transactionCount: 3, trend: 'stable' as const, changeFromLastPeriod: 0 },
       { category: 'transportation', amount: -300, percentage: 7.5, transactionCount: 10, trend: 'stable' as const, changeFromLastPeriod: 0 },
     ],
-    transactions: [],
+    byMerchant: [],
+    period: {
+      startDate: new Date('2024-01-01'),
+      endDate: new Date('2024-01-31'),
+      daysIncluded: 31,
+    },
   },
   debts: {
     totalDebt: 8000,
     monthlyPayments: 400,
     debtToIncomeRatio: 0.16,
+    averageInterestRate: 12.0,
+    payoffStrategies: [],
+    projectedPayoffDate: new Date('2026-01-01'),
+    totalInterestSaved: 0,
     debts: [
       {
         id: 'debt-1',

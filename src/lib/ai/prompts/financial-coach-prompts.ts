@@ -138,7 +138,7 @@ export const DEBT_SNOWBALL_TEMPLATE = `Analyze the user's debts and create a deb
 **Debts:**
 {debts}
 
-**Available for debt payoff:** ${extra_payment}/month
+**Available for debt payoff:** {extra_payment}/month
 
 Create a plan that:
 1. Lists debts from smallest to largest balance (ignore interest rates)
@@ -152,7 +152,7 @@ Include a month-by-month breakdown and celebration points.`;
 
 export const BUDGET_ANALYSIS_TEMPLATE = `Analyze this budget and provide optimization recommendations:
 
-**Income:** ${income}/month
+**Income:** {income}/month
 **Expenses by category:**
 {expense_breakdown}
 
@@ -169,13 +169,13 @@ Identify overspending categories and provide specific cut recommendations.`;
 
 export const EMERGENCY_FUND_TEMPLATE = `Help the user build their emergency fund:
 
-**Current savings:** ${current_savings}
-**Monthly income:** ${monthly_income}
-**Monthly expenses:** ${monthly_expenses}
+**Current savings:** {current_savings}
+**Monthly income:** {monthly_income}
+**Monthly expenses:** {monthly_expenses}
 
-**Target:** 
+**Target:**
 - Baby Step 1: $1,000 (if in debt)
-- Baby Step 3: {months} months of expenses = ${target_amount}
+- Baby Step 3: {months} months of expenses = {target_amount}
 
 Create a savings plan with:
 1. Weekly/monthly savings target

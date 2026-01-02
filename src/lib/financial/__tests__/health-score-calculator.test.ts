@@ -59,6 +59,7 @@ const createMockAccounts = (): AggregatedAccounts => ({
   loan: [],
   totalAssets: 15000,
   totalLiabilities: 2000,
+  totalSavings: 10000,
   netWorth: 13000,
   lastSyncedAt: new Date(),
 });
@@ -81,6 +82,7 @@ const createMockDebts = (): DebtAnalysis => ({
   totalDebt: 2000,
   monthlyPayments: 200,
   debtToIncomeRatio: 0.04,
+  averageInterestRate: 15.0,
   debts: [],
   payoffStrategies: [],
   projectedPayoffDate: new Date(),
