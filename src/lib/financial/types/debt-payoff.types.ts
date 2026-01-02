@@ -32,7 +32,7 @@ export type DebtType =
   | 'medical'
   | 'other';
 
-export type PayoffStrategy = 'avalanche' | 'snowball' | 'hybrid';
+export type PayoffStrategy = 'avalanche' | 'snowball' | 'hybrid' | 'ai_optimized';
 
 // Payoff calculation result
 export interface PayoffPlan {
@@ -76,6 +76,7 @@ export interface StrategyComparison {
   avalanche: PayoffPlan;
   snowball: PayoffPlan;
   hybrid: PayoffPlan;
+  ai_optimized?: PayoffPlan;
   recommendation: PayoffStrategy;
   recommendationReason: string;
 }

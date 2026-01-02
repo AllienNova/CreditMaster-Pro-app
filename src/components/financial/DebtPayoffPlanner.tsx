@@ -61,6 +61,11 @@ const STRATEGY_INFO: Record<
     description: 'Balanced approach considering both factors',
     icon: '⚖️',
   },
+  ai_optimized: {
+    name: 'AI-Optimized',
+    description: 'AI-powered strategy balancing math and psychology',
+    icon: '🤖',
+  },
 };
 
 interface DebtPayoffData {
@@ -88,6 +93,54 @@ export default function DebtPayoffPlanner() {
     if (!user) return;
     try {
       setLoading(true);
+
+      // First, get the list of debts from the existing API
+      const debtsResponse = await fetch('/api/financial/debt');
+      if (!debtsResponse.ok) throw new Error('Failed to fetch debts');
+      const debtsResult = await debtsResponse.json();
+
+      // If user has debts, use the new debt strategy optimizer API
+      if (debtsResult.data?.debts && debtsResult.data.debts.length > 0) {
+        const strategyResponse = await fetch('/api/ai/financial-coach/debt-strategy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            debts: debtsResult.data.debts.map((d: Debt) => ({
+              id: d.id,
+              name: d.name,
+              balance: d.balance,
+              interestRate: d.interestRate,
+              minimumPayment: d.minimumPayment,
+              type: d.type,
+            })),
+            extraPayment: extraPayment,
+            includeAIOptimization: true,
+          }),
+        });
+
+        if (strategyResponse.ok) {
+          const strategyResult = await strategyResponse.json();
+          if (strategyResult.success && strategyResult.data) {
+            // Transform the new API response to match the expected format
+            const comparison = strategyResult.data;
+            const selectedPlan = comparison.strategies.find(
+              (s: any) => s.method === selectedStrategy
+            ) || comparison.strategies[0];
+
+            setData({
+              overview: debtsResult.data.overview,
+              debts: debtsResult.data.debts,
+              currentPlan: selectedPlan,
+              comparison: comparison,
+              milestones: selectedPlan.milestones || [],
+              insights: debtsResult.data.insights || [],
+            });
+            return;
+          }
+        }
+      }
+
+      // Fallback to old API if new API fails or no debts
       const params = new URLSearchParams({
         strategy: selectedStrategy,
         extraPayment: extraPayment.toString(),
@@ -425,10 +478,13 @@ export default function DebtPayoffPlanner() {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Compare Payoff Strategies
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {(['avalanche', 'snowball', 'hybrid'] as PayoffStrategy[]).map(
-                  (strategy) => {
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {(['avalanche', 'snowball', 'hybrid', 'ai_optimized'] as PayoffStrategy[])
+                  .filter((strategy) => strategy !== 'ai_optimized' || comparison.ai_optimized)
+                  .map((strategy) => {
                     const plan = comparison[strategy];
+                    if (!plan) return null;
+
                     const isRecommended =
                       comparison.recommendation === strategy;
                     const isSelected = selectedStrategy === strategy;
@@ -487,8 +543,7 @@ export default function DebtPayoffPlanner() {
                         </div>
                       </button>
                     );
-                  }
-                )}
+                  })}
               </div>
               {comparison.recommendationReason && (
                 <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
