@@ -15,7 +15,7 @@ import type {
   BillType,
   MarketAnalysis,
   NegotiationScript,
-  NegotiationOutcome as NegotiationOutcomeType,
+  NegotiationOutcomeData,
   NegotiationHistory,
   SavingsEstimate,
   UserProfile,
@@ -218,7 +218,7 @@ export class BillNegotiator {
    */
   public async trackNegotiationOutcome(
     billId: string,
-    outcome: NegotiationOutcomeType
+    outcome: NegotiationOutcomeData
   ): Promise<void> {
     const supabase = getSupabase();
 
@@ -531,38 +531,29 @@ export class BillNegotiator {
       'internet': [
         {
           provider: 'Spectrum',
-          planName: 'Internet Ultra',
-          monthlyRate: 49.99,
+          rate: 49.99,
           features: ['300 Mbps', 'No data caps', 'Free modem'],
           promotionalRate: 39.99,
-          promotionDuration: 12,
-          contractRequired: false,
+          promotionalPeriod: '12 months',
         },
         {
           provider: 'Xfinity',
-          planName: 'Performance Pro',
-          monthlyRate: 59.99,
+          rate: 59.99,
           features: ['200 Mbps', 'Unlimited data', 'Free installation'],
           promotionalRate: 44.99,
-          promotionDuration: 12,
-          contractRequired: true,
-          contractLength: 12,
+          promotionalPeriod: '12 months',
         },
       ],
       'mobile': [
         {
           provider: 'T-Mobile',
-          planName: 'Magenta',
-          monthlyRate: 70.00,
+          rate: 70.00,
           features: ['Unlimited data', '5G included', 'Netflix on Us'],
-          contractRequired: false,
         },
         {
           provider: 'Verizon',
-          planName: 'Play More Unlimited',
-          monthlyRate: 80.00,
+          rate: 80.00,
           features: ['Unlimited premium data', '5G Ultra Wideband', 'Disney+ included'],
-          contractRequired: false,
         },
       ],
     };
@@ -575,7 +566,7 @@ export class BillNegotiator {
    */
   private calculateAverageRate(rates: CompetitorRate[]): number {
     if (rates.length === 0) return 0;
-    const sum = rates.reduce((acc, r) => acc + r.monthlyRate, 0);
+    const sum = rates.reduce((acc, r) => acc + r.rate, 0);
     return sum / rates.length;
   }
 

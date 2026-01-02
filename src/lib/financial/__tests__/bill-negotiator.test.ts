@@ -214,7 +214,7 @@ describe('BillNegotiator', () => {
       if (analysis.competitorRates.length > 0) {
         const competitor = analysis.competitorRates[0];
         expect(competitor.provider).toBeDefined();
-        expect(competitor.monthlyRate).toBeGreaterThan(0);
+        expect(competitor.rate).toBeGreaterThan(0);
         expect(Array.isArray(competitor.features)).toBe(true);
       }
     });

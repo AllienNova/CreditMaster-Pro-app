@@ -331,3 +331,21 @@ export interface UserProfile {
   previousNegotiations: number;
   successRate: number;
 }
+
+export interface NegotiationOutcomeData {
+  billId: string;
+  userId: string;
+  negotiationDate: Date;
+  success: boolean;
+  savingsAchieved: number;
+  newMonthlyRate?: number;
+  previousMonthlyRate: number;
+  method: 'phone' | 'email' | 'chat' | 'in_person';
+  duration?: number;
+  representative?: string;
+  notes?: string;
+  requiresFollowup?: boolean;
+  followupDate?: Date;
+  followupReason?: string;
+  recordedAt: Date;
+}
