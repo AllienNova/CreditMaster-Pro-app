@@ -87,7 +87,7 @@ export class SignalGenerator {
     const riskRewardRatio = Math.abs(potentialGain / potentialLoss);
 
     // Generate AI insights
-    const aiInsights = await this.generateAIInsights(symbol, analysis, signalType);
+    const aiInsights = await this.generateAIInsights(symbol, analysis, signalType, factors);
 
     // Create signal
     const signal: TradingSignal = {
@@ -236,13 +236,15 @@ export class SignalGenerator {
     }
 
     // Pattern Recognition
-    if (patterns.bullishPatterns.length > 0) {
+    const bullishPatterns = patterns.filter(p => p.direction === 'bullish');
+    const bearishPatterns = patterns.filter(p => p.direction === 'bearish');
+    if (bullishPatterns.length > 0) {
       score += 10;
-      factors.push(`Bullish patterns detected: ${patterns.bullishPatterns.join(', ')}`);
+      factors.push(`Bullish patterns detected: ${bullishPatterns.map(p => p.type).join(', ')}`);
     }
-    if (patterns.bearishPatterns.length > 0) {
+    if (bearishPatterns.length > 0) {
       score -= 10;
-      factors.push(`Bearish patterns detected: ${patterns.bearishPatterns.join(', ')}`);
+      factors.push(`Bearish patterns detected: ${bearishPatterns.map(p => p.type).join(', ')}`);
     }
 
     // Normalize score to 0-100
@@ -329,30 +331,30 @@ export class SignalGenerator {
       let score = 50;
 
       // News sentiment
-      if (sentiment.news.score > 0.3) {
+      if (sentiment.newsSentiment.averageSentiment > 0.3) {
         score += 15;
         factors.push('Positive news sentiment');
-      } else if (sentiment.news.score < -0.3) {
+      } else if (sentiment.newsSentiment.averageSentiment < -0.3) {
         score -= 15;
         factors.push('Negative news sentiment');
       }
 
       // Social sentiment
-      if (sentiment.social.score > 0.3) {
+      if (sentiment.socialSentiment.averageSentiment > 0.3) {
         score += 10;
         factors.push('Positive social media sentiment');
-      } else if (sentiment.social.score < -0.3) {
+      } else if (sentiment.socialSentiment.averageSentiment < -0.3) {
         score -= 10;
         factors.push('Negative social media sentiment');
       }
 
       // Analyst ratings
-      if (sentiment.analysts.consensusRating === 'strong_buy' || sentiment.analysts.consensusRating === 'buy') {
+      if (sentiment.analystConsensus.consensusRating === 'strong_buy' || sentiment.analystConsensus.consensusRating === 'buy') {
         score += 15;
-        factors.push(`Analyst consensus: ${sentiment.analysts.consensusRating}`);
-      } else if (sentiment.analysts.consensusRating === 'sell' || sentiment.analysts.consensusRating === 'strong_sell') {
+        factors.push(`Analyst consensus: ${sentiment.analystConsensus.consensusRating}`);
+      } else if (sentiment.analystConsensus.consensusRating === 'sell' || sentiment.analystConsensus.consensusRating === 'strong_sell') {
         score -= 15;
-        factors.push(`Analyst consensus: ${sentiment.analysts.consensusRating}`);
+        factors.push(`Analyst consensus: ${sentiment.analystConsensus.consensusRating}`);
       }
 
       score = Math.max(0, Math.min(100, score));
@@ -360,11 +362,11 @@ export class SignalGenerator {
       return {
         score,
         metrics: {
-          newsScore: sentiment.news.score,
-          socialScore: sentiment.social.score,
-          analystRating: sentiment.analysts.consensusRating,
-          insiderActivity: sentiment.insiders?.activity || 'neutral',
-          institutionalFlow: sentiment.institutional?.flow || 'neutral',
+          newsScore: sentiment.newsSentiment.averageSentiment,
+          socialScore: sentiment.socialSentiment.averageSentiment,
+          analystRating: sentiment.analystConsensus.consensusRating,
+          insiderActivity: sentiment.insiderActivity.insiderSentiment,
+          institutionalFlow: sentiment.institutionalOwnership.ownershipChange > 0 ? 'buying' : 'selling',
         },
         factors,
       };
@@ -420,7 +422,7 @@ export class SignalGenerator {
   ): Promise<{ targetPrice: number; stopLoss: number; currentPrice: number }> {
     const quote = await this.marketData.getQuote(symbol);
     const currentPrice = quote.price;
-    const atr = analysis.technicalIndicators?.atr || currentPrice * 0.02; // 2% default
+    const atr = currentPrice * 0.02; // 2% default ATR
 
     let targetPrice: number;
     let stopLoss: number;
@@ -450,7 +452,8 @@ export class SignalGenerator {
   private async generateAIInsights(
     symbol: string,
     analysis: SignalAnalysis,
-    signalType: SignalType
+    signalType: SignalType,
+    factors: { technical: string[]; fundamental: string[]; sentiment: string[] }
   ): Promise<string[]> {
     try {
       const prompt = `Analyze the following trading signal for ${symbol}:
@@ -462,13 +465,13 @@ Sentiment Score: ${analysis.sentimentScore}/100
 Overall Score: ${analysis.overallScore}/100
 
 Technical Factors:
-${analysis.technicalFactors?.join('\n') || 'N/A'}
+${factors.technical.join('\n') || 'N/A'}
 
 Fundamental Factors:
-${analysis.fundamentalFactors?.join('\n') || 'N/A'}
+${factors.fundamental.join('\n') || 'N/A'}
 
 Sentiment Factors:
-${analysis.sentimentFactors?.join('\n') || 'N/A'}
+${factors.sentiment.join('\n') || 'N/A'}
 
 Provide 3-5 key insights about this trading opportunity. Focus on:
 1. The strongest supporting factors
@@ -478,6 +481,7 @@ Provide 3-5 key insights about this trading opportunity. Focus on:
 
 Format as a JSON array of strings.`;
 
+      const aimlService = getAIMLService();
       const response = await aimlService.chat({
         model: 'anthropic/claude-4.5-sonnet',
         messages: [
@@ -828,7 +832,7 @@ Format as a JSON array of strings.`;
     }
 
     // Re-analyze the symbol
-    const newAnalysis = await this.analyzeSymbol(
+    const { analysis: newAnalysis } = await this.analyzeSymbol(
       signal.symbol,
       signal.asset_type,
       signal.analysis_types,
