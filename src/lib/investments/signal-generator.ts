@@ -110,7 +110,7 @@ export class SignalGenerator {
       fundamentalFactors: factors.fundamental,
       sentimentFactors: factors.sentiment,
       aiInsights,
-      timeframe,
+      timeframe: timeframe as '1d' | '1w' | '1m' | '3m' | '6m' | '1y',
       expiresAt: this.calculateExpiration(timeframe),
       generatedAt: new Date(),
       status: 'active',
@@ -186,7 +186,8 @@ export class SignalGenerator {
   ): Promise<{ score: number; indicators: any; factors: string[] }> {
     const historicalData = await this.marketData.getHistoricalData(symbol, timeframe, 200);
     const indicators = this.calculateTechnicalIndicators(historicalData);
-    const patterns = await this.patternRecognition.detectPatterns(symbol, timeframe);
+    const patternScanResult = this.patternRecognition.scanForPatterns(historicalData, symbol, timeframe);
+    const patterns = patternScanResult.patterns;
 
     const factors: string[] = [];
     let score = 50; // Neutral starting point
@@ -271,26 +272,26 @@ export class SignalGenerator {
       }
 
       // Growth metrics
-      if (fundamentals.growth.revenueGrowth > 20) {
+      if (fundamentals.growth.revenueGrowth3Y > 20) {
         score += 15;
-        factors.push(`Strong revenue growth: ${fundamentals.growth.revenueGrowth.toFixed(1)}%`);
+        factors.push(`Strong revenue growth: ${fundamentals.growth.revenueGrowth3Y.toFixed(1)}%`);
       }
-      if (fundamentals.growth.earningsGrowth > 20) {
+      if (fundamentals.growth.netIncomeGrowth3Y > 20) {
         score += 15;
-        factors.push(`Strong earnings growth: ${fundamentals.growth.earningsGrowth.toFixed(1)}%`);
+        factors.push(`Strong earnings growth: ${fundamentals.growth.netIncomeGrowth3Y.toFixed(1)}%`);
       }
 
       // Profitability
-      if (fundamentals.profitability.roe > 15) {
+      if (fundamentals.profitability.returnOnEquity > 15) {
         score += 10;
-        factors.push(`Healthy ROE: ${fundamentals.profitability.roe.toFixed(1)}%`);
+        factors.push(`Healthy ROE: ${fundamentals.profitability.returnOnEquity.toFixed(1)}%`);
       }
 
-      // Financial health
-      if (fundamentals.health.debtToEquity < 0.5) {
+      // Financial health (using leverage metrics)
+      if (fundamentals.leverage.debtToEquity < 0.5) {
         score += 10;
         factors.push('Low debt-to-equity ratio (strong balance sheet)');
-      } else if (fundamentals.health.debtToEquity > 2) {
+      } else if (fundamentals.leverage.debtToEquity > 2) {
         score -= 10;
         factors.push('High debt-to-equity ratio (financial risk)');
       }
@@ -302,10 +303,10 @@ export class SignalGenerator {
         metrics: {
           peRatio: fundamentals.valuation.peRatio,
           pbRatio: fundamentals.valuation.pbRatio,
-          debtToEquity: fundamentals.health.debtToEquity,
-          roe: fundamentals.profitability.roe,
-          revenueGrowth: fundamentals.growth.revenueGrowth,
-          earningsGrowth: fundamentals.growth.earningsGrowth,
+          debtToEquity: fundamentals.leverage.debtToEquity,
+          roe: fundamentals.profitability.returnOnEquity,
+          revenueGrowth: fundamentals.growth.revenueGrowth3Y,
+          earningsGrowth: fundamentals.growth.netIncomeGrowth3Y,
           rating: score > 70 ? 'strong_buy' : score > 60 ? 'buy' : score > 40 ? 'hold' : score > 30 ? 'sell' : 'strong_sell',
         },
         factors,

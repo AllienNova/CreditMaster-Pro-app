@@ -86,8 +86,7 @@ export async function GET(request: NextRequest) {
       : 0;
     const totalHistoricalSavings = history.reduce((sum, h) => sum + h.totalSavings, 0);
 
-    return finalizeResponse(
-      NextResponse.json({
+    const response = NextResponse.json({
         success: true,
         data: {
           savingsEstimate: savingsEstimate ? {
@@ -133,10 +132,9 @@ export async function GET(request: NextRequest) {
           generatedAt: new Date().toISOString(),
           processingTimeMs: Date.now() - middlewareStartTime,
         },
-      }),
-      middlewareStartTime,
-      userId
-    );
+      });
+
+    return finalizeResponse(request, response, middlewareStartTime, userId);
   } catch (error) {
     console.error('Error in GET /api/financial/bills/analysis:', error);
 

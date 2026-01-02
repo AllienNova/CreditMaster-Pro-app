@@ -143,9 +143,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
-    const preferences: BudgetPreferences = validationResult.data;
-    
+
+    const preferences: BudgetPreferences = validationResult.data as BudgetPreferences;
+
     // Generate smart budget
     const smartBudgetEngine = getSmartBudgetEngine();
     const budget = await smartBudgetEngine.generateBudget(userId, preferences);
