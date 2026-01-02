@@ -91,10 +91,10 @@ export async function GET(request: NextRequest) {
   });
 
   if (middleware.error) {
-    return finalizeResponse(middleware.error, startTime);
+    return middleware.error;
   }
 
-  const { userId, user } = middleware;
+  const { userId, startTime: middlewareStartTime } = middleware;
 
   try {
     // Validate query parameters
@@ -108,9 +108,10 @@ export async function GET(request: NextRequest) {
     const validatedParams = TrendsQuerySchema.parse(queryParams);
 
     // Check permissions
-    const hasPermission = await rbac.hasPermission(userId, 'financial:view_spending');
+    const hasPermission = await rbac.hasPermission(userId!, 'financial:view_spending');
     if (!hasPermission) {
       return finalizeResponse(
+        request,
         NextResponse.json(
           {
             success: false,
@@ -121,7 +122,8 @@ export async function GET(request: NextRequest) {
           },
           { status: 403 }
         ),
-        startTime
+        middlewareStartTime,
+        userId
       );
     }
 
@@ -135,12 +137,13 @@ export async function GET(request: NextRequest) {
 
     // Get spending trends
     const trends = await analyzer.getSpendingTrends(
-      userId,
+      userId!,
       validatedParams.period,
       categories
     );
 
     return finalizeResponse(
+      request,
       NextResponse.json({
         success: true,
         data: trends,
@@ -150,15 +153,17 @@ export async function GET(request: NextRequest) {
           categoriesAnalyzed: categories?.length || 'all',
           compareWith: validatedParams.compareWith,
           generatedAt: new Date().toISOString(),
-          processingTimeMs: Date.now() - startTime,
+          processingTimeMs: Date.now() - middlewareStartTime,
         },
       }),
-      startTime
+      middlewareStartTime,
+      userId
     );
   } catch (error) {
     console.error('Error analyzing spending trends:', error);
 
     return finalizeResponse(
+      request,
       NextResponse.json(
         {
           success: false,
@@ -170,7 +175,8 @@ export async function GET(request: NextRequest) {
         },
         { status: 500 }
       ),
-      startTime
+      middlewareStartTime,
+      userId
     );
   }
 }

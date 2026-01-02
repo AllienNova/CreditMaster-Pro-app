@@ -86,10 +86,10 @@ export async function GET(request: NextRequest) {
   });
 
   if (middleware.error) {
-    return finalizeResponse(middleware.error, startTime);
+    return middleware.error;
   }
 
-  const { userId, user } = middleware;
+  const { userId, startTime: middlewareStartTime } = middleware;
 
   try {
     // Validate query parameters
@@ -102,9 +102,10 @@ export async function GET(request: NextRequest) {
     const validatedParams = InsightsQuerySchema.parse(queryParams);
 
     // Check permissions
-    const hasPermission = await rbac.hasPermission(userId, 'financial:view_spending');
+    const hasPermission = await rbac.hasPermission(userId!, 'financial:view_spending');
     if (!hasPermission) {
       return finalizeResponse(
+        request,
         NextResponse.json(
           {
             success: false,
@@ -115,7 +116,8 @@ export async function GET(request: NextRequest) {
           },
           { status: 403 }
         ),
-        startTime
+        middlewareStartTime,
+        userId
       );
     }
 
@@ -124,7 +126,7 @@ export async function GET(request: NextRequest) {
 
     // Generate insights
     const result = await analyzer.generateInsights(
-      userId,
+      userId!,
       validatedParams.type as 'patterns' | 'trends' | 'anomalies' | 'all'
     );
 
@@ -137,6 +139,7 @@ export async function GET(request: NextRequest) {
     }
 
     return finalizeResponse(
+      request,
       NextResponse.json({
         success: true,
         data: {
@@ -149,15 +152,17 @@ export async function GET(request: NextRequest) {
           priority: validatedParams.priority,
           totalInsights: filteredInsights.length,
           generatedAt: new Date().toISOString(),
-          processingTimeMs: Date.now() - startTime,
+          processingTimeMs: Date.now() - middlewareStartTime,
         },
       }),
-      startTime
+      middlewareStartTime,
+      userId
     );
   } catch (error) {
     console.error('Error generating spending insights:', error);
 
     return finalizeResponse(
+      request,
       NextResponse.json(
         {
           success: false,
@@ -169,7 +174,8 @@ export async function GET(request: NextRequest) {
         },
         { status: 500 }
       ),
-      startTime
+      middlewareStartTime,
+      userId
     );
   }
 }

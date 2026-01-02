@@ -87,10 +87,10 @@ export async function GET(request: NextRequest) {
   });
 
   if (middleware.error) {
-    return finalizeResponse(middleware.error, startTime);
+    return middleware.error;
   }
 
-  const { userId, user } = middleware;
+  const { userId, startTime: middlewareStartTime } = middleware;
 
   try {
     // Validate query parameters
@@ -103,9 +103,10 @@ export async function GET(request: NextRequest) {
     const validatedParams = AnomaliesQuerySchema.parse(queryParams);
 
     // Check permissions
-    const hasPermission = await rbac.hasPermission(userId, 'financial:view_spending');
+    const hasPermission = await rbac.hasPermission(userId!, 'financial:view_spending');
     if (!hasPermission) {
       return finalizeResponse(
+        request,
         NextResponse.json(
           {
             success: false,
@@ -116,7 +117,8 @@ export async function GET(request: NextRequest) {
           },
           { status: 403 }
         ),
-        startTime
+        middlewareStartTime,
+        userId
       );
     }
 
@@ -125,12 +127,13 @@ export async function GET(request: NextRequest) {
 
     // Detect anomalies
     const result = await analyzer.detectAnomalies(
-      userId,
+      userId!,
       validatedParams.sensitivity as 'low' | 'medium' | 'high',
       validatedParams.timeframe
     );
 
     return finalizeResponse(
+      request,
       NextResponse.json({
         success: true,
         data: result,
@@ -141,15 +144,17 @@ export async function GET(request: NextRequest) {
           anomaliesDetected: result.anomalies.length,
           requiresAction: result.summary.requiresImmediateAction,
           generatedAt: new Date().toISOString(),
-          processingTimeMs: Date.now() - startTime,
+          processingTimeMs: Date.now() - middlewareStartTime,
         },
       }),
-      startTime
+      middlewareStartTime,
+      userId
     );
   } catch (error) {
     console.error('Error detecting spending anomalies:', error);
 
     return finalizeResponse(
+      request,
       NextResponse.json(
         {
           success: false,
@@ -161,7 +166,8 @@ export async function GET(request: NextRequest) {
         },
         { status: 500 }
       ),
-      startTime
+      middlewareStartTime,
+      userId
     );
   }
 }
