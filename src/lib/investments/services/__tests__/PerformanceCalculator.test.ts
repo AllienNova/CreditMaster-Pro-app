@@ -31,8 +31,8 @@ describe('PerformanceCalculator', () => {
       };
 
       const mockHoldings = [
-        { current_value: 7000, quantity: 100, average_cost: 50 },
-        { current_value: 5000, quantity: 50, average_cost: 80 },
+        { current_value: 7000, quantity: 100, average_cost: 60 }, // cost: 6000
+        { current_value: 5000, quantity: 50, average_cost: 80 },  // cost: 4000
       ];
 
       mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);

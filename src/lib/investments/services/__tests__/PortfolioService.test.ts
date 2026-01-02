@@ -7,23 +7,23 @@
 
 import { PortfolioService } from '../PortfolioService';
 import { PortfolioType, RiskLevel, AssetType, TransactionType } from '../../types/portfolio-db.types';
+import { getSupabase } from '../../../supabase/client';
 
 // Mock Supabase client
 jest.mock('../../../supabase/client');
-
-import { getSupabase } from '../../../supabase/client';
 
 const mockSupabase = {
   from: jest.fn(),
 };
 
-(getSupabase as jest.Mock) = jest.fn(() => mockSupabase);
-
 describe('PortfolioService', () => {
   let service: PortfolioService;
   const userId = 'test-user-123';
+  const portfolioId = '550e8400-e29b-41d4-a716-446655440000';
+  const holdingId = '550e8400-e29b-41d4-a716-446655440001';
 
   beforeEach(() => {
+    (getSupabase as jest.Mock).mockReturnValue(mockSupabase);
     service = new PortfolioService(userId);
     jest.clearAllMocks();
   });
@@ -161,8 +161,8 @@ describe('PortfolioService', () => {
   describe('Holdings Management', () => {
     it('should create a new holding', async () => {
       const mockHolding = {
-        id: 'holding-1',
-        portfolio_id: 'portfolio-1',
+        id: holdingId,
+        portfolio_id: portfolioId,
         symbol: 'AAPL',
         name: 'Apple Inc.',
         asset_type: 'stock',
@@ -185,7 +185,7 @@ describe('PortfolioService', () => {
       });
 
       const result = await service.createHolding({
-        portfolio_id: 'portfolio-1',
+        portfolio_id: portfolioId,
         symbol: 'AAPL',
         name: 'Apple Inc.',
         asset_type: AssetType.STOCK,
@@ -201,8 +201,8 @@ describe('PortfolioService', () => {
     it('should get all holdings for a portfolio', async () => {
       const mockHoldings = [
         {
-          id: 'holding-1',
-          portfolio_id: 'portfolio-1',
+          id: holdingId,
+          portfolio_id: portfolioId,
           symbol: 'AAPL',
           name: 'Apple Inc.',
           asset_type: 'stock',
@@ -216,8 +216,8 @@ describe('PortfolioService', () => {
           updated_at: new Date().toISOString(),
         },
         {
-          id: 'holding-2',
-          portfolio_id: 'portfolio-1',
+          id: '550e8400-e29b-41d4-a716-446655440002',
+          portfolio_id: portfolioId,
           symbol: 'GOOGL',
           name: 'Alphabet Inc.',
           asset_type: 'stock',
@@ -235,12 +235,14 @@ describe('PortfolioService', () => {
       mockSupabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
-            order: jest.fn().mockResolvedValue({ data: mockHoldings, error: null }),
+            eq: jest.fn().mockReturnValue({
+              order: jest.fn().mockResolvedValue({ data: mockHoldings, error: null }),
+            }),
           }),
         }),
       });
 
-      const result = await service.getHoldings('portfolio-1');
+      const result = await service.getHoldings(portfolioId);
 
       expect(result).toHaveLength(2);
       expect(result[0].symbol).toBe('AAPL');
@@ -249,8 +251,8 @@ describe('PortfolioService', () => {
 
     it('should update a holding', async () => {
       const mockUpdatedHolding = {
-        id: 'holding-1',
-        portfolio_id: 'portfolio-1',
+        id: holdingId,
+        portfolio_id: portfolioId,
         symbol: 'AAPL',
         name: 'Apple Inc.',
         asset_type: 'stock',
@@ -267,14 +269,16 @@ describe('PortfolioService', () => {
       mockSupabase.from.mockReturnValue({
         update: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
-            select: jest.fn().mockReturnValue({
-              single: jest.fn().mockResolvedValue({ data: mockUpdatedHolding, error: null }),
+            eq: jest.fn().mockReturnValue({
+              select: jest.fn().mockReturnValue({
+                single: jest.fn().mockResolvedValue({ data: mockUpdatedHolding, error: null }),
+              }),
             }),
           }),
         }),
       });
 
-      const result = await service.updateHolding('holding-1', {
+      const result = await service.updateHolding(holdingId, {
         quantity: 150,
         average_cost: 160,
       });
@@ -287,9 +291,9 @@ describe('PortfolioService', () => {
   describe('Transaction Processing', () => {
     it('should create a buy transaction', async () => {
       const mockTransaction = {
-        id: 'transaction-1',
-        portfolio_id: 'portfolio-1',
-        holding_id: 'holding-1',
+        id: '550e8400-e29b-41d4-a716-446655440003',
+        portfolio_id: portfolioId,
+        holding_id: holdingId,
         transaction_type: 'buy',
         symbol: 'AAPL',
         quantity: 50,
@@ -314,21 +318,25 @@ describe('PortfolioService', () => {
           return {
             select: jest.fn().mockReturnValue({
               eq: jest.fn().mockReturnValue({
-                single: jest.fn().mockResolvedValue({
-                  data: {
-                    id: 'holding-1',
-                    quantity: 100,
-                    average_cost: 150,
-                    created_at: new Date().toISOString(),
-                  },
-                  error: null,
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: {
+                      id: holdingId,
+                      quantity: 100,
+                      average_cost: 150,
+                      created_at: new Date().toISOString(),
+                    },
+                    error: null,
+                  }),
                 }),
               }),
             }),
             update: jest.fn().mockReturnValue({
               eq: jest.fn().mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                  single: jest.fn().mockResolvedValue({ data: {}, error: null }),
+                eq: jest.fn().mockReturnValue({
+                  select: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({ data: {}, error: null }),
+                  }),
                 }),
               }),
             }),
@@ -337,8 +345,8 @@ describe('PortfolioService', () => {
       });
 
       const result = await service.createTransaction({
-        portfolio_id: 'portfolio-1',
-        holding_id: 'holding-1',
+        portfolio_id: portfolioId,
+        holding_id: holdingId,
         transaction_type: TransactionType.BUY,
         symbol: 'AAPL',
         quantity: 50,

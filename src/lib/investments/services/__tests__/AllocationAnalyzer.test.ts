@@ -146,11 +146,13 @@ describe('AllocationAnalyzer', () => {
 
       const result = await analyzer.assessConcentrationRisk(portfolioId);
 
-      expect(result).toHaveLength(2); // Only AAPL and GOOGL (>5%)
+      expect(result).toHaveLength(3); // All holdings are >5%
       expect(result[0].symbol).toBe('AAPL');
       expect(result[0].risk_level).toBe('critical'); // >20%
       expect(result[1].symbol).toBe('GOOGL');
-      expect(result[1].risk_level).toBe('high'); // 10-20%
+      expect(result[1].risk_level).toBe('critical'); // >20%
+      expect(result[2].symbol).toBe('MSFT');
+      expect(result[2].risk_level).toBe('high'); // 10-20%
     });
   });
 
