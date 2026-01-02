@@ -637,7 +637,7 @@ export class SpendingAnalyzer {
     }
 
     // Detect recurring patterns
-    for (const [merchant, txns] of merchantGroups) {
+    for (const [merchant, txns] of Array.from(merchantGroups)) {
       if (txns.length < MIN_TRANSACTIONS_FOR_PATTERN) continue;
 
       const pattern = this.analyzeRecurringPattern(merchant, txns);
@@ -994,13 +994,13 @@ export class SpendingAnalyzer {
 
     const stats = new Map<string, CategoryStats>();
 
-    for (const [category, txns] of categoryMap) {
-      const amounts = txns.map(t => t.amount).sort((a, b) => a - b);
-      const mean = amounts.reduce((sum, a) => sum + a, 0) / amounts.length;
+    for (const [category, txns] of Array.from(categoryMap)) {
+      const amounts = txns.map((t: Transaction) => t.amount).sort((a: number, b: number) => a - b);
+      const mean = amounts.reduce((sum: number, a: number) => sum + a, 0) / amounts.length;
       const median = amounts[Math.floor(amounts.length / 2)];
 
       // Calculate standard deviation
-      const variance = amounts.reduce((sum, a) => sum + Math.pow(a - mean, 2), 0) / amounts.length;
+      const variance = amounts.reduce((sum: number, a: number) => sum + Math.pow(a - mean, 2), 0) / amounts.length;
       const stdDev = Math.sqrt(variance);
 
       // Calculate IQR
@@ -1017,7 +1017,7 @@ export class SpendingAnalyzer {
         q3,
         iqr,
         count: txns.length,
-        total: amounts.reduce((sum, a) => sum + a, 0),
+        total: amounts.reduce((sum: number, a: number) => sum + a, 0),
       });
     }
 
@@ -1168,7 +1168,7 @@ export class SpendingAnalyzer {
 
     const trends: CategoryTrend[] = [];
 
-    for (const [category, txns] of categoryMap) {
+    for (const [category, txns] of Array.from(categoryMap)) {
       const currentAmount = txns.reduce((sum, t) => sum + t.amount, 0);
 
       // Get previous period amount (simplified)
