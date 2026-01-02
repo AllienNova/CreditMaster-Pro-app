@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import SmartBudgetManagement from '@/components/financial/SmartBudgetManagement';
-import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton';
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 
 /**
  * Smart Budget Management Page

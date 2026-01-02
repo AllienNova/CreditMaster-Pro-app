@@ -6,8 +6,8 @@
  * Displays spending by category with visual charts and progress bars.
  */
 
-import { PieChart } from '@/components/charts/PieChart';
-import { BarChart } from '@/components/charts/BarChart';
+import PieChart from '@/components/charts/PieChart';
+import BarChart from '@/components/charts/BarChart';
 import { useState } from 'react';
 
 interface BudgetCategory {

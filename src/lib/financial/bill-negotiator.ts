@@ -9,7 +9,7 @@
  */
 
 import { getSupabase } from '@/lib/supabase/client';
-import { AIMLService } from '@/lib/aiml-service';
+import { getAIMLService, type AIMLService } from '@/lib/aiml-service';
 import type {
   NegotiableBill,
   BillType,
@@ -38,6 +38,24 @@ interface Transaction {
   is_recurring: boolean;
 }
 
+interface BillNegotiationOutcomeRow {
+  bill_id: string;
+  user_id: string;
+  negotiation_date: string;
+  success: boolean;
+  savings_achieved: number;
+  new_monthly_rate?: number;
+  previous_monthly_rate: number;
+  method: string;
+  duration?: number;
+  representative?: string;
+  notes?: string;
+  requires_followup?: boolean;
+  followup_date?: string;
+  followup_reason?: string;
+  recorded_at: string;
+}
+
 /**
  * Bill Negotiator Service
  * Singleton service for bill negotiation assistance
@@ -49,7 +67,7 @@ export class BillNegotiator {
   private scriptCache: Map<string, { script: NegotiationScript; expiresAt: Date }>;
 
   private constructor() {
-    this.aimlService = AIMLService.getInstance();
+    this.aimlService = getAIMLService();
     this.marketDataCache = new Map();
     this.scriptCache = new Map();
   }
@@ -193,11 +211,15 @@ export class BillNegotiator {
 
     let aiResponse: string;
     try {
-      aiResponse = await this.aimlService.generateText(prompt, {
-        model: 'anthropic/claude-4.5-sonnet',
-        maxTokens: 2000,
-        temperature: 0.7,
-      });
+      const response = await this.aimlService.chat(
+        'anthropic/claude-4.5-sonnet',
+        [{ role: 'user', content: prompt }],
+        {
+          max_tokens: 2000,
+          temperature: 0.7,
+        }
+      );
+      aiResponse = response.choices[0]?.message?.content || '';
     } catch (error) {
       console.error('AI script generation failed, using template:', error);
       aiResponse = this.generateTemplateScript(bill, marketAnalysis, profile);
@@ -260,7 +282,8 @@ export class BillNegotiator {
       .from('bill_negotiation_outcomes')
       .select('*')
       .eq('user_id', userId)
-      .order('negotiation_date', { ascending: false });
+      .order('negotiation_date', { ascending: false })
+      .returns<BillNegotiationOutcomeRow[]>();
 
     if (error) {
       console.error('Error fetching negotiation history:', error);
@@ -359,7 +382,8 @@ export class BillNegotiator {
       .eq('user_id', userId)
       .eq('is_recurring', true)
       .gte('date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()) // Last 90 days
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .returns<Array<Omit<Transaction, 'date'> & { date: string }>>();
 
     if (error) {
       console.error('Error fetching transactions:', error);
@@ -612,9 +636,9 @@ export class BillNegotiator {
     const points: LeveragePoint[] = [];
 
     // Competitor pricing leverage
-    const lowerRates = competitorRates.filter(r => r.monthlyRate < userRate);
+    const lowerRates = competitorRates.filter(r => r.rate < userRate);
     if (lowerRates.length > 0) {
-      const lowestRate = Math.min(...lowerRates.map(r => r.monthlyRate));
+      const lowestRate = Math.min(...lowerRates.map(r => r.rate));
       points.push({
         type: 'competitor_pricing',
         description: `Competitors offering similar service for $${lowestRate}/month`,
