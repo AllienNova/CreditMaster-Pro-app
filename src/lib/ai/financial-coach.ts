@@ -486,16 +486,16 @@ export class FinancialCoach {
 
     // Budget optimization opportunities
     for (const category of context.transactions.byCategory) {
-      const percentOfIncome = category.total / income;
+      const percentOfIncome = category.amount / income;
       if (category.category === 'dining' && percentOfIncome > 0.10) {
         opportunities.push({
           id: `reduce_${category.category}`,
           type: 'expense_reduction',
           title: 'Reduce Dining Out',
           description: `You're spending ${(percentOfIncome * 100).toFixed(0)}% of income on dining out.`,
-          potentialBenefit: `Save $${(category.total * 0.5).toFixed(2)}/month by cooking at home.`,
+          potentialBenefit: `Save $${(category.amount * 0.5).toFixed(2)}/month by cooking at home.`,
           difficulty: 'moderate',
-          estimatedImpact: category.total * 0.5,
+          estimatedImpact: category.amount * 0.5,
           actionSteps: [
             'Meal plan for the week',
             'Grocery shop with a list',
