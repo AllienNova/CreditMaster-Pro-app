@@ -57,7 +57,7 @@ if (typeof Request === 'undefined') {
     constructor(input: string | Request, init?: RequestInit) {
       this.url = typeof input === 'string' ? input : input.url;
       this.method = init?.method || 'GET';
-      this.headers = new Headers(init?.headers);
+      this.headers = new Headers(init?.headers as any);
       this.body = init?.body;
     }
 
@@ -77,7 +77,7 @@ jest.mock('next/server', () => ({
     json: (data: any, init?: ResponseInit) => ({
       status: init?.status || 200,
       json: async () => data,
-      headers: new Headers(init?.headers),
+      headers: new Headers(init?.headers as any),
     }),
     redirect: (url: string) => ({
       status: 307,
@@ -93,7 +93,7 @@ jest.mock('next/server', () => ({
     constructor(input: string | Request, init?: RequestInit) {
       this.url = typeof input === 'string' ? input : input.url;
       this.method = init?.method || 'GET';
-      this.headers = new Headers(init?.headers);
+      this.headers = new Headers(init?.headers as any);
       this.nextUrl = new URL(this.url);
     }
 

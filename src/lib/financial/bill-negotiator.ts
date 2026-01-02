@@ -245,7 +245,7 @@ export class BillNegotiator {
     const supabase = getSupabase();
 
     // Store outcome in database
-    const { error } = await supabase.from('bill_negotiation_outcomes').insert({
+    const { error } = await (supabase.from('bill_negotiation_outcomes') as any).insert([{
       bill_id: billId,
       user_id: outcome.userId,
       negotiation_date: outcome.negotiationDate,
@@ -261,7 +261,7 @@ export class BillNegotiator {
       followup_date: outcome.followupDate,
       followup_reason: outcome.followupReason,
       recorded_at: outcome.recordedAt,
-    });
+    }]);
 
     if (error) {
       console.error('Error tracking negotiation outcome:', error);
@@ -678,9 +678,6 @@ export class BillNegotiator {
     for (const rate of rates) {
       if (rate.promotionalRate) {
         advantages.push(`${rate.provider} offers promotional rate of $${rate.promotionalRate}/month`);
-      }
-      if (!rate.contractRequired) {
-        advantages.push(`${rate.provider} offers no-contract plans`);
       }
       if (rate.features.length > 0) {
         advantages.push(`${rate.provider} includes: ${rate.features.join(', ')}`);

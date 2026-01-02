@@ -62,7 +62,8 @@ export default function CategoryBreakdown({ categories, totalBudgeted }: Categor
   }));
 
   const barChartData = categories.map(cat => ({
-    name: cat.category.replace(/_/g, ' ').substring(0, 10),
+    label: cat.category.replace(/_/g, ' ').substring(0, 10),
+    value: cat.spent,
     budgeted: cat.budgeted,
     spent: cat.spent,
   }));

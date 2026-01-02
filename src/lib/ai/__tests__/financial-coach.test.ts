@@ -133,6 +133,31 @@ const mockFinancialContext: FinancialContext = {
     trend: 'stable' as const,
     calculatedAt: new Date(),
   },
+  investments: {
+    totalValue: 0,
+    totalCostBasis: 0,
+    totalGainLoss: 0,
+    totalGainLossPercent: 0,
+    dayChange: 0,
+    dayChangePercent: 0,
+    portfolios: [],
+    allocation: [],
+    topHoldings: [],
+  },
+  creditProfile: {
+    currentScore: 680,
+    scoreChange: 5,
+    scoreChangeDirection: 'up' as const,
+    lastUpdated: new Date(),
+    scoreHistory: [],
+    factors: [],
+    activeDisputes: 0,
+    resolvedDisputes: 0,
+    bureauScores: [],
+  },
+  insights: [],
+  recommendations: [],
+  lastUpdated: new Date(),
 };
 
 const mockAIAnalysisResponse = {

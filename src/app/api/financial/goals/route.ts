@@ -11,6 +11,7 @@ import { jwtValidation } from '@/lib/auth/jwt-validation';
 import { rbac } from '@/lib/auth/rbac';
 import { goalTracker } from '@/lib/financial/goal-tracker';
 import { supabase } from '@/lib/supabase';
+import type { GoalType } from '@/lib/financial/types/ai-coach.types';
 
 // Zod validation schemas
 const createGoalSchema = z.object({
@@ -206,7 +207,7 @@ export async function POST(request: NextRequest) {
 
     // Create goal using goal tracker
     const goal = await goalTracker.createGoal(userId, {
-      type: goalData.type,
+      type: goalData.type as GoalType,
       name: goalData.name,
       targetAmount: goalData.targetAmount,
       targetDate: new Date(goalData.targetDate),

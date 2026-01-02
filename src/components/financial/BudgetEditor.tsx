@@ -14,14 +14,14 @@ interface BudgetCategory {
   spent: number;
   remaining: number;
   percentUsed: number;
-  status: string;
+  status: 'under_budget' | 'on_track' | 'near_limit' | 'over_budget';
   transactions: number;
 }
 
 interface Budget {
   id: string;
   userId: string;
-  period: string;
+  period: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
   categories: BudgetCategory[];
   totalBudgeted: number;
   totalSpent: number;

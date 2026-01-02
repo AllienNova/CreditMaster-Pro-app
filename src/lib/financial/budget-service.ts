@@ -867,9 +867,9 @@ export class BudgetService {
     }
 
     // Sort by impact
-    const impactOrder = { high: 0, medium: 1, low: 2 };
+    const impactOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
     recommendations.sort(
-      (a, b) => impactOrder[a.impact] - impactOrder[b.impact]
+      (a, b) => impactOrder[a.impact as string] - impactOrder[b.impact as string]
     );
 
     return recommendations;

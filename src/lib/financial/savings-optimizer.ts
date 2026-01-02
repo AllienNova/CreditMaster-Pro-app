@@ -784,11 +784,11 @@ ${recurringCharges.map((c, i) => `${i + 1}. ${c.merchantName} - $${c.amount.toFi
 Return JSON array with format: [{"merchant": "name", "importance": "essential|useful|optional|unnecessary", "reason": "brief explanation"}]`;
 
     try {
-      const response = await this.aiService.chat({
-        model: AI_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.3,
-      });
+      const response = await this.aiService.chat(
+        AI_MODEL,
+        [{ role: 'user', content: prompt }],
+        { temperature: 0.3 }
+      );
 
       const content = response.choices[0]?.message?.content || '[]';
       const classifications = JSON.parse(content.replace(/```json\n?|\n?```/g, ''));
@@ -894,11 +894,11 @@ For each subscription, suggest:
 Return JSON array with format: [{"merchant": "name", "action": "cancel|downgrade|consolidate|negotiate", "alternatives": [{"name": "alt", "monthlyCost": 0, "savings": 0}], "reason": "explanation"}]`;
 
     try {
-      const response = await this.aiService.chat({
-        model: AI_REASONING_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.4,
-      });
+      const response = await this.aiService.chat(
+        AI_REASONING_MODEL,
+        [{ role: 'user', content: prompt }],
+        { temperature: 0.4 }
+      );
 
       const content = response.choices[0]?.message?.content || '[]';
       const enhancements = JSON.parse(content.replace(/```json\n?|\n?```/g, ''));
@@ -1126,11 +1126,11 @@ Recurring Charges: ${recurringCharges.length} found
 Provide brief, actionable insights (1-2 sentences each).`;
 
     try {
-      const response = await this.aiService.chat({
-        model: AI_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.5,
-      });
+      const response = await this.aiService.chat(
+        AI_MODEL,
+        [{ role: 'user', content: prompt }],
+        { temperature: 0.5 }
+      );
 
       const content = response.choices[0]?.message?.content || '';
       const insights = content
@@ -1256,11 +1256,11 @@ Suggest goals that are:
 Return JSON array with format: [{"type": "vacation|major_purchase|education|custom", "title": "Goal Name", "description": "Brief description", "recommendedAmount": 0, "recommendedMonthlyContribution": 0, "priority": 1-5, "reasoning": "Why this goal"}]`;
 
     try {
-      const response = await this.aiService.chat({
-        model: AI_REASONING_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.5,
-      });
+      const response = await this.aiService.chat(
+        AI_REASONING_MODEL,
+        [{ role: 'user', content: prompt }],
+        { temperature: 0.5 }
+      );
 
       const content = response.choices[0]?.message?.content || '[]';
       const aiGoals = JSON.parse(content.replace(/```json\n?|\n?```/g, ''));
