@@ -3,8 +3,8 @@
  * Track and complete AI-generated financial action plans
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { lightTheme as theme } from '../../src/constants/theme';
@@ -32,6 +32,8 @@ export default function ActionPlanScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('active');
   const [plans, setPlans] = useState<ActionPlan[]>([]);
+  const [celebratingPlan, setCelebratingPlan] = useState<string | null>(null);
+  const celebrationScale = useRef(new Animated.Value(1)).current;
 
   const fetchPlans = useCallback(async () => {
     try {
@@ -58,8 +60,27 @@ export default function ActionPlanScreen() {
     fetchPlans();
   }, [fetchPlans]);
 
+  const celebrateCompletion = (planId: string) => {
+    setCelebratingPlan(planId);
+    Animated.sequence([
+      Animated.timing(celebrationScale, {
+        toValue: 1.1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(celebrationScale, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setTimeout(() => setCelebratingPlan(null), 2000);
+    });
+  };
+
   const toggleStep = async (planId: string, stepId: string) => {
     // Optimistic update
+    let planCompleted = false;
     setPlans(plans.map(plan => {
       if (plan.id === planId) {
         const updatedSteps = plan.steps.map(step =>
@@ -67,10 +88,21 @@ export default function ActionPlanScreen() {
         );
         const completedSteps = updatedSteps.filter(s => s.completed).length;
         const progress = (completedSteps / updatedSteps.length) * 100;
-        return { ...plan, steps: updatedSteps, progress, completed: progress === 100 };
+        const isCompleted = progress === 100;
+
+        // Trigger celebration if plan just completed
+        if (isCompleted && !plan.completed) {
+          planCompleted = true;
+        }
+
+        return { ...plan, steps: updatedSteps, progress, completed: isCompleted };
       }
       return plan;
     }));
+
+    if (planCompleted) {
+      celebrateCompletion(planId);
+    }
 
     // API call
     try {
@@ -111,8 +143,25 @@ export default function ActionPlanScreen() {
     );
   }
 
+  const overallProgress = plans.length > 0
+    ? (plans.filter(p => p.completed).length / plans.length) * 100
+    : 0;
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Sticky Header with Overall Progress */}
+      <View style={styles.stickyHeader}>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Your Action Plans</Text>
+          <Text style={styles.headerSubtitle}>
+            {plans.filter(p => p.completed).length} of {plans.length} completed
+          </Text>
+        </View>
+        <View style={styles.headerProgress}>
+          <ProgressBar progress={overallProgress / 100} color={theme.colors.primary} height={6} />
+        </View>
+      </View>
+
       {/* Filter Tabs */}
       <View style={styles.filterContainer}>
         <TouchableOpacity
@@ -148,46 +197,63 @@ export default function ActionPlanScreen() {
         }
       >
         {filteredPlans.map((plan) => (
-          <Card key={plan.id} style={styles.planCard}>
-            <View style={styles.planHeader}>
-              <Text style={styles.planTitle}>{plan.title}</Text>
-              <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(plan.priority) }]}>
-                <Text style={styles.priorityText}>{plan.priority.toUpperCase()}</Text>
+          <Animated.View
+            key={plan.id}
+            style={[
+              { transform: [{ scale: celebratingPlan === plan.id ? celebrationScale : 1 }] }
+            ]}
+          >
+            <Card style={styles.planCard}>
+              <View style={styles.planHeader}>
+                <Text style={styles.planTitle}>{plan.title}</Text>
+                <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(plan.priority) }]}>
+                  <Text style={styles.priorityText}>{plan.priority.toUpperCase()}</Text>
+                </View>
               </View>
-            </View>
-            <Text style={styles.planDescription}>{plan.description}</Text>
-            
-            <View style={styles.progressContainer}>
-              <ProgressBar progress={plan.progress / 100} color={theme.colors.primary} />
-              <Text style={styles.progressText}>{Math.round(plan.progress)}% complete</Text>
-            </View>
+              <Text style={styles.planDescription}>{plan.description}</Text>
 
-            <View style={styles.stepsContainer}>
-              {plan.steps.map((step) => (
-                <TouchableOpacity
-                  key={step.id}
-                  style={styles.stepRow}
-                  onPress={() => toggleStep(plan.id, step.id)}
-                >
-                  <Ionicons
-                    name={step.completed ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={24}
-                    color={step.completed ? '#10B981' : '#9CA3AF'}
-                  />
-                  <Text style={[styles.stepText, step.completed && styles.stepTextCompleted]}>
-                    {step.title}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {plan.completed && (
-              <View style={styles.completedBanner}>
-                <Ionicons name="trophy" size={20} color="#10B981" />
-                <Text style={styles.completedText}>Plan Completed!</Text>
+              <View style={styles.progressContainer}>
+                <ProgressBar progress={plan.progress / 100} color={theme.colors.primary} />
+                <Text style={styles.progressText}>{Math.round(plan.progress)}% complete</Text>
               </View>
-            )}
-          </Card>
+
+              <View style={styles.stepsContainer}>
+                {plan.steps.map((step) => (
+                  <TouchableOpacity
+                    key={step.id}
+                    style={styles.stepRow}
+                    onPress={() => toggleStep(plan.id, step.id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.checkbox}>
+                      <Ionicons
+                        name={step.completed ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={28}
+                        color={step.completed ? '#10B981' : '#9CA3AF'}
+                      />
+                    </View>
+                    <Text style={[styles.stepText, step.completed && styles.stepTextCompleted]}>
+                      {step.title}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {plan.completed && (
+                <View style={styles.completedBanner}>
+                  <Ionicons name="trophy" size={20} color="#10B981" />
+                  <Text style={styles.completedText}>Plan Completed! 🎉</Text>
+                </View>
+              )}
+
+              {celebratingPlan === plan.id && (
+                <View style={styles.celebrationOverlay}>
+                  <Text style={styles.celebrationEmoji}>🎉</Text>
+                  <Text style={styles.celebrationText}>Amazing Work!</Text>
+                </View>
+              )}
+            </Card>
+          </Animated.View>
         ))}
 
         {filteredPlans.length === 0 && (
@@ -215,6 +281,28 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
     fontSize: 16,
     color: theme.colors.textSecondary,
+  },
+  stickyHeader: {
+    backgroundColor: '#FFFFFF',
+    padding: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  headerContent: {
+    marginBottom: theme.spacing.sm,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+  },
+  headerProgress: {
+    marginTop: theme.spacing.xs,
   },
   filterContainer: {
     flexDirection: 'row',
@@ -291,13 +379,20 @@ const styles = StyleSheet.create({
   stepRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+  },
+  checkbox: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   stepText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     color: theme.colors.text,
-    marginLeft: theme.spacing.sm,
+    marginLeft: theme.spacing.xs,
   },
   stepTextCompleted: {
     textDecorationLine: 'line-through',
@@ -328,6 +423,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.md,
+  },
+  celebrationOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: theme.borderRadius.lg,
+  },
+  celebrationEmoji: {
+    fontSize: 48,
+    marginBottom: theme.spacing.sm,
+  },
+  celebrationText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#10B981',
   },
 });
 

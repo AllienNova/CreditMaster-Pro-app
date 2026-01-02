@@ -4,12 +4,14 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { lightTheme as theme } from '../../src/constants/theme';
 import { Card } from '../../src/components/Card';
 import { ProgressBar } from '../../src/components/ProgressBar';
+import { BottomSheet } from '../../src/components/BottomSheet';
 
 interface BabyStep {
   step: number;
@@ -34,16 +36,27 @@ export default function AICoachScreen() {
   const [babySteps, setBabySteps] = useState<BabyStep[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [healthScore, setHealthScore] = useState(0);
+  const [userName, setUserName] = useState('');
+  const [currentBabyStep, setCurrentBabyStep] = useState(1);
+  const [showAskModal, setShowAskModal] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [askingQuestion, setAskingQuestion] = useState(false);
 
   const fetchCoachData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/ai/financial-coach/dashboard');
+      const response = await fetch('/api/ai/financial-coach/dashboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
       if (response.ok) {
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data || result;
         setBabySteps(data.babySteps || []);
         setRecommendations(data.recommendations || []);
         setHealthScore(data.healthScore || 0);
+        setUserName(data.userName || 'there');
+        setCurrentBabyStep(data.currentBabyStep || 1);
       }
     } catch (error) {
       console.error('Error fetching coach data:', error);
@@ -90,6 +103,54 @@ export default function AICoachScreen() {
     }
   };
 
+  const handleAskQuestion = async () => {
+    if (!question.trim()) return;
+
+    try {
+      setAskingQuestion(true);
+      const response = await fetch('/api/ai/financial-coach/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: question.trim() }),
+      });
+
+      if (response.ok) {
+        // Navigate to chat screen with the question
+        router.push({
+          pathname: '/financial-intelligence/chat',
+          params: { initialQuestion: question.trim() },
+        });
+        setShowAskModal(false);
+        setQuestion('');
+      }
+    } catch (error) {
+      console.error('Error asking question:', error);
+    } finally {
+      setAskingQuestion(false);
+    }
+  };
+
+  const quickActions = [
+    {
+      icon: 'chatbubble-ellipses',
+      label: 'Ask Question',
+      color: theme.colors.primary,
+      onPress: () => setShowAskModal(true),
+    },
+    {
+      icon: 'list',
+      label: 'View Plan',
+      color: '#10B981',
+      onPress: () => router.push('/financial-intelligence/action-plan'),
+    },
+    {
+      icon: 'stats-chart',
+      label: 'Check Progress',
+      color: '#8B5CF6',
+      onPress: () => router.push('/financial-intelligence/debt-payoff'),
+    },
+  ];
+
   if (loading && babySteps.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
@@ -109,6 +170,36 @@ export default function AICoachScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
         }
       >
+        {/* Coach Avatar & Greeting */}
+        <View style={styles.coachHeader}>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatar}>
+              <Ionicons name="person" size={40} color="#FFFFFF" />
+            </View>
+            <View style={styles.statusBadge}>
+              <View style={styles.statusDot} />
+            </View>
+          </View>
+          <View style={styles.greetingContainer}>
+            <Text style={styles.greeting}>Hello, {userName}! 👋</Text>
+            <Text style={styles.subGreeting}>You're on Baby Step {currentBabyStep}</Text>
+          </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.quickActionsContainer}>
+          {quickActions.map((action, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.quickActionButton, { backgroundColor: `${action.color}15` }]}
+              onPress={action.onPress}
+            >
+              <Ionicons name={action.icon as any} size={24} color={action.color} />
+              <Text style={[styles.quickActionLabel, { color: action.color }]}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         {/* Health Score */}
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>Financial Health Score</Text>
@@ -167,6 +258,44 @@ export default function AICoachScreen() {
           ))}
         </View>
       </ScrollView>
+
+      {/* Ask Coach Bottom Sheet */}
+      <BottomSheet
+        visible={showAskModal}
+        onClose={() => setShowAskModal(false)}
+        title="Ask Your Financial Coach"
+        height={400}
+      >
+        <View style={styles.askModalContent}>
+          <Text style={styles.askModalDescription}>
+            Ask me anything about your finances, budgeting, debt payoff, or financial goals.
+          </Text>
+          <TextInput
+            style={styles.askInput}
+            placeholder="Type your question here..."
+            placeholderTextColor={theme.colors.textSecondary}
+            value={question}
+            onChangeText={setQuestion}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+          />
+          <TouchableOpacity
+            style={[styles.askButton, (!question.trim() || askingQuestion) && styles.askButtonDisabled]}
+            onPress={handleAskQuestion}
+            disabled={!question.trim() || askingQuestion}
+          >
+            {askingQuestion ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons name="send" size={20} color="#FFFFFF" />
+                <Text style={styles.askButtonText}>Ask Question</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -188,6 +317,77 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  coachHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: theme.spacing.md,
+  },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#10B981',
+  },
+  greetingContainer: {
+    flex: 1,
+  },
+  greeting: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  subGreeting: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+  },
+  quickActionsContainer: {
+    flexDirection: 'row',
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  quickActionButton: {
+    flex: 1,
+    alignItems: 'center',
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    minHeight: 80,
+    justifyContent: 'center',
+  },
+  quickActionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: theme.spacing.xs,
+    textAlign: 'center',
   },
   card: {
     margin: theme.spacing.md,
@@ -296,6 +496,42 @@ const styles = StyleSheet.create({
   priorityText: {
     fontSize: 10,
     fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  askModalContent: {
+    padding: theme.spacing.md,
+  },
+  askModalDescription: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.md,
+    lineHeight: 20,
+  },
+  askInput: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    fontSize: 16,
+    color: theme.colors.text,
+    minHeight: 120,
+    marginBottom: theme.spacing.md,
+  },
+  askButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primary,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    gap: theme.spacing.sm,
+  },
+  askButtonDisabled: {
+    opacity: 0.5,
+  },
+  askButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
 });

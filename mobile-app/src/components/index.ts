@@ -20,6 +20,7 @@ export { AlertCard } from './AlertCard';
 
 // Progress & Status
 export { ProgressRing } from './ProgressRing';
+export { ProgressBar } from './ProgressBar';
 export { TimelineItem } from './TimelineItem';
 export { LastUpdated } from './LastUpdated';
 
