@@ -34,15 +34,17 @@ export async function POST(
   try {
     // Apply middleware (auth, RBAC, rate limiting, etc.)
     const middlewareResult = await applyFinancialAPIMiddleware(request, {
-      requiredPermission: 'financial:manage_bills',
-      rateLimit: { maxRequests: 50, windowMs: 60000 }, // 50 req/min
+      requireAuth: true,
+      rateLimit: true,
+      cors: true,
+      logging: true,
     });
 
     if (middlewareResult.error) {
-      return middlewareResult.response!;
+      return middlewareResult.error;
     }
 
-    const { userId } = middlewareResult;
+    const { userId, startTime: middlewareStartTime } = middlewareResult;
     const { id: billId } = await params;
 
     // Parse and validate request body
@@ -53,7 +55,7 @@ export async function POST(
     const billNegotiator = getBillNegotiator();
 
     // Get all negotiable bills for the user
-    const bills = await billNegotiator.identifyNegotiableBills(userId);
+    const bills = await billNegotiator.identifyNegotiableBills(userId!);
     const bill = bills.find(b => b.id === billId);
 
     if (!bill) {
@@ -70,9 +72,9 @@ export async function POST(
     // Build user profile if provided
     const userProfile = validatedBody.userTenure || validatedBody.paymentHistory || validatedBody.loyaltyScore
       ? {
-          userId,
-          tenure: validatedBody.userTenure,
-          paymentHistory: validatedBody.paymentHistory || 'good',
+          userId: userId!,
+          tenure: validatedBody.userTenure || 0,
+          paymentHistory: (validatedBody.paymentHistory || 'good') as 'excellent' | 'good' | 'fair' | 'poor',
           loyaltyScore: validatedBody.loyaltyScore || 75,
           previousNegotiations: 0,
           successRate: 0,
@@ -89,6 +91,7 @@ export async function POST(
     );
 
     return finalizeResponse(
+      request,
       NextResponse.json({
         success: true,
         data: {
@@ -120,10 +123,11 @@ export async function POST(
           aiModel: script.aiModel,
           generatedAt: script.generatedAt.toISOString(),
           expiresAt: script.expiresAt.toISOString(),
-          processingTimeMs: Date.now() - startTime,
+          processingTimeMs: Date.now() - middlewareStartTime,
         },
       }),
-      startTime
+      middlewareStartTime,
+      userId
     );
   } catch (error) {
     console.error('Error in POST /api/financial/bills/[id]/negotiate:', error);

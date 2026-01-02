@@ -31,15 +31,17 @@ export async function GET(request: NextRequest) {
   try {
     // Apply middleware (auth, RBAC, rate limiting, etc.)
     const middlewareResult = await applyFinancialAPIMiddleware(request, {
-      requiredPermission: 'financial:manage_bills',
-      rateLimit: { maxRequests: 50, windowMs: 60000 }, // 50 req/min
+      requireAuth: true,
+      rateLimit: true,
+      cors: true,
+      logging: true,
     });
 
     if (middlewareResult.error) {
-      return middlewareResult.response!;
+      return middlewareResult.error;
     }
 
-    const { userId } = middlewareResult;
+    const { userId, startTime: middlewareStartTime } = middlewareResult;
 
     // Parse and validate query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -57,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     // Get savings estimate
     const savingsEstimate = validatedParams.includeSavingsEstimate
-      ? await billNegotiator.calculatePotentialSavings(userId)
+      ? await billNegotiator.calculatePotentialSavings(userId!)
       : null;
 
     // Get market analysis if specific bill type and provider are provided
@@ -71,7 +73,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get negotiation history
-    const history = await billNegotiator.getBillNegotiationHistory(userId);
+    const history = await billNegotiator.getBillNegotiationHistory(userId!);
 
     // Calculate success metrics
     const totalNegotiations = history.reduce((sum, h) => sum + h.attempts.length, 0);
@@ -129,10 +131,11 @@ export async function GET(request: NextRequest) {
             location: validatedParams.location,
           },
           generatedAt: new Date().toISOString(),
-          processingTimeMs: Date.now() - startTime,
+          processingTimeMs: Date.now() - middlewareStartTime,
         },
       }),
-      startTime
+      middlewareStartTime,
+      userId
     );
   } catch (error) {
     console.error('Error in GET /api/financial/bills/analysis:', error);

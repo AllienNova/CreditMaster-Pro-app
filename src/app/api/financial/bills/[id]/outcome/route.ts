@@ -41,16 +41,18 @@ export async function POST(
   try {
     // Apply middleware (auth, RBAC, rate limiting, etc.)
     const middlewareResult = await applyFinancialAPIMiddleware(request, {
-      requiredPermission: 'financial:manage_bills',
-      rateLimit: { maxRequests: 50, windowMs: 60000 }, // 50 req/min
+      requireAuth: true,
+      rateLimit: true,
+      cors: true,
+      logging: true,
     });
 
     if (middlewareResult.error) {
-      return middlewareResult.response!;
+      return middlewareResult.error;
     }
 
     const { id: billId } = await params;
-    const { userId } = middlewareResult;
+    const { userId, startTime: middlewareStartTime } = middlewareResult;
 
     // Parse and validate request body
     const body = await request.json();
@@ -74,26 +76,27 @@ export async function POST(
     // Track the outcome
     await billNegotiator.trackNegotiationOutcome(billId, {
       billId,
-      userId,
+      userId: userId!,
       negotiationDate: new Date(),
       success: validatedBody.success,
       savingsAchieved: validatedBody.savingsAchieved,
-      newMonthlyRate: validatedBody.newMonthlyRate,
+      newMonthlyRate: validatedBody.newMonthlyRate || 0,
       previousMonthlyRate: validatedBody.previousMonthlyRate,
       method: validatedBody.method,
       duration: validatedBody.duration,
       representative: validatedBody.representative,
       notes: validatedBody.notes,
-      requiresFollowup: validatedBody.requiresFollowup,
+      requiresFollowup: validatedBody.requiresFollowup || false,
       followupDate: validatedBody.followupDate ? new Date(validatedBody.followupDate) : undefined,
       followupReason: validatedBody.followupReason,
       recordedAt: new Date(),
     });
 
     // Calculate updated savings estimate
-    const savingsEstimate = await billNegotiator.calculatePotentialSavings(userId);
+    const savingsEstimate = await billNegotiator.calculatePotentialSavings(userId!);
 
     return finalizeResponse(
+      request,
       NextResponse.json({
         success: true,
         data: {
@@ -116,10 +119,11 @@ export async function POST(
           userId,
           billId,
           recordedAt: new Date().toISOString(),
-          processingTimeMs: Date.now() - startTime,
+          processingTimeMs: Date.now() - middlewareStartTime,
         },
       }),
-      startTime
+      middlewareStartTime,
+      userId
     );
   } catch (error) {
     console.error('Error in POST /api/financial/bills/[id]/outcome:', error);
