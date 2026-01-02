@@ -90,7 +90,7 @@ export async function GET(
     // Calculate comprehensive progress metrics
     const progress = await goalTracker.calculateProgressMetrics(userId, goalId);
     const recommendations = await goalTracker.getGoalRecommendations(userId, goalId);
-    const history = await goalTracker.getProgressHistory(userId, goalId, 30);
+    const history = await goalTracker.getProgressHistory(userId, goalId);
 
     return NextResponse.json({
       success: true,
