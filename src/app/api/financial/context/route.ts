@@ -179,15 +179,9 @@ export async function GET(request: NextRequest) {
         success: true,
         data: {
           summary: {
-            totalAssets: context.accounts.reduce((sum, acc) => sum + acc.balance, 0),
-            totalLiabilities: context.accounts
-              .filter((acc) => acc.type === 'credit' || acc.type === 'loan')
-              .reduce((sum, acc) => sum + Math.abs(acc.balance), 0),
-            netWorth:
-              context.accounts.reduce((sum, acc) => sum + acc.balance, 0) -
-              context.accounts
-                .filter((acc) => acc.type === 'credit' || acc.type === 'loan')
-                .reduce((sum, acc) => sum + Math.abs(acc.balance), 0),
+            totalAssets: context.accounts.totalAssets,
+            totalLiabilities: context.accounts.totalLiabilities,
+            netWorth: context.accounts.netWorth,
           },
           accounts: context.accounts,
           budgetStatus: context.budgets,

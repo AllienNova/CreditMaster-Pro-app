@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     const enrichedGoals = await Promise.all(
       (goals || []).map(async (goal) => {
         try {
-          const progress = await goalTracker.calculateProgressMetrics(goal.id);
+          const progress = await goalTracker.calculateProgressMetrics(userId, goal.id);
           return {
             id: goal.id,
             type: goal.type,
@@ -100,13 +100,13 @@ export async function GET(request: NextRequest) {
             status: goal.status,
             priority: goal.priority,
             createdAt: goal.created_at,
-            progress: {
+            progress: progress ? {
               percentage: progress.progressPercentage,
               velocity: progress.velocity.monthlyVelocity,
               performanceGrade: progress.performanceScore.grade,
               onTrack: progress.performanceScore.status === 'on_track' || progress.performanceScore.status === 'ahead',
               estimatedCompletion: progress.predictions.projectedCompletionDate,
-            },
+            } : null,
           };
         } catch (err) {
           // If progress calculation fails, return basic goal info
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Calculate initial progress metrics
-    const progress = await goalTracker.calculateProgressMetrics(goal.id);
+    const progress = await goalTracker.calculateProgressMetrics(userId, goal.id);
 
     return NextResponse.json(
       {
@@ -233,13 +233,13 @@ export async function POST(request: NextRequest) {
           status: goal.status,
           priority: goal.priority,
           createdAt: goal.createdAt,
-          progress: {
+          progress: progress ? {
             percentage: progress.progressPercentage,
             velocity: progress.velocity.monthlyVelocity,
             performanceGrade: progress.performanceScore.grade,
             onTrack: progress.performanceScore.status === 'on_track' || progress.performanceScore.status === 'ahead',
             estimatedCompletion: progress.predictions.projectedCompletionDate,
-          },
+          } : null,
         },
         message: 'Financial goal created successfully',
       },

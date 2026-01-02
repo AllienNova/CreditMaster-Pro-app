@@ -88,9 +88,9 @@ export async function GET(
     }
 
     // Calculate comprehensive progress metrics
-    const progress = await goalTracker.calculateProgressMetrics(goalId);
-    const recommendations = await goalTracker.getGoalRecommendations(goalId);
-    const history = await goalTracker.getProgressHistory(goalId, 30);
+    const progress = await goalTracker.calculateProgressMetrics(userId, goalId);
+    const recommendations = await goalTracker.getGoalRecommendations(userId, goalId);
+    const history = await goalTracker.getProgressHistory(userId, goalId, 30);
 
     return NextResponse.json({
       success: true,
@@ -106,13 +106,13 @@ export async function GET(
         priority: goal.priority,
         createdAt: goal.created_at,
         updatedAt: goal.updated_at,
-        progress: {
+        progress: progress ? {
           percentage: progress.progressPercentage,
           velocity: progress.velocity,
           performance: progress.performanceScore,
           predictions: progress.predictions,
           risks: progress.risks,
-        },
+        } : null,
         recommendations: recommendations.map((rec) => ({
           type: rec.type,
           title: rec.title,
@@ -251,7 +251,7 @@ export async function PATCH(
     }
 
     // Calculate updated progress metrics
-    const progress = await goalTracker.calculateProgressMetrics(goalId);
+    const progress = await goalTracker.calculateProgressMetrics(userId, goalId);
 
     return NextResponse.json({
       success: true,
@@ -267,12 +267,12 @@ export async function PATCH(
         priority: updatedGoal.priority,
         createdAt: updatedGoal.created_at,
         updatedAt: updatedGoal.updated_at,
-        progress: {
+        progress: progress ? {
           percentage: progress.progressPercentage,
           velocity: progress.velocity.monthlyVelocity,
           performanceGrade: progress.performanceScore.grade,
           onTrack: progress.performanceScore.status === 'on_track' || progress.performanceScore.status === 'ahead',
-        },
+        } : null,
       },
       message: 'Goal updated successfully',
     });
