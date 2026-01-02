@@ -5,7 +5,12 @@
  * Extends existing debt-payoff.types.ts with advanced strategy features
  */
 
-import { Debt as BaseDebt, DebtType as BaseDebtType } from './debt-payoff.types';
+import {
+  Debt as BaseDebt,
+  DebtType as BaseDebtType,
+  PayoffMilestone,
+  DebtPayment
+} from './debt-payoff.types';
 
 // ============================================================================
 // ENUMS
@@ -90,36 +95,36 @@ export interface DebtPayoffPlan {
   method: PayoffMethod;
   focus: StrategyFocus;
   createdAt: Date;
-  
+
   // Financial metrics
   totalDebt: number;
   totalMinimumPayments: number;
   extraPayment: number;
   totalMonthlyPayment: number;
-  
+
   // Timeline
   startDate: Date;
   payoffDate: Date;
   totalMonths: number;
-  
+
   // Cost analysis
   totalInterestPaid: number;
   totalAmountPaid: number;
   interestSaved: number; // Compared to minimum payments only
   monthsSaved: number; // Compared to minimum payments only
-  
+
   // Debt ordering
   debtOrder: DebtPayoffOrder[];
-  
+
   // Detailed schedule
   schedule: PayoffSchedule[];
-  
+
   // Milestones
   milestones: PayoffMilestone[];
-  
+
   // Motivation tracking
   motivationMetrics: MotivationMetrics;
-  
+
   // AI insights (for AI_OPTIMIZED method)
   aiInsights?: {
     reasoning: string;
@@ -153,21 +158,34 @@ export interface DebtPayoffOrder {
 export interface PayoffSchedule {
   month: number;
   date: Date;
-  
+
   // Overall metrics
   totalBalance: number;
   totalPaid: number;
   totalInterest: number;
   totalPrincipal: number;
-  
+
   // Per-debt breakdown
   debtBalances: Record<string, number>;
   debtPayments: Record<string, DebtPayment>;
-  
+
   // Milestones achieved this month
   milestonesAchieved: string[];
-  
+
   // Debts paid off this month
   debtsPaidOff: string[];
+}
+
+/**
+ * Motivation tracking metrics for debt payoff
+ */
+export interface MotivationMetrics {
+  quickWins: number; // Number of debts paid off in first 6 months
+  totalDebtsEliminated: number;
+  percentageComplete: number;
+  streakDays: number; // Days of consistent payments
+  motivationScore: number; // 0-100
+  psychologicalMomentum: 'high' | 'medium' | 'low';
+  celebrationPoints: string[]; // Milestones achieved
 }
 
