@@ -1415,9 +1415,12 @@ export class HealthScoreCalculatorV2 {
       for (const rec of score.recommendations) {
         if (rec.estimatedImprovement >= 5) {
           quickWins.push({
+            title: `Improve ${component}`,
+            description: rec.action,
             action: rec.action,
             component,
             estimatedImprovement: rec.estimatedImprovement,
+            impact: rec.priority === 'high' ? 'high' : rec.priority === 'medium' ? 'medium' : 'low',
             effort:
               rec.priority === 'low'
                 ? 'low'
@@ -1425,6 +1428,7 @@ export class HealthScoreCalculatorV2 {
                   ? 'medium'
                   : 'high',
             timeframe: rec.timeframe,
+            category: component,
           });
         }
       }
