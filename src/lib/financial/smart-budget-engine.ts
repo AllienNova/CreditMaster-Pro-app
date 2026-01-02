@@ -285,7 +285,7 @@ export class SmartBudgetEngine {
         recommendations.push({
           id: crypto.randomUUID(),
           userId,
-          type: 'increase',
+          type: 'increase_budget',
           category: category.category,
           currentAmount: category.budgeted,
           suggestedAmount: suggestedIncrease,
@@ -306,7 +306,7 @@ export class SmartBudgetEngine {
         recommendations.push({
           id: crypto.randomUUID(),
           userId,
-          type: 'decrease',
+          type: 'decrease_budget',
           category: category.category,
           currentAmount: category.budgeted,
           suggestedAmount: suggestedDecrease,
@@ -911,7 +911,7 @@ Provide recommendations in JSON format:
         recommendations.push({
           id: crypto.randomUUID(),
           userId,
-          type: 'increase',
+          type: 'increase_budget',
           category: category.category,
           currentAmount: category.budgeted,
           suggestedAmount: Math.ceil(category.spent * 1.1),
