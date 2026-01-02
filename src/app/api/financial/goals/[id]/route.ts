@@ -271,7 +271,7 @@ export async function PATCH(
           percentage: progress.progressPercentage,
           velocity: progress.velocity.monthlyVelocity,
           performanceGrade: progress.performanceScore.grade,
-          onTrack: progress.performanceScore.onTrack,
+          onTrack: progress.performanceScore.status === 'on_track' || progress.performanceScore.status === 'ahead',
         },
       },
       message: 'Goal updated successfully',

@@ -142,11 +142,15 @@ export interface ScoreWeakness {
 }
 
 export interface QuickWin {
+  title: string;
+  description: string;
   action: string;
   component: keyof HealthScoreBreakdownV2;
   estimatedImprovement: number;
+  impact: 'high' | 'medium' | 'low';
   effort: 'low' | 'medium' | 'high';
   timeframe: string;
+  category?: string;
 }
 
 export interface ScoreHistoryPoint {

@@ -104,8 +104,8 @@ export async function GET(request: NextRequest) {
               percentage: progress.progressPercentage,
               velocity: progress.velocity.monthlyVelocity,
               performanceGrade: progress.performanceScore.grade,
-              onTrack: progress.performanceScore.onTrack,
-              estimatedCompletion: progress.predictions.estimatedCompletionDate,
+              onTrack: progress.performanceScore.status === 'on_track' || progress.performanceScore.status === 'ahead',
+              estimatedCompletion: progress.predictions.projectedCompletionDate,
             },
           };
         } catch (err) {
@@ -237,8 +237,8 @@ export async function POST(request: NextRequest) {
             percentage: progress.progressPercentage,
             velocity: progress.velocity.monthlyVelocity,
             performanceGrade: progress.performanceScore.grade,
-            onTrack: progress.performanceScore.onTrack,
-            estimatedCompletion: progress.predictions.estimatedCompletionDate,
+            onTrack: progress.performanceScore.status === 'on_track' || progress.performanceScore.status === 'ahead',
+            estimatedCompletion: progress.predictions.projectedCompletionDate,
           },
         },
         message: 'Financial goal created successfully',

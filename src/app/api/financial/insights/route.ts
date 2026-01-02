@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
       // Apply additional filters
       if (isReadFilter !== null) {
         const isRead = isReadFilter === 'true';
-        insights = insights.filter((insight) => insight.isRead === isRead);
+        insights = insights.filter((insight) => !insight.dismissed === isRead);
       }
 
       // Apply sorting
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
     // Apply additional filters
     if (isReadFilter !== null) {
       const isRead = isReadFilter === 'true';
-      insights = insights.filter((insight) => insight.isRead === isRead);
+      insights = insights.filter((insight) => !insight.dismissed === isRead);
     }
 
     // Apply sorting
