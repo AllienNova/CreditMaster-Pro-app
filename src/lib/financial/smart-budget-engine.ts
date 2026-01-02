@@ -337,7 +337,7 @@ export class SmartBudgetEngine {
       }
     }
 
-    return recommendations.sort((a, b) => b.confidence - a.confidence);
+    return recommendations.sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0));
   }
 
   /**

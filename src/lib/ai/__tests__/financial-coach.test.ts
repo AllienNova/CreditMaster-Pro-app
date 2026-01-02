@@ -30,7 +30,21 @@ jest.mock('@/lib/financial/financial-context-engine', () => ({
 // ============================================================================
 
 const mockFinancialContext: FinancialContext = {
-  userId: 'test-user-123',
+  user: {
+    id: 'test-user-123',
+    email: 'test@example.com',
+    fullName: 'Test User',
+    subscriptionTier: 'premium',
+    createdAt: new Date(),
+    onboardingCompleted: true,
+    preferences: {
+      currency: 'USD',
+      timezone: 'America/New_York',
+      budgetAlertThreshold: 80,
+      goalRemindersEnabled: true,
+      insightNotificationsEnabled: true,
+    },
+  },
   accounts: {
     checking: [],
     savings: [],

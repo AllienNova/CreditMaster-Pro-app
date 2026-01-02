@@ -368,13 +368,13 @@ describe('SavingsOptimizer', () => {
       const summary = await optimizer.calculatePotentialSavings(mockUserId);
 
       expect(summary.breakdown).toBeDefined();
-      expect(Array.isArray(summary.breakdown)).toBe(true);
+      expect(typeof summary.breakdown).toBe('object');
 
-      summary.breakdown.forEach((item) => {
-        expect(item.category).toBeDefined();
-        expect(item.monthlySavings).toBeGreaterThanOrEqual(0);
-        expect(item.annualSavings).toBe(item.monthlySavings * 12);
-      });
+      // Verify breakdown properties
+      expect(summary.breakdown.subscriptions).toBeGreaterThanOrEqual(0);
+      expect(summary.breakdown.categoryOptimization).toBeGreaterThanOrEqual(0);
+      expect(summary.breakdown.recurringCharges).toBeGreaterThanOrEqual(0);
+      expect(summary.breakdown.oneTimeOpportunities).toBeGreaterThanOrEqual(0);
     });
 
     it('should identify top opportunities', async () => {

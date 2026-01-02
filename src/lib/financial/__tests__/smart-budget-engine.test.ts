@@ -308,9 +308,9 @@ describe('SmartBudgetEngine', () => {
 
       if (suggestions.length > 1) {
         for (let i = 0; i < suggestions.length - 1; i++) {
-          expect(suggestions[i].confidence).toBeGreaterThanOrEqual(
-            suggestions[i + 1].confidence
-          );
+          const currentConfidence = suggestions[i].confidence ?? 0;
+          const nextConfidence = suggestions[i + 1].confidence ?? 0;
+          expect(currentConfidence).toBeGreaterThanOrEqual(nextConfidence);
         }
       }
     });
