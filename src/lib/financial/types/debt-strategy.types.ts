@@ -167,13 +167,26 @@ export interface PayoffSchedule {
 
   // Per-debt breakdown
   debtBalances: Record<string, number>;
-  debtPayments: Record<string, DebtPayment>;
+  debtPayments: Record<string, DebtPaymentDetail>;
 
   // Milestones achieved this month
   milestonesAchieved: string[];
 
   // Debts paid off this month
   debtsPaidOff: string[];
+}
+
+/**
+ * Individual debt payment in a schedule
+ */
+export interface DebtPaymentDetail {
+  debtId: string;
+  debtName: string;
+  payment: number;
+  interestPortion: number;
+  principalPortion: number;
+  remainingBalance: number;
+  isPaidOff: boolean;
 }
 
 /**
@@ -187,5 +200,95 @@ export interface MotivationMetrics {
   motivationScore: number; // 0-100
   psychologicalMomentum: 'high' | 'medium' | 'low';
   celebrationPoints: string[]; // Milestones achieved
+}
+
+// ============================================================================
+// STRATEGY COMPARISON INTERFACES
+// ============================================================================
+
+/**
+ * Comparison of multiple debt payoff strategies
+ */
+export interface DebtComparison {
+  userId: string;
+  generatedAt: Date;
+
+  // All calculated strategies
+  strategies: DebtPayoffPlan[];
+
+  // Recommended strategy
+  recommendation: PayoffMethod;
+  reasonForRecommendation: string;
+
+  // Savings comparisons
+  potentialSavings: {
+    snowballVsAvalanche: number; // Interest difference
+    aiOptimizedVsSnowball: number;
+    aiOptimizedVsAvalanche: number;
+    bestVsWorst: number;
+  };
+
+  // Timeline comparisons
+  timelineDifferences: {
+    snowballVsAvalanche: number; // Months difference
+    aiOptimizedVsSnowball: number;
+    aiOptimizedVsAvalanche: number;
+    bestVsWorst: number;
+  };
+
+  // Summary insights
+  insights: string[];
+  warnings: string[];
+}
+
+/**
+ * Debt strategy configuration
+ */
+export interface DebtStrategy {
+  method: PayoffMethod;
+  extraPayment: number;
+  priorityDebtIds?: string[]; // For custom strategies
+  description: string;
+  pros: string[];
+  cons: string[];
+  focus?: StrategyFocus;
+}
+
+// ============================================================================
+// REQUEST/RESPONSE TYPES
+// ============================================================================
+
+/**
+ * Request to calculate debt strategies
+ */
+export interface CalculateStrategyRequest {
+  method?: PayoffMethod; // Optional, defaults to comparison of all methods
+  extraPayment: number; // Monthly extra payment amount
+  priorityDebtIds?: string[]; // For custom strategy
+  includeComparison?: boolean; // Default true
+  focus?: StrategyFocus;
+}
+
+/**
+ * Response from debt strategy calculation
+ */
+export interface StrategyCalculationResponse {
+  success: boolean;
+  data?: {
+    strategies: DebtPayoffPlan[];
+    comparison?: DebtComparison;
+    recommendation: {
+      method: PayoffMethod;
+      reasoning: string;
+      projectedSavings: number;
+      payoffTimeMonths: number;
+    };
+    timestamp: string;
+  };
+  error?: {
+    code: string;
+    message: string;
+    details?: any;
+  };
 }
 
