@@ -135,9 +135,25 @@ export interface ProactiveRecommendation {
 // ============================================================================
 
 const AI_MODEL = 'anthropic/claude-4.5-sonnet';
-const aiService = new AIMLService();
+
+// Function to get AIMLService instance (allows for mocking in tests)
+let aiServiceInstance: AIMLService | null = null;
+export function getAIMLService(): AIMLService {
+  if (!aiServiceInstance) {
+    aiServiceInstance = new AIMLService();
+  }
+  return aiServiceInstance;
+}
+
+// Allow tests to override the AI service
+export function setAIMLService(service: AIMLService): void {
+  aiServiceInstance = service;
+}
 
 export class FinancialCoach {
+  private get aiService(): AIMLService {
+    return getAIMLService();
+  }
   /**
    * Analyze user's complete financial situation
    */
@@ -196,7 +212,7 @@ export class FinancialCoach {
     // Build prompt for AI
     const prompt = this.buildActionPlanPrompt(context, goals, timeframe);
 
-    const response = await aiService.chat(
+    const response = await this.aiService.chat(
       AI_MODEL,
       [
         { role: 'system', content: ACTION_PLAN_PROMPT },
@@ -231,28 +247,47 @@ export class FinancialCoach {
     const context = await financialContextEngine.getFinancialContext(userId);
     const currentBabyStep = this.determineCurrentBabyStep(context);
 
-    const prompt = this.buildAdvicePrompt(context, question);
+    try {
+      const prompt = this.buildAdvicePrompt(context, question);
 
-    const response = await aiService.chat(
-      AI_MODEL,
-      [
-        { role: 'system', content: FINANCIAL_COACH_SYSTEM_PROMPT },
-        { role: 'user', content: prompt },
-      ],
-      { temperature: 0.4, max_tokens: 1500 }
-    );
+      const response = await this.aiService.chat(
+        AI_MODEL,
+        [
+          { role: 'system', content: FINANCIAL_COACH_SYSTEM_PROMPT },
+          { role: 'user', content: prompt },
+        ],
+        { temperature: 0.4, max_tokens: 1500 }
+      );
 
-    const aiAdvice = this.parseAdviceResponse(response.choices[0]?.message?.content || '');
+      const aiAdvice = this.parseAdviceResponse(response.choices[0]?.message?.content || '');
 
-    return {
-      question,
-      answer: aiAdvice.answer,
-      relevantBabyStep: aiAdvice.relevantBabyStep || currentBabyStep,
-      actionSteps: aiAdvice.actionSteps,
-      resources: aiAdvice.resources,
-      encouragement: aiAdvice.encouragement,
-      generatedAt: new Date(),
-    };
+      return {
+        question,
+        answer: aiAdvice.answer,
+        relevantBabyStep: aiAdvice.relevantBabyStep || currentBabyStep,
+        actionSteps: aiAdvice.actionSteps,
+        resources: aiAdvice.resources,
+        encouragement: aiAdvice.encouragement,
+        generatedAt: new Date(),
+      };
+    } catch (error) {
+      console.error('AI advice failed:', error);
+      // Return fallback advice
+      return {
+        question,
+        answer: 'I recommend starting with the Baby Steps. First, save $1,000 for emergencies, then focus on paying off debt using the debt snowball method.',
+        relevantBabyStep: currentBabyStep,
+        actionSteps: [
+          'Create a written budget',
+          'Track all expenses for one month',
+          'Identify areas to cut spending',
+          'Start your emergency fund',
+        ],
+        resources: ['Dave Ramsey Baby Steps Guide', 'EveryDollar Budgeting App'],
+        encouragement: 'You can do this! Small steps lead to big changes.',
+        generatedAt: new Date(),
+      };
+    }
   }
 
   /**
@@ -266,7 +301,7 @@ export class FinancialCoach {
 
     const prompt = this.buildRecommendationPrompt(context, opportunities);
 
-    const response = await aiService.chat(
+    const response = await this.aiService.chat(
       AI_MODEL,
       [
         { role: 'system', content: RECOMMENDATION_PROMPT },
@@ -484,18 +519,53 @@ export class FinancialCoach {
     const opportunities: Opportunity[] = [];
     const income = context.transactions.totalIncome;
 
+    // Debt payoff opportunities (if user has debt)
+    if (context.debts.totalDebt > 0 && (focusArea === 'debt_payoff' || focusArea === 'overall')) {
+      const monthlyPayment = context.debts.monthlyPayments;
+      const extraPayment = context.transactions.netCashFlow * 0.5; // Use 50% of cash flow for extra debt payment
+
+      // Find smallest debt for debt snowball method
+      const sortedDebts = [...context.debts.debts].sort((a, b) => a.balance - b.balance);
+      const smallestDebt = sortedDebts[0];
+
+      const title = smallestDebt
+        ? `Pay Off ${smallestDebt.name} First (Debt Snowball)`
+        : 'Accelerate Debt Payoff with Debt Snowball';
+
+      const description = smallestDebt
+        ? `Start with your smallest debt: ${smallestDebt.name} ($${smallestDebt.balance.toFixed(2)}). This is the debt snowball method.`
+        : `You have $${context.debts.totalDebt.toFixed(2)} in debt. Use the debt snowball method to pay it off faster.`;
+
+      opportunities.push({
+        id: 'debt_snowball',
+        type: 'debt_payoff',
+        title,
+        description,
+        potentialBenefit: `Pay off debt ${Math.round((extraPayment / monthlyPayment) * 12)} months faster by adding $${extraPayment.toFixed(2)}/month to payments.`,
+        difficulty: 'moderate',
+        estimatedImpact: extraPayment,
+        actionSteps: [
+          'List all debts from smallest to largest balance',
+          'Make minimum payments on all debts',
+          `Put all extra money toward ${smallestDebt?.name || 'the smallest debt'}`,
+          'Once smallest is paid, roll that payment to the next smallest',
+        ],
+      });
+    }
+
     // Budget optimization opportunities
     for (const category of context.transactions.byCategory) {
-      const percentOfIncome = category.amount / income;
+      const expenseAmount = Math.abs(category.amount); // Use absolute value for expenses
+      const percentOfIncome = expenseAmount / income;
       if (category.category === 'dining' && percentOfIncome > 0.10) {
         opportunities.push({
           id: `reduce_${category.category}`,
           type: 'expense_reduction',
           title: 'Reduce Dining Out',
           description: `You're spending ${(percentOfIncome * 100).toFixed(0)}% of income on dining out.`,
-          potentialBenefit: `Save $${(category.amount * 0.5).toFixed(2)}/month by cooking at home.`,
+          potentialBenefit: `Save $${(expenseAmount * 0.5).toFixed(2)}/month by cooking at home.`,
           difficulty: 'moderate',
-          estimatedImpact: category.amount * 0.5,
+          estimatedImpact: expenseAmount * 0.5,
           actionSteps: [
             'Meal plan for the week',
             'Grocery shop with a list',
@@ -531,7 +601,7 @@ Provide:
 Respond in JSON format with keys: behavioralInsights (array), nextSteps (array), encouragement (string)`;
 
     try {
-      const response = await aiService.chat(
+      const response = await this.aiService.chat(
         AI_MODEL,
         [
           { role: 'system', content: ANALYSIS_SYSTEM_PROMPT },
