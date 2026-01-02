@@ -1263,7 +1263,7 @@ export class HealthScoreCalculatorV2 {
   /**
    * Get letter grade from score
    */
-  private getGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'F' {
+  public getGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'F' {
     if (score >= 90) return 'A';
     if (score >= 80) return 'B';
     if (score >= 70) return 'C';

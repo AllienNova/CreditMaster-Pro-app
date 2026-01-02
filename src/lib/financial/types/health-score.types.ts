@@ -16,37 +16,37 @@
 // V2 TYPES (RECOMMENDED)
 // ============================================================================
 
-export {
+export type {
   // Main Score Types
   FinancialHealthScoreV2,
   HealthScoreBreakdownV2,
   ComponentScoreV2,
-  
+
   // Configuration
   ScoreWeightsV2,
   ScoreThresholdsV2,
-  
+
   // Input/Output
   HealthScoreInputV2,
   HealthScoreOptionsV2,
-  
+
   // Detailed Scoring
   SubScore,
   ComponentRecommendation,
   BenchmarkComparison,
-  
+
   // Insights
   ScoreStrength,
   ScoreWeakness,
   QuickWin,
-  
+
   // Historical
   ScoreHistoryPoint,
-  
+
   // Metadata
   DataQualityAssessment,
   CalculationDetails,
-  
+
   // Enums
   AgeGroup,
   IncomeGroup,
@@ -56,7 +56,7 @@ export {
 // V1 TYPES (LEGACY)
 // ============================================================================
 
-export {
+export type {
   // Basic Score Types
   FinancialHealthScore,
   HealthScoreBreakdown,
