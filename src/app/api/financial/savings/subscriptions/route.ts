@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!rbac.hasPermission(validation.user, 'financial:view_savings')) {
+    if (!rbac.hasPermission(validation.user, 'financial:read')) {
       return NextResponse.json(
         { success: false, error: 'Forbidden - Insufficient permissions' },
         { status: 403 }

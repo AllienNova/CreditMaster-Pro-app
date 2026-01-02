@@ -107,26 +107,6 @@ export async function GET(request: NextRequest) {
 
     const validatedParams = TrendsQuerySchema.parse(queryParams);
 
-    // Check permissions
-    const hasPermission = await rbac.hasPermission(userId!, 'financial:view_spending');
-    if (!hasPermission) {
-      return finalizeResponse(
-        request,
-        NextResponse.json(
-          {
-            success: false,
-            error: {
-              code: 'FORBIDDEN',
-              message: 'You do not have permission to view spending trends',
-            },
-          },
-          { status: 403 }
-        ),
-        middlewareStartTime,
-        userId
-      );
-    }
-
     // Parse categories
     const categories = validatedParams.categories
       ? validatedParams.categories.split(',').map(c => c.trim())

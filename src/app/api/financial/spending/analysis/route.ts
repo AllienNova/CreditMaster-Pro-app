@@ -108,26 +108,6 @@ export async function GET(request: NextRequest) {
 
     const validatedParams = AnalysisQuerySchema.parse(queryParams);
 
-    // Check permissions
-    const hasPermission = await rbac.hasPermission(userId!, 'financial:view_spending');
-    if (!hasPermission) {
-      return finalizeResponse(
-        request,
-        NextResponse.json(
-          {
-            success: false,
-            error: {
-              code: 'FORBIDDEN',
-              message: 'You do not have permission to view spending analysis',
-            },
-          },
-          { status: 403 }
-        ),
-        middlewareStartTime,
-        userId
-      );
-    }
-
     // Get spending analyzer
     const analyzer = getSpendingAnalyzer();
 

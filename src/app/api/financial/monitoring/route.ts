@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check admin permission
-    if (!rbac.hasPermission(validation.user, 'admin:read')) {
+    if (!rbac.isAdmin(validation.user)) {
       return NextResponse.json(
         { success: false, error: 'Forbidden - Admin access required', _meta: { timestamp: new Date().toISOString() } },
         { status: 403 }
