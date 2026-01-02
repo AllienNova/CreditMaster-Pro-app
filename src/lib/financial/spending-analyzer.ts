@@ -928,14 +928,16 @@ export class SpendingAnalyzer {
     });
 
     if (weekendTxns.length > transactions.length * 0.3) {
+      const totalSpending = weekendTxns.reduce((sum, t) => sum + t.amount, 0);
       triggers.push({
-        type: 'time_based',
+        id: crypto.randomUUID(),
+        type: 'weekend',
         pattern: 'weekend_spending',
         description: 'Increased spending on weekends',
-        frequency: weekendTxns.length,
-        averageAmount: weekendTxns.reduce((sum, t) => sum + t.amount, 0) / weekendTxns.length,
+        occurrences: weekendTxns.length,
+        associatedSpending: totalSpending,
         confidence: 80,
-        impact: 'medium',
+        recommendation: 'Consider setting a weekend spending budget to control discretionary expenses',
       });
     }
 
@@ -946,14 +948,16 @@ export class SpendingAnalyzer {
     });
 
     if (lateNightTxns.length > 5) {
+      const totalSpending = lateNightTxns.reduce((sum, t) => sum + t.amount, 0);
       triggers.push({
-        type: 'time_based',
+        id: crypto.randomUUID(),
+        type: 'time_of_day',
         pattern: 'late_night_spending',
         description: 'Spending late at night',
-        frequency: lateNightTxns.length,
-        averageAmount: lateNightTxns.reduce((sum, t) => sum + t.amount, 0) / lateNightTxns.length,
+        occurrences: lateNightTxns.length,
+        associatedSpending: totalSpending,
         confidence: 75,
-        impact: 'low',
+        recommendation: 'Late night purchases are often impulsive. Try to avoid shopping after 10 PM',
       });
     }
 
@@ -964,14 +968,16 @@ export class SpendingAnalyzer {
     );
 
     if (diningTxns.length > 10) {
+      const totalSpending = diningTxns.reduce((sum, t) => sum + t.amount, 0);
       triggers.push({
-        type: 'event_based',
+        id: crypto.randomUUID(),
+        type: 'social_event',
         pattern: 'social_dining',
         description: 'Frequent dining out',
-        frequency: diningTxns.length,
-        averageAmount: diningTxns.reduce((sum, t) => sum + t.amount, 0) / diningTxns.length,
+        occurrences: diningTxns.length,
+        associatedSpending: totalSpending,
         confidence: 85,
-        impact: 'medium',
+        recommendation: 'Consider meal prepping or setting a monthly dining out budget',
       });
     }
 
@@ -1077,6 +1083,7 @@ export class SpendingAnalyzer {
           description: `Duplicate charge of $${txn.amount.toFixed(2)} from ${txn.merchant_name}`,
           transactionId: txn.id,
           amount: txn.amount,
+          deviation: 100, // 100% deviation since it's a duplicate
           category: txn.category,
           merchant: txn.merchant_name,
           date: txn.date,
