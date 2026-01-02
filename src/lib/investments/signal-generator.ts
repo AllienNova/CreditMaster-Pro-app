@@ -21,7 +21,7 @@ import {
   SignalStatus,
 } from './types/trading-signals.types';
 import { Timeframe } from './types/investment.types';
-import { createClient } from '@/lib/supabase/server';
+import { supabase } from '@/lib/supabase';
 
 // ============================================================================
 // TECHNICAL INDICATORS
@@ -69,7 +69,7 @@ export class SignalGenerator {
     timeframe: Timeframe = '1d'
   ): Promise<TradingSignal> {
     // Get comprehensive analysis
-    const analysis = await this.analyzeSymbol(symbol, assetType, analysisTypes, timeframe);
+    const { analysis, factors } = await this.analyzeSymbol(symbol, assetType, analysisTypes, timeframe);
 
     // Calculate signal type and strength
     const { signalType, strength, confidence } = this.calculateSignal(analysis);
@@ -106,9 +106,9 @@ export class SignalGenerator {
       potentialLoss,
       riskRewardRatio,
       reasoning: this.generateReasoning(analysis, signalType),
-      technicalFactors: analysis.technicalFactors || [],
-      fundamentalFactors: analysis.fundamentalFactors || [],
-      sentimentFactors: analysis.sentimentFactors || [],
+      technicalFactors: factors.technical,
+      fundamentalFactors: factors.fundamental,
+      sentimentFactors: factors.sentiment,
       aiInsights,
       timeframe,
       expiresAt: this.calculateExpiration(timeframe),
@@ -132,7 +132,7 @@ export class SignalGenerator {
     assetType: string,
     analysisTypes: AnalysisType[],
     timeframe: Timeframe
-  ): Promise<SignalAnalysis> {
+  ): Promise<{ analysis: SignalAnalysis; factors: { technical: string[]; fundamental: string[]; sentiment: string[] } }> {
     const analysis: Partial<SignalAnalysis> = {
       symbol,
       technicalScore: 0,
@@ -144,12 +144,18 @@ export class SignalGenerator {
       warnings: [],
     };
 
+    const factors = {
+      technical: [] as string[],
+      fundamental: [] as string[],
+      sentiment: [] as string[],
+    };
+
     // Technical Analysis
     if (analysisTypes.includes('technical') || analysisTypes.includes('ai_combined')) {
       const technicalData = await this.performTechnicalAnalysis(symbol, timeframe);
       analysis.technicalScore = technicalData.score;
       analysis.technicalIndicators = technicalData.indicators;
-      analysis.technicalFactors = technicalData.factors;
+      factors.technical = technicalData.factors;
     }
 
     // Sentiment Analysis
@@ -157,7 +163,7 @@ export class SignalGenerator {
       const sentimentData = await this.performSentimentAnalysis(symbol);
       analysis.sentimentScore = sentimentData.score;
       analysis.sentimentMetrics = sentimentData.metrics;
-      analysis.sentimentFactors = sentimentData.factors;
+      factors.sentiment = sentimentData.factors;
     }
 
     // Calculate overall score
@@ -168,7 +174,7 @@ export class SignalGenerator {
     ].filter((s) => s > 0);
     analysis.overallScore = scores.reduce((sum, s) => sum + s, 0) / scores.length;
 
-    return analysis as SignalAnalysis;
+    return { analysis: analysis as SignalAnalysis, factors };
   }
 
   /**
@@ -768,7 +774,6 @@ Format as a JSON array of strings.`;
    */
   private async saveSignal(signal: TradingSignal): Promise<void> {
     try {
-      const supabase = await createClient();
       const { error } = await supabase.from('trading_signals').insert({
         id: signal.id,
         user_id: signal.userId,
@@ -811,7 +816,6 @@ Format as a JSON array of strings.`;
     strengthChange: 'stronger' | 'weaker' | 'unchanged';
     recommendation: string;
   }> {
-    const supabase = await createClient();
     const { data: signal, error } = await supabase
       .from('trading_signals')
       .select('*')
@@ -864,8 +868,6 @@ Format as a JSON array of strings.`;
       status: 'executed' | 'expired' | 'cancelled';
     }
   ): Promise<SignalOutcome> {
-    const supabase = await createClient();
-
     // Get the signal
     const { data: signal, error: signalError } = await supabase
       .from('trading_signals')
@@ -958,7 +960,6 @@ Format as a JSON array of strings.`;
       limit?: number;
     }
   ): Promise<TradingSignal[]> {
-    const supabase = await createClient();
     let query = supabase
       .from('trading_signals')
       .select('*')
@@ -999,8 +1000,6 @@ Format as a JSON array of strings.`;
     userId: string,
     period: 'week' | 'month' | 'quarter' | 'year' | 'all' = 'month'
   ): Promise<SignalPerformance> {
-    const supabase = await createClient();
-
     // Calculate date range
     const now = new Date();
     const periodMap = {

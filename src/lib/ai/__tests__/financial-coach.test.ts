@@ -133,7 +133,6 @@ const mockFinancialContext: FinancialContext = {
     trend: 'stable' as const,
     calculatedAt: new Date(),
   },
-  generatedAt: new Date(),
 };
 
 const mockAIAnalysisResponse = {

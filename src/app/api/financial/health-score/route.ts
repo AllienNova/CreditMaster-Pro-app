@@ -200,10 +200,10 @@ export async function GET(request: NextRequest) {
           insurance: healthScore.breakdown.insurance.score,
         },
         recommendations: healthScore.quickWins.map((qw) => ({
-          title: qw.title,
-          description: qw.description,
-          priority: qw.impact > 15 ? 'high' : qw.impact > 8 ? 'medium' : 'low',
-          expectedImpact: qw.impact,
+          title: qw.action,
+          description: qw.timeframe,
+          priority: qw.estimatedImprovement > 15 ? 'high' : qw.estimatedImprovement > 8 ? 'medium' : 'low',
+          expectedImpact: qw.estimatedImprovement,
           effort: qw.effort,
         })),
         comparisons: {
@@ -349,12 +349,12 @@ export async function POST(request: NextRequest) {
           insurance: healthScore.breakdown.insurance.score,
         },
         recommendations: healthScore.quickWins.map((qw) => ({
-          title: qw.title,
-          description: qw.description,
-          priority: qw.impact > 15 ? 'high' : qw.impact > 8 ? 'medium' : 'low',
-          expectedImpact: qw.impact,
+          title: qw.action,
+          description: qw.timeframe,
+          priority: qw.estimatedImprovement > 15 ? 'high' : qw.estimatedImprovement > 8 ? 'medium' : 'low',
+          expectedImpact: qw.estimatedImprovement,
           effort: qw.effort,
-          category: qw.category,
+          category: qw.component,
         })),
         comparisons: {
           percentile: healthScore.percentileRank,
