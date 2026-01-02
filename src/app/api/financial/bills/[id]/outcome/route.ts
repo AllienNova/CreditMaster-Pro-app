@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getBillNegotiator } from '@/lib/financial/bill-negotiator';
-import { applyFinancialAPIMiddleware, finalizeResponse } from '@/lib/api/middleware/financial-api-middleware';
+import { applyFinancialAPIMiddleware, finalizeResponse } from '@/lib/api/financial-api-middleware';
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -34,7 +34,7 @@ const recordOutcomeSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const startTime = Date.now();
 
@@ -49,8 +49,8 @@ export async function POST(
       return middlewareResult.response!;
     }
 
+    const { id: billId } = await params;
     const { userId } = middlewareResult;
-    const billId = params.id;
 
     // Parse and validate request body
     const body = await request.json();

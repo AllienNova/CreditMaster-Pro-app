@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getBillNegotiator } from '@/lib/financial/bill-negotiator';
-import { applyFinancialAPIMiddleware, finalizeResponse } from '@/lib/api/middleware/financial-api-middleware';
+import { applyFinancialAPIMiddleware, finalizeResponse } from '@/lib/api/financial-api-middleware';
 
 // ============================================================================
 // VALIDATION SCHEMAS
