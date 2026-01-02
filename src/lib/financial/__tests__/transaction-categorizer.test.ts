@@ -85,7 +85,6 @@ describe('TransactionCategorizer', () => {
         merchantName: 'Chipotle',
         category: ['restaurants'],
         pending: false,
-        currency: 'USD',
         createdAt: new Date(),
       };
 
@@ -110,7 +109,6 @@ describe('TransactionCategorizer', () => {
         merchantName: 'Unknown Merchant',
         category: [],
         pending: false,
-        currency: 'USD',
         createdAt: new Date(),
       };
 
@@ -132,7 +130,6 @@ describe('TransactionCategorizer', () => {
         merchantName: 'Best Buy',
         category: ['electronics'],
         pending: false,
-        currency: 'USD',
         createdAt: new Date(),
       };
 
@@ -153,7 +150,6 @@ describe('TransactionCategorizer', () => {
         merchantName: 'Amazon',
         category: ['online shopping'],
         pending: true,
-        currency: 'USD',
         createdAt: new Date(),
       };
 
@@ -228,7 +224,6 @@ describe('TransactionCategorizer', () => {
         merchantName: '',
         category: [],
         pending: false,
-        currency: 'USD',
         createdAt: new Date(),
       };
 
