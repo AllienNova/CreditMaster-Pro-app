@@ -4,7 +4,7 @@
  * Asset Allocation Panel Component
  *
  * Displays portfolio asset allocation analysis, risk metrics, and rebalancing recommendations
- * Mobile-responsive with collapsible sections, swipe navigation, and WCAG 2.1 AA accessibility
+ * Mobile-responsive with collapsible sections, swipe navigation, pull-to-refresh, and WCAG 2.1 AA accessibility
  */
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -17,6 +17,8 @@ import {
 import { Portfolio } from '@/lib/investments/types/investment.types';
 import { EfficientFrontierChart } from './EfficientFrontierChart';
 import { getAssetAllocationService } from '@/lib/investments/services/AssetAllocationService';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { PullToRefreshIndicator } from '@/components/ui/PullToRefreshIndicator';
 
 // Collapsible section component with swipe navigation support
 interface CollapsibleSectionProps {
@@ -221,6 +223,27 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isMobile, analysis, activeSection, swipeableSections.length]);
 
+  // Pull-to-refresh handler
+  const handleRefresh = async () => {
+    if (!analysis) return; // Only refresh if analysis exists
+    await analyzeAllocation();
+  };
+
+  // Pull-to-refresh hook
+  const {
+    containerRef: pullToRefreshRef,
+    isPulling,
+    isRefreshing,
+    pullDistance,
+    shouldTriggerRefresh,
+  } = usePullToRefresh({
+    onRefresh: handleRefresh,
+    threshold: 80,
+    maxPullDistance: 150,
+    resistance: 0.5,
+    enabled: isMobile && !!analysis, // Only enable on mobile when analysis exists
+  });
+
   // Generate efficient frontier data
   const efficientFrontierData = useMemo(() => {
     const service = getAssetAllocationService();
@@ -341,7 +364,21 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
       )}
 
       {analysis && (
-        <div className="space-y-4 sm:space-y-6">
+        <div
+          ref={pullToRefreshRef}
+          className="relative space-y-4 sm:space-y-6 overflow-y-auto"
+          style={{
+            overscrollBehavior: 'contain',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {/* Pull-to-Refresh Indicator */}
+          <PullToRefreshIndicator
+            isPulling={isPulling}
+            isRefreshing={isRefreshing}
+            pullDistance={pullDistance}
+            threshold={80}
+          />
           {/* Swipe Navigation Indicator (Mobile Only) */}
           {isMobile && swipeableSections.length > 0 && (
             <div className="flex items-center justify-center gap-2 py-2">
