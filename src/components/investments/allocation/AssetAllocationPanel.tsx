@@ -19,6 +19,7 @@ import { EfficientFrontierChart } from './EfficientFrontierChart';
 import { getAssetAllocationService } from '@/lib/investments/services/AssetAllocationService';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { PullToRefreshIndicator } from '@/components/ui/PullToRefreshIndicator';
+import { AssetAllocationSkeleton } from '@/components/ui/Skeleton';
 
 // Collapsible section component with swipe navigation support
 interface CollapsibleSectionProps {
@@ -362,6 +363,9 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
           {error}
         </div>
       )}
+
+      {/* Loading Skeleton */}
+      {loading && !analysis && <AssetAllocationSkeleton />}
 
       {analysis && (
         <div

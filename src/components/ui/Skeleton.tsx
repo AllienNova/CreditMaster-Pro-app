@@ -182,5 +182,123 @@ export function FormSkeleton({ fields = 4 }: { fields?: number }) {
   );
 }
 
-export default Skeleton;
+/**
+ * Asset Allocation Analysis Skeleton
+ *
+ * Specialized skeleton for investment analysis loading states.
+ */
+export function AssetAllocationSkeleton() {
+  return (
+    <div className="space-y-4 sm:space-y-6" role="status" aria-label="Loading asset allocation analysis">
+      {/* Current Allocation Section */}
+      <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton variant="text" height={24} width={180} className="bg-gray-700" />
+          <Skeleton variant="circular" width={24} height={24} className="bg-gray-700" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="bg-gray-700/50 rounded-lg p-3 sm:p-4">
+              <Skeleton variant="text" height={16} width="60%" className="bg-gray-600 mb-2" />
+              <Skeleton variant="text" height={28} width="80%" className="bg-gray-600 mb-1" />
+              <Skeleton variant="text" height={14} width="50%" className="bg-gray-600" />
+            </div>
+          ))}
+        </div>
+      </div>
 
+      {/* Diversification Score Section */}
+      <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton variant="text" height={24} width={200} className="bg-gray-700" />
+          <Skeleton variant="circular" width={24} height={24} className="bg-gray-700" />
+        </div>
+        <div className="flex items-center justify-center mb-4">
+          <Skeleton variant="circular" width={120} height={120} className="bg-gray-700" />
+        </div>
+        <Skeleton variant="text" height={16} width="70%" className="bg-gray-700 mx-auto" />
+      </div>
+
+      {/* Risk Metrics Section */}
+      <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton variant="text" height={24} width={150} className="bg-gray-700" />
+          <Skeleton variant="circular" width={24} height={24} className="bg-gray-700" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="bg-gray-700/50 rounded-lg p-3 sm:p-4">
+              <Skeleton variant="text" height={14} width="70%" className="bg-gray-600 mb-2" />
+              <Skeleton variant="text" height={24} width="50%" className="bg-gray-600" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Performance Metrics Section */}
+      <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton variant="text" height={24} width={200} className="bg-gray-700" />
+          <Skeleton variant="circular" width={24} height={24} className="bg-gray-700" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-gray-700/50 rounded-lg p-3 sm:p-4">
+              <Skeleton variant="text" height={14} width="70%" className="bg-gray-600 mb-2" />
+              <Skeleton variant="text" height={24} width="50%" className="bg-gray-600" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Efficient Frontier Chart Section */}
+      <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton variant="text" height={24} width={180} className="bg-gray-700" />
+          <Skeleton variant="circular" width={24} height={24} className="bg-gray-700" />
+        </div>
+        <Skeleton variant="rounded" height={300} className="bg-gray-700 mb-4" />
+        <div className="flex justify-center gap-4">
+          <Skeleton variant="text" width={100} height={16} className="bg-gray-700" />
+          <Skeleton variant="text" width={100} height={16} className="bg-gray-700" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Metric Card Skeleton
+ *
+ * Skeleton for individual metric cards in dark mode.
+ */
+export function MetricCardSkeleton({ className = '' }: { className?: string }) {
+  return (
+    <div className={`bg-gray-700/50 rounded-lg p-3 sm:p-4 ${className}`}>
+      <Skeleton variant="text" height={14} width="70%" className="bg-gray-600 mb-2" />
+      <Skeleton variant="text" height={24} width="50%" className="bg-gray-600 mb-1" />
+      <Skeleton variant="text" height={12} width="40%" className="bg-gray-600" />
+    </div>
+  );
+}
+
+/**
+ * Chart Skeleton
+ *
+ * Skeleton for chart components in dark mode.
+ */
+export function ChartSkeleton({ height = 300, className = '' }: { height?: number; className?: string }) {
+  return (
+    <div className={`bg-gray-800 rounded-lg p-4 sm:p-6 ${className}`}>
+      <Skeleton variant="text" height={24} width="40%" className="bg-gray-700 mb-4" />
+      <Skeleton variant="rounded" height={height} className="bg-gray-700 mb-4" />
+      <div className="flex justify-center gap-4">
+        <Skeleton variant="text" width={80} height={16} className="bg-gray-700" />
+        <Skeleton variant="text" width={80} height={16} className="bg-gray-700" />
+        <Skeleton variant="text" width={80} height={16} className="bg-gray-700" />
+      </div>
+    </div>
+  );
+}
+
+export default Skeleton;

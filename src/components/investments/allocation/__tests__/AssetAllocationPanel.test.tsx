@@ -281,6 +281,34 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
       expect(analyzeButton.className).toContain('active:bg-blue-800');
     });
   });
+
+  describe('Loading Skeleton', () => {
+    it('should show skeleton during initial loading', async () => {
+      // Setup MSW handler with delay to simulate loading
+      server.use(
+        rest.post('*/api/investments/allocation-analysis', async (req, res, ctx) => {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          return res(ctx.json({ success: true, data: mockAnalysisResponse }));
+        })
+      );
+
+      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+
+      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      fireEvent.click(analyzeButton);
+
+      // Should show skeleton immediately
+      await waitFor(() => {
+        expect(screen.getByRole('status', { name: /Loading asset allocation analysis/i })).toBeInTheDocument();
+      });
+
+      // Wait for analysis to complete
+      await waitFor(() => {
+        expect(screen.getByText('Current Allocation')).toBeInTheDocument();
+      }, { timeout: 3000 });
+
+      // Skeleton should be gone
+      expect(screen.queryByRole('status', { name: /Loading asset allocation analysis/i })).not.toBeInTheDocument();
+    });
+  });
 });
-
-
