@@ -62,6 +62,7 @@ export function ComprehensiveAnalysisPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   // Fetch comprehensive analysis
   const fetchAnalysis = useCallback(async () => {
@@ -98,6 +99,86 @@ export function ComprehensiveAnalysisPanel({
 
   const handleAnalyze = () => {
     fetchAnalysis();
+  };
+
+  // Export analysis to specified format
+  const handleExport = async (format: 'csv' | 'json' | 'pdf') => {
+    if (!analysis) return;
+
+    setExporting(true);
+    try {
+      // Create export data
+      let content: string;
+      let filename: string;
+      let mimeType: string;
+
+      if (format === 'json') {
+        content = JSON.stringify(analysis, null, 2);
+        filename = `analysis-${symbol}-${Date.now()}.json`;
+        mimeType = 'application/json';
+      } else if (format === 'csv') {
+        // Simple CSV export
+        const rows = [
+          ['Investment Analysis Report'],
+          ['Symbol', symbol],
+          ['Analyzed At', analysis.analyzedAt],
+          ['Current Price', analysis.currentPrice.toString()],
+          [''],
+          ['Overall Signal', analysis.overallSignal],
+          ['Confidence', (analysis.overallConfidence * 100).toFixed(2) + '%'],
+          ['Risk Level', analysis.riskLevel],
+          [''],
+          ['Key Insights'],
+          ...analysis.keyInsights.map((insight, i) => [`${i + 1}`, insight]),
+        ];
+        content = rows.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
+        filename = `analysis-${symbol}-${Date.now()}.csv`;
+        mimeType = 'text/csv';
+      } else {
+        // HTML/PDF export
+        content = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Investment Analysis - ${symbol}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    h1 { color: #2563eb; }
+    .metric { padding: 10px; border-bottom: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <h1>Investment Analysis Report</h1>
+  <div class="metric"><strong>Symbol:</strong> ${symbol}</div>
+  <div class="metric"><strong>Price:</strong> $${analysis.currentPrice.toFixed(2)}</div>
+  <div class="metric"><strong>Signal:</strong> ${analysis.overallSignal}</div>
+  <div class="metric"><strong>Confidence:</strong> ${(analysis.overallConfidence * 100).toFixed(2)}%</div>
+  <h2>Key Insights</h2>
+  <ul>${analysis.keyInsights.map((i) => `<li>${i}</li>`).join('')}</ul>
+</body>
+</html>
+        `.trim();
+        filename = `analysis-${symbol}-${Date.now()}.html`;
+        mimeType = 'text/html';
+      }
+
+      // Download file
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export failed:', err);
+      setError('Failed to export analysis');
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -145,7 +226,7 @@ export function ComprehensiveAnalysisPanel({
           </div>
 
 
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <button
               onClick={handleAnalyze}
               disabled={loading || !symbol}
@@ -153,6 +234,35 @@ export function ComprehensiveAnalysisPanel({
             >
               {loading ? '🔄 Analyzing...' : '🚀 Analyze'}
             </button>
+
+            {analysis && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleExport('csv')}
+                  disabled={exporting}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                  title="Export to CSV"
+                >
+                  📊 CSV
+                </button>
+                <button
+                  onClick={() => handleExport('json')}
+                  disabled={exporting}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                  title="Export to JSON"
+                >
+                  📄 JSON
+                </button>
+                <button
+                  onClick={() => handleExport('pdf')}
+                  disabled={exporting}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                  title="Export to PDF/HTML"
+                >
+                  📑 PDF
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
