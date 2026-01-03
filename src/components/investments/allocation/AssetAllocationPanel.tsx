@@ -4,9 +4,10 @@
  * Asset Allocation Panel Component
  *
  * Displays portfolio asset allocation analysis, risk metrics, and rebalancing recommendations
+ * Mobile-responsive with collapsible sections and WCAG 2.1 AA accessibility
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   AssetAllocationAnalysis,
   RiskTolerance,
@@ -15,6 +16,64 @@ import {
 import { Portfolio } from '@/lib/investments/types/investment.types';
 import { EfficientFrontierChart } from './EfficientFrontierChart';
 import { getAssetAllocationService } from '@/lib/investments/services/AssetAllocationService';
+
+// Collapsible section component
+interface CollapsibleSectionProps {
+  title: string;
+  children: React.ReactNode;
+  defaultExpanded?: boolean;
+  sectionId: string;
+}
+
+function CollapsibleSection({ title, children, defaultExpanded = false, sectionId }: CollapsibleSectionProps) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+
+  // Persist expansion state in localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem(`allocation-section-${sectionId}`);
+    if (savedState !== null) {
+      setIsExpanded(savedState === 'true');
+    }
+  }, [sectionId]);
+
+  const toggleExpanded = () => {
+    const newState = !isExpanded;
+    setIsExpanded(newState);
+    localStorage.setItem(`allocation-section-${sectionId}`, String(newState));
+  };
+
+  return (
+    <div className="bg-gray-800 rounded-lg overflow-hidden">
+      <button
+        onClick={toggleExpanded}
+        className="w-full px-4 py-4 sm:px-6 sm:py-5 flex items-center justify-between text-left hover:bg-gray-750 active:bg-gray-700 transition-colors duration-200 min-h-[44px]"
+        aria-expanded={isExpanded}
+        aria-controls={`section-${sectionId}`}
+      >
+        <h3 className="text-lg sm:text-xl font-semibold text-white">{title}</h3>
+        <svg
+          className={`w-6 h-6 text-gray-400 transition-transform duration-300 ${
+            isExpanded ? 'rotate-180' : ''
+          }`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div
+        id={`section-${sectionId}`}
+        className={`transition-all duration-300 ease-in-out ${
+          isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+        }`}
+      >
+        <div className="px-4 pb-4 sm:px-6 sm:pb-6">{children}</div>
+      </div>
+    </div>
+  );
+}
 
 interface AssetAllocationPanelProps {
   portfolio: Portfolio;
@@ -26,6 +85,18 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
   const [riskTolerance, setRiskTolerance] = useState<RiskTolerance>(RiskTolerance.MODERATE);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Generate efficient frontier data
   const efficientFrontierData = useMemo(() => {
@@ -101,14 +172,22 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
   };
 
   return (
-    <div className="space-y-6 p-6 bg-gray-900 rounded-lg">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">Asset Allocation Analysis</h2>
-        <div className="flex items-center gap-4">
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 bg-gray-900 rounded-lg">
+      {/* Header - Mobile Responsive */}
+      <div className="space-y-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-white">Asset Allocation Analysis</h2>
+
+        {/* Controls - Stack on mobile, row on desktop */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+          <label htmlFor="risk-tolerance-select" className="sr-only">
+            Select Risk Tolerance Level
+          </label>
           <select
+            id="risk-tolerance-select"
             value={riskTolerance}
             onChange={(e) => setRiskTolerance(e.target.value as RiskTolerance)}
-            className="px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700"
+            className="w-full sm:w-auto px-4 py-3 sm:py-2 bg-gray-800 text-white text-base rounded-lg border-2 border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 min-h-[44px]"
+            aria-label="Risk tolerance level"
           >
             <option value={RiskTolerance.VERY_CONSERVATIVE}>Very Conservative</option>
             <option value={RiskTolerance.CONSERVATIVE}>Conservative</option>
@@ -119,7 +198,8 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
           <button
             onClick={analyzeAllocation}
             disabled={loading}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
+            className="w-full sm:w-auto px-6 py-3 sm:py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 active:scale-95 text-white text-base font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 min-h-[44px]"
+            aria-label={loading ? 'Analyzing portfolio allocation' : 'Analyze portfolio allocation'}
           >
             {loading ? 'Analyzing...' : 'Analyze'}
           </button>
@@ -127,20 +207,24 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
       </div>
 
       {error && (
-        <div className="p-4 bg-red-900/30 border border-red-500 rounded-lg text-red-400">
+        <div
+          className="p-4 bg-red-900/30 border-2 border-red-500 rounded-lg text-red-400"
+          role="alert"
+          aria-live="assertive"
+        >
+          <strong className="font-semibold">Error: </strong>
           {error}
         </div>
       )}
 
       {analysis && (
-        <div className="space-y-6">
-          {/* Current Allocation */}
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold text-white mb-4">Current Allocation</h3>
+        <div className="space-y-4 sm:space-y-6">
+          {/* Current Allocation - Collapsible */}
+          <CollapsibleSection title="Current Allocation" defaultExpanded={true} sectionId="current-allocation">
             <div className="space-y-3">
               {analysis.currentAllocations.map((allocation) => (
                 <div key={allocation.assetClass} className="space-y-2">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-sm sm:text-base">
                     <span className="text-gray-300 capitalize">
                       {allocation.assetClass.replace('_', ' ')}
                     </span>
@@ -148,28 +232,32 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
                       {allocation.percentage.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div className="w-full bg-gray-700 rounded-full h-2 sm:h-3">
                     <div
-                      className={`${getAssetClassColor(allocation.assetClass)} h-2 rounded-full`}
+                      className={`${getAssetClassColor(allocation.assetClass)} h-2 sm:h-3 rounded-full transition-all duration-500`}
                       style={{ width: `${allocation.percentage}%` }}
+                      role="progressbar"
+                      aria-valuenow={allocation.percentage}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={`${allocation.assetClass} allocation: ${allocation.percentage.toFixed(1)}%`}
                     />
                   </div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs sm:text-sm text-gray-400">
                     ${allocation.value.toLocaleString()}
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Diversification Score */}
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold text-white mb-4">Diversification Score</h3>
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <div className="w-full bg-gray-700 rounded-full h-4">
+          {/* Diversification Score - Collapsible */}
+          <CollapsibleSection title="Diversification Score" defaultExpanded={true} sectionId="diversification">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex-1 w-full">
+                <div className="w-full bg-gray-700 rounded-full h-4 sm:h-6">
                   <div
-                    className={`h-4 rounded-full ${
+                    className={`h-4 sm:h-6 rounded-full transition-all duration-500 ${
                       analysis.diversificationScore >= 70
                         ? 'bg-green-500'
                         : analysis.diversificationScore >= 40
@@ -177,103 +265,139 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
                         : 'bg-red-500'
                     }`}
                     style={{ width: `${analysis.diversificationScore}%` }}
+                    role="progressbar"
+                    aria-valuenow={analysis.diversificationScore}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`Diversification score: ${analysis.diversificationScore} out of 100`}
                   />
                 </div>
               </div>
-              <span className="text-2xl font-bold text-white">{analysis.diversificationScore}/100</span>
+              <span className="text-2xl sm:text-3xl font-bold text-white">
+                {analysis.diversificationScore}/100
+              </span>
             </div>
-          </div>
+            <p className="mt-3 text-sm text-gray-400">
+              {analysis.diversificationScore >= 70
+                ? '✓ Well diversified portfolio'
+                : analysis.diversificationScore >= 40
+                ? '⚠ Moderate diversification - consider spreading investments'
+                : '⚠ Low diversification - high concentration risk'}
+            </p>
+          </CollapsibleSection>
 
-          {/* Risk Metrics */}
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold text-white mb-4">Risk Metrics</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <div className="text-sm text-gray-400">Volatility</div>
-                <div className="text-lg font-semibold text-white">
+          {/* Risk Metrics - Collapsible */}
+          <CollapsibleSection title="Risk Metrics" defaultExpanded={false} sectionId="risk-metrics">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div className="bg-gray-750 p-4 rounded-lg">
+                <div className="text-sm text-gray-400 mb-1">Volatility</div>
+                <div className="text-xl sm:text-2xl font-semibold text-white">
                   {(analysis.riskMetrics.portfolioVolatility * 100).toFixed(1)}%
                 </div>
+                <div className="text-xs text-gray-500 mt-1">Standard deviation</div>
               </div>
-              <div>
-                <div className="text-sm text-gray-400">Beta</div>
-                <div className="text-lg font-semibold text-white">
+              <div className="bg-gray-750 p-4 rounded-lg">
+                <div className="text-sm text-gray-400 mb-1">Beta</div>
+                <div className="text-xl sm:text-2xl font-semibold text-white">
                   {analysis.riskMetrics.portfolioBeta.toFixed(2)}
                 </div>
+                <div className="text-xs text-gray-500 mt-1">Market correlation</div>
               </div>
-              <div>
-                <div className="text-sm text-gray-400">VaR (95%)</div>
-                <div className="text-lg font-semibold text-white">
+              <div className="bg-gray-750 p-4 rounded-lg">
+                <div className="text-sm text-gray-400 mb-1">VaR (95%)</div>
+                <div className="text-xl sm:text-2xl font-semibold text-white">
                   ${analysis.riskMetrics.valueAtRisk.toLocaleString()}
                 </div>
+                <div className="text-xs text-gray-500 mt-1">Value at risk</div>
               </div>
-              <div>
-                <div className="text-sm text-gray-400">Max Drawdown</div>
-                <div className="text-lg font-semibold text-white">
+              <div className="bg-gray-750 p-4 rounded-lg">
+                <div className="text-sm text-gray-400 mb-1">Max Drawdown</div>
+                <div className="text-xl sm:text-2xl font-semibold text-white">
                   {(analysis.riskMetrics.maxDrawdown * 100).toFixed(1)}%
                 </div>
+                <div className="text-xs text-gray-500 mt-1">Worst decline</div>
               </div>
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Performance Metrics */}
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <h3 className="text-xl font-semibold text-white mb-4">Performance Metrics</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <div className="text-sm text-gray-400">Expected Return</div>
-                <div className="text-lg font-semibold text-white">
+          {/* Performance Metrics - Collapsible */}
+          <CollapsibleSection title="Performance Metrics" defaultExpanded={false} sectionId="performance-metrics">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div className="bg-gray-750 p-4 rounded-lg">
+                <div className="text-sm text-gray-400 mb-1">Expected Return</div>
+                <div className="text-xl sm:text-2xl font-semibold text-green-400">
                   {(analysis.performanceMetrics.expectedReturn * 100).toFixed(1)}%
                 </div>
+                <div className="text-xs text-gray-500 mt-1">Annual projection</div>
               </div>
-              <div>
-                <div className="text-sm text-gray-400">Sharpe Ratio</div>
-                <div className="text-lg font-semibold text-white">
+              <div className="bg-gray-750 p-4 rounded-lg">
+                <div className="text-sm text-gray-400 mb-1">Sharpe Ratio</div>
+                <div className="text-xl sm:text-2xl font-semibold text-white">
                   {analysis.performanceMetrics.sharpeRatio.toFixed(2)}
                 </div>
+                <div className="text-xs text-gray-500 mt-1">Risk-adjusted return</div>
               </div>
-              <div>
-                <div className="text-sm text-gray-400">Sortino Ratio</div>
-                <div className="text-lg font-semibold text-white">
+              <div className="bg-gray-750 p-4 rounded-lg">
+                <div className="text-sm text-gray-400 mb-1">Sortino Ratio</div>
+                <div className="text-xl sm:text-2xl font-semibold text-white">
                   {analysis.performanceMetrics.sortinoRatio.toFixed(2)}
                 </div>
+                <div className="text-xs text-gray-500 mt-1">Downside risk</div>
               </div>
-              <div>
-                <div className="text-sm text-gray-400">Information Ratio</div>
-                <div className="text-lg font-semibold text-white">
+              <div className="bg-gray-750 p-4 rounded-lg">
+                <div className="text-sm text-gray-400 mb-1">Information Ratio</div>
+                <div className="text-xl sm:text-2xl font-semibold text-white">
                   {analysis.performanceMetrics.informationRatio.toFixed(2)}
                 </div>
+                <div className="text-xs text-gray-500 mt-1">Benchmark comparison</div>
               </div>
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Efficient Frontier Chart */}
-          <div className="bg-gray-800 p-6 rounded-lg">
-            <EfficientFrontierChart
-              frontierPoints={efficientFrontierData}
-              currentPortfolio={currentPortfolioPosition}
-              recommendedPortfolio={recommendedPortfolioPosition}
-              height={450}
-            />
-          </div>
-
-          {/* Rebalancing Recommendations */}
-          {analysis.needsRebalancing && analysis.rebalancingRecommendations.length > 0 && (
-            <div className="bg-gray-800 p-6 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-white">Rebalancing Recommendations</h3>
-                <span className="px-3 py-1 bg-yellow-900/30 text-yellow-400 rounded-full text-sm">
-                  {analysis.deviationFromTarget.toFixed(1)}% deviation
-                </span>
+          {/* Efficient Frontier Chart - Collapsible */}
+          <CollapsibleSection title="Efficient Frontier" defaultExpanded={false} sectionId="efficient-frontier">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="min-w-[320px]">
+                <EfficientFrontierChart
+                  frontierPoints={efficientFrontierData}
+                  currentPortfolio={currentPortfolioPosition}
+                  recommendedPortfolio={recommendedPortfolioPosition}
+                  height={isMobile ? 300 : 450}
+                />
               </div>
+            </div>
+            <p className="mt-4 text-sm text-gray-400">
+              The efficient frontier shows the optimal risk-return tradeoff. Your current portfolio (red diamond) and recommended portfolio (green star) are plotted against the optimal frontier (blue curve).
+            </p>
+          </CollapsibleSection>
+
+          {/* Rebalancing Recommendations - Collapsible */}
+          {analysis.needsRebalancing && analysis.rebalancingRecommendations.length > 0 && (
+            <CollapsibleSection
+              title={`Rebalancing Recommendations (${analysis.rebalancingRecommendations.length})`}
+              defaultExpanded={true}
+              sectionId="rebalancing"
+            >
+              <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm text-yellow-400 font-medium">
+                    Portfolio deviation: {analysis.deviationFromTarget.toFixed(1)}% from target allocation
+                  </span>
+                </div>
+              </div>
+
               <div className="space-y-3">
                 {analysis.rebalancingRecommendations.map((rec, index) => (
                   <div
                     key={index}
-                    className="p-4 bg-gray-700 rounded-lg border border-gray-600"
+                    className="p-4 bg-gray-700 rounded-lg border-2 border-gray-600 hover:border-gray-500 transition-colors"
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                       <div className="flex items-center gap-3">
-                        <span className="text-lg font-semibold text-white">{rec.symbol}</span>
+                        <span className="text-lg sm:text-xl font-semibold text-white">{rec.symbol}</span>
                         <span
                           className={`px-2 py-1 rounded text-xs font-semibold ${
                             rec.priority === 'high'
@@ -282,42 +406,44 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
                               ? 'bg-yellow-900/30 text-yellow-400'
                               : 'bg-blue-900/30 text-blue-400'
                           }`}
+                          aria-label={`Priority: ${rec.priority}`}
                         >
                           {rec.priority.toUpperCase()}
                         </span>
                       </div>
                       <span
-                        className={`px-3 py-1 rounded font-semibold ${
+                        className={`px-4 py-2 rounded font-semibold text-sm min-h-[44px] flex items-center justify-center ${
                           rec.action === 'buy'
                             ? 'bg-green-900/30 text-green-400'
                             : rec.action === 'sell'
                             ? 'bg-red-900/30 text-red-400'
                             : 'bg-gray-600 text-gray-300'
                         }`}
+                        aria-label={`Action: ${rec.action}`}
                       >
                         {rec.action.toUpperCase()}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-300 mb-2">{rec.reason}</div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                      <div>
-                        <span className="text-gray-400">Current: </span>
-                        <span className="text-white">{rec.currentPercentage.toFixed(1)}%</span>
+                    <div className="text-sm sm:text-base text-gray-300 mb-3">{rec.reason}</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs sm:text-sm">
+                      <div className="bg-gray-750 p-2 rounded">
+                        <span className="text-gray-400 block mb-1">Current</span>
+                        <span className="text-white font-semibold">{rec.currentPercentage.toFixed(1)}%</span>
                       </div>
-                      <div>
-                        <span className="text-gray-400">Target: </span>
-                        <span className="text-white">{rec.targetPercentage.toFixed(1)}%</span>
+                      <div className="bg-gray-750 p-2 rounded">
+                        <span className="text-gray-400 block mb-1">Target</span>
+                        <span className="text-white font-semibold">{rec.targetPercentage.toFixed(1)}%</span>
                       </div>
-                      <div>
-                        <span className="text-gray-400">Shares: </span>
-                        <span className="text-white">
+                      <div className="bg-gray-750 p-2 rounded">
+                        <span className="text-gray-400 block mb-1">Shares</span>
+                        <span className="text-white font-semibold">
                           {rec.action === 'buy' ? '+' : '-'}
                           {rec.sharesToTrade}
                         </span>
                       </div>
-                      <div>
-                        <span className="text-gray-400">Value: </span>
-                        <span className="text-white">${rec.valueToTrade.toLocaleString()}</span>
+                      <div className="bg-gray-750 p-2 rounded">
+                        <span className="text-gray-400 block mb-1">Value</span>
+                        <span className="text-white font-semibold">${rec.valueToTrade.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -326,22 +452,29 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
               {onRebalance && (
                 <button
                   onClick={() => onRebalance(analysis.rebalancingRecommendations)}
-                  className="mt-4 w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold"
+                  className="mt-6 w-full px-6 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 active:scale-95 text-white text-base font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-800 min-h-[44px]"
+                  aria-label="Execute portfolio rebalancing recommendations"
                 >
                   Execute Rebalancing
                 </button>
               )}
-            </div>
+            </CollapsibleSection>
           )}
 
           {!analysis.needsRebalancing && (
-            <div className="bg-green-900/30 border border-green-500 p-4 rounded-lg">
-              <div className="flex items-center gap-2 text-green-400">
-                <span className="text-2xl">✓</span>
-                <span className="font-semibold">Portfolio is well-balanced!</span>
+            <div
+              className="bg-green-900/30 border-2 border-green-500 p-4 sm:p-6 rounded-lg"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="flex items-center gap-3 text-green-400">
+                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span className="text-lg sm:text-xl font-semibold">Portfolio is well-balanced!</span>
               </div>
-              <div className="text-sm text-green-300 mt-2">
-                Your current allocation is within acceptable ranges for your risk tolerance.
+              <div className="text-sm sm:text-base text-green-300 mt-3">
+                Your current allocation is within acceptable ranges for your {riskTolerance.toLowerCase().replace('_', ' ')} risk tolerance.
               </div>
             </div>
           )}
