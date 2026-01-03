@@ -5,6 +5,8 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { rest } from 'msw';
+import { server } from '@/__tests__/mocks/server';
 import AssetAllocationPanel from '../AssetAllocationPanel';
 import { Portfolio } from '@/lib/investments/types/investment.types';
 import { RiskTolerance, AssetClass } from '@/lib/investments/types/asset-allocation.types';
@@ -28,10 +30,6 @@ jest.mock('../EfficientFrontierChart', () => ({
   EfficientFrontierChart: () => <div data-testid="efficient-frontier-chart">Chart</div>,
 }));
 
-// Mock fetch
-const mockFetch = jest.fn();
-global.fetch = mockFetch as any;
-
 const mockPortfolio: Portfolio = {
   id: 'test-portfolio',
   userId: 'user1',
@@ -46,11 +44,38 @@ const mockPortfolio: Portfolio = {
   updatedAt: new Date('2023-12-01'),
 };
 
+const mockAnalysisResponse = {
+  currentAllocations: [
+    { assetClass: AssetClass.STOCKS, percentage: 60, value: 60000 },
+    { assetClass: AssetClass.BONDS, percentage: 40, value: 40000 },
+  ],
+  diversificationScore: 75,
+  riskMetrics: {
+    portfolioVolatility: 0.15,
+    portfolioBeta: 1.1,
+    valueAtRisk: 5000,
+    maxDrawdown: 0.20,
+  },
+  performanceMetrics: {
+    expectedReturn: 0.08,
+    sharpeRatio: 1.2,
+    sortinoRatio: 1.5,
+    informationRatio: 0.8,
+  },
+  recommendedModel: {
+    name: 'Moderate Growth',
+    expectedReturn: 0.09,
+    expectedVolatility: 0.14,
+  },
+  needsRebalancing: false,
+  rebalancingRecommendations: [],
+  deviationFromTarget: 2.5,
+};
+
 describe('AssetAllocationPanel - Mobile Responsive', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
-    mockFetch.mockClear();
   });
 
   describe('Responsive Layout', () => {
@@ -83,37 +108,12 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
 
   describe('Collapsible Sections', () => {
     it('should render collapsible sections when analysis is available', async () => {
-      const mockAnalysis = {
-        currentAllocations: [
-          { assetClass: 'stocks' as any, percentage: 60, value: 60000 },
-          { assetClass: 'bonds' as any, percentage: 40, value: 40000 },
-        ],
-        diversificationScore: 75,
-        riskMetrics: {
-          portfolioVolatility: 0.15,
-          portfolioBeta: 1.1,
-          valueAtRisk: 5000,
-          maxDrawdown: 0.20,
-        },
-        performanceMetrics: {
-          expectedReturn: 0.08,
-          sharpeRatio: 1.2,
-          sortinoRatio: 1.5,
-          informationRatio: 0.8,
-        },
-        recommendedModel: {
-          name: 'Moderate Growth',
-          expectedReturn: 0.09,
-          expectedVolatility: 0.14,
-        },
-        needsRebalancing: false,
-        rebalancingRecommendations: [],
-        deviationFromTarget: 2.5,
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        json: async () => ({ success: true, data: mockAnalysis }),
-      });
+      // Setup MSW handler for this test
+      server.use(
+        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+          return res(ctx.json({ success: true, data: mockAnalysisResponse }));
+        })
+      );
 
       render(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
@@ -126,40 +126,16 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
         expect(screen.getByText('Risk Metrics')).toBeInTheDocument();
         expect(screen.getByText('Performance Metrics')).toBeInTheDocument();
         expect(screen.getByText('Efficient Frontier')).toBeInTheDocument();
-      });
+      }, { timeout: 3000 });
     });
 
     it('should toggle collapsible sections on click', async () => {
-      const mockAnalysis = {
-        currentAllocations: [
-          { assetClass: 'stocks' as any, percentage: 60, value: 60000 },
-        ],
-        diversificationScore: 75,
-        riskMetrics: {
-          portfolioVolatility: 0.15,
-          portfolioBeta: 1.1,
-          valueAtRisk: 5000,
-          maxDrawdown: 0.20,
-        },
-        performanceMetrics: {
-          expectedReturn: 0.08,
-          sharpeRatio: 1.2,
-          sortinoRatio: 1.5,
-          informationRatio: 0.8,
-        },
-        recommendedModel: {
-          name: 'Moderate Growth',
-          expectedReturn: 0.09,
-          expectedVolatility: 0.14,
-        },
-        needsRebalancing: false,
-        rebalancingRecommendations: [],
-        deviationFromTarget: 2.5,
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        json: async () => ({ success: true, data: mockAnalysis }),
-      });
+      // Setup MSW handler for this test
+      server.use(
+        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+          return res(ctx.json({ success: true, data: mockAnalysisResponse }));
+        })
+      );
 
       render(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
@@ -168,7 +144,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Risk Metrics')).toBeInTheDocument();
-      });
+      }, { timeout: 3000 });
 
       // Find the Risk Metrics collapsible button
       const riskMetricsButton = screen.getByRole('button', { name: /Risk Metrics/i });
@@ -186,36 +162,12 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
     });
 
     it('should persist collapsible section state in localStorage', async () => {
-      const mockAnalysis = {
-        currentAllocations: [
-          { assetClass: 'stocks' as any, percentage: 60, value: 60000 },
-        ],
-        diversificationScore: 75,
-        riskMetrics: {
-          portfolioVolatility: 0.15,
-          portfolioBeta: 1.1,
-          valueAtRisk: 5000,
-          maxDrawdown: 0.20,
-        },
-        performanceMetrics: {
-          expectedReturn: 0.08,
-          sharpeRatio: 1.2,
-          sortinoRatio: 1.5,
-          informationRatio: 0.8,
-        },
-        recommendedModel: {
-          name: 'Moderate Growth',
-          expectedReturn: 0.09,
-          expectedVolatility: 0.14,
-        },
-        needsRebalancing: false,
-        rebalancingRecommendations: [],
-        deviationFromTarget: 2.5,
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        json: async () => ({ success: true, data: mockAnalysis }),
-      });
+      // Setup MSW handler for this test
+      server.use(
+        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+          return res(ctx.json({ success: true, data: mockAnalysisResponse }));
+        })
+      );
 
       render(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
@@ -224,7 +176,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Risk Metrics')).toBeInTheDocument();
-      });
+      }, { timeout: 3000 });
 
       const riskMetricsButton = screen.getByRole('button', { name: /Risk Metrics/i });
 
@@ -252,7 +204,12 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
     });
 
     it('should display error messages with proper ARIA attributes', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+      // Setup MSW handler to return error
+      server.use(
+        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+          return res(ctx.status(500), ctx.json({ success: false, error: 'Network error' }));
+        })
+      );
 
       render(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
@@ -268,36 +225,12 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
     });
 
     it('should have proper color contrast for text elements', async () => {
-      const mockAnalysis = {
-        currentAllocations: [
-          { assetClass: 'stocks' as any, percentage: 60, value: 60000 },
-        ],
-        diversificationScore: 75,
-        riskMetrics: {
-          portfolioVolatility: 0.15,
-          portfolioBeta: 1.1,
-          valueAtRisk: 5000,
-          maxDrawdown: 0.20,
-        },
-        performanceMetrics: {
-          expectedReturn: 0.08,
-          sharpeRatio: 1.2,
-          sortinoRatio: 1.5,
-          informationRatio: 0.8,
-        },
-        recommendedModel: {
-          name: 'Moderate Growth',
-          expectedReturn: 0.09,
-          expectedVolatility: 0.14,
-        },
-        needsRebalancing: false,
-        rebalancingRecommendations: [],
-        deviationFromTarget: 2.5,
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        json: async () => ({ success: true, data: mockAnalysis }),
-      });
+      // Setup MSW handler for this test
+      server.use(
+        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+          return res(ctx.json({ success: true, data: mockAnalysisResponse }));
+        })
+      );
 
       render(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
@@ -309,40 +242,16 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
         const successMessage = screen.getByRole('status');
         expect(successMessage).toBeInTheDocument();
         expect(successMessage).toHaveAttribute('aria-live', 'polite');
-      });
+      }, { timeout: 3000 });
     });
 
     it('should have progress bars with proper ARIA attributes', async () => {
-      const mockAnalysis = {
-        currentAllocations: [
-          { assetClass: 'stocks' as any, percentage: 60, value: 60000 },
-        ],
-        diversificationScore: 75,
-        riskMetrics: {
-          portfolioVolatility: 0.15,
-          portfolioBeta: 1.1,
-          valueAtRisk: 5000,
-          maxDrawdown: 0.20,
-        },
-        performanceMetrics: {
-          expectedReturn: 0.08,
-          sharpeRatio: 1.2,
-          sortinoRatio: 1.5,
-          informationRatio: 0.8,
-        },
-        recommendedModel: {
-          name: 'Moderate Growth',
-          expectedReturn: 0.09,
-          expectedVolatility: 0.14,
-        },
-        needsRebalancing: false,
-        rebalancingRecommendations: [],
-        deviationFromTarget: 2.5,
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        json: async () => ({ success: true, data: mockAnalysis }),
-      });
+      // Setup MSW handler for this test
+      server.use(
+        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+          return res(ctx.json({ success: true, data: mockAnalysisResponse }));
+        })
+      );
 
       render(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
@@ -359,7 +268,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
           expect(bar).toHaveAttribute('aria-valuemax', '100');
           expect(bar).toHaveAttribute('aria-label');
         });
-      });
+      }, { timeout: 3000 });
     });
   });
 
