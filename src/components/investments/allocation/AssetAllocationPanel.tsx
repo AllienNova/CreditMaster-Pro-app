@@ -21,6 +21,8 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { PullToRefreshIndicator } from '@/components/ui/PullToRefreshIndicator';
 import { AssetAllocationSkeleton } from '@/components/ui/Skeleton';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { useOnline } from '@/hooks/useOnline';
+import { OfflineIndicator } from '@/components/ui/OfflineIndicator';
 
 // Collapsible section component with swipe navigation support
 interface CollapsibleSectionProps {
@@ -246,6 +248,18 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
     enabled: isMobile && !!analysis, // Only enable on mobile when analysis exists
   });
 
+  // Online/offline status
+  const { isOnline } = useOnline();
+  const [cachedAnalysisTimestamp, setCachedAnalysisTimestamp] = useState<Date | null>(null);
+
+  // Load cached timestamp on mount
+  useEffect(() => {
+    const cachedTimestamp = localStorage.getItem('allocation-analysis-timestamp');
+    if (cachedTimestamp) {
+      setCachedAnalysisTimestamp(new Date(cachedTimestamp));
+    }
+  }, []);
+
   // Generate efficient frontier data
   const efficientFrontierData = useMemo(() => {
     const service = getAssetAllocationService();
@@ -290,17 +304,35 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
             minPositionSize: 0.01,
           },
         }),
+        // Use cache when offline
+        cache: isOnline ? 'default' : 'force-cache',
       });
 
       const result = await response.json();
 
       if (result.success) {
         setAnalysis(result.data);
+        // Update cached timestamp when we get fresh data
+        if (isOnline) {
+          const timestamp = new Date();
+          setCachedAnalysisTimestamp(timestamp);
+          // Store in localStorage for persistence
+          localStorage.setItem('allocation-analysis-timestamp', timestamp.toISOString());
+        }
       } else {
         setError(result.error || 'Failed to analyze allocation');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to analyze allocation');
+      // If offline, try to load from cache
+      if (!isOnline) {
+        const cachedTimestamp = localStorage.getItem('allocation-analysis-timestamp');
+        if (cachedTimestamp) {
+          setCachedAnalysisTimestamp(new Date(cachedTimestamp));
+        }
+        setError('You are offline. Showing cached data if available.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to analyze allocation');
+      }
     } finally {
       setLoading(false);
     }
@@ -321,6 +353,14 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
 
   return (
     <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 bg-gray-100 dark:bg-gray-900 rounded-lg transition-colors duration-200">
+      {/* Offline Indicator */}
+      <OfflineIndicator
+        showCachedTimestamp={true}
+        cachedAt={cachedAnalysisTimestamp}
+        position="top"
+        variant="banner"
+      />
+
       {/* Header - Mobile Responsive */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">

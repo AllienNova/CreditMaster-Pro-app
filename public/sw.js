@@ -21,7 +21,11 @@ const STATIC_ASSETS = [
 // API routes to cache with network-first strategy
 const API_ROUTES = [
   '/api/profile',
-  '/api/credit-repair/score'
+  '/api/credit-repair/score',
+  '/api/investments/allocation-analysis',
+  '/api/investments/portfolio-analysis',
+  '/api/investments/market-data',
+  '/api/health'
 ];
 
 // Install event - cache static assets
