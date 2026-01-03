@@ -12,7 +12,8 @@
  * - Portfolio Analysis
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useMarketDataWebSocket } from '@/hooks/useMarketDataWebSocket';
 
 // ============================================================================
 // TYPES
@@ -63,6 +64,20 @@ export function ComprehensiveAnalysisPanel({
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [realtimePrice, setRealtimePrice] = useState<number | null>(null);
+
+  // WebSocket for real-time price updates
+  const { priceUpdate, status: wsStatus } = useMarketDataWebSocket({
+    symbol: analysis ? symbol : undefined, // Only subscribe after analysis
+    autoConnect: true,
+  });
+
+  // Update realtime price when we receive updates
+  useEffect(() => {
+    if (priceUpdate && priceUpdate.symbol === symbol.toUpperCase()) {
+      setRealtimePrice(priceUpdate.price);
+    }
+  }, [priceUpdate, symbol]);
 
   // Fetch comprehensive analysis
   const fetchAnalysis = useCallback(async () => {
@@ -196,9 +211,25 @@ export function ComprehensiveAnalysisPanel({
         {/* Input Controls */}
         <div className="flex gap-4">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-400 mb-2">
-              Stock Symbol
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-400">Stock Symbol</label>
+              {realtimePrice && (
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-xs px-2 py-1 rounded ${
+                      wsStatus === 'connected'
+                        ? 'bg-green-900/30 text-green-400'
+                        : 'bg-gray-800 text-gray-500'
+                    }`}
+                  >
+                    {wsStatus === 'connected' ? '🟢 Live' : '⚪ Offline'}
+                  </span>
+                  <span className="text-sm font-mono text-white">
+                    ${realtimePrice.toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
             <input
               type="text"
               value={symbol}
