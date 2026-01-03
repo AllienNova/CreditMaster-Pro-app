@@ -10,6 +10,7 @@ import { server } from '@/__tests__/mocks/server';
 import AssetAllocationPanel from '../AssetAllocationPanel';
 import { Portfolio } from '@/lib/investments/types/investment.types';
 import { RiskTolerance, AssetClass } from '@/lib/investments/types/asset-allocation.types';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 // Mock the AssetAllocationService
 const mockGenerateEfficientFrontier = jest.fn(() => [
@@ -29,6 +30,15 @@ jest.mock('@/lib/investments/services/AssetAllocationService', () => ({
 jest.mock('../EfficientFrontierChart', () => ({
   EfficientFrontierChart: () => <div data-testid="efficient-frontier-chart">Chart</div>,
 }));
+
+// Helper function to render with ThemeProvider
+const renderWithTheme = (component: React.ReactElement) => {
+  return render(
+    <ThemeProvider defaultTheme="dark">
+      {component}
+    </ThemeProvider>
+  );
+};
 
 const mockPortfolio: Portfolio = {
   id: 'test-portfolio',
@@ -80,7 +90,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
 
   describe('Responsive Layout', () => {
     it('should render header with mobile-friendly controls', () => {
-      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       expect(screen.getByText('Asset Allocation Analysis')).toBeInTheDocument();
       expect(screen.getByLabelText('Select Risk Tolerance Level')).toBeInTheDocument();
@@ -88,17 +98,17 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
     });
 
     it('should have minimum 44px tap targets for buttons', () => {
-      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
       const styles = window.getComputedStyle(analyzeButton);
-      
+
       // Check min-height class is applied
       expect(analyzeButton.className).toContain('min-h-[44px]');
     });
 
     it('should have proper focus indicators for accessibility', () => {
-      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       const riskSelect = screen.getByLabelText('Select Risk Tolerance Level');
       expect(riskSelect.className).toContain('focus:ring-2');
@@ -115,7 +125,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
         })
       );
 
-      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
       fireEvent.click(analyzeButton);
@@ -137,7 +147,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
         })
       );
 
-      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
       fireEvent.click(analyzeButton);
@@ -169,7 +179,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
         })
       );
 
-      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
       fireEvent.click(analyzeButton);
@@ -194,7 +204,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
 
   describe('Accessibility (WCAG 2.1 AA)', () => {
     it('should have proper ARIA labels for interactive elements', () => {
-      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       const riskSelect = screen.getByLabelText('Select Risk Tolerance Level');
       expect(riskSelect).toHaveAttribute('aria-label', 'Risk tolerance level');
@@ -211,7 +221,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
         })
       );
 
-      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
       fireEvent.click(analyzeButton);
@@ -232,7 +242,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
         })
       );
 
-      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
       fireEvent.click(analyzeButton);
@@ -253,7 +263,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
         })
       );
 
-      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
       fireEvent.click(analyzeButton);
@@ -274,7 +284,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
 
   describe('Touch-Friendly Interactions', () => {
     it('should have active states for touch feedback', () => {
-      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
       expect(analyzeButton.className).toContain('active:scale-95');
@@ -292,7 +302,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
         })
       );
 
-      render(<AssetAllocationPanel portfolio={mockPortfolio} />);
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
       fireEvent.click(analyzeButton);
