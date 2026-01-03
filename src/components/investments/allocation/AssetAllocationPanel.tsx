@@ -4,10 +4,11 @@
  * Asset Allocation Panel Component
  *
  * Displays portfolio asset allocation analysis, risk metrics, and rebalancing recommendations
- * Mobile-responsive with collapsible sections and WCAG 2.1 AA accessibility
+ * Mobile-responsive with collapsible sections, swipe navigation, and WCAG 2.1 AA accessibility
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useSwipeable } from 'react-swipeable';
 import {
   AssetAllocationAnalysis,
   RiskTolerance,
@@ -17,15 +18,30 @@ import { Portfolio } from '@/lib/investments/types/investment.types';
 import { EfficientFrontierChart } from './EfficientFrontierChart';
 import { getAssetAllocationService } from '@/lib/investments/services/AssetAllocationService';
 
-// Collapsible section component
+// Collapsible section component with swipe navigation support
 interface CollapsibleSectionProps {
   title: string;
   children: React.ReactNode;
   defaultExpanded?: boolean;
   sectionId: string;
+  isActive?: boolean;
+  onSwipeLeft?: () => void;
+  onSwipeRight?: () => void;
+  showSwipeIndicators?: boolean;
+  sectionRef?: (el: HTMLDivElement | null) => void;
 }
 
-function CollapsibleSection({ title, children, defaultExpanded = false, sectionId }: CollapsibleSectionProps) {
+function CollapsibleSection({
+  title,
+  children,
+  defaultExpanded = false,
+  sectionId,
+  isActive = false,
+  onSwipeLeft,
+  onSwipeRight,
+  showSwipeIndicators = false,
+  sectionRef,
+}: CollapsibleSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   // Persist expansion state in localStorage
@@ -42,15 +58,61 @@ function CollapsibleSection({ title, children, defaultExpanded = false, sectionI
     localStorage.setItem(`allocation-section-${sectionId}`, String(newState));
   };
 
+  // Setup swipe handlers
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      if (onSwipeLeft && isExpanded) {
+        onSwipeLeft();
+      }
+    },
+    onSwipedRight: () => {
+      if (onSwipeRight && isExpanded) {
+        onSwipeRight();
+      }
+    },
+    trackMouse: false, // Only track touch events
+    preventScrollOnSwipe: false,
+    delta: 50, // Minimum swipe distance in pixels
+  });
+
+  // Combine refs from swipeHandlers and sectionRef
+  const refPassthrough = (el: HTMLDivElement | null) => {
+    // Call swipeHandlers ref
+    swipeHandlers.ref(el);
+    // Call sectionRef
+    if (sectionRef) {
+      sectionRef(el);
+    }
+  };
+
   return (
-    <div className="bg-gray-800 rounded-lg overflow-hidden">
+    <div
+      {...swipeHandlers}
+      ref={refPassthrough}
+      className={`bg-gray-800 rounded-lg overflow-hidden transition-all duration-300 ${
+        isActive ? 'ring-2 ring-blue-500 ring-opacity-50' : ''
+      }`}
+    >
       <button
         onClick={toggleExpanded}
         className="w-full px-4 py-4 sm:px-6 sm:py-5 flex items-center justify-between text-left hover:bg-gray-750 active:bg-gray-700 transition-colors duration-200 min-h-[44px]"
         aria-expanded={isExpanded}
         aria-controls={`section-${sectionId}`}
       >
-        <h3 className="text-lg sm:text-xl font-semibold text-white">{title}</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg sm:text-xl font-semibold text-white">{title}</h3>
+          {showSwipeIndicators && isExpanded && (
+            <div className="hidden sm:flex items-center gap-1 text-xs text-gray-400">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>Swipe</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          )}
+        </div>
         <svg
           className={`w-6 h-6 text-gray-400 transition-transform duration-300 ${
             isExpanded ? 'rotate-180' : ''
@@ -86,6 +148,22 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [activeSection, setActiveSection] = useState<number>(0);
+
+  // Section refs for smooth scrolling
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Define swipeable sections (only the main analysis sections)
+  const swipeableSections = useMemo(() => {
+    if (!analysis) return [];
+    return [
+      { id: 'current-allocation', title: 'Current Allocation', index: 0 },
+      { id: 'diversification', title: 'Diversification Score', index: 1 },
+      { id: 'risk-metrics', title: 'Risk Metrics', index: 2 },
+      { id: 'performance-metrics', title: 'Performance Metrics', index: 3 },
+      { id: 'efficient-frontier', title: 'Efficient Frontier', index: 4 },
+    ];
+  }, [analysis]);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -97,6 +175,51 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Swipe navigation handlers
+  const handleSwipeLeft = () => {
+    if (activeSection < swipeableSections.length - 1) {
+      const nextSection = activeSection + 1;
+      setActiveSection(nextSection);
+      scrollToSection(nextSection);
+    }
+  };
+
+  const handleSwipeRight = () => {
+    if (activeSection > 0) {
+      const prevSection = activeSection - 1;
+      setActiveSection(prevSection);
+      scrollToSection(prevSection);
+    }
+  };
+
+  const scrollToSection = (index: number) => {
+    const sectionElement = sectionRefs.current[index];
+    if (sectionElement) {
+      sectionElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  };
+
+  // Keyboard navigation for accessibility
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isMobile || !analysis) return;
+
+      if (e.key === 'ArrowLeft' && activeSection > 0) {
+        e.preventDefault();
+        handleSwipeRight();
+      } else if (e.key === 'ArrowRight' && activeSection < swipeableSections.length - 1) {
+        e.preventDefault();
+        handleSwipeLeft();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobile, analysis, activeSection, swipeableSections.length]);
 
   // Generate efficient frontier data
   const efficientFrontierData = useMemo(() => {
@@ -219,8 +342,37 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
 
       {analysis && (
         <div className="space-y-4 sm:space-y-6">
+          {/* Swipe Navigation Indicator (Mobile Only) */}
+          {isMobile && swipeableSections.length > 0 && (
+            <div className="flex items-center justify-center gap-2 py-2">
+              {swipeableSections.map((section, index) => (
+                <button
+                  key={section.id}
+                  onClick={() => {
+                    setActiveSection(index);
+                    scrollToSection(index);
+                  }}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    activeSection === index ? 'w-8 bg-blue-500' : 'w-2 bg-gray-600'
+                  }`}
+                  aria-label={`Navigate to ${section.title}`}
+                  aria-current={activeSection === index ? 'true' : 'false'}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Current Allocation - Collapsible */}
-          <CollapsibleSection title="Current Allocation" defaultExpanded={true} sectionId="current-allocation">
+          <CollapsibleSection
+            title="Current Allocation"
+            defaultExpanded={true}
+            sectionId="current-allocation"
+            isActive={isMobile && activeSection === 0}
+            onSwipeLeft={handleSwipeLeft}
+            onSwipeRight={handleSwipeRight}
+            showSwipeIndicators={isMobile}
+            sectionRef={(el) => (sectionRefs.current[0] = el)}
+          >
             <div className="space-y-3">
               {analysis.currentAllocations.map((allocation) => (
                 <div key={allocation.assetClass} className="space-y-2">
@@ -252,7 +404,16 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
           </CollapsibleSection>
 
           {/* Diversification Score - Collapsible */}
-          <CollapsibleSection title="Diversification Score" defaultExpanded={true} sectionId="diversification">
+          <CollapsibleSection
+            title="Diversification Score"
+            defaultExpanded={true}
+            sectionId="diversification"
+            isActive={isMobile && activeSection === 1}
+            onSwipeLeft={handleSwipeLeft}
+            onSwipeRight={handleSwipeRight}
+            showSwipeIndicators={isMobile}
+            sectionRef={(el) => (sectionRefs.current[1] = el)}
+          >
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <div className="flex-1 w-full">
                 <div className="w-full bg-gray-700 rounded-full h-4 sm:h-6">
@@ -287,7 +448,16 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
           </CollapsibleSection>
 
           {/* Risk Metrics - Collapsible */}
-          <CollapsibleSection title="Risk Metrics" defaultExpanded={false} sectionId="risk-metrics">
+          <CollapsibleSection
+            title="Risk Metrics"
+            defaultExpanded={false}
+            sectionId="risk-metrics"
+            isActive={isMobile && activeSection === 2}
+            onSwipeLeft={handleSwipeLeft}
+            onSwipeRight={handleSwipeRight}
+            showSwipeIndicators={isMobile}
+            sectionRef={(el) => (sectionRefs.current[2] = el)}
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <div className="bg-gray-750 p-4 rounded-lg">
                 <div className="text-sm text-gray-400 mb-1">Volatility</div>
@@ -321,7 +491,16 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
           </CollapsibleSection>
 
           {/* Performance Metrics - Collapsible */}
-          <CollapsibleSection title="Performance Metrics" defaultExpanded={false} sectionId="performance-metrics">
+          <CollapsibleSection
+            title="Performance Metrics"
+            defaultExpanded={false}
+            sectionId="performance-metrics"
+            isActive={isMobile && activeSection === 3}
+            onSwipeLeft={handleSwipeLeft}
+            onSwipeRight={handleSwipeRight}
+            showSwipeIndicators={isMobile}
+            sectionRef={(el) => (sectionRefs.current[3] = el)}
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               <div className="bg-gray-750 p-4 rounded-lg">
                 <div className="text-sm text-gray-400 mb-1">Expected Return</div>
@@ -355,7 +534,16 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
           </CollapsibleSection>
 
           {/* Efficient Frontier Chart - Collapsible */}
-          <CollapsibleSection title="Efficient Frontier" defaultExpanded={false} sectionId="efficient-frontier">
+          <CollapsibleSection
+            title="Efficient Frontier"
+            defaultExpanded={false}
+            sectionId="efficient-frontier"
+            isActive={isMobile && activeSection === 4}
+            onSwipeLeft={handleSwipeLeft}
+            onSwipeRight={handleSwipeRight}
+            showSwipeIndicators={isMobile}
+            sectionRef={(el) => (sectionRefs.current[4] = el)}
+          >
             <div className="overflow-x-auto -mx-4 sm:mx-0">
               <div className="min-w-[320px]">
                 <EfficientFrontierChart
