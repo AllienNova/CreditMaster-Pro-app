@@ -9,6 +9,7 @@ import { jwtValidation } from '@/lib/auth/jwt-validation';
 import { z } from 'zod';
 import { getInvestmentAnalysisEngine } from '@/lib/investments/services/InvestmentAnalysisEngine';
 import { getMarketDataService } from '@/lib/investments/services/MarketDataService';
+import { getAnalysisCacheService } from '@/lib/investments/services/AnalysisCacheService';
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -66,6 +67,23 @@ export async function POST(request: NextRequest) {
 
     const { symbol, timeframe, userProfile, customWeights } = validationResult.data;
 
+    // Check cache first
+    const cacheService = getAnalysisCacheService();
+    const cacheKey = { symbol, timeframe, userProfile, customWeights };
+    const cachedAnalysis = cacheService.get('comprehensive-analysis', cacheKey);
+
+    if (cachedAnalysis) {
+      return NextResponse.json({
+        success: true,
+        data: cachedAnalysis,
+        meta: {
+          cached: true,
+          processingTime: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
     // Get market data service
     const marketDataService = getMarketDataService();
 
@@ -110,6 +128,9 @@ export async function POST(request: NextRequest) {
       }
     );
 
+    // Cache the result (5 minutes TTL)
+    cacheService.set('comprehensive-analysis', cacheKey, analysis, 5 * 60 * 1000);
+
     const processingTime = Date.now() - startTime;
 
     return NextResponse.json({
@@ -120,6 +141,7 @@ export async function POST(request: NextRequest) {
         analyzedAt: analysis.analyzedAt.toISOString(),
       },
       meta: {
+        cached: false,
         processingTime: `${processingTime}ms`,
         dataPoints: historicalData.length,
         timestamp: new Date().toISOString(),

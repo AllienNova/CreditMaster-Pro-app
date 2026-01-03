@@ -9,6 +9,7 @@ import { jwtValidation } from '@/lib/auth/jwt-validation';
 import { z } from 'zod';
 import { getInvestmentAnalysisEngine } from '@/lib/investments/services/InvestmentAnalysisEngine';
 import { getMarketDataService } from '@/lib/investments/services/MarketDataService';
+import { getAnalysisCacheService } from '@/lib/investments/services/AnalysisCacheService';
 import type { PortfolioHolding } from '@/lib/investments/services/PortfolioAnalysisService';
 
 // ============================================================================
@@ -70,6 +71,23 @@ export async function POST(request: NextRequest) {
     }
 
     const { portfolioId, holdings, timeframe, userProfile } = validationResult.data;
+
+    // Check cache first
+    const cacheService = getAnalysisCacheService();
+    const cacheKey = { portfolioId, holdings, timeframe, userProfile };
+    const cachedAnalysis = cacheService.get('portfolio-analysis', cacheKey);
+
+    if (cachedAnalysis) {
+      return NextResponse.json({
+        success: true,
+        data: cachedAnalysis,
+        meta: {
+          cached: true,
+          processingTime: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
 
     // Get market data service
     const marketDataService = getMarketDataService();
@@ -141,14 +159,20 @@ export async function POST(request: NextRequest) {
       };
     });
 
+    const responseData = {
+      ...analysis,
+      analyzedAt: analysis.analyzedAt.toISOString(),
+      holdingAnalyses: holdingAnalysesObject,
+    };
+
+    // Cache the result (3 minutes TTL for portfolio analysis)
+    cacheService.set('portfolio-analysis', cacheKey, responseData, 3 * 60 * 1000);
+
     return NextResponse.json({
       success: true,
-      data: {
-        ...analysis,
-        analyzedAt: analysis.analyzedAt.toISOString(),
-        holdingAnalyses: holdingAnalysesObject,
-      },
+      data: responseData,
       meta: {
+        cached: false,
         processingTime: `${processingTime}ms`,
         holdingsAnalyzed: updatedHoldings.length,
         timestamp: new Date().toISOString(),
