@@ -370,6 +370,84 @@ export class AssetAllocationService {
       informationRatio: avgReturn / volatility,
     };
   }
+
+  /**
+   * Generate Efficient Frontier Points
+   *
+   * Creates a series of optimal portfolios along the efficient frontier
+   * by varying the risk tolerance from very conservative to very aggressive
+   *
+   * @param numPoints - Number of points to generate (default: 20)
+   * @returns Array of efficient frontier points with risk/return metrics
+   */
+  generateEfficientFrontier(numPoints: number = 20): Array<{
+    volatility: number;
+    expectedReturn: number;
+    sharpeRatio: number;
+    label: string;
+    isOptimal: boolean;
+  }> {
+    const points: Array<{
+      volatility: number;
+      expectedReturn: number;
+      sharpeRatio: number;
+      label: string;
+      isOptimal: boolean;
+    }> = [];
+
+    // Generate points by interpolating between risk tolerance levels
+    const riskLevels = [
+      RiskTolerance.VERY_CONSERVATIVE,
+      RiskTolerance.CONSERVATIVE,
+      RiskTolerance.MODERATE,
+      RiskTolerance.AGGRESSIVE,
+      RiskTolerance.VERY_AGGRESSIVE,
+    ];
+
+    // Add the 5 main risk tolerance models
+    riskLevels.forEach((riskLevel) => {
+      const model = this.getAllocationModel(riskLevel);
+      points.push({
+        volatility: model.expectedVolatility * 100, // Convert to percentage
+        expectedReturn: model.expectedReturn * 100, // Convert to percentage
+        sharpeRatio: model.sharpeRatio,
+        label: model.name,
+        isOptimal: true,
+      });
+    });
+
+    // Generate intermediate points by interpolation
+    const additionalPoints = numPoints - 5;
+    if (additionalPoints > 0) {
+      const step = 4 / (additionalPoints + 1); // 4 intervals between 5 points
+
+      for (let i = 1; i <= additionalPoints; i++) {
+        const position = i * step;
+        const lowerIndex = Math.floor(position);
+        const upperIndex = Math.ceil(position);
+        const fraction = position - lowerIndex;
+
+        const lowerPoint = points[lowerIndex];
+        const upperPoint = points[Math.min(upperIndex, points.length - 1)];
+
+        // Linear interpolation
+        const interpolatedVolatility = lowerPoint.volatility + (upperPoint.volatility - lowerPoint.volatility) * fraction;
+        const interpolatedReturn = lowerPoint.expectedReturn + (upperPoint.expectedReturn - lowerPoint.expectedReturn) * fraction;
+        const interpolatedSharpe = lowerPoint.sharpeRatio + (upperPoint.sharpeRatio - lowerPoint.sharpeRatio) * fraction;
+
+        points.push({
+          volatility: interpolatedVolatility,
+          expectedReturn: interpolatedReturn,
+          sharpeRatio: interpolatedSharpe,
+          label: `Portfolio ${i + 5}`,
+          isOptimal: true,
+        });
+      }
+    }
+
+    // Sort by volatility for proper curve rendering
+    return points.sort((a, b) => a.volatility - b.volatility);
+  }
 }
 
 // Singleton instance

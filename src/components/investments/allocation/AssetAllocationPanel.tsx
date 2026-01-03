@@ -6,13 +6,15 @@
  * Displays portfolio asset allocation analysis, risk metrics, and rebalancing recommendations
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   AssetAllocationAnalysis,
   RiskTolerance,
   AssetClass,
 } from '@/lib/investments/types/asset-allocation.types';
 import { Portfolio } from '@/lib/investments/types/investment.types';
+import { EfficientFrontierChart } from './EfficientFrontierChart';
+import { getAssetAllocationService } from '@/lib/investments/services/AssetAllocationService';
 
 interface AssetAllocationPanelProps {
   portfolio: Portfolio;
@@ -24,6 +26,34 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
   const [riskTolerance, setRiskTolerance] = useState<RiskTolerance>(RiskTolerance.MODERATE);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Generate efficient frontier data
+  const efficientFrontierData = useMemo(() => {
+    const service = getAssetAllocationService();
+    return service.generateEfficientFrontier(20);
+  }, []);
+
+  // Calculate current portfolio position for the chart
+  const currentPortfolioPosition = useMemo(() => {
+    if (!analysis) return undefined;
+
+    return {
+      volatility: analysis.riskMetrics.portfolioVolatility * 100,
+      expectedReturn: analysis.performanceMetrics.expectedReturn * 100,
+      label: 'Current Portfolio',
+    };
+  }, [analysis]);
+
+  // Calculate recommended portfolio position for the chart
+  const recommendedPortfolioPosition = useMemo(() => {
+    if (!analysis) return undefined;
+
+    return {
+      volatility: analysis.recommendedModel.expectedVolatility * 100,
+      expectedReturn: analysis.recommendedModel.expectedReturn * 100,
+      label: `Recommended (${analysis.recommendedModel.name})`,
+    };
+  }, [analysis]);
 
   const analyzeAllocation = async () => {
     setLoading(true);
@@ -214,6 +244,16 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Efficient Frontier Chart */}
+          <div className="bg-gray-800 p-6 rounded-lg">
+            <EfficientFrontierChart
+              frontierPoints={efficientFrontierData}
+              currentPortfolio={currentPortfolioPosition}
+              recommendedPortfolio={recommendedPortfolioPosition}
+              height={450}
+            />
           </div>
 
           {/* Rebalancing Recommendations */}
