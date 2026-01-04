@@ -23,6 +23,8 @@ import { AssetAllocationSkeleton } from '@/components/ui/Skeleton';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useOnline } from '@/hooks/useOnline';
 import { OfflineIndicator } from '@/components/ui/OfflineIndicator';
+import { useOfflineQueue } from '@/hooks/useOfflineQueue';
+import { OfflineQueueStatus } from '@/components/ui/OfflineQueueStatus';
 
 // Collapsible section component with swipe navigation support
 interface CollapsibleSectionProps {
@@ -252,6 +254,9 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
   const { isOnline } = useOnline();
   const [cachedAnalysisTimestamp, setCachedAnalysisTimestamp] = useState<Date | null>(null);
 
+  // Offline queue
+  const { addToQueue, pendingCount } = useOfflineQueue();
+
   // Load cached timestamp on mount
   useEffect(() => {
     const cachedTimestamp = localStorage.getItem('allocation-analysis-timestamp');
@@ -291,6 +296,34 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
   const analyzeAllocation = async () => {
     setLoading(true);
     setError(null);
+
+    // If offline, queue the action instead of executing it
+    if (!isOnline) {
+      try {
+        addToQueue({
+          type: 'analysis',
+          endpoint: '/api/investments/allocation-analysis',
+          method: 'POST',
+          data: {
+            portfolio,
+            riskTolerance,
+            constraints: {
+              transactionCostPerTrade: 10,
+              minPositionSize: 0.01,
+            },
+          },
+          maxRetries: 3,
+        });
+
+        setError('You are offline. Analysis request queued for when you reconnect.');
+        setLoading(false);
+        return;
+      } catch (err) {
+        setError('Failed to queue analysis request');
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       const response = await fetch('/api/investments/allocation-analysis', {
@@ -360,6 +393,11 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
         position="top"
         variant="banner"
       />
+
+      {/* Offline Queue Status */}
+      {pendingCount > 0 && (
+        <OfflineQueueStatus variant="compact" className="mb-2" />
+      )}
 
       {/* Header - Mobile Responsive */}
       <div className="space-y-4">

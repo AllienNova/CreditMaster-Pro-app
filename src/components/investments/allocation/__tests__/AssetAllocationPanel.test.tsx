@@ -383,7 +383,7 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
       expect(localStorage.getItem('allocation-analysis-timestamp')).toBe(cachedTimestamp);
     });
 
-    it('should use force-cache when offline', async () => {
+    it('should queue action when offline', async () => {
       mockUseOnlineReturn = {
         isOnline: false,
         wasOffline: true,
@@ -391,46 +391,6 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
         lastOfflineAt: new Date(),
         checkConnection: jest.fn(),
       };
-
-      const fetchSpy = jest.spyOn(global, 'fetch');
-
-      server.use(
-        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
-          return res(ctx.json({ success: true, data: mockAnalysisResponse }));
-        })
-      );
-
-      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
-
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
-      fireEvent.click(analyzeButton);
-
-      await waitFor(() => {
-        expect(fetchSpy).toHaveBeenCalledWith(
-          expect.stringContaining('/api/investments/allocation-analysis'),
-          expect.objectContaining({
-            cache: 'force-cache',
-          })
-        );
-      });
-
-      fetchSpy.mockRestore();
-    });
-
-    it('should show offline error message when request fails offline', async () => {
-      mockUseOnlineReturn = {
-        isOnline: false,
-        wasOffline: true,
-        lastOnlineAt: null,
-        lastOfflineAt: new Date(),
-        checkConnection: jest.fn(),
-      };
-
-      server.use(
-        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
-          return res.networkError('Network error');
-        })
-      );
 
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
@@ -439,7 +399,30 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/You are offline/i)).toBeInTheDocument();
-        expect(screen.getByText(/Showing cached data if available/i)).toBeInTheDocument();
+        expect(screen.getByText(/Analysis request queued/i)).toBeInTheDocument();
+      });
+
+      // Should show pending action in queue status
+      expect(screen.getByText(/1 pending action/i)).toBeInTheDocument();
+    });
+
+    it('should show queued message when offline', async () => {
+      mockUseOnlineReturn = {
+        isOnline: false,
+        wasOffline: true,
+        lastOnlineAt: null,
+        lastOfflineAt: new Date(),
+        checkConnection: jest.fn(),
+      };
+
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
+
+      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      fireEvent.click(analyzeButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/You are offline/i)).toBeInTheDocument();
+        expect(screen.getByText(/Analysis request queued for when you reconnect/i)).toBeInTheDocument();
       });
     });
 
