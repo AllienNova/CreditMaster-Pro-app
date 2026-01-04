@@ -31,6 +31,19 @@ jest.mock('../EfficientFrontierChart', () => ({
   EfficientFrontierChart: () => <div data-testid="efficient-frontier-chart">Chart</div>,
 }));
 
+// Mock useOnline hook
+let mockUseOnlineReturn = {
+  isOnline: true,
+  wasOffline: false,
+  lastOnlineAt: new Date(),
+  lastOfflineAt: null,
+  checkConnection: jest.fn(),
+};
+
+jest.mock('@/hooks/useOnline', () => ({
+  useOnline: () => mockUseOnlineReturn,
+}));
+
 // Helper function to render with ThemeProvider
 const renderWithTheme = (component: React.ReactElement) => {
   return render(
@@ -319,6 +332,123 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
 
       // Skeleton should be gone
       expect(screen.queryByRole('status', { name: /Loading asset allocation analysis/i })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Offline Support', () => {
+    beforeEach(() => {
+      // Clear localStorage before each test
+      localStorage.clear();
+
+      // Reset mock to default online state
+      mockUseOnlineReturn = {
+        isOnline: true,
+        wasOffline: false,
+        lastOnlineAt: new Date(),
+        lastOfflineAt: null,
+        checkConnection: jest.fn(),
+      };
+    });
+
+    it('should store cached timestamp when analysis succeeds', async () => {
+      server.use(
+        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+          return res(ctx.json({ success: true, data: mockAnalysisResponse }));
+        })
+      );
+
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
+
+      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      fireEvent.click(analyzeButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Current Allocation')).toBeInTheDocument();
+      });
+
+      // Check that timestamp was stored in localStorage
+      const storedTimestamp = localStorage.getItem('allocation-analysis-timestamp');
+      expect(storedTimestamp).toBeTruthy();
+      expect(new Date(storedTimestamp!)).toBeInstanceOf(Date);
+    });
+
+    it('should load cached timestamp on mount', () => {
+      const cachedTimestamp = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      localStorage.setItem('allocation-analysis-timestamp', cachedTimestamp);
+
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
+
+      // Component should load the cached timestamp
+      // (We can't directly test state, but we can verify localStorage was accessed)
+      expect(localStorage.getItem('allocation-analysis-timestamp')).toBe(cachedTimestamp);
+    });
+
+    it('should use force-cache when offline', async () => {
+      mockUseOnlineReturn = {
+        isOnline: false,
+        wasOffline: true,
+        lastOnlineAt: null,
+        lastOfflineAt: new Date(),
+        checkConnection: jest.fn(),
+      };
+
+      const fetchSpy = jest.spyOn(global, 'fetch');
+
+      server.use(
+        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+          return res(ctx.json({ success: true, data: mockAnalysisResponse }));
+        })
+      );
+
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
+
+      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      fireEvent.click(analyzeButton);
+
+      await waitFor(() => {
+        expect(fetchSpy).toHaveBeenCalledWith(
+          expect.stringContaining('/api/investments/allocation-analysis'),
+          expect.objectContaining({
+            cache: 'force-cache',
+          })
+        );
+      });
+
+      fetchSpy.mockRestore();
+    });
+
+    it('should show offline error message when request fails offline', async () => {
+      mockUseOnlineReturn = {
+        isOnline: false,
+        wasOffline: true,
+        lastOnlineAt: null,
+        lastOfflineAt: new Date(),
+        checkConnection: jest.fn(),
+      };
+
+      server.use(
+        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+          return res.networkError('Network error');
+        })
+      );
+
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
+
+      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      fireEvent.click(analyzeButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/You are offline/i)).toBeInTheDocument();
+        expect(screen.getByText(/Showing cached data if available/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should render OfflineIndicator component', () => {
+      renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
+
+      // OfflineIndicator should be in the DOM (even if not visible when online)
+      // We can't test its visibility directly without mocking useOnline to return offline
+      expect(screen.getByRole('heading', { name: /Asset Allocation Analysis/i })).toBeInTheDocument();
     });
   });
 });

@@ -20,12 +20,43 @@ const STATIC_ASSETS = [
 
 // API routes to cache with network-first strategy
 const API_ROUTES = [
+  // User & Profile
   '/api/profile',
+  '/api/health',
+
+  // Credit & Financial
   '/api/credit-repair/score',
+  '/api/credit-monitoring/history',
+  '/api/financial/health-score',
+  '/api/financial/ai-insights',
+  '/api/financial/spending/insights',
+  '/api/financial/spending/ai-insights',
+  '/api/financial/budget/ai-optimize',
+  '/api/financial/goals/ai-optimize',
+  '/api/financial/bills/ai-optimize',
+  '/api/financial/credit/ai-insights',
+  '/api/financial/disputes/ai-strategy',
+  '/api/financial/credit-builder/ai-roadmap',
+  '/api/financial/credit-repair/ai-strategy',
+
+  // Investment APIs
   '/api/investments/allocation-analysis',
   '/api/investments/portfolio-analysis',
+  '/api/investments/comprehensive-analysis',
+  '/api/investments/portfolio',
+  '/api/investments/holdings',
+  '/api/investments/analyze',
+  '/api/investments/recommendations',
+  '/api/investments/alerts',
+  '/api/investments/patterns',
+  '/api/investments/signals',
   '/api/investments/market-data',
-  '/api/health'
+  '/api/financial/investments/ai-insights',
+
+  // Real-time & Monitoring
+  '/api/ws/market-data',
+  '/api/monitoring/health',
+  '/api/monitoring/history'
 ];
 
 // Install event - cache static assets
