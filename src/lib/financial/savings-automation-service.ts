@@ -49,7 +49,7 @@ class SavingsAutomationService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching savings rules:', error);
+      // SavingsAutomationService error: Error fetching savings rules
       return [];
     }
 
@@ -192,7 +192,7 @@ class SavingsAutomationService {
       .order('priority', { ascending: true });
 
     if (error) {
-      console.error('Error fetching savings goals:', error);
+      // SavingsAutomationService error: Error fetching savings goals
       return [];
     }
 
@@ -597,7 +597,7 @@ class SavingsAutomationService {
     if (summary.totalSaved >= 1000 && summary.totalSaved < 1100) {
       insights.push({
         type: 'achievement',
-        title: '🎉 $1,000 Saved!',
+        title: '$1,000 Saved!',
         description:
           "Congratulations! You've saved over $1,000 with automation.",
         actionable: false,

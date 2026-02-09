@@ -18,6 +18,7 @@ import { ChartType } from '@/lib/investments/types/charting.types';
 import { Timeframe } from '@/lib/investments/types/investment.types';
 import { getMarketDataService, RealtimeUpdate } from '@/lib/investments/services/MarketDataService';
 import { CandleData } from '@/lib/investments/types/charting.types';
+import { Icon } from '@/components/ui/Icon';
 
 // ============================================================================
 // TYPES
@@ -52,10 +53,10 @@ const TIMEFRAMES: { value: Timeframe; label: string }[] = [
 ];
 
 const CHART_TYPES: { value: ChartType; label: string; icon: string }[] = [
-  { value: 'candlestick', label: 'Candles', icon: '📊' },
-  { value: 'line', label: 'Line', icon: '📈' },
-  { value: 'area', label: 'Area', icon: '📉' },
-  { value: 'heikin_ashi', label: 'Heikin Ashi', icon: '🔥' },
+  { value: 'candlestick', label: 'Candles', icon: "sparkles" },
+  { value: 'line', label: 'Line', icon: "sparkles" },
+  { value: 'area', label: 'Area', icon: "sparkles" },
+  { value: 'heikin_ashi', label: 'Heikin Ashi', icon: "sparkles" },
 ];
 
 const AVAILABLE_INDICATORS: { type: IndicatorConfig['type']; label: string; defaultPeriod: number }[] = [
@@ -265,7 +266,7 @@ function ChartHeader({ symbol, lastPrice, priceChange, crosshairData }: ChartHea
       </div>
 
       {crosshairData && (
-        <div className="flex items-center gap-4 text-sm text-gray-400">
+        <div className="flex items-center gap-4 text-sm text-gray-400 dark:text-slate-500">
           <span>O: ${crosshairData.open?.toFixed(2)}</span>
           <span>H: ${crosshairData.high?.toFixed(2)}</span>
           <span>L: ${crosshairData.low?.toFixed(2)}</span>
@@ -307,7 +308,7 @@ function ChartToolbar({
             className={`px-3 py-1 text-sm rounded transition-colors ${
               timeframe === tf.value
                 ? 'bg-blue-600 text-white'
-                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                : 'text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-700'
             }`}
           >
             {tf.label}
@@ -325,7 +326,7 @@ function ChartToolbar({
             className={`px-2 py-1 text-sm rounded transition-colors ${
               chartType === ct.value
                 ? 'bg-blue-600 text-white'
-                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                : 'text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-700'
             }`}
           >
             {ct.icon}
@@ -340,10 +341,10 @@ function ChartToolbar({
           className={`px-3 py-1 text-sm rounded transition-colors ${
             viewMode === 'advanced'
               ? 'bg-purple-600 text-white'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700'
+              : 'text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-700'
           }`}
         >
-          {viewMode === 'advanced' ? '📊 Advanced' : '📈 Basic'}
+          {viewMode === 'advanced' ? 'Advanced' : 'Basic'}
         </button>
       </div>
     </div>
@@ -359,7 +360,7 @@ interface IndicatorPanelProps {
 function IndicatorPanel({ indicators, availableIndicators, onToggle }: IndicatorPanelProps) {
   return (
     <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/30 border-b border-gray-700 overflow-x-auto">
-      <span className="text-sm text-gray-500 whitespace-nowrap">Indicators:</span>
+      <span className="text-sm text-gray-500 dark:text-slate-400 whitespace-nowrap">Indicators:</span>
       {availableIndicators.map(ind => {
         const isActive = indicators.some(i => i.type === ind.type);
         return (
@@ -369,7 +370,7 @@ function IndicatorPanel({ indicators, availableIndicators, onToggle }: Indicator
             className={`px-3 py-1 text-sm rounded whitespace-nowrap transition-colors ${
               isActive
                 ? 'bg-green-600 text-white'
-                : 'bg-gray-700 text-gray-400 hover:text-white hover:bg-gray-600'
+                : 'bg-gray-700 text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-600'
             }`}
           >
             {ind.label}

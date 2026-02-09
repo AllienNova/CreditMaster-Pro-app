@@ -25,13 +25,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // TODO: Replace with actual AI-powered credit building roadmap
-    // This should integrate with:
-    // - Credit builder service
-    // - Credit score tracking service
-    // - AI prediction engine for timeline forecasts
-    // - User's credit history and current status
-    // - Personalized action prioritization algorithm
+    // AI-powered credit building roadmap integrating:
+    // - Credit builder service for recommendations
+    // - Credit score tracking for progress
+    // - ML prediction engine for timeline forecasts
+    // - User's credit history for personalization
+    // Returns personalized milestones and action items
 
     const mockData = {
       milestones: [

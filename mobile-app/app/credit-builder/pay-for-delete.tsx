@@ -1,5 +1,5 @@
 /**
- * CPFI Pay-for-Delete Screen
+ * Fynvita Pay-for-Delete Screen
  * Negotiate collection removal
  */
 

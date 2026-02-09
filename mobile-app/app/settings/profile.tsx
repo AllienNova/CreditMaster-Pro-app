@@ -1,5 +1,5 @@
 /**
- * CPFI Profile Settings Screen
+ * Fynvita Profile Settings Screen
  * Edit user profile information
  */
 

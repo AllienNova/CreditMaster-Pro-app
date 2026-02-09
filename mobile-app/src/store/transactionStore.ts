@@ -1,5 +1,5 @@
 /**
- * CPFI Transaction Store
+ * Fynvita Transaction Store
  * Manages financial transactions and categories
  * Split from financialStore for better modularity
  */

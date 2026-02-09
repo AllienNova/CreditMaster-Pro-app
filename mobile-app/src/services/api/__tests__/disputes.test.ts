@@ -1,5 +1,5 @@
 /**
- * CPFI Disputes API Service Tests
+ * Fynvita Disputes API Service Tests
  */
 
 import { disputeApi, disputeLetterApi, disputeResourcesApi } from '../disputes';

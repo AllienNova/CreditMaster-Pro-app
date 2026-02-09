@@ -1,6 +1,6 @@
 /**
  * Document Management Service
- * 
+ *
  * Handles document storage and management:
  * - File uploads (S3)
  * - Document metadata
@@ -8,7 +8,13 @@
  * - Document categorization
  */
 
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Initialize S3 client
@@ -20,9 +26,9 @@ const s3Client = new S3Client({
   },
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'CPFI-pro-documents';
+const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'fynvita-documents';
 
-export type DocumentType = 
+export type DocumentType =
   | 'credit_report'
   | 'dispute_letter'
   | 'evidence'
@@ -52,7 +58,7 @@ export interface Document {
  */
 class DocumentService {
   private documents: Map<string, Document> = new Map();
-  
+
   /**
    * Upload document to S3
    */
@@ -67,7 +73,7 @@ class DocumentService {
     const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const fileExtension = fileName.split('.').pop();
     const s3Key = `users/${userId}/${documentType}/${documentId}.${fileExtension}`;
-    
+
     // Upload to S3
     const command = new PutObjectCommand({
       Bucket: BUCKET_NAME,
@@ -82,17 +88,17 @@ class DocumentService {
         ...metadata,
       },
     });
-    
+
     await s3Client.send(command);
-    
+
     // Generate presigned URL (valid for 7 days)
     const getCommand = new GetObjectCommand({
       Bucket: BUCKET_NAME,
       Key: s3Key,
     });
-    
+
     const url = await getSignedUrl(s3Client, getCommand, { expiresIn: 604800 }); // 7 days
-    
+
     // Create document record
     const document: Document = {
       id: documentId,
@@ -107,74 +113,81 @@ class DocumentService {
       uploadedAt: new Date(),
       metadata,
     };
-    
+
     this.documents.set(documentId, document);
     return document;
   }
-  
+
   /**
    * Get document by ID
    */
   async getDocument(documentId: string): Promise<Document | undefined> {
     const document = this.documents.get(documentId);
-    
+
     if (document) {
       // Refresh URL if needed
       const now = new Date();
       const uploadedTime = document.uploadedAt.getTime();
-      const daysSinceUpload = (now.getTime() - uploadedTime) / (1000 * 60 * 60 * 24);
-      
+      const daysSinceUpload =
+        (now.getTime() - uploadedTime) / (1000 * 60 * 60 * 24);
+
       if (daysSinceUpload > 6) {
         // Regenerate presigned URL
         const getCommand = new GetObjectCommand({
           Bucket: BUCKET_NAME,
           Key: document.s3Key,
         });
-        
-        document.url = await getSignedUrl(s3Client, getCommand, { expiresIn: 604800 });
+
+        document.url = await getSignedUrl(s3Client, getCommand, {
+          expiresIn: 604800,
+        });
       }
     }
-    
+
     return document;
   }
-  
+
   /**
    * Get user documents
    */
   getUserDocuments(userId: string, type?: DocumentType): Document[] {
-    const userDocuments = Array.from(this.documents.values())
-      .filter(d => d.userId === userId);
-    
+    const userDocuments = Array.from(this.documents.values()).filter(
+      (d) => d.userId === userId
+    );
+
     if (type) {
-      return userDocuments.filter(d => d.type === type);
+      return userDocuments.filter((d) => d.type === type);
     }
-    
-    return userDocuments.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime());
+
+    return userDocuments.sort(
+      (a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime()
+    );
   }
-  
+
   /**
    * Delete document
    */
   async deleteDocument(documentId: string): Promise<boolean> {
     const document = this.documents.get(documentId);
     if (!document) return false;
-    
+
     // Delete from S3
     const command = new DeleteObjectCommand({
       Bucket: BUCKET_NAME,
       Key: document.s3Key,
     });
-    
+
     try {
       await s3Client.send(command);
       this.documents.delete(documentId);
       return true;
-    } catch (error) {
-      console.error('Failed to delete document from S3:', error);
+    } catch (_error) {
+      // DocumentService error: Failed to delete document from S3
+      void _error;
       return false;
     }
   }
-  
+
   /**
    * Update document metadata
    */
@@ -184,42 +197,42 @@ class DocumentService {
   ): Document | null {
     const document = this.documents.get(documentId);
     if (!document) return null;
-    
+
     document.metadata = {
       ...document.metadata,
       ...metadata,
     };
-    
+
     return document;
   }
-  
+
   /**
    * Add tags to document
    */
   addTags(documentId: string, tags: string[]): Document | null {
     const document = this.documents.get(documentId);
     if (!document) return null;
-    
+
     if (!document.tags) {
       document.tags = [];
     }
-    
+
     document.tags.push(...tags);
     document.tags = Array.from(new Set(document.tags)); // Remove duplicates
-    
+
     return document;
   }
-  
+
   /**
    * Search documents by tags
    */
   searchByTags(userId: string, tags: string[]): Document[] {
-    return this.getUserDocuments(userId).filter(doc => {
+    return this.getUserDocuments(userId).filter((doc) => {
       if (!doc.tags) return false;
-      return tags.some(tag => doc.tags!.includes(tag));
+      return tags.some((tag) => doc.tags!.includes(tag));
     });
   }
-  
+
   /**
    * Get document statistics
    */
@@ -231,19 +244,19 @@ class DocumentService {
     const userDocuments = this.getUserDocuments(userId);
     const byType: Record<string, number> = {};
     let totalSize = 0;
-    
-    userDocuments.forEach(doc => {
+
+    userDocuments.forEach((doc) => {
       byType[doc.type] = (byType[doc.type] || 0) + 1;
       totalSize += doc.size;
     });
-    
+
     return {
       total: userDocuments.length,
       byType: byType as Record<DocumentType, number>,
       totalSize,
     };
   }
-  
+
   /**
    * Generate presigned upload URL
    */
@@ -256,22 +269,24 @@ class DocumentService {
     const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const fileExtension = fileName.split('.').pop();
     const s3Key = `users/${userId}/${documentType}/${documentId}.${fileExtension}`;
-    
+
     const command = new PutObjectCommand({
       Bucket: BUCKET_NAME,
       Key: s3Key,
       ContentType: mimeType,
     });
-    
-    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // 1 hour
-    
+
+    const uploadUrl = await getSignedUrl(s3Client, command, {
+      expiresIn: 3600,
+    }); // 1 hour
+
     return {
       uploadUrl,
       documentId,
       s3Key,
     };
   }
-  
+
   /**
    * Confirm upload and create document record
    */
@@ -298,11 +313,11 @@ class DocumentService {
       uploadedAt: new Date(),
       metadata,
     };
-    
+
     this.documents.set(documentId, document);
     return document;
   }
-  
+
   /**
    * Get documents by date range
    */
@@ -311,29 +326,42 @@ class DocumentService {
     startDate: Date,
     endDate: Date
   ): Document[] {
-    return this.getUserDocuments(userId).filter(doc => {
+    return this.getUserDocuments(userId).filter((doc) => {
       const uploadTime = doc.uploadedAt.getTime();
-      return uploadTime >= startDate.getTime() && uploadTime <= endDate.getTime();
+      return (
+        uploadTime >= startDate.getTime() && uploadTime <= endDate.getTime()
+      );
     });
   }
-  
+
   /**
    * Validate file type
    */
   validateFileType(mimeType: string, documentType: DocumentType): boolean {
     const allowedTypes: Record<DocumentType, string[]> = {
       credit_report: ['application/pdf', 'image/png', 'image/jpeg'],
-      dispute_letter: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+      dispute_letter: [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ],
       evidence: ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'],
       identity_document: ['application/pdf', 'image/png', 'image/jpeg'],
       proof_of_address: ['application/pdf', 'image/png', 'image/jpeg'],
       income_verification: ['application/pdf', 'image/png', 'image/jpeg'],
-      other: ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+      other: [
+        'application/pdf',
+        'image/png',
+        'image/jpeg',
+        'image/jpg',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ],
     };
-    
+
     return allowedTypes[documentType]?.includes(mimeType) || false;
   }
-  
+
   /**
    * Validate file size (max 10MB)
    */
@@ -378,7 +406,9 @@ class DocumentService {
    */
   listShareLinks(documentId: string, userId: string): ShareLink[] {
     return Array.from(this.shareLinks.values())
-      .filter(link => link.documentId === documentId && link.userId === userId)
+      .filter(
+        (link) => link.documentId === documentId && link.userId === userId
+      )
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
@@ -423,4 +453,3 @@ export type DocumentShareLink = ShareLink;
 // Export singleton instance
 export const documentService = new DocumentService();
 export default documentService;
-

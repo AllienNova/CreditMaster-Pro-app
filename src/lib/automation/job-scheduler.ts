@@ -64,7 +64,7 @@ export class JobScheduler {
       this.startJob(scheduledJob);
     }
     
-    console.log(`📅 Scheduled job: ${scheduledJob.id} (${scheduledJob.job_type})`);
+    // Job scheduler:(`Scheduled job: ${scheduledJob.id} (${scheduledJob.job_type})`);
     return scheduledJob;
   }
   
@@ -92,7 +92,7 @@ export class JobScheduler {
    * Execute a job
    */
   private static async executeJob(job: ScheduledJob): Promise<void> {
-    console.log(`⚙️ Executing job: ${job.id} (${job.job_type})`);
+    // Job scheduler:(`Executing job: ${job.id} (${job.job_type})`);
     
     const execution: JobExecution = {
       id: `exec_${Date.now()}`,
@@ -123,13 +123,13 @@ export class JobScheduler {
       
       this.jobs.set(job.id, job);
       
-      console.log(`✅ Job completed: ${job.id}`);
+      // Job scheduler:(`Job completed: ${job.id}`);
     } catch (error) {
       execution.status = 'failed';
       execution.completed_at = new Date().toISOString();
       execution.error = error instanceof Error ? error.message : 'Unknown error';
       
-      console.error(`❌ Job failed: ${job.id}`, error);
+      // Job scheduler error:(`Job failed: ${job.id}`, error);
     }
   }
   
@@ -162,27 +162,27 @@ export class JobScheduler {
    * Job handlers
    */
   private static async runDisputeFollowUp(job: ScheduledJob): Promise<JobResult> {
-    console.log(`📝 Running dispute follow-up for user ${job.user_id}`);
+    // Job scheduler:(`Running dispute follow-up for user ${job.user_id}`);
     return { checked: 0, updated: 0 };
   }
   
   private static async runPaymentReminder(job: ScheduledJob): Promise<JobResult> {
-    console.log(`💰 Running payment reminder for user ${job.user_id}`);
+    // Job scheduler:(`Running payment reminder for user ${job.user_id}`);
     return { reminders_sent: 0 };
   }
   
   private static async runDocumentCheck(job: ScheduledJob): Promise<JobResult> {
-    console.log(`📄 Running document check for user ${job.user_id}`);
+    // Job scheduler:(`Running document check for user ${job.user_id}`);
     return { documents_checked: 0, missing: 0 };
   }
   
   private static async runStatusUpdate(job: ScheduledJob): Promise<JobResult> {
-    console.log(`🔄 Running status update for user ${job.user_id}`);
+    // Job scheduler:(`Running status update for user ${job.user_id}`);
     return { loans_updated: 0 };
   }
   
   private static async runReportGeneration(job: ScheduledJob): Promise<JobResult> {
-    console.log(`📊 Running report generation for user ${job.user_id}`);
+    // Job scheduler:(`Running report generation for user ${job.user_id}`);
     return { report_id: `report_${Date.now()}` };
   }
   
@@ -241,7 +241,7 @@ export class JobScheduler {
     if (job) {
       job.enabled = false;
       this.jobs.set(jobId, job);
-      console.log(`❌ Cancelled job: ${jobId}`);
+      // Job scheduler:(`Cancelled job: ${jobId}`);
       return true;
     }
     
@@ -283,7 +283,7 @@ export class JobScheduler {
     if (job) {
       job.enabled = false;
       this.jobs.set(jobId, job);
-      console.log(`⏸️ Paused job: ${jobId}`);
+      // Job scheduler:(`⏸️ Paused job: ${jobId}`);
       return true;
     }
     
@@ -299,7 +299,7 @@ export class JobScheduler {
       job.enabled = true;
       this.jobs.set(jobId, job);
       this.startJob(job);
-      console.log(`▶️ Resumed job: ${jobId}`);
+      // Job scheduler:(`▶️ Resumed job: ${jobId}`);
       return true;
     }
     
@@ -321,7 +321,7 @@ export class JobScheduler {
         this.startJob(job);
       }
       
-      console.log(`🔄 Updated job: ${jobId}`);
+      // Job scheduler:(`Updated job: ${jobId}`);
       return true;
     }
     
@@ -335,7 +335,7 @@ export class JobScheduler {
     this.timers.forEach(timer => clearTimeout(timer));
     this.timers.clear();
     this.jobs.clear();
-    console.log(`🗑️ Cleared all jobs`);
+    // Job scheduler:(`Cleared all jobs`);
   }
 }
 

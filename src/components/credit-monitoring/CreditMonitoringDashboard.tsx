@@ -53,10 +53,10 @@ export default function CreditMonitoringDashboard() {
       <div className="space-y-6 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow p-6">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-              <div className="h-12 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
+              <div className="h-12 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-1/3"></div>
             </div>
           ))}
         </div>
@@ -66,11 +66,11 @@ export default function CreditMonitoringDashboard() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">❌</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Dashboard</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="text-red-600 text-xl mb-4"></div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Dashboard</h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-4">{error}</p>
           <button
             type="button"
             onClick={fetchDashboard}
@@ -92,15 +92,15 @@ export default function CreditMonitoringDashboard() {
       {/* Header with Settings Button */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Your Credit Scores</h2>
-          <p className="text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Your Credit Scores</h2>
+          <p className="text-gray-600 dark:text-slate-300">Last updated: {new Date().toLocaleDateString()}</p>
         </div>
         <button
           type="button"
           onClick={() => setShowSettings(true)}
-          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
         >
-          ⚙️ Settings
+          Settings
         </button>
       </div>
 
@@ -127,7 +127,7 @@ export default function CreditMonitoringDashboard() {
       </div>
 
       {/* Average Score Card */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold mb-2">Average Credit Score</h3>
@@ -145,20 +145,20 @@ export default function CreditMonitoringDashboard() {
               </span>
             </div>
           </div>
-          <div className="text-6xl">📊</div>
+          <div className="text-6xl"></div>
         </div>
       </div>
 
       {/* Score History Chart */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Score History</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Score History</h3>
         <CreditScoreChart history={dashboard.history} />
       </div>
 
       {/* Alerts */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Alerts</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Alerts</h3>
           <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-semibold">
             {dashboard.alerts.filter(a => !a.read).length} unread
           </span>
@@ -168,21 +168,21 @@ export default function CreditMonitoringDashboard() {
 
       {/* Recent Changes */}
       {dashboard.recentChanges.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Changes</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Recent Changes</h3>
           <div className="space-y-4">
             {dashboard.recentChanges.map((change, index) => (
-              <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl">📝</div>
+              <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
+                <div className="text-2xl"></div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-gray-900">{change.type}</h4>
-                    <span className="text-sm text-gray-500">
+                    <h4 className="font-semibold text-gray-900 dark:text-white">{change.type}</h4>
+                    <span className="text-sm text-gray-500 dark:text-slate-400">
                       {change.bureau.charAt(0).toUpperCase() + change.bureau.slice(1)}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">{change.description}</p>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">{change.description}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
                     {change.date.toLocaleDateString()}
                   </p>
                 </div>

@@ -1,5 +1,5 @@
 /**
- * CPFI Payment History Screen
+ * Fynvita Payment History Screen
  * Track payment patterns
  */
 

@@ -1,5 +1,5 @@
 /**
- * CPFI Subscription Management Screen
+ * Fynvita Subscription Management Screen
  * View and change subscription plans
  */
 

@@ -1,5 +1,5 @@
 /**
- * CPFI Navigation Integration Tests
+ * Fynvita Navigation Integration Tests
  * Tests navigation flows between screens
  */
 

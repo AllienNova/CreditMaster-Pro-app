@@ -1,6 +1,7 @@
 /**
  * Trading Signal Generator
  *
+ * Phase 5.1.2: Enhanced with multi-model AI consensus and Redis caching
  * AI-powered trading signal generation with multi-asset support,
  * technical analysis, and performance tracking
  */
@@ -19,9 +20,16 @@ import {
   SignalStrength,
   AnalysisType,
   SignalStatus,
+  SignalOutcomeType,
+  SignalFilters,
+  TradingSignalSchema,
+  SignalAnalysisSchema,
+  SignalOutcomeSchema,
+  SignalPerformanceSchema,
 } from './types/trading-signals.types';
 import { Timeframe } from './types/investment.types';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
+import { redisCache, shortRedisCache } from '@/lib/cache/redis-cache-service';
 
 // ============================================================================
 // TECHNICAL INDICATORS
@@ -65,9 +73,16 @@ export class SignalGenerator {
     userId: string,
     symbol: string,
     assetType: 'stock' | 'etf' | 'crypto' | 'option' = 'stock',
-    analysisTypes: AnalysisType[] = ['technical', 'fundamental', 'sentiment', 'ai_combined'],
+    analysisTypes: AnalysisType[] = [AnalysisType.TECHNICAL, AnalysisType.FUNDAMENTAL, AnalysisType.SENTIMENT, AnalysisType.AI_COMBINED],
     timeframe: Timeframe = '1d'
   ): Promise<TradingSignal> {
+    // Check cache first (15 minutes TTL)
+    const cacheKey = `signal:${symbol}:${userId}`;
+    const cachedSignal = await shortRedisCache.get<TradingSignal>(cacheKey);
+    if (cachedSignal) {
+      return cachedSignal;
+    }
+
     // Get comprehensive analysis
     const { analysis, factors } = await this.analyzeSymbol(symbol, assetType, analysisTypes, timeframe);
 
@@ -86,8 +101,16 @@ export class SignalGenerator {
     const potentialLoss = currentPrice - stopLoss;
     const riskRewardRatio = Math.abs(potentialGain / potentialLoss);
 
-    // Generate AI insights
-    const aiInsights = await this.generateAIInsights(symbol, analysis, signalType, factors);
+    // Generate multi-model AI consensus
+    const consensus = await this.generateMultiModelConsensus(symbol, analysis, factors);
+
+    // Use consensus signal if AI analysis is requested
+    const finalSignalType = analysisTypes.includes(AnalysisType.AI_COMBINED)
+      ? consensus.signalType
+      : signalType;
+    const finalConfidence = analysisTypes.includes(AnalysisType.AI_COMBINED)
+      ? consensus.confidence
+      : confidence;
 
     // Create signal
     const signal: TradingSignal = {
@@ -95,9 +118,9 @@ export class SignalGenerator {
       userId,
       symbol,
       assetType,
-      signalType,
-      strength,
-      confidence,
+      signalType: finalSignalType,
+      strength: Math.round(finalConfidence * 100), // Convert to 0-100 scale
+      confidence: finalConfidence, // 0-1 scale
       analysisTypes,
       currentPrice,
       targetPrice,
@@ -105,23 +128,163 @@ export class SignalGenerator {
       potentialGain,
       potentialLoss,
       riskRewardRatio,
-      reasoning: this.generateReasoning(analysis, signalType),
+      reasoning: this.generateReasoning(analysis, finalSignalType),
       technicalFactors: factors.technical,
       fundamentalFactors: factors.fundamental,
       sentimentFactors: factors.sentiment,
-      aiInsights,
+      aiInsights: consensus.aiInsights,
       timeframe: timeframe as '1d' | '1w' | '1m' | '3m' | '6m' | '1y',
       expiresAt: this.calculateExpiration(timeframe),
       generatedAt: new Date(),
-      status: 'active',
-      modelVersion: 'v1.0.0',
-      consensusScore: this.calculateConsensusScore(analysis),
+      status: SignalStatus.ACTIVE,
+      modelVersion: 'v2.0.0-multi-model',
+      consensusScore: consensus.consensusScore,
+      metadata: {
+        analysisTimestamp: new Date().toISOString(),
+        modelsUsed: ['Claude 4.5', 'GPT-4o Mini', 'DeepSeek R1'],
+      },
     };
 
     // Save to database
     await this.saveSignal(signal);
 
+    // Cache the signal (15 minutes TTL) - reuse cacheKey from earlier
+    await shortRedisCache.set(cacheKey, signal, 900); // 15 minutes
+
     return signal;
+  }
+
+  /**
+   * Generate multi-model AI consensus
+   * Uses Claude, GPT-4, and DeepSeek for consensus-based signal generation
+   */
+  private async generateMultiModelConsensus(
+    symbol: string,
+    analysis: SignalAnalysis,
+    factors: { technical: string[]; fundamental: string[]; sentiment: string[] }
+  ): Promise<{ consensusScore: number; aiInsights: string[]; signalType: SignalType; confidence: number }> {
+    const aiml = getAIMLService();
+    const insights: string[] = [];
+    const modelPredictions: Array<{ model: string; signalType: SignalType; confidence: number; reasoning: string }> = [];
+
+    // Prepare analysis context
+    const context = `
+Symbol: ${symbol}
+Technical Score: ${analysis.technicalScore}/100
+Fundamental Score: ${analysis.fundamentalScore}/100
+Sentiment Score: ${analysis.sentimentScore}/100
+
+Technical Factors:
+${factors.technical.join('\n')}
+
+Fundamental Factors:
+${factors.fundamental.join('\n')}
+
+Sentiment Factors:
+${factors.sentiment.join('\n')}
+    `.trim();
+
+    const prompt = `Based on the following analysis, provide a trading signal (BUY, SELL, or HOLD) with confidence level (0-1) and brief reasoning.
+
+${context}
+
+Respond in JSON format:
+{
+  "signalType": "buy" | "sell" | "hold",
+  "confidence": 0.0-1.0,
+  "reasoning": "brief explanation"
+}`;
+
+    try {
+      // Model 1: Claude 4.5 Sonnet (default)
+      const claude = await aiml.chat(
+        'anthropic/claude-4.5-sonnet',
+        [{ role: 'user', content: prompt }],
+        { temperature: 0.3 }
+      );
+      const content = claude.choices[0].message.content || '{}';
+      const claudeResponse = JSON.parse(content);
+      modelPredictions.push({
+        model: 'Claude 4.5',
+        signalType: claudeResponse.signalType as SignalType,
+        confidence: claudeResponse.confidence,
+        reasoning: claudeResponse.reasoning,
+      });
+      insights.push(`Claude 4.5: ${claudeResponse.reasoning}`);
+    } catch (error) {
+      // SignalGenerator error: Claude model error
+    }
+
+    try {
+      // Model 2: GPT-4o Mini (fast)
+      const gpt = await aiml.chat(
+        'openai/gpt-4o-mini',
+        [{ role: 'user', content: prompt }],
+        { temperature: 0.3 }
+      );
+      const gptContent = gpt.choices[0].message.content || '{}';
+      const gptResponse = JSON.parse(gptContent);
+      modelPredictions.push({
+        model: 'GPT-4o Mini',
+        signalType: gptResponse.signalType as SignalType,
+        confidence: gptResponse.confidence,
+        reasoning: gptResponse.reasoning,
+      });
+      insights.push(`GPT-4o: ${gptResponse.reasoning}`);
+    } catch (error) {
+      // SignalGenerator error: GPT model error
+    }
+
+    try {
+      // Model 3: DeepSeek R1 (reasoning)
+      const deepseek = await aiml.chat(
+        'deepseek/deepseek-r1',
+        [{ role: 'user', content: prompt }],
+        { temperature: 0.3 }
+      );
+      const deepseekContent = deepseek.choices[0].message.content || '{}';
+      const deepseekResponse = JSON.parse(deepseekContent);
+      modelPredictions.push({
+        model: 'DeepSeek R1',
+        signalType: deepseekResponse.signalType as SignalType,
+        confidence: deepseekResponse.confidence,
+        reasoning: deepseekResponse.reasoning,
+      });
+      insights.push(`DeepSeek: ${deepseekResponse.reasoning}`);
+    } catch (error) {
+      // SignalGenerator error: DeepSeek model error
+    }
+
+    // Calculate consensus
+    const buyVotes = modelPredictions.filter(p => p.signalType === SignalType.BUY || p.signalType === SignalType.STRONG_BUY).length;
+    const sellVotes = modelPredictions.filter(p => p.signalType === SignalType.SELL || p.signalType === SignalType.STRONG_SELL).length;
+    const holdVotes = modelPredictions.filter(p => p.signalType === SignalType.HOLD).length;
+
+    let consensusSignalType: SignalType;
+    if (buyVotes > sellVotes && buyVotes > holdVotes) {
+      consensusSignalType = SignalType.BUY;
+    } else if (sellVotes > buyVotes && sellVotes > holdVotes) {
+      consensusSignalType = SignalType.SELL;
+    } else {
+      consensusSignalType = SignalType.HOLD;
+    }
+
+    // Calculate consensus score (0-1)
+    const totalVotes = modelPredictions.length;
+    const maxVotes = Math.max(buyVotes, sellVotes, holdVotes);
+    const consensusScore = totalVotes > 0 ? maxVotes / totalVotes : 0.5;
+
+    // Average confidence from all models
+    const avgConfidence = modelPredictions.reduce((sum, p) => sum + p.confidence, 0) / modelPredictions.length;
+
+    insights.push(`Consensus: ${buyVotes} BUY, ${sellVotes} SELL, ${holdVotes} HOLD (${(consensusScore * 100).toFixed(0)}% agreement)`);
+
+    return {
+      consensusScore,
+      aiInsights: insights,
+      signalType: consensusSignalType,
+      confidence: avgConfidence,
+    };
   }
 
   /**
@@ -138,7 +301,8 @@ export class SignalGenerator {
       technicalScore: 0,
       fundamentalScore: 0,
       sentimentScore: 0,
-      overallScore: 0,
+      aiConsensusScore: 0,
+      riskAssessment: 'moderate',
       risks: [],
       catalysts: [],
       warnings: [],
@@ -151,28 +315,36 @@ export class SignalGenerator {
     };
 
     // Technical Analysis
-    if (analysisTypes.includes('technical') || analysisTypes.includes('ai_combined')) {
+    if (analysisTypes.includes(AnalysisType.TECHNICAL) || analysisTypes.includes(AnalysisType.AI_COMBINED)) {
       const technicalData = await this.performTechnicalAnalysis(symbol, timeframe);
       analysis.technicalScore = technicalData.score;
       analysis.technicalIndicators = technicalData.indicators;
       factors.technical = technicalData.factors;
     }
 
+    // Fundamental Analysis
+    if (analysisTypes.includes(AnalysisType.FUNDAMENTAL) || analysisTypes.includes(AnalysisType.AI_COMBINED)) {
+      const fundamentalData = await this.performFundamentalAnalysis(symbol);
+      analysis.fundamentalScore = fundamentalData.score;
+      analysis.fundamentalMetrics = fundamentalData.metrics;
+      factors.fundamental = fundamentalData.factors;
+    }
+
     // Sentiment Analysis
-    if (analysisTypes.includes('sentiment') || analysisTypes.includes('ai_combined')) {
+    if (analysisTypes.includes(AnalysisType.SENTIMENT) || analysisTypes.includes(AnalysisType.AI_COMBINED)) {
       const sentimentData = await this.performSentimentAnalysis(symbol);
       analysis.sentimentScore = sentimentData.score;
       analysis.sentimentMetrics = sentimentData.metrics;
       factors.sentiment = sentimentData.factors;
     }
 
-    // Calculate overall score
+    // Calculate AI consensus score
     const scores = [
       analysis.technicalScore || 0,
       analysis.fundamentalScore || 0,
       analysis.sentimentScore || 0,
     ].filter((s) => s > 0);
-    analysis.overallScore = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+    analysis.aiConsensusScore = scores.reduce((sum, s) => sum + s, 0) / scores.length;
 
     return { analysis: analysis as SignalAnalysis, factors };
   }
@@ -314,7 +486,7 @@ export class SignalGenerator {
         factors,
       };
     } catch (error) {
-      console.error('Fundamental analysis failed:', error);
+      // SignalGenerator error: Fundamental analysis failed
       return { score: 50, metrics: {}, factors: [] };
     }
   }
@@ -371,7 +543,7 @@ export class SignalGenerator {
         factors,
       };
     } catch (error) {
-      console.error('Sentiment analysis failed:', error);
+      // SignalGenerator error: Sentiment analysis failed
       return { score: 50, metrics: {}, factors: [] };
     }
   }
@@ -381,30 +553,27 @@ export class SignalGenerator {
    */
   private calculateSignal(analysis: SignalAnalysis): {
     signalType: SignalType;
-    strength: SignalStrength;
-    confidence: number;
+    strength: number; // 0-100 scale
+    confidence: number; // 0-1 scale
   } {
-    const score = analysis.overallScore;
+    const score = analysis.aiConsensusScore;
     let signalType: SignalType;
-    let strength: SignalStrength;
 
     // Determine signal type
-    if (score >= 60) {
-      signalType = 'buy';
+    if (score >= 75) {
+      signalType = SignalType.STRONG_BUY;
+    } else if (score >= 60) {
+      signalType = SignalType.BUY;
+    } else if (score <= 25) {
+      signalType = SignalType.STRONG_SELL;
     } else if (score <= 40) {
-      signalType = 'sell';
+      signalType = SignalType.SELL;
     } else {
-      signalType = 'hold';
+      signalType = SignalType.HOLD;
     }
 
-    // Determine strength
-    if (score >= 80 || score <= 20) {
-      strength = 'strong';
-    } else if (score >= 70 || score <= 30) {
-      strength = 'moderate';
-    } else {
-      strength = 'weak';
-    }
+    // Strength is the score itself (0-100)
+    const strength = Math.round(score);
 
     // Calculate confidence (based on consensus across analysis types)
     const confidence = this.calculateConsensusScore(analysis);
@@ -462,7 +631,7 @@ Signal Type: ${signalType.toUpperCase()}
 Technical Score: ${analysis.technicalScore}/100
 Fundamental Score: ${analysis.fundamentalScore}/100
 Sentiment Score: ${analysis.sentimentScore}/100
-Overall Score: ${analysis.overallScore}/100
+AI Consensus Score: ${analysis.aiConsensusScore}/100
 
 Technical Factors:
 ${factors.technical.join('\n') || 'N/A'}
@@ -502,7 +671,7 @@ Format as a JSON array of strings.`;
       const insights = JSON.parse(content);
       return Array.isArray(insights) ? insights : [];
     } catch (error) {
-      console.error('Failed to generate AI insights:', error);
+      // SignalGenerator error: Failed to generate AI insights
       return [
         'AI analysis temporarily unavailable',
         'Rely on technical and fundamental factors',
@@ -516,17 +685,17 @@ Format as a JSON array of strings.`;
   private generateReasoning(analysis: SignalAnalysis, signalType: SignalType): string {
     const parts: string[] = [];
 
-    if (signalType === 'buy') {
+    if (signalType === SignalType.BUY || signalType === SignalType.STRONG_BUY) {
       parts.push(
-        `BUY signal generated based on overall score of ${analysis.overallScore.toFixed(1)}/100.`
+        `BUY signal generated based on AI consensus score of ${analysis.aiConsensusScore.toFixed(1)}/100.`
       );
-    } else if (signalType === 'sell') {
+    } else if (signalType === SignalType.SELL || signalType === SignalType.STRONG_SELL) {
       parts.push(
-        `SELL signal generated based on overall score of ${analysis.overallScore.toFixed(1)}/100.`
+        `SELL signal generated based on AI consensus score of ${analysis.aiConsensusScore.toFixed(1)}/100.`
       );
     } else {
       parts.push(
-        `HOLD signal generated based on neutral score of ${analysis.overallScore.toFixed(1)}/100.`
+        `HOLD signal generated based on neutral score of ${analysis.aiConsensusScore.toFixed(1)}/100.`
       );
     }
 
@@ -781,7 +950,9 @@ Format as a JSON array of strings.`;
    */
   private async saveSignal(signal: TradingSignal): Promise<void> {
     try {
-      const { error } = await supabase.from('trading_signals').insert({
+      const supabase = createClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from('trading_signals').insert({
         id: signal.id,
         user_id: signal.userId,
         symbol: signal.symbol,
@@ -810,7 +981,7 @@ Format as a JSON array of strings.`;
 
       if (error) throw error;
     } catch (error) {
-      console.error('Failed to save signal:', error);
+      // SignalGenerator error: Failed to save signal
       // Don't throw - signal generation should succeed even if save fails
     }
   }
@@ -819,11 +990,13 @@ Format as a JSON array of strings.`;
    * Evaluate signal strength (for existing signals)
    */
   async evaluateSignalStrength(signalId: string): Promise<{
-    currentStrength: SignalStrength;
+    currentStrength: number; // 0-100 scale
     strengthChange: 'stronger' | 'weaker' | 'unchanged';
     recommendation: string;
   }> {
-    const { data: signal, error } = await supabase
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: signal, error } = await (supabase as any)
       .from('trading_signals')
       .select('*')
       .eq('id', signalId)
@@ -843,17 +1016,15 @@ Format as a JSON array of strings.`;
 
     const { strength: newStrength } = this.calculateSignal(newAnalysis);
 
-    const strengthOrder: SignalStrength[] = ['weak', 'moderate', 'strong'];
-    const oldIndex = strengthOrder.indexOf(signal.strength);
-    const newIndex = strengthOrder.indexOf(newStrength);
+    const oldStrength = signal.strength;
 
     let strengthChange: 'stronger' | 'weaker' | 'unchanged';
     let recommendation: string;
 
-    if (newIndex > oldIndex) {
+    if (newStrength > oldStrength + 10) {
       strengthChange = 'stronger';
-      recommendation = 'Signal has strengthened. Consider increasing position size.';
-    } else if (newIndex < oldIndex) {
+      recommendation = 'Signal has strengthened significantly. Consider increasing position size.';
+    } else if (newStrength < oldStrength - 10) {
       strengthChange = 'weaker';
       recommendation = 'Signal has weakened. Consider reducing position or exiting.';
     } else {
@@ -876,7 +1047,9 @@ Format as a JSON array of strings.`;
     }
   ): Promise<SignalOutcome> {
     // Get the signal
-    const { data: signal, error: signalError } = await supabase
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: signal, error: signalError } = await (supabase as any)
       .from('trading_signals')
       .select('*')
       .eq('id', signalId)
@@ -892,26 +1065,26 @@ Format as a JSON array of strings.`;
 
     let returnAmount = 0;
     let returnPercent = 0;
-    let outcomeType: 'profit' | 'loss' | 'breakeven' | 'pending' = 'pending';
+    let outcomeType: SignalOutcomeType = SignalOutcomeType.PENDING;
     let targetHit = false;
     let stopLossHit = false;
 
     if (outcome.exitPrice) {
-      if (signal.signal_type === 'buy') {
+      if (signal.signal_type === SignalType.BUY || signal.signal_type === SignalType.STRONG_BUY) {
         returnAmount = outcome.exitPrice - outcome.entryPrice;
         returnPercent = (returnAmount / outcome.entryPrice) * 100;
         targetHit = outcome.exitPrice >= signal.target_price;
         stopLossHit = outcome.exitPrice <= signal.stop_loss;
-      } else if (signal.signal_type === 'sell') {
+      } else if (signal.signal_type === SignalType.SELL || signal.signal_type === SignalType.STRONG_SELL) {
         returnAmount = outcome.entryPrice - outcome.exitPrice;
         returnPercent = (returnAmount / outcome.entryPrice) * 100;
         targetHit = outcome.exitPrice <= signal.target_price;
         stopLossHit = outcome.exitPrice >= signal.stop_loss;
       }
 
-      if (returnAmount > 0.01) outcomeType = 'profit';
-      else if (returnAmount < -0.01) outcomeType = 'loss';
-      else outcomeType = 'breakeven';
+      if (returnAmount > 0.01) outcomeType = SignalOutcomeType.PROFIT;
+      else if (returnAmount < -0.01) outcomeType = SignalOutcomeType.LOSS;
+      else outcomeType = SignalOutcomeType.BREAKEVEN;
     }
 
     const holdingPeriod = exitDate
@@ -919,6 +1092,7 @@ Format as a JSON array of strings.`;
       : 0;
 
     const signalOutcome: SignalOutcome = {
+      id: crypto.randomUUID(),
       signalId,
       userId: signal.user_id,
       symbol: signal.symbol,
@@ -926,20 +1100,24 @@ Format as a JSON array of strings.`;
       entryDate,
       exitPrice: outcome.exitPrice,
       exitDate,
-      returnAmount,
-      returnPercent,
-      holdingPeriod,
+      performanceMetrics: {
+        returnAmount,
+        returnPercent,
+        holdingPeriod,
+        maxDrawdown: 0, // Would need price history to calculate
+        maxGain: 0, // Would need price history to calculate
+      },
+      trackedUntil: exitDate || now,
       outcome: outcomeType,
       targetHit,
       stopLossHit,
-      maxDrawdown: 0, // Would need price history to calculate
-      maxGain: 0, // Would need price history to calculate
       createdAt: now,
       updatedAt: now,
     };
 
     // Update signal status
-    await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
       .from('trading_signals')
       .update({
         status: outcome.status,
@@ -956,48 +1134,74 @@ Format as a JSON array of strings.`;
   }
 
   /**
-   * Get signal history for a user
+   * Get signal history for a user with advanced filtering
    */
   async getSignalHistory(
     userId: string,
-    filters?: {
-      symbol?: string;
-      assetType?: string;
-      status?: SignalStatus;
-      limit?: number;
-    }
+    filters?: Partial<SignalFilters>
   ): Promise<TradingSignal[]> {
+    // Check cache first
+    const cacheKey = `signal-history:${userId}:${JSON.stringify(filters || {})}`;
+    const cached = await redisCache.get<TradingSignal[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const supabase = await createClient();
     let query = supabase
       .from('trading_signals')
       .select('*')
       .eq('user_id', userId)
       .order('generated_at', { ascending: false });
 
-    if (filters?.symbol) {
-      query = query.eq('symbol', filters.symbol);
+    // Apply filters
+    if (filters?.symbols && filters.symbols.length > 0) {
+      query = query.in('symbol', filters.symbols);
     }
-    if (filters?.assetType) {
-      query = query.eq('asset_type', filters.assetType);
+    if (filters?.signalTypes && filters.signalTypes.length > 0) {
+      query = query.in('signal_type', filters.signalTypes);
     }
-    if (filters?.status) {
-      query = query.eq('status', filters.status);
+    if (filters?.statuses && filters.statuses.length > 0) {
+      query = query.in('status', filters.statuses);
     }
-    if (filters?.limit) {
-      query = query.limit(filters.limit);
+    if (filters?.assetTypes && filters.assetTypes.length > 0) {
+      query = query.in('asset_type', filters.assetTypes);
     }
+    if (filters?.minConfidence !== undefined) {
+      query = query.gte('confidence', filters.minConfidence);
+    }
+    if (filters?.minStrength !== undefined) {
+      query = query.gte('strength', filters.minStrength);
+    }
+    if (filters?.startDate) {
+      query = query.gte('generated_at', filters.startDate.toISOString());
+    }
+    if (filters?.endDate) {
+      query = query.lte('generated_at', filters.endDate.toISOString());
+    }
+
+    // Pagination
+    const limit = filters?.limit || 20;
+    const offset = filters?.offset || 0;
+    query = query.range(offset, offset + limit - 1);
 
     const { data, error } = await query;
 
     if (error) throw error;
 
-    return (data || []).map(this.mapDbSignalToType);
+    const signals = (data || []).map(this.mapDbSignalToType);
+
+    // Cache results for 5 minutes
+    await redisCache.set(cacheKey, signals, 300);
+
+    return signals;
   }
 
   /**
    * Get active signals for a user
    */
   async getActiveSignals(userId: string): Promise<TradingSignal[]> {
-    return this.getSignalHistory(userId, { status: 'active', limit: 50 });
+    return this.getSignalHistory(userId, { statuses: [SignalStatus.ACTIVE], limit: 50 });
   }
 
   /**
@@ -1020,6 +1224,7 @@ Format as a JSON array of strings.`;
     const startDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
 
     // Get all signals in period
+    const supabase = await createClient();
     const { data: signals, error } = await supabase
       .from('trading_signals')
       .select('*')
@@ -1028,23 +1233,23 @@ Format as a JSON array of strings.`;
 
     if (error) throw error;
 
-    const allSignals = (signals || []).map(this.mapDbSignalToType);
-    const executedSignals = allSignals.filter((s) => s.status === 'executed' && s.actualReturn !== undefined);
+    const allSignals: TradingSignal[] = (signals || []).map(this.mapDbSignalToType);
+    const executedSignals = allSignals.filter((s: TradingSignal) => s.status === 'executed' && s.actualReturn !== undefined);
 
     const totalSignals = allSignals.length;
-    const activeSignals = allSignals.filter((s) => s.status === 'active').length;
-    const expiredSignals = allSignals.filter((s) => s.status === 'expired').length;
+    const activeSignals = allSignals.filter((s: TradingSignal) => s.status === 'active').length;
+    const expiredSignals = allSignals.filter((s: TradingSignal) => s.status === 'expired').length;
 
-    const winningTrades = executedSignals.filter((s) => (s.actualReturn || 0) > 0);
-    const losingTrades = executedSignals.filter((s) => (s.actualReturn || 0) < 0);
+    const winningTrades = executedSignals.filter((s: TradingSignal) => (s.actualReturn || 0) > 0);
+    const losingTrades = executedSignals.filter((s: TradingSignal) => (s.actualReturn || 0) < 0);
 
     const winRate = executedSignals.length > 0 ? (winningTrades.length / executedSignals.length) * 100 : 0;
     const avgReturn = executedSignals.length > 0
-      ? executedSignals.reduce((sum, s) => sum + (s.actualReturn || 0), 0) / executedSignals.length
+      ? executedSignals.reduce((sum: number, s: TradingSignal) => sum + (s.actualReturn || 0), 0) / executedSignals.length
       : 0;
-    const totalReturn = executedSignals.reduce((sum, s) => sum + (s.actualReturn || 0), 0);
-    const bestTrade = executedSignals.length > 0 ? Math.max(...executedSignals.map((s) => s.actualReturn || 0)) : 0;
-    const worstTrade = executedSignals.length > 0 ? Math.min(...executedSignals.map((s) => s.actualReturn || 0)) : 0;
+    const totalReturn = executedSignals.reduce((sum: number, s: TradingSignal) => sum + (s.actualReturn || 0), 0);
+    const bestTrade = executedSignals.length > 0 ? Math.max(...executedSignals.map((s: TradingSignal) => s.actualReturn || 0)) : 0;
+    const worstTrade = executedSignals.length > 0 ? Math.min(...executedSignals.map((s: TradingSignal) => s.actualReturn || 0)) : 0;
 
     // Group by signal type
     const bySignalType = this.groupBySignalType(executedSignals);
@@ -1067,8 +1272,8 @@ Format as a JSON array of strings.`;
       activeSignals,
       executedSignals: executedSignals.length,
       expiredSignals,
-      winRate,
-      avgReturn,
+      successRate: winRate, // Renamed from winRate to successRate
+      averageReturn: avgReturn, // Renamed from avgReturn to averageReturn
       totalReturn,
       bestTrade,
       worstTrade,
@@ -1095,7 +1300,11 @@ Format as a JSON array of strings.`;
 
   private groupByStrength(signals: TradingSignal[]) {
     const groups = { strong: [], moderate: [], weak: [] } as Record<string, TradingSignal[]>;
-    signals.forEach((s) => groups[s.strength].push(s));
+    signals.forEach((s) => {
+      if (s.strength >= 70) groups.strong.push(s);
+      else if (s.strength >= 40) groups.moderate.push(s);
+      else groups.weak.push(s);
+    });
 
     return {
       strong: this.calculateGroupStats(groups.strong),
@@ -1111,7 +1320,7 @@ Format as a JSON array of strings.`;
       groups[s.assetType].push(s);
     });
 
-    const result: Record<string, { count: number; winRate: number; avgReturn: number }> = {};
+    const result: Record<string, { count: number; successRate: number; winRate: number; avgReturn: number }> = {};
     Object.keys(groups).forEach((type) => {
       result[type] = this.calculateGroupStats(groups[type]);
     });
@@ -1121,17 +1330,18 @@ Format as a JSON array of strings.`;
 
   private calculateGroupStats(signals: TradingSignal[]): {
     count: number;
+    successRate: number;
     winRate: number;
     avgReturn: number;
   } {
     const count = signals.length;
-    if (count === 0) return { count: 0, winRate: 0, avgReturn: 0 };
+    if (count === 0) return { count: 0, successRate: 0, winRate: 0, avgReturn: 0 };
 
     const winners = signals.filter((s) => (s.actualReturn || 0) > 0).length;
     const winRate = (winners / count) * 100;
     const avgReturn = signals.reduce((sum, s) => sum + (s.actualReturn || 0), 0) / count;
 
-    return { count, winRate, avgReturn };
+    return { count, successRate: winRate, winRate, avgReturn };
   }
 
   private mapDbSignalToType(dbSignal: any): TradingSignal {

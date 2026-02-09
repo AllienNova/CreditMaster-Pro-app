@@ -1,6 +1,26 @@
 
-import { FederalRegulationEngine } from "./FederalRegulationEngine";
+import { FederalRegulationEngine, Regulation } from "./FederalRegulationEngine";
 
+export interface LoanAnalysis {
+  defaultStatus?: boolean;
+  loanType?: string;
+  balance?: number;
+  status?: string;
+}
+
+export interface LoanStrategy {
+  name: string;
+  description: string;
+  regulation: Regulation | undefined;
+  priority?: 'high' | 'medium' | 'low';
+  complexity?: 'low' | 'medium' | 'high';
+}
+
+export interface StrategyContext {
+  creditScore?: number;
+  loanStatus?: 'current' | 'default' | 'delinquent';
+  documentation?: 'complete' | 'incomplete' | 'partial';
+}
 
 export class StrategyEngine {
   private regulationEngine: FederalRegulationEngine;
@@ -8,7 +28,7 @@ export class StrategyEngine {
     this.regulationEngine = regulationEngine;
   }
 
-  public generateStrategies(analysis: any): any[] {
+  public generateStrategies(analysis: LoanAnalysis): LoanStrategy[] {
     const strategies = [];
 
     if (analysis.defaultStatus) {
@@ -21,7 +41,7 @@ export class StrategyEngine {
     return strategies;
   }
 
-  private getFreshStartStrategy(): any {
+  private getFreshStartStrategy(): LoanStrategy {
     const regulation = this.regulationEngine.getRegulation("fresh_start_program");
     return {
       name: "Fresh Start Program",
@@ -30,7 +50,7 @@ export class StrategyEngine {
     };
   }
 
-  private getLoanRehabilitationStrategy(): any {
+  private getLoanRehabilitationStrategy(): LoanStrategy {
     const regulation = this.regulationEngine.getRegulation("loan_rehabilitation");
     return {
       name: "Loan Rehabilitation",
@@ -39,7 +59,7 @@ export class StrategyEngine {
     };
   }
 
-  private getFcraDisputeStrategy(): any {
+  private getFcraDisputeStrategy(): LoanStrategy {
     const regulation = this.regulationEngine.getRegulation("fcra");
     return {
       name: "FCRA Dispute",
@@ -48,35 +68,36 @@ export class StrategyEngine {
     };
   }
 
-  public prioritizeStrategies(strategies: any[]): any[] {
+  public prioritizeStrategies(strategies: LoanStrategy[]): LoanStrategy[] {
     return strategies.sort((a, b) => {
       const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
-      const aPriority = priorityOrder[a.priority] || 0;
-      const bPriority = priorityOrder[b.priority] || 0;
+      const aPriority = a.priority ? priorityOrder[a.priority] || 0 : 0;
+      const bPriority = b.priority ? priorityOrder[b.priority] || 0 : 0;
       return bPriority - aPriority;
     });
   }
 
-  public estimateTimeline(strategy: any): { days: number; description: string } {
+  public estimateTimeline(strategy: LoanStrategy): { days: number; description: string } {
     const complexityDays: Record<string, number> = {
       low: 30,
       medium: 60,
       high: 120,
     };
-    const days = complexityDays[strategy.complexity] || 45;
+    const days = strategy.complexity ? complexityDays[strategy.complexity] || 45 : 45;
     return {
       days,
       description: `Estimated ${days} days to complete`,
     };
   }
 
-  public calculateSuccessProbability(strategy: any, context: any): number {
+  public calculateSuccessProbability(_strategy: LoanStrategy, context: StrategyContext): number {
     let probability = 50; // Base probability
 
     // Adjust based on credit score
-    if (context.creditScore > 700) probability += 20;
-    else if (context.creditScore > 600) probability += 10;
-    else if (context.creditScore < 500) probability -= 10;
+    const creditScore = context.creditScore ?? 0;
+    if (creditScore > 700) probability += 20;
+    else if (creditScore > 600) probability += 10;
+    else if (creditScore < 500) probability -= 10;
 
     // Adjust based on loan status
     if (context.loanStatus === 'current') probability += 15;

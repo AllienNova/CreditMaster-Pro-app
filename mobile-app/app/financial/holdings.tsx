@@ -1,5 +1,5 @@
 /**
- * CPFI Holdings Management Screen
+ * Fynvita Holdings Management Screen
  * View, add, edit, and delete investment holdings
  */
 
@@ -367,7 +367,7 @@ export default function HoldingsScreen() {
             <TouchableOpacity
               key={h.id}
               onPress={() =>
-                router.push(`/financial/stock-analysis?symbol=${h.symbol}`)
+                router.push(`/investments/analyze/${h.symbol}`)
               }
               onLongPress={() => openEditModal(h)}
             >

@@ -127,10 +127,10 @@ export async function GET(
         })),
       },
     });
-  } catch (error) {
-    console.error('Error fetching goal:', error);
+  } catch (_error) {
+    // FinancialGoalsRoute error: Failed to fetch goal
 
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch goal';
+    const errorMessage = _error instanceof Error ? _error.message : 'Failed to fetch goal';
 
     return NextResponse.json(
       {
@@ -276,10 +276,10 @@ export async function PATCH(
       },
       message: 'Goal updated successfully',
     });
-  } catch (error) {
-    console.error('Error updating goal:', error);
+  } catch (_error) {
+    // FinancialGoalsRoute error: Failed to update goal
 
-    const errorMessage = error instanceof Error ? error.message : 'Failed to update goal';
+    const errorMessage = _error instanceof Error ? _error.message : 'Failed to update goal';
 
     return NextResponse.json(
       {
@@ -359,10 +359,10 @@ export async function DELETE(
         goalId,
       },
     });
-  } catch (error) {
-    console.error('Error deleting goal:', error);
+  } catch (_error) {
+    // FinancialGoalsRoute error: Failed to delete goal
 
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete goal';
+    const errorMessage = _error instanceof Error ? _error.message : 'Failed to delete goal';
 
     return NextResponse.json(
       {

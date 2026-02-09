@@ -1,5 +1,5 @@
 /**
- * CPFI Goals Screen
+ * Fynvita Goals Screen
  * Goal cards with progress, create wizard, milestone tracking
  */
 
@@ -93,7 +93,7 @@ export default function GoalsScreen() {
         setGoals(MOCK_GOALS);
       }
     } catch (err) {
-      console.warn('Using mock goals:', err);
+      // Fallback to mock data silently in production
       setGoals(MOCK_GOALS);
     } finally {
       setLoading(false);

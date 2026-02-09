@@ -2,8 +2,40 @@
 
 import { useState } from 'react';
 
+interface AlternativePlan {
+  name: string;
+  monthly_payment: number;
+  total_cost: number;
+  pros: string[];
+  cons: string[];
+}
+
+interface PSLFAnalysis {
+  eligible: boolean;
+  qualifying_payments: number;
+  remaining_payments: number;
+  estimated_forgiveness_amount: number;
+}
+
+interface RecommendedPlan {
+  name: string;
+  description: string;
+  monthly_payment: number;
+  total_cost: number;
+  forgiveness_eligible: boolean;
+  forgiveness_timeline?: string;
+}
+
+interface LoanStrategy {
+  recommended_plan: RecommendedPlan;
+  alternative_plans: AlternativePlan[];
+  pslf_analysis: PSLFAnalysis;
+  tax_implications: string;
+  recommendations: string[];
+}
+
 interface LoanStrategyCalculatorProps {
-  onCalculate?: (strategy: any) => void;
+  onCalculate?: (strategy: LoanStrategy) => void;
 }
 
 interface LoanData {
@@ -40,7 +72,7 @@ export default function LoanStrategyCalculator({ onCalculate }: LoanStrategyCalc
   const [goals, setGoals] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [strategy, setStrategy] = useState<any>(null);
+  const [strategy, setStrategy] = useState<LoanStrategy | null>(null);
 
   const handleCalculate = async () => {
     setLoading(true);
@@ -108,13 +140,13 @@ export default function LoanStrategyCalculator({ onCalculate }: LoanStrategyCalc
     <div className="loan-strategy-calculator">
       <div className="max-w-4xl mx-auto p-6">
         <h2 className="text-3xl font-bold mb-6">Student Loan Strategy Calculator</h2>
-        <p className="text-gray-600 mb-8">
+        <p className="text-gray-600 dark:text-slate-300 mb-8">
           Calculate optimal repayment strategy using DeepSeek V3.1 Terminus's advanced mathematical reasoning
         </p>
 
         <div className="space-y-6">
           {/* Loan Information */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
             <h3 className="text-xl font-semibold mb-4">Loan Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -177,7 +209,7 @@ export default function LoanStrategyCalculator({ onCalculate }: LoanStrategyCalc
           </div>
 
           {/* Financial Situation */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
             <h3 className="text-xl font-semibold mb-4">Financial Situation</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -229,7 +261,7 @@ export default function LoanStrategyCalculator({ onCalculate }: LoanStrategyCalc
           </div>
 
           {/* Goals */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
             <h3 className="text-xl font-semibold mb-4">Your Goals (Optional)</h3>
             <textarea
               value={goals}
@@ -275,15 +307,15 @@ export default function LoanStrategyCalculator({ onCalculate }: LoanStrategyCalc
                   </div>
                 </div>
                 {strategy.recommended_plan.forgiveness_eligible && (
-                  <div className="mt-4 bg-white bg-opacity-20 rounded p-3">
-                    <p className="font-semibold">✓ Forgiveness Eligible</p>
+                  <div className="mt-4 bg-white dark:bg-slate-800 bg-opacity-20 rounded p-3">
+                    <p className="font-semibold">Forgiveness Eligible</p>
                     <p className="text-sm">{strategy.recommended_plan.forgiveness_timeline}</p>
                   </div>
                 )}
               </div>
 
               {/* PSLF Analysis */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
                 <h3 className="text-xl font-semibold mb-4">PSLF Analysis</h3>
                 {strategy.pslf_analysis.eligible ? (
                   <div className="space-y-3">
@@ -295,39 +327,39 @@ export default function LoanStrategyCalculator({ onCalculate }: LoanStrategyCalc
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                       <div>
-                        <p className="text-sm text-gray-600">Qualifying Payments</p>
+                        <p className="text-sm text-gray-600 dark:text-slate-300">Qualifying Payments</p>
                         <p className="text-xl font-bold">{strategy.pslf_analysis.qualifying_payments}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Remaining Payments</p>
+                        <p className="text-sm text-gray-600 dark:text-slate-300">Remaining Payments</p>
                         <p className="text-xl font-bold">{strategy.pslf_analysis.remaining_payments}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Est. Forgiveness</p>
+                        <p className="text-sm text-gray-600 dark:text-slate-300">Est. Forgiveness</p>
                         <p className="text-xl font-bold">{formatCurrency(strategy.pslf_analysis.estimated_forgiveness_amount)}</p>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-600">You are not currently eligible for PSLF based on your employment type.</p>
+                  <p className="text-gray-600 dark:text-slate-300">You are not currently eligible for PSLF based on your employment type.</p>
                 )}
               </div>
 
               {/* Alternative Plans */}
               {strategy.alternative_plans.length > 0 && (
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
                   <h3 className="text-xl font-semibold mb-4">Alternative Plans</h3>
                   <div className="space-y-4">
-                    {strategy.alternative_plans.map((plan: any, i: number) => (
+                    {strategy.alternative_plans.map((plan: AlternativePlan, i: number) => (
                       <div key={i} className="border rounded-lg p-4">
                         <h4 className="font-semibold mb-2">{plan.name}</h4>
                         <div className="grid grid-cols-2 gap-4 mb-3">
                           <div>
-                            <p className="text-sm text-gray-600">Monthly Payment</p>
+                            <p className="text-sm text-gray-600 dark:text-slate-300">Monthly Payment</p>
                             <p className="font-semibold">{formatCurrency(plan.monthly_payment)}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">Total Cost</p>
+                            <p className="text-sm text-gray-600 dark:text-slate-300">Total Cost</p>
                             <p className="font-semibold">{formatCurrency(plan.total_cost)}</p>
                           </div>
                         </div>
@@ -358,11 +390,11 @@ export default function LoanStrategyCalculator({ onCalculate }: LoanStrategyCalc
               {/* Tax Implications */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
                 <h3 className="text-xl font-semibold mb-2">Tax Implications</h3>
-                <p className="text-gray-700">{strategy.tax_implications}</p>
+                <p className="text-gray-700 dark:text-slate-200">{strategy.tax_implications}</p>
               </div>
 
               {/* Recommendations */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
                 <h3 className="text-xl font-semibold mb-4">Recommendations</h3>
                 <ul className="space-y-2">
                   {strategy.recommendations.map((rec: string, i: number) => (
@@ -374,7 +406,7 @@ export default function LoanStrategyCalculator({ onCalculate }: LoanStrategyCalc
                 </ul>
               </div>
 
-              <p className="text-xs text-gray-500 text-center">
+              <p className="text-xs text-gray-500 dark:text-slate-400 text-center">
                 Strategy calculated by DeepSeek V3.1 Terminus • AIML API
               </p>
             </div>

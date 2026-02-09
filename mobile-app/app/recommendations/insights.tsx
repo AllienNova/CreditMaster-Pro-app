@@ -1,5 +1,5 @@
 /**
- * CPFI Financial Insights Screen
+ * Fynvita Financial Insights Screen
  * Spending patterns, saving opportunities, weekly summary
  */
 

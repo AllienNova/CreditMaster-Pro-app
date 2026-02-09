@@ -115,14 +115,14 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Loan Type */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
           Loan Type *
         </label>
         <select
           name="loan_type"
           value={formData.loan_type}
           onChange={handleChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           {loanTypes.map(type => (
             <option key={type.value} value={type.value}>
@@ -134,7 +134,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
 
       {/* Servicer Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
           Servicer Name *
         </label>
         <input
@@ -144,7 +144,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
           onChange={handleChange}
           placeholder="e.g., Nelnet, Great Lakes, Navient"
           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            errors.servicer_name ? 'border-red-500' : 'border-gray-300'
+            errors.servicer_name ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
           }`}
         />
         {errors.servicer_name && (
@@ -155,7 +155,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
       {/* Current Balance and Interest Rate */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Current Balance *
           </label>
           <input
@@ -167,7 +167,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
             step="0.01"
             min="0"
             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.current_balance ? 'border-red-500' : 'border-gray-300'
+              errors.current_balance ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
             }`}
           />
           {errors.current_balance && (
@@ -176,7 +176,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Interest Rate (%) *
           </label>
           <input
@@ -189,7 +189,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
             min="0"
             max="100"
             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.interest_rate ? 'border-red-500' : 'border-gray-300'
+              errors.interest_rate ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
             }`}
           />
           {errors.interest_rate && (
@@ -200,14 +200,14 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
 
       {/* Loan Status */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
           Loan Status *
         </label>
         <select
           name="loan_status"
           value={formData.loan_status}
           onChange={handleChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           {loanStatuses.map(status => (
             <option key={status.value} value={status.value}>
@@ -220,7 +220,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
       {/* Dates */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Disbursement Date *
           </label>
           <input
@@ -229,7 +229,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
             value={formData.disbursement_date}
             onChange={handleChange}
             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.disbursement_date ? 'border-red-500' : 'border-gray-300'
+              errors.disbursement_date ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
             }`}
           />
           {errors.disbursement_date && (
@@ -238,7 +238,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Repayment Start Date *
           </label>
           <input
@@ -247,7 +247,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
             value={formData.repayment_start_date}
             onChange={handleChange}
             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.repayment_start_date ? 'border-red-500' : 'border-gray-300'
+              errors.repayment_start_date ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
             }`}
           />
           {errors.repayment_start_date && (
@@ -259,7 +259,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
       {/* Optional Fields */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Original Amount (Optional)
           </label>
           <input
@@ -270,12 +270,12 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
             placeholder="0.00"
             step="0.01"
             min="0"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Outstanding Interest (Optional)
           </label>
           <input
@@ -286,7 +286,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
             placeholder="0.00"
             step="0.01"
             min="0"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
       </div>
@@ -296,7 +296,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+          className="flex-1 px-6 py-3 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors font-medium"
         >
           Cancel
         </button>

@@ -18,9 +18,9 @@ export default function CreditReportImport({ onImportComplete, onError }: Credit
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const bureaus: { id: Bureau; name: string; color: string; logo: string }[] = [
-    { id: 'experian', name: 'Experian', color: 'blue', logo: '🔵' },
-    { id: 'equifax', name: 'Equifax', color: 'red', logo: '🔴' },
-    { id: 'transunion', name: 'TransUnion', color: 'purple', logo: '🟣' },
+    { id: 'experian', name: 'Experian', color: 'blue', logo: '' },
+    { id: 'equifax', name: 'Equifax', color: 'red', logo: '' },
+    { id: 'transunion', name: 'TransUnion', color: 'purple', logo: '' },
   ];
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,13 +164,13 @@ export default function CreditReportImport({ onImportComplete, onError }: Credit
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Import Credit Report</h2>
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-slate-700">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Import Credit Report</h2>
 
       {/* Step 1: Select Bureau */}
       {!selectedBureau && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 1: Select Credit Bureau</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Step 1: Select Credit Bureau</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {bureaus.map((bureau) => (
               <button
@@ -179,11 +179,11 @@ export default function CreditReportImport({ onImportComplete, onError }: Credit
                 className={`p-6 border-2 rounded-lg hover:shadow-md transition-all ${
                   selectedBureau === bureau.id
                     ? `border-${bureau.color}-500 bg-${bureau.color}-50`
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-gray-200 hover:border-gray-300 dark:border-slate-600'
                 }`}
               >
                 <div className="text-4xl mb-2">{bureau.logo}</div>
-                <div className="text-lg font-semibold text-gray-900">{bureau.name}</div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">{bureau.name}</div>
               </button>
             ))}
           </div>
@@ -194,12 +194,12 @@ export default function CreditReportImport({ onImportComplete, onError }: Credit
       {selectedBureau && !importMethod && !uploading && !successMessage && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Step 2: Choose Import Method for {bureaus.find((b) => b.id === selectedBureau)?.name}
             </h3>
             <button
               onClick={() => setSelectedBureau(null)}
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200"
             >
               ← Change Bureau
             </button>
@@ -211,7 +211,7 @@ export default function CreditReportImport({ onImportComplete, onError }: Credit
                 setImportMethod('file');
                 fileInputRef.current?.click();
               }}
-              className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-left"
+              className="p-6 border-2 border-gray-200 dark:border-slate-700 rounded-lg hover:border-blue-500 hover:shadow-md transition-all text-left"
             >
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -225,8 +225,8 @@ export default function CreditReportImport({ onImportComplete, onError }: Credit
                   </svg>
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Upload File</div>
-                  <div className="text-sm text-gray-500">PDF, TXT, or HTML</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">Upload File</div>
+                  <div className="text-sm text-gray-500 dark:text-slate-400">PDF, TXT, or HTML</div>
                 </div>
               </div>
             </button>
@@ -237,7 +237,7 @@ export default function CreditReportImport({ onImportComplete, onError }: Credit
                 setImportMethod('api');
                 handleApiImport();
               }}
-              className="p-6 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:shadow-md transition-all text-left"
+              className="p-6 border-2 border-gray-200 dark:border-slate-700 rounded-lg hover:border-green-500 hover:shadow-md transition-all text-left"
             >
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -251,8 +251,8 @@ export default function CreditReportImport({ onImportComplete, onError }: Credit
                   </svg>
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Direct Import</div>
-                  <div className="text-sm text-gray-500">Connect via API</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">Direct Import</div>
+                  <div className="text-sm text-gray-500 dark:text-slate-400">Connect via API</div>
                 </div>
               </div>
             </button>
@@ -270,15 +270,15 @@ export default function CreditReportImport({ onImportComplete, onError }: Credit
       {/* Progress */}
       {uploading && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Importing Credit Report...</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Importing Credit Report...</h3>
           <div className="space-y-4">
-            <div className="w-full bg-gray-200 rounded-full h-3">
+            <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3">
               <div
                 className="bg-blue-600 h-3 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <div className="text-center text-sm text-gray-600">{progress}% complete</div>
+            <div className="text-center text-sm text-gray-600 dark:text-slate-300">{progress}% complete</div>
           </div>
         </div>
       )}

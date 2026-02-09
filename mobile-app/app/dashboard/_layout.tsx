@@ -1,5 +1,6 @@
 /**
- * CPFI Dashboard Layout
+ * Fynvita Dashboard Layout
+ * All dashboard sub-pages with stack navigation
  */
 
 import { Stack } from 'expo-router';
@@ -9,15 +10,23 @@ export default function DashboardLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: theme.colors.surface },
-        headerTintColor: theme.colors.text,
-        headerTitleStyle: { fontWeight: '600' },
-        headerShadowVisible: false,
+        headerShown: false,
+        contentStyle: { backgroundColor: theme.colors.background },
+        animation: 'slide_from_right',
       }}
     >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="analytics" options={{ title: 'Credit Analytics' }} />
-      <Stack.Screen name="progress" options={{ title: 'My Progress' }} />
+      <Stack.Screen name="index" />
+      <Stack.Screen name="analytics" />
+      <Stack.Screen name="progress" />
+      <Stack.Screen name="disputes" />
+      <Stack.Screen name="documents" />
+      <Stack.Screen name="monitoring" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="reports" />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="spending" />
+      <Stack.Screen name="subscriptions" />
+      <Stack.Screen name="vitality" />
     </Stack>
   );
 }

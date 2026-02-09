@@ -6,17 +6,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import { goalPlanner } from '@/lib/financial/goal-planner';
 
 async function getUser() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll() } }
-  );
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -33,8 +27,9 @@ export async function GET(request: NextRequest) {
 
     const goals = await goalPlanner.getUserGoals(user.id);
     return NextResponse.json({ goals, count: goals.length });
-  } catch (error) {
-    console.error('Error fetching goals:', error);
+  } catch (_error) {
+    // FinancialCoachGoalsRoute error: Failed to fetch goals
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch goals' },
       { status: 500 }
@@ -90,8 +85,9 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(goal, { status: 201 });
-  } catch (error) {
-    console.error('Error creating goal:', error);
+  } catch (_error) {
+    // FinancialCoachGoalsRoute error: Failed to create goal
+    void _error;
     return NextResponse.json(
       { error: 'Failed to create goal' },
       { status: 500 }

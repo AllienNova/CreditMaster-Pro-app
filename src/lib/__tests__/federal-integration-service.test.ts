@@ -30,12 +30,9 @@ describe('FederalIntegrationService', () => {
   describe('submitFreshStartApplication', () => {
     it('should submit a fresh start application', async () => {
       const applicationData = {
-        user_id: 'test-user',
-        loan_id: 'loan-123',
-        program_type: 'fresh-start' as const,
-        application_data: {},
-        status: 'pending' as const,
-        submitted_at: new Date().toISOString(),
+        userId: 'test-user',
+        loanIds: ['loan-123'],
+        reason: 'Financial hardship',
       };
 
       const result = await service.submitFreshStartApplication(applicationData);
@@ -49,12 +46,9 @@ describe('FederalIntegrationService', () => {
   describe('submitRehabilitationApplication', () => {
     it('should submit a rehabilitation application', async () => {
       const applicationData = {
-        user_id: 'test-user',
-        loan_id: 'loan-123',
-        program_type: 'rehabilitation' as const,
-        application_data: {},
-        status: 'pending' as const,
-        submitted_at: new Date().toISOString(),
+        userId: 'test-user',
+        loanIds: ['loan-123'],
+        proposedMonthlyPayment: 200,
       };
 
       const result = await service.submitRehabilitationApplication(applicationData);
@@ -68,12 +62,9 @@ describe('FederalIntegrationService', () => {
   describe('submitConsolidationApplication', () => {
     it('should submit a consolidation application', async () => {
       const applicationData = {
-        user_id: 'test-user',
-        loan_id: 'loan-123',
-        program_type: 'consolidation' as const,
-        application_data: {},
-        status: 'pending' as const,
-        submitted_at: new Date().toISOString(),
+        userId: 'test-user',
+        loanIds: ['loan-123'],
+        targetServicer: 'FedLoan',
       };
 
       const result = await service.submitConsolidationApplication(applicationData);

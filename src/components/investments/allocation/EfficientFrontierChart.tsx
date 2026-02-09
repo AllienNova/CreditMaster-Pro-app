@@ -48,24 +48,34 @@ export interface EfficientFrontierChartProps {
 }
 
 /**
+ * Custom Tooltip Props for Efficient Frontier Chart
+ */
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    payload: EfficientFrontierPoint & { label?: string };
+  }>;
+}
+
+/**
  * Custom Tooltip for Efficient Frontier Chart
  */
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+      <div className="bg-white dark:bg-slate-800 p-3 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg">
         <p className="font-semibold text-gray-900 dark:text-white mb-2">
           {data.label || 'Portfolio'}
         </p>
-        <p className="text-sm text-gray-600 dark:text-gray-300">
+        <p className="text-sm text-gray-600 dark:text-slate-300">
           <span className="font-medium">Expected Return:</span> {data.expectedReturn.toFixed(2)}%
         </p>
-        <p className="text-sm text-gray-600 dark:text-gray-300">
+        <p className="text-sm text-gray-600 dark:text-slate-300">
           <span className="font-medium">Volatility:</span> {data.volatility.toFixed(2)}%
         </p>
         {data.sharpeRatio !== undefined && (
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600 dark:text-slate-300">
             <span className="font-medium">Sharpe Ratio:</span> {data.sharpeRatio.toFixed(2)}
           </p>
         )}
@@ -125,7 +135,7 @@ export const EfficientFrontierChart: React.FC<EfficientFrontierChartProps> = ({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           Efficient Frontier
         </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-gray-600 dark:text-slate-400">
           Risk vs. Return tradeoff. Points on the curve represent optimal portfolios.
         </p>
       </div>
@@ -199,7 +209,7 @@ export const EfficientFrontierChart: React.FC<EfficientFrontierChartProps> = ({
       <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-          <span className="text-gray-700 dark:text-gray-300">
+          <span className="text-gray-700 dark:text-slate-300">
             Efficient Frontier (Optimal Portfolios)
           </span>
         </div>
@@ -207,7 +217,7 @@ export const EfficientFrontierChart: React.FC<EfficientFrontierChartProps> = ({
         {currentPortfolio && (
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-red-500 transform rotate-45"></div>
-            <span className="text-gray-700 dark:text-gray-300">
+            <span className="text-gray-700 dark:text-slate-300">
               Current Portfolio
             </span>
           </div>
@@ -216,7 +226,7 @@ export const EfficientFrontierChart: React.FC<EfficientFrontierChartProps> = ({
         {recommendedPortfolio && (
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-green-500" style={{ clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }}></div>
-            <span className="text-gray-700 dark:text-gray-300">
+            <span className="text-gray-700 dark:text-slate-300">
               Recommended Portfolio
             </span>
           </div>

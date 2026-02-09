@@ -85,8 +85,9 @@ export async function PUT(request: NextRequest) {
       success: true, 
       preferences: updatedPreferences 
     });
-  } catch (error) {
-    console.error('Error updating notification preferences:', error);
+  } catch (_error) {
+    // NotificationPreferencesAPI error: Error updating notification preferences
+    void _error;
     return NextResponse.json(
       { error: 'Failed to update preferences' },
       { status: 500 }
@@ -101,13 +102,12 @@ export async function POST(request: NextRequest) {
     const { action, subscription } = body;
 
     if (action === 'subscribe' && subscription) {
-      // Store push subscription
-      console.log('Push subscription registered for user:', userId);
+      // NotificationPreferencesAPI: Push subscription registered for user
       return NextResponse.json({ success: true, message: 'Subscribed to push notifications' });
     }
 
     if (action === 'unsubscribe') {
-      console.log('Push subscription removed for user:', userId);
+      // NotificationPreferencesAPI: Push subscription removed for user
       return NextResponse.json({ success: true, message: 'Unsubscribed from push notifications' });
     }
 
@@ -115,8 +115,9 @@ export async function POST(request: NextRequest) {
       { error: 'Invalid action' },
       { status: 400 }
     );
-  } catch (error) {
-    console.error('Error processing notification action:', error);
+  } catch (_error) {
+    // NotificationPreferencesAPI error: Error processing notification action
+    void _error;
     return NextResponse.json(
       { error: 'Failed to process request' },
       { status: 500 }

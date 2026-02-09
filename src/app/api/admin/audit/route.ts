@@ -73,8 +73,8 @@ export async function GET(request: NextRequest) {
       limit,
       totalPages: Math.ceil((count || 0) / limit)
     });
-  } catch (error) {
-    console.error('Admin audit error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json({
       logs: generateMockAuditLogs(50),
       total: 100,
@@ -105,8 +105,8 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ log: data });
-  } catch (error) {
-    console.error('Audit log creation error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json({ error: 'Failed to create audit log' }, { status: 500 });
   }
 }

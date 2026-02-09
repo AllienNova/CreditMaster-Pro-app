@@ -18,7 +18,7 @@ describe('Credit Reports', () => {
     // Login before each test
     cy.clearCookies();
     cy.clearLocalStorage();
-    cy.visit('/login');
+    cy.visit('/auth/login');
     cy.get('input[type="email"]').type(testUser.email);
     cy.get('input[type="password"]').type(testUser.password);
     cy.get('button[type="submit"]').click();

@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile Credit API Service
+ * Fynvita Mobile Credit API Service
  * Handles all credit score, monitoring, and bureau-related API calls
  */
 

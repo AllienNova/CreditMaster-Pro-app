@@ -1,12 +1,12 @@
 /**
- * CPFI Empty State Component
+ * Fynvita Empty State Component
  * Placeholder for empty lists, no data, etc.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, ViewStyle, TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 import { Button } from './Button';
 
 interface EmptyStateProps {
@@ -28,14 +28,52 @@ export function EmptyState({
   secondaryActionLabel,
   onSecondaryAction,
 }: EmptyStateProps) {
+  const { colors, spacing, fontSize, fontWeight } = useTheme();
+
+  const styles = useMemo(() => ({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing.xl,
+    } as ViewStyle,
+    iconContainer: {
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: colors.backgroundSecondary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: spacing.lg,
+    } as ViewStyle,
+    title: {
+      fontSize: fontSize.xl,
+      fontWeight: fontWeight.semibold,
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: spacing.sm,
+    } as TextStyle,
+    description: {
+      fontSize: fontSize.sm,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 20,
+      marginBottom: spacing.lg,
+      maxWidth: 280,
+    } as TextStyle,
+    buttonContainer: {
+      marginBottom: spacing.sm,
+    } as ViewStyle,
+  }), [colors, spacing, fontSize, fontWeight]);
+
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
-        <Ionicons name={icon} size={64} color={theme.colors.textSecondary} />
+        <Ionicons name={icon} size={64} color={colors.textSecondary} />
       </View>
-      
+
       <Text style={styles.title}>{title}</Text>
-      
+
       {description && (
         <Text style={styles.description}>{description}</Text>
       )}
@@ -60,41 +98,5 @@ export function EmptyState({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: theme.spacing.xl,
-  },
-  iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: theme.colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: theme.spacing.sm,
-  },
-  description: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: theme.spacing.lg,
-    maxWidth: 280,
-  },
-  buttonContainer: {
-    marginBottom: theme.spacing.sm,
-  },
-});
 
 export default EmptyState;

@@ -93,12 +93,12 @@ export default function DisputeDetail({ disputeId }: DisputeDetailProps) {
   }
 
   const statusColors = {
-    draft: 'bg-gray-100 text-gray-800',
+    draft: 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100',
     sent: 'bg-blue-100 text-blue-800',
     under_review: 'bg-yellow-100 text-yellow-800',
     resolved: 'bg-green-100 text-green-800',
     rejected: 'bg-red-100 text-red-800',
-    escalated: 'bg-purple-100 text-purple-800',
+    escalated: 'bg-blue-100 text-blue-800',
   };
 
   const bureauColors = {
@@ -130,8 +130,8 @@ export default function DisputeDetail({ disputeId }: DisputeDetailProps) {
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{dispute.itemType}</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{dispute.itemType}</h1>
+            <p className="text-gray-600 dark:text-slate-300 mt-1">
               Dispute ID: {dispute.id}
             </p>
           </div>
@@ -146,77 +146,77 @@ export default function DisputeDetail({ disputeId }: DisputeDetailProps) {
         {/* Left Column - Details */}
         <div className="lg:col-span-2 space-y-6">
           {/* Dispute Information */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Dispute Information</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+            <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Dispute Information</h2>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Bureau</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-slate-400">Bureau</label>
                 <p className={`text-lg font-semibold ${bureauColors[dispute.bureau]}`}>
                   {dispute.bureau.charAt(0).toUpperCase() + dispute.bureau.slice(1)}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Item Description</label>
-                <p className="text-gray-900">{dispute.itemDescription}</p>
+                <label className="text-sm font-medium text-gray-500 dark:text-slate-400">Item Description</label>
+                <p className="text-gray-900 dark:text-white">{dispute.itemDescription}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Dispute Reason</label>
-                <p className="text-gray-900">{dispute.reason}</p>
+                <label className="text-sm font-medium text-gray-500 dark:text-slate-400">Dispute Reason</label>
+                <p className="text-gray-900 dark:text-white">{dispute.reason}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Created</label>
-                  <p className="text-gray-900">{formatDate(dispute.createdAt)}</p>
+                  <label className="text-sm font-medium text-gray-500 dark:text-slate-400">Created</label>
+                  <p className="text-gray-900 dark:text-white">{formatDate(dispute.createdAt)}</p>
                 </div>
                 {dispute.sentAt && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Sent</label>
-                    <p className="text-gray-900">{formatDate(dispute.sentAt)}</p>
+                    <label className="text-sm font-medium text-gray-500 dark:text-slate-400">Sent</label>
+                    <p className="text-gray-900 dark:text-white">{formatDate(dispute.sentAt)}</p>
                   </div>
                 )}
                 {dispute.estimatedResolutionDate && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Est. Resolution</label>
-                    <p className="text-gray-900">{formatDate(dispute.estimatedResolutionDate)}</p>
+                    <label className="text-sm font-medium text-gray-500 dark:text-slate-400">Est. Resolution</label>
+                    <p className="text-gray-900 dark:text-white">{formatDate(dispute.estimatedResolutionDate)}</p>
                   </div>
                 )}
                 {dispute.resolvedAt && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Resolved</label>
-                    <p className="text-gray-900">{formatDate(dispute.resolvedAt)}</p>
+                    <label className="text-sm font-medium text-gray-500 dark:text-slate-400">Resolved</label>
+                    <p className="text-gray-900 dark:text-white">{formatDate(dispute.resolvedAt)}</p>
                   </div>
                 )}
               </div>
               {dispute.outcome && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Outcome</label>
-                  <p className="text-gray-900 capitalize">{dispute.outcome}</p>
+                  <label className="text-sm font-medium text-gray-500 dark:text-slate-400">Outcome</label>
+                  <p className="text-gray-900 dark:text-white capitalize">{dispute.outcome}</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Dispute Letter */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Dispute Letter</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+            <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Dispute Letter</h2>
             </div>
             <div className="p-6">
-              <div className="bg-gray-50 rounded-lg p-6 font-mono text-sm whitespace-pre-wrap">
+              <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-6 font-mono text-sm whitespace-pre-wrap">
                 {dispute.letterContent}
               </div>
               <div className="mt-4 flex gap-3">
                 <button
                   onClick={() => window.print()}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
                 >
                   Print Letter
                 </button>
                 <button
                   onClick={() => navigator.clipboard.writeText(dispute.letterContent)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
                 >
                   Copy to Clipboard
                 </button>
@@ -226,9 +226,9 @@ export default function DisputeDetail({ disputeId }: DisputeDetailProps) {
 
           {/* Evidence */}
           {dispute.evidence && dispute.evidence.length > 0 && (
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">Evidence</h2>
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+              <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Evidence</h2>
               </div>
               <div className="p-6">
                 <ul className="space-y-2">
@@ -254,12 +254,12 @@ export default function DisputeDetail({ disputeId }: DisputeDetailProps) {
 
           {/* Notes */}
           {dispute.notes && (
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">Notes</h2>
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+              <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Notes</h2>
               </div>
               <div className="p-6">
-                <p className="text-gray-900 whitespace-pre-wrap">{dispute.notes}</p>
+                <p className="text-gray-900 dark:text-white whitespace-pre-wrap">{dispute.notes}</p>
               </div>
             </div>
           )}

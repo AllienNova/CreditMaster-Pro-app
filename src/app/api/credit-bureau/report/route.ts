@@ -47,8 +47,7 @@ export async function GET(request: NextRequest) {
       result = await CreditBureauService.getAllCreditReports(user.id);
     }
 
-    // 5. Log action
-    console.log(`Credit report retrieved for user ${user.id}, bureau: ${bureau || 'all'}, type: ${reportType}`);
+    // 5. Log action (CreditBureauReportAPI: Credit report retrieved for user)
 
     // 6. Return response
     return NextResponse.json({
@@ -57,8 +56,8 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Credit report API error:', error);
-    
+    // CreditBureauReportAPI error: Credit report API error
+
     return NextResponse.json(
       { 
         success: false,
@@ -108,8 +107,7 @@ export async function POST(request: NextRequest) {
       reportType
     );
 
-    // 5. Log action
-    console.log(`Credit report requested for user ${user.id}, bureau: ${bureau}, type: ${reportType}`);
+    // 5. Log action (CreditBureauReportAPI: Credit report requested for user)
 
     // 6. Return response
     return NextResponse.json({
@@ -118,8 +116,8 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Credit report request API error:', error);
-    
+    // CreditBureauReportAPI error: Credit report request API error
+
     return NextResponse.json(
       { 
         success: false,

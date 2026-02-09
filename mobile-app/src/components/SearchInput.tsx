@@ -1,20 +1,21 @@
 /**
- * CPFI Search Input Component
+ * Fynvita Search Input Component
  * Search input with suggestions and clear button
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View,
   TextInput,
   Text,
-  StyleSheet,
   TouchableOpacity,
   FlatList,
   Keyboard,
+  ViewStyle,
+  TextStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 
 interface Suggestion {
   id: string;
@@ -43,6 +44,7 @@ export function SearchInput({
   autoFocus = false,
   showClearButton = true,
 }: SearchInputProps) {
+  const { colors, spacing, borderRadius, fontSize, shadow, iconSize } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
@@ -64,17 +66,68 @@ export function SearchInput({
     Keyboard.dismiss();
   };
 
+  const styles = useMemo(() => ({
+    container: {
+      position: 'relative',
+      zIndex: 10,
+    } as ViewStyle,
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.lg,
+      paddingHorizontal: spacing.md,
+      borderWidth: 1,
+      borderColor: isFocused ? colors.primary : colors.border,
+      height: 48,
+    } as ViewStyle,
+    input: {
+      flex: 1,
+      fontSize: fontSize.md,
+      color: colors.text,
+      marginLeft: spacing.sm,
+      paddingVertical: 0,
+    } as TextStyle,
+    clearButton: {
+      padding: 4,
+    } as ViewStyle,
+    suggestionsContainer: {
+      position: 'absolute',
+      top: 52,
+      left: 0,
+      right: 0,
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      maxHeight: 200,
+      ...shadow.md,
+    } as ViewStyle,
+    suggestionItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    } as ViewStyle,
+    suggestionText: {
+      fontSize: fontSize.sm,
+      color: colors.text,
+    } as TextStyle,
+  }), [colors, spacing, borderRadius, fontSize, shadow, isFocused]);
+
   return (
     <View style={styles.container}>
-      <View style={[styles.inputContainer, isFocused && styles.inputContainerFocused]}>
-        <Ionicons name="search" size={20} color={theme.colors.textSecondary} />
+      <View style={styles.inputContainer}>
+        <Ionicons name="search" size={iconSize.md} color={colors.textSecondary} />
         <TextInput
           ref={inputRef}
           style={styles.input}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={theme.colors.textSecondary}
+          placeholderTextColor={colors.textSecondary}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setTimeout(() => setIsFocused(false), 200)}
           onSubmitEditing={handleSubmit}
@@ -85,7 +138,7 @@ export function SearchInput({
         />
         {showClearButton && value.length > 0 && (
           <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
-            <Ionicons name="close-circle" size={18} color={theme.colors.textSecondary} />
+            <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
@@ -102,11 +155,11 @@ export function SearchInput({
                 onPress={() => handleSuggestionPress(item)}
               >
                 {item.icon && (
-                  <Ionicons 
-                    name={item.icon} 
-                    size={18} 
-                    color={theme.colors.textSecondary} 
-                    style={styles.suggestionIcon}
+                  <Ionicons
+                    name={item.icon}
+                    size={18}
+                    color={colors.textSecondary}
+                    style={{ marginRight: spacing.sm }}
                   />
                 )}
                 <Text style={styles.suggestionText}>{item.text}</Text>
@@ -118,66 +171,5 @@ export function SearchInput({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
-    zIndex: 10,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    paddingHorizontal: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    height: 48,
-  },
-  inputContainerFocused: {
-    borderColor: theme.colors.primary,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: theme.colors.text,
-    marginLeft: theme.spacing.sm,
-    paddingVertical: 0,
-  },
-  clearButton: {
-    padding: 4,
-  },
-  suggestionsContainer: {
-    position: 'absolute',
-    top: 52,
-    left: 0,
-    right: 0,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    maxHeight: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  suggestionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  suggestionIcon: {
-    marginRight: theme.spacing.sm,
-  },
-  suggestionText: {
-    fontSize: 14,
-    color: theme.colors.text,
-  },
-});
 
 export default SearchInput;

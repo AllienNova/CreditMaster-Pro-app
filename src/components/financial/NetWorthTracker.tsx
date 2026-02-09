@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
 import AreaChartComponent from '@/components/charts/AreaChart';
 import PieChartComponent from '@/components/charts/PieChart';
+import { Icon } from '@/components/ui/Icon';
 
 // Types
 interface Asset {
@@ -77,12 +78,12 @@ const ASSET_CATEGORIES: {
   icon: string;
   color: string;
 }[] = [
-  { value: 'cash', label: 'Cash & Savings', icon: '💵', color: '#10B981' },
-  { value: 'investments', label: 'Investments', icon: '📈', color: '#3B82F6' },
-  { value: 'retirement', label: 'Retirement', icon: '🏦', color: '#8B5CF6' },
-  { value: 'real_estate', label: 'Real Estate', icon: '🏠', color: '#F59E0B' },
-  { value: 'vehicles', label: 'Vehicles', icon: '🚗', color: '#6366F1' },
-  { value: 'other', label: 'Other', icon: '📦', color: '#6B7280' },
+  { value: 'cash', label: 'Cash & Savings', icon: "wallet", color: '#10B981' },
+  { value: 'investments', label: 'Investments', icon: "trending-up", color: '#3B82F6' },
+  { value: 'retirement', label: 'Retirement', icon: "shield", color: '#8B5CF6' },
+  { value: 'real_estate', label: 'Real Estate', icon: "home", color: '#F59E0B' },
+  { value: 'vehicles', label: 'Vehicles', icon: "truck", color: '#6366F1' },
+  { value: 'other', label: 'Other', icon: "puzzle-piece", color: '#6B7280' },
 ];
 
 const LIABILITY_CATEGORIES: {
@@ -91,22 +92,22 @@ const LIABILITY_CATEGORIES: {
   icon: string;
   color: string;
 }[] = [
-  { value: 'credit_card', label: 'Credit Cards', icon: '💳', color: '#EF4444' },
-  { value: 'mortgage', label: 'Mortgage', icon: '🏠', color: '#F97316' },
-  { value: 'auto_loan', label: 'Auto Loans', icon: '🚗', color: '#F59E0B' },
+  { value: 'credit_card', label: 'Credit Cards', icon: "credit-card", color: '#EF4444' },
+  { value: 'mortgage', label: 'Mortgage', icon: "home", color: '#F97316' },
+  { value: 'auto_loan', label: 'Auto Loans', icon: "truck", color: '#F59E0B' },
   {
     value: 'student_loan',
     label: 'Student Loans',
-    icon: '🎓',
+    icon: "academic-cap",
     color: '#EAB308',
   },
   {
     value: 'personal_loan',
     label: 'Personal Loans',
-    icon: '💰',
+    icon: "banknotes",
     color: '#84CC16',
   },
-  { value: 'other', label: 'Other', icon: '📋', color: '#6B7280' },
+  { value: 'other', label: 'Other', icon: "puzzle-piece", color: '#6B7280' },
 ];
 
 export default function NetWorthTracker() {
@@ -409,10 +410,10 @@ export default function NetWorthTracker() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+              className="bg-white dark:bg-slate-800 rounded-lg shadow p-6"
             >
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
+              <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4"></div>
             </div>
           ))}
         </div>
@@ -428,20 +429,20 @@ export default function NetWorthTracker() {
       : 0;
 
   const tabs: { id: TabType; label: string; icon: string }[] = [
-    { id: 'overview', label: 'Overview', icon: '📊' },
-    { id: 'assets', label: 'Assets', icon: '💰' },
-    { id: 'liabilities', label: 'Liabilities', icon: '💳' },
-    { id: 'history', label: 'History', icon: '📈' },
+    { id: 'overview', label: 'Overview', icon: "chart-bar" },
+    { id: 'assets', label: 'Assets', icon: "trending-up" },
+    { id: 'liabilities', label: 'Liabilities', icon: "credit-card" },
+    { id: 'history', label: 'History', icon: "clock" },
   ];
 
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 rounded-xl shadow-lg p-6 text-white">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 rounded-xl shadow-lg p-6 text-white">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold opacity-90">Net Worth</h3>
-            <span className="text-2xl">💎</span>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold">
             {formatCurrency(data.current)}
@@ -451,72 +452,68 @@ export default function NetWorthTracker() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-400">
               Total Assets
             </h3>
-            <span className="text-2xl">💰</span>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold text-green-600 dark:text-green-400">
             {formatCurrency(data.assets)}
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             {data.assetsList.length} accounts
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-400">
               Total Liabilities
             </h3>
-            <span className="text-2xl">💳</span>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold text-red-600 dark:text-red-400">
             {formatCurrency(data.liabilities)}
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             {data.liabilitiesList.length} accounts
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-400">
               Monthly Change
             </h3>
             <span className="text-2xl">
-              {data.monthlyChange >= 0 ? '📈' : '📉'}
+              {data.monthlyChange >= 0 ? '' : ''}
             </span>
           </div>
           <div
-            className={`text-3xl font-bold ${data.monthlyChange >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+            className={`text-3xl font-bold ${data.monthlyChange >= 0 ? 'text-green-600' : 'text-red-600 dark:text-red-400'}`}
           >
             {data.monthlyChange >= 0 ? '+' : ''}
             {formatCurrency(data.monthlyChange)}
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             vs last month
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow">
-        <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow">
+        <div className="border-b border-gray-200 dark:border-slate-700">
           <nav className="flex -mb-px overflow-x-auto">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
-                }`}
+                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${ activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300 hover:border-gray-300 dark:border-slate-600' }`}
               >
-                <span>{tab.icon}</span>
+                <Icon name={tab.icon} className="w-4 h-4 inline-block" />
                 {tab.label}
               </button>
             ))}
@@ -589,17 +586,13 @@ export default function NetWorthTracker() {
                   {data.milestones.map((milestone) => (
                     <div
                       key={milestone.amount}
-                      className={`p-3 rounded-lg text-center ${
-                        milestone.achieved
-                          ? 'bg-green-100 dark:bg-green-900/30 border-2 border-green-500'
-                          : 'bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600'
-                      }`}
+                      className={`p-3 rounded-lg text-center ${ milestone.achieved ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600' }`}
                     >
                       <div className="text-2xl mb-1">
-                        {milestone.achieved ? '✅' : '🎯'}
+                        {milestone.achieved ? '' : ''}
                       </div>
                       <div
-                        className={`text-sm font-bold ${milestone.achieved ? 'text-green-700 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}
+                        className={`text-sm font-bold ${milestone.achieved ? 'text-green-700' : 'text-gray-600 dark:text-slate-400'}`}
                       >
                         {formatCurrency(milestone.amount)}
                       </div>
@@ -638,11 +631,11 @@ export default function NetWorthTracker() {
                 return (
                   <div
                     key={category.value}
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                    className="border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden"
                   >
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 flex items-center justify-between">
+                    <div className="bg-gray-50 dark:bg-slate-700 px-4 py-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-xl">{category.icon}</span>
+                        <Icon name={category.icon} className="w-5 h-5 inline-block" />
                         <span className="font-semibold text-gray-900 dark:text-white">
                           {category.label}
                         </span>
@@ -655,14 +648,14 @@ export default function NetWorthTracker() {
                       {categoryAssets.map((asset) => (
                         <div
                           key={asset.id}
-                          className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                          className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/50"
                         >
                           <div>
                             <div className="font-medium text-gray-900 dark:text-white">
                               {asset.name}
                             </div>
                             {asset.institution && (
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                              <div className="text-sm text-gray-500 dark:text-slate-400">
                                 {asset.institution}
                               </div>
                             )}
@@ -673,7 +666,7 @@ export default function NetWorthTracker() {
                             </div>
                             {asset.isLinked && (
                               <span className="text-xs text-green-600 dark:text-green-400">
-                                🔗 Linked
+                                Linked
                               </span>
                             )}
                           </div>
@@ -714,11 +707,11 @@ export default function NetWorthTracker() {
                 return (
                   <div
                     key={category.value}
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                    className="border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden"
                   >
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 flex items-center justify-between">
+                    <div className="bg-gray-50 dark:bg-slate-700 px-4 py-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-xl">{category.icon}</span>
+                        <Icon name={category.icon} className="w-5 h-5 inline-block" />
                         <span className="font-semibold text-gray-900 dark:text-white">
                           {category.label}
                         </span>
@@ -731,13 +724,13 @@ export default function NetWorthTracker() {
                       {categoryLiabilities.map((liability) => (
                         <div
                           key={liability.id}
-                          className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                          className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/50"
                         >
                           <div>
                             <div className="font-medium text-gray-900 dark:text-white">
                               {liability.name}
                             </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                            <div className="text-sm text-gray-500 dark:text-slate-400">
                               {liability.institution}{' '}
                               {liability.interestRate &&
                                 `• ${liability.interestRate}% APR`}
@@ -748,7 +741,7 @@ export default function NetWorthTracker() {
                               {formatCurrency(liability.balance)}
                             </div>
                             {liability.minimumPayment && (
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                              <div className="text-xs text-gray-500 dark:text-slate-400">
                                 Min: {formatCurrency(liability.minimumPayment)}
                                 /mo
                               </div>
@@ -795,7 +788,7 @@ export default function NetWorthTracker() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <tr className="border-b border-gray-200 dark:border-slate-700">
                       <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">
                         Month
                       </th>
@@ -822,7 +815,7 @@ export default function NetWorthTracker() {
                       return (
                         <tr
                           key={month.date}
-                          className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                          className="border-b border-gray-100 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30"
                         >
                           <td className="py-3 px-4 text-gray-900 dark:text-white">
                             {month.date}
@@ -837,7 +830,7 @@ export default function NetWorthTracker() {
                             {formatCurrency(month.netWorth)}
                           </td>
                           <td
-                            className={`py-3 px-4 text-right ${change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+                            className={`py-3 px-4 text-right ${change >= 0 ? 'text-green-600' : 'text-red-600 dark:text-red-400'}`}
                           >
                             {index < arr.length - 1
                               ? `${change >= 0 ? '+' : ''}${formatCurrency(change)}`
@@ -857,13 +850,13 @@ export default function NetWorthTracker() {
       {/* Add Asset Modal */}
       {showAddAssetModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
               Add Asset
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Name *
                 </label>
                 <input
@@ -872,12 +865,12 @@ export default function NetWorthTracker() {
                   onChange={(e) =>
                     setNewAsset({ ...newAsset, name: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   placeholder="e.g., Savings Account"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Category *
                 </label>
                 <select
@@ -888,7 +881,7 @@ export default function NetWorthTracker() {
                       category: e.target.value as AssetCategory,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                 >
                   {ASSET_CATEGORIES.map((cat) => (
                     <option key={cat.value} value={cat.value}>
@@ -898,7 +891,7 @@ export default function NetWorthTracker() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Value *
                 </label>
                 <input
@@ -910,12 +903,12 @@ export default function NetWorthTracker() {
                       value: parseFloat(e.target.value) || 0,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   placeholder="0.00"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Institution
                 </label>
                 <input
@@ -924,7 +917,7 @@ export default function NetWorthTracker() {
                   onChange={(e) =>
                     setNewAsset({ ...newAsset, institution: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   placeholder="e.g., Chase Bank"
                 />
               </div>
@@ -932,7 +925,7 @@ export default function NetWorthTracker() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowAddAssetModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
               >
                 Cancel
               </button>
@@ -950,13 +943,13 @@ export default function NetWorthTracker() {
       {/* Add Liability Modal */}
       {showAddLiabilityModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
               Add Liability
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Name *
                 </label>
                 <input
@@ -965,12 +958,12 @@ export default function NetWorthTracker() {
                   onChange={(e) =>
                     setNewLiability({ ...newLiability, name: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   placeholder="e.g., Credit Card"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Category *
                 </label>
                 <select
@@ -981,7 +974,7 @@ export default function NetWorthTracker() {
                       category: e.target.value as LiabilityCategory,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                 >
                   {LIABILITY_CATEGORIES.map((cat) => (
                     <option key={cat.value} value={cat.value}>
@@ -991,7 +984,7 @@ export default function NetWorthTracker() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Balance *
                 </label>
                 <input
@@ -1003,13 +996,13 @@ export default function NetWorthTracker() {
                       balance: parseFloat(e.target.value) || 0,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   placeholder="0.00"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Interest Rate %
                   </label>
                   <input
@@ -1022,12 +1015,12 @@ export default function NetWorthTracker() {
                         interestRate: parseFloat(e.target.value) || 0,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                     placeholder="0.00"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                     Min Payment
                   </label>
                   <input
@@ -1039,13 +1032,13 @@ export default function NetWorthTracker() {
                         minimumPayment: parseFloat(e.target.value) || 0,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                     placeholder="0.00"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                   Institution
                 </label>
                 <input
@@ -1057,7 +1050,7 @@ export default function NetWorthTracker() {
                       institution: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   placeholder="e.g., Chase"
                 />
               </div>
@@ -1065,7 +1058,7 @@ export default function NetWorthTracker() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowAddLiabilityModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
               >
                 Cancel
               </button>

@@ -96,7 +96,7 @@ export default function ConfirmDialog({
           {/* Content */}
           <div className="flex-1">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{message}</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{message}</p>
           </div>
         </div>
 
@@ -106,7 +106,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {cancelText}
           </button>

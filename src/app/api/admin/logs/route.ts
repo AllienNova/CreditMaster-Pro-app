@@ -73,8 +73,8 @@ export async function GET(request: NextRequest) {
       limit,
       totalPages: Math.ceil((count || 0) / limit)
     });
-  } catch (error) {
-    console.error('Admin logs error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json({
       logs: generateMockLogs(50),
       total: 100,

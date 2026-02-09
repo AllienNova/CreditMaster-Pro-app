@@ -25,8 +25,8 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
           const data = await response.json();
           setLinks(data.links || []);
         }
-      } catch (err) {
-        console.error('Failed to load share links', err);
+      } catch (_error) {
+        // Error logged
       }
     };
 
@@ -94,16 +94,16 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-2xl">
+        <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500">Share document</p>
-            <h3 className="text-xl font-semibold text-gray-900 truncate">{document.originalName}</h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Share document</p>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white truncate">{document.originalName}</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl"
+            className="text-gray-400 hover:text-gray-600 dark:text-slate-300 text-2xl"
             aria-label="Close share modal"
           >
             ×
@@ -124,12 +124,12 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
           )}
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Recipients</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">Recipients</label>
             <textarea
               value={recipients}
               onChange={(e) => setRecipients(e.target.value)}
               placeholder="Enter email addresses separated by commas"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg border border-gray-300 dark:border-slate-600 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               rows={2}
               disabled={loading}
             />
@@ -137,11 +137,11 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Permission</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Permission</label>
               <select
                 value={permission}
                 onChange={(e) => setPermission(e.target.value as 'view' | 'download')}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-300 dark:border-slate-600 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={loading}
               >
                 <option value="view">View only</option>
@@ -150,11 +150,11 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Expires in</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Expires in</label>
               <select
                 value={expiration}
                 onChange={(e) => setExpiration(Number(e.target.value))}
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-300 dark:border-slate-600 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={loading}
               >
                 {[1, 6, 12, 24, 48, 72, 168].map((hours) => (
@@ -176,21 +176,21 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
           </button>
 
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-3">Active links</h4>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Active links</h4>
             {links.length === 0 && (
-              <p className="text-sm text-gray-500">No active links yet. Create one above.</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">No active links yet. Create one above.</p>
             )}
             <div className="space-y-3">
               {links.map((link) => (
                 <div
                   key={link.id}
-                  className="border border-gray-200 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                  className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
                 >
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {link.recipients.join(', ')}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
                       {permissionLabel(link.permissions)} · Expires{' '}
                       {link.expiresAt.toLocaleString()}
                     </p>

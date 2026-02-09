@@ -84,12 +84,12 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
 
   if (!analysis) {
     return (
-      <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <span className="text-6xl">📊</span>
+      <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-lg shadow">
+        <span className="text-6xl"></span>
         <h3 className="mt-4 text-xl font-semibold text-gray-900 dark:text-white">
           No Analysis Available
         </h3>
-        <p className="mt-2 text-gray-500 dark:text-gray-400">
+        <p className="mt-2 text-gray-500 dark:text-slate-400">
           Unable to retrieve analysis for {symbol}
         </p>
       </div>
@@ -100,29 +100,32 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
   const isPositive = quote.change >= 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="stock-analysis-container">
       {/* Stock Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {quote.symbol}
               </h2>
-              <span className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded">
+              <span className="px-2 py-1 text-xs bg-gray-100 dark:bg-slate-700 rounded">
                 {quote.exchange}
               </span>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-gray-500 dark:text-slate-400 mt-1">
               {quote.name}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(quote.price)}
+            <p
+              className="text-3xl font-bold text-gray-900 dark:text-white"
+              data-testid="stock-price"
+            >
+              <span data-testid="current-price">{formatCurrency(quote.price)}</span>
             </p>
             <p
-              className={`text-lg font-medium ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+              className={`text-lg font-medium ${isPositive ? 'text-green-600' : 'text-red-600 dark:text-red-400'}`}
             >
               {isPositive ? '▲' : '▼'} {formatCurrency(Math.abs(quote.change))}{' '}
               ({formatPercent(quote.changePercent)})
@@ -135,26 +138,28 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
             action={recommendation.action}
             confidence={recommendation.confidence}
           />
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+          <span className="text-sm text-gray-500 dark:text-slate-400" data-testid="target-price">
             Target: {formatCurrency(recommendation.targetPrice)}
           </span>
         </div>
       </div>
 
       {/* Price Chart */}
-      <ChartContainer title="Price History" className="h-[350px]">
-        <LineChartComponent
-          data={generateMockPriceData(quote.price, 30)}
-          lines={[{ dataKey: 'price', name: 'Price', color: '#3B82F6' }]}
-          height={280}
-          currency
-        />
-      </ChartContainer>
+      <div data-testid="price-chart">
+        <ChartContainer title="Price History" className="h-[350px]">
+          <LineChartComponent
+            data={generateMockPriceData(quote.price, 30)}
+            lines={[{ dataKey: 'price', name: 'Price', color: '#3B82F6' }]}
+            height={280}
+            currency
+          />
+        </ChartContainer>
+      </div>
 
       {/* Analysis Tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="border-b border-gray-200 dark:border-gray-700">
-          <nav className="flex -mb-px">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+        <div className="border-b border-gray-200 dark:border-slate-700">
+          <nav className="flex -mb-px" role="tablist" aria-label="Analysis tabs">
             {(
               ['technical', 'fundamental', 'sentiment', 'ai'] as AnalysisTab[]
             ).map((tab) => (
@@ -162,11 +167,11 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
+                id={`analysis-tab-${tab}`}
+                role="tab"
+                aria-selected={activeTab === tab}
+                aria-controls={`analysis-panel-${tab}`}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${ activeTab === tab ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300' }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
@@ -174,15 +179,29 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
           </nav>
         </div>
         <div className="p-6">
-          {activeTab === 'technical' && <TechnicalTab analysis={analysis} />}
-          {activeTab === 'fundamental' && (
-            <FundamentalTab
-              analysis={analysis}
-              formatLargeNumber={formatLargeNumber}
-            />
+          {activeTab === 'technical' && (
+            <div id="analysis-panel-technical" role="tabpanel" aria-labelledby="analysis-tab-technical">
+              <TechnicalTab analysis={analysis} />
+            </div>
           )}
-          {activeTab === 'sentiment' && <SentimentTab analysis={analysis} />}
-          {activeTab === 'ai' && <AITab analysis={analysis} />}
+          {activeTab === 'fundamental' && (
+            <div id="analysis-panel-fundamental" role="tabpanel" aria-labelledby="analysis-tab-fundamental">
+              <FundamentalTab
+                analysis={analysis}
+                formatLargeNumber={formatLargeNumber}
+              />
+            </div>
+          )}
+          {activeTab === 'sentiment' && (
+            <div id="analysis-panel-sentiment" role="tabpanel" aria-labelledby="analysis-tab-sentiment">
+              <SentimentTab analysis={analysis} />
+            </div>
+          )}
+          {activeTab === 'ai' && (
+            <div id="analysis-panel-ai" role="tabpanel" aria-labelledby="analysis-tab-ai">
+              <AITab analysis={analysis} />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -217,6 +236,7 @@ function RecommendationBadge({
   return (
     <span
       className={`px-3 py-1 text-white text-sm font-medium rounded ${colors[action] || 'bg-gray-500'}`}
+      data-testid="recommendation"
     >
       {labels[action] || action} ({Math.round(confidence * 100)}%)
     </span>
@@ -234,15 +254,15 @@ function TechnicalTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="technical-indicators">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* RSI */}
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-          <h4 className="text-sm text-gray-500 dark:text-gray-400">RSI (14)</h4>
+        <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4">
+          <h4 className="text-sm text-gray-500 dark:text-slate-400">RSI (14)</h4>
           <p className={`text-2xl font-bold ${getRSIColor(indicators.rsi)}`}>
             {indicators.rsi.toFixed(2)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
             {indicators.rsi >= 70
               ? 'Overbought'
               : indicators.rsi <= 30
@@ -251,26 +271,26 @@ function TechnicalTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
           </p>
         </div>
         {/* MACD */}
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-          <h4 className="text-sm text-gray-500 dark:text-gray-400">MACD</h4>
+        <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4">
+          <h4 className="text-sm text-gray-500 dark:text-slate-400">MACD</h4>
           <p
-            className={`text-2xl font-bold ${indicators.macd.histogram >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+            className={`text-2xl font-bold ${indicators.macd.histogram >= 0 ? 'text-green-600' : 'text-red-600 dark:text-red-400'}`}
           >
             {indicators.macd.histogram.toFixed(4)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
             Signal: {indicators.macd.signal.toFixed(4)}
           </p>
         </div>
         {/* ADX */}
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-          <h4 className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4">
+          <h4 className="text-sm text-gray-500 dark:text-slate-400">
             ADX (Trend Strength)
           </h4>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
             {indicators.adx.toFixed(2)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
             {indicators.adx >= 25 ? 'Strong Trend' : 'Weak Trend'}
           </p>
         </div>
@@ -319,14 +339,14 @@ function TechnicalTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
       {/* Overall Signal */}
       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
         <div className="flex items-center justify-between">
-          <span className="text-gray-700 dark:text-gray-300">
+          <span className="text-gray-700 dark:text-slate-300">
             Technical Signal
           </span>
           <span className="font-bold text-blue-600 dark:text-blue-400">
             {technical.overallSignal.replace('_', ' ').toUpperCase()}
           </span>
         </div>
-        <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        <div className="mt-2 text-sm text-gray-500 dark:text-slate-400">
           Confidence: {(technical.confidence * 100).toFixed(1)}%
         </div>
       </div>
@@ -466,7 +486,7 @@ function SentimentTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
   return (
     <div className="space-y-6">
       {/* Overall Sentiment */}
-      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+      <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-6">
         <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           Overall Sentiment
         </h4>
@@ -484,7 +504,7 @@ function SentimentTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
             >
               {sentiment.overallSentiment.label.replace('_', ' ').toUpperCase()}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-gray-500 dark:text-slate-400">
               Based on news, social media, and analyst data
             </p>
           </div>
@@ -492,8 +512,8 @@ function SentimentTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
       </div>
       {/* Sentiment Sources */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-          <h5 className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4">
+          <h5 className="text-sm text-gray-500 dark:text-slate-400">
             News Sentiment
           </h5>
           <p
@@ -501,12 +521,12 @@ function SentimentTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
           >
             {getSentimentLabel(sentiment.newsSentiment.score)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
             {sentiment.newsSentiment.articleCount} articles analyzed
           </p>
         </div>
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-          <h5 className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4">
+          <h5 className="text-sm text-gray-500 dark:text-slate-400">
             Social Sentiment
           </h5>
           <p
@@ -514,12 +534,12 @@ function SentimentTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
           >
             {getSentimentLabel(sentiment.socialSentiment.score)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
             {sentiment.socialSentiment.mentionCount.toLocaleString()} mentions
           </p>
         </div>
-        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-          <h5 className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4">
+          <h5 className="text-sm text-gray-500 dark:text-slate-400">
             Analyst Rating
           </h5>
           <p className="text-xl font-bold text-gray-900 dark:text-white">
@@ -527,7 +547,7 @@ function SentimentTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
               .replace('_', ' ')
               .toUpperCase()}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
             {sentiment.analystSentiment.numberOfAnalysts} analysts
           </p>
         </div>
@@ -582,11 +602,11 @@ function AnalystBar({
   const pct = total > 0 ? (count / total) * 100 : 0;
   return (
     <div className="flex-1">
-      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+      <div className="flex justify-between text-sm text-gray-600 dark:text-slate-400 mb-1">
         <span>{label}</span>
         <span>{count}</span>
       </div>
-      <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+      <div className="h-3 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
         <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -597,20 +617,20 @@ function AITab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
   const { aiAnalysis, recommendation } = analysis;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="ai-analysis">
       {/* AI Summary */}
       <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6">
         <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
           AI Analysis Summary
         </h4>
-        <p className="text-gray-700 dark:text-gray-300">{aiAnalysis.summary}</p>
+        <p className="text-gray-700 dark:text-slate-300">{aiAnalysis.summary}</p>
       </div>
       {/* Investment Thesis */}
       <div>
         <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
           Investment Thesis
         </h4>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600 dark:text-slate-400">
           {aiAnalysis.investmentThesis}
         </p>
       </div>
@@ -618,15 +638,15 @@ function AITab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <h4 className="text-lg font-medium text-green-600 dark:text-green-400 mb-3">
-            🐂 Bull Case
+            Bull Case
           </h4>
           <ul className="space-y-2">
             {aiAnalysis.bullCase.map((point, i) => (
               <li
                 key={i}
-                className="flex items-start gap-2 text-gray-600 dark:text-gray-400"
+                className="flex items-start gap-2 text-gray-600 dark:text-slate-400"
               >
-                <span className="text-green-500 mt-1">✓</span>
+                <span className="text-green-500 mt-1"></span>
                 <span>{point}</span>
               </li>
             ))}
@@ -634,15 +654,15 @@ function AITab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
         </div>
         <div>
           <h4 className="text-lg font-medium text-red-600 dark:text-red-400 mb-3">
-            🐻 Bear Case
+            Bear Case
           </h4>
           <ul className="space-y-2">
             {aiAnalysis.bearCase.map((point, i) => (
               <li
                 key={i}
-                className="flex items-start gap-2 text-gray-600 dark:text-gray-400"
+                className="flex items-start gap-2 text-gray-600 dark:text-slate-400"
               >
-                <span className="text-red-500 mt-1">✗</span>
+                <span className="text-red-500 mt-1"></span>
                 <span>{point}</span>
               </li>
             ))}
@@ -658,29 +678,29 @@ function AITab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
           {aiAnalysis.keyRisks.map((risk, i) => (
             <li
               key={i}
-              className="flex items-start gap-2 text-gray-600 dark:text-gray-400"
+              className="flex items-start gap-2 text-gray-600 dark:text-slate-400"
             >
-              <span className="text-yellow-500 mt-1">⚠</span>
+              <span className="text-yellow-500 mt-1"></span>
               <span>{risk}</span>
             </li>
           ))}
         </ul>
       </div>
       {/* Recommendation Rationale */}
-      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+      <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-6">
         <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
           Recommendation Rationale
         </h4>
         <ul className="space-y-2">
           {recommendation.rationale.map((point, i) => (
-            <li key={i} className="text-gray-600 dark:text-gray-400">
+            <li key={i} className="text-gray-600 dark:text-slate-400">
               • {point}
             </li>
           ))}
         </ul>
       </div>
       {/* Confidence */}
-      <div className="text-sm text-gray-500 dark:text-gray-400">
+      <div className="text-sm text-gray-500 dark:text-slate-400">
         AI Confidence Score: {(aiAnalysis.confidenceScore * 100).toFixed(1)}% |
         Model: {aiAnalysis.analysisModel}
       </div>
@@ -690,8 +710,8 @@ function AITab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-      <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+    <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3">
+      <p className="text-xs text-gray-500 dark:text-slate-400">{label}</p>
       <p className="text-lg font-semibold text-gray-900 dark:text-white">
         {value}
       </p>
@@ -721,9 +741,9 @@ function generateMockPriceData(currentPrice: number, days: number) {
 function AnalysisSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-32" />
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-[350px]" />
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-[400px]" />
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 h-32" />
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 h-[350px]" />
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 h-[400px]" />
     </div>
   );
 }

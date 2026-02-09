@@ -93,8 +93,9 @@ export class PushNotificationService {
       // Save subscription to server
       await this.saveSubscription(userId, subscription);
       return subscription;
-    } catch (error) {
-      console.error('Push subscription failed:', error);
+    } catch (_error) {
+      // PushNotificationService error: Push subscription failed
+      void _error;
       return null;
     }
   }

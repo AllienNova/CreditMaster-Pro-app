@@ -2,9 +2,49 @@
  * Chart Utilities
  *
  * Common utilities, colors, and formatters for charts.
+ * Includes accessibility-focused helpers for WCAG compliance.
  */
 
-// Primary chart color palette - matches CPFI brand
+// Axis tick styles with proper dark mode support and responsive sizing
+export const AXIS_TICK_STYLE = {
+  fontSize: 11,
+  fill: '#6B7280',
+};
+
+// Dark mode aware axis styles
+export const getAxisStyles = (isDark = false) => ({
+  tick: {
+    fontSize: 11,
+    fill: isDark ? '#9CA3AF' : '#6B7280',
+  },
+  tickLine: {
+    stroke: isDark ? '#4B5563' : '#E5E7EB',
+  },
+  axisLine: {
+    stroke: isDark ? '#4B5563' : '#E5E7EB',
+  },
+});
+
+// Grid styles with dark mode support
+export const getGridStyles = (isDark = false) => ({
+  stroke: isDark ? '#374151' : '#E5E7EB',
+  strokeDasharray: '3 3',
+});
+
+// Generate accessible chart description for screen readers
+export function generateChartDescription(
+  chartType: string,
+  dataPoints: number,
+  dataRange?: { min: number; max: number },
+  currency = false
+): string {
+  const rangeText = dataRange
+    ? ` ranging from ${currency ? formatCurrency(dataRange.min) : dataRange.min} to ${currency ? formatCurrency(dataRange.max) : dataRange.max}`
+    : '';
+  return `${chartType} with ${dataPoints} data points${rangeText}. Use arrow keys to navigate data points when focused.`;
+}
+
+// Primary chart color palette - matches Fynvita brand
 export const CHART_COLORS = {
   primary: '#3B82F6', // Blue
   secondary: '#10B981', // Green

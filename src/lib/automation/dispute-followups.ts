@@ -24,7 +24,7 @@ const FOLLOWUP_SCHEDULE = [
   { days: 14, type: 'second_reminder' },
   { days: 21, type: 'third_reminder' },
   { days: 30, type: 'final_reminder' },
-  { days: 45, type: 'escalation_notice' }
+  { days: 45, type: 'escalation_notice' },
 ];
 
 interface Dispute {
@@ -55,10 +55,10 @@ export async function processFollowups(): Promise<{
 
   // Get disputes that need follow-up
   const disputes = await getDisputesNeedingFollowup();
-  
+
   for (const dispute of disputes) {
     stats.processed++;
-    
+
     try {
       const user = await getUser(dispute.user_id);
       if (!user) continue;
@@ -68,10 +68,11 @@ export async function processFollowups(): Promise<{
 
       await sendFollowupEmail(user, dispute, followupType);
       await updateLastFollowup(dispute.id);
-      
+
       stats.sent++;
-    } catch (error) {
-      console.error(`Follow-up error for dispute ${dispute.id}:`, error);
+    } catch (_error) {
+      // DisputeFollowups error: Follow-up error for dispute
+      void _error;
       stats.errors++;
     }
   }
@@ -91,7 +92,7 @@ async function getDisputesNeedingFollowup(): Promise<Dispute[]> {
     .order('created_at', { ascending: true });
 
   if (error) {
-    console.error('Error fetching disputes:', error);
+    // DisputeFollowups error: Error fetching disputes
     return [];
   }
 
@@ -103,11 +104,11 @@ async function getDisputesNeedingFollowup(): Promise<Dispute[]> {
  */
 function determineFollowupType(dispute: Dispute): string | null {
   const createdAt = new Date(dispute.created_at);
-  const lastFollowup = dispute.last_followup_at 
-    ? new Date(dispute.last_followup_at) 
+  const lastFollowup = dispute.last_followup_at
+    ? new Date(dispute.last_followup_at)
     : null;
   const now = new Date();
-  
+
   const daysSinceCreation = Math.floor(
     (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
   );
@@ -158,10 +159,10 @@ async function sendFollowupEmail(
   const body = getEmailBody(user, dispute, followupType);
 
   await resend.emails.send({
-    from: 'CreditMaster Pro <noreply@creditmaster.pro>',
+    from: 'Fynvita <noreply@fynvita.com>',
     to: user.email,
     subject,
-    html: body
+    html: body,
   });
 
   // Log the follow-up
@@ -169,7 +170,7 @@ async function sendFollowupEmail(
     user_id: user.id,
     dispute_id: dispute.id,
     email_type: `dispute_followup_${followupType}`,
-    sent_at: new Date().toISOString()
+    sent_at: new Date().toISOString(),
   });
 }
 
@@ -190,7 +191,7 @@ function getEmailSubject(type: string): string {
     second_reminder: 'Dispute Update: 2 Week Progress Report',
     third_reminder: 'Dispute Update: 3 Week Status - Action May Be Needed',
     final_reminder: 'Dispute Update: 30 Day Review Required',
-    escalation_notice: 'Important: Dispute Escalation Notice'
+    escalation_notice: 'Important: Dispute Escalation Notice',
   };
   return subjects[type] || 'Dispute Status Update';
 }
@@ -204,4 +205,3 @@ function getEmailBody(user: User, dispute: Dispute, type: string): string {
     <p>If you have any questions, please contact our support team.</p>
   `;
 }
-

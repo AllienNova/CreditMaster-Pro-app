@@ -93,7 +93,7 @@ export default function DebtPayoffScreen() {
         }
       }
     } catch (error) {
-      console.error('Error fetching debt data:', error);
+      if (__DEV__) console.error('Error fetching debt data:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);

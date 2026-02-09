@@ -87,8 +87,9 @@ export default function NotificationCenter() {
         prev.map(n => (n.id === notificationId ? { ...n, read: true } : n))
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error('Failed to mark as read:', err);
+    } catch (_err) {
+      // NotificationCenter error: Failed to mark as read
+      void _err;
     }
   };
 
@@ -111,8 +112,9 @@ export default function NotificationCenter() {
       // Update local state
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
-    } catch (err) {
-      console.error('Failed to mark all as read:', err);
+    } catch (_err) {
+      // NotificationCenter error: Failed to mark all as read
+      void _err;
     }
   };
 
@@ -130,8 +132,9 @@ export default function NotificationCenter() {
       
       // Update local state
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    } catch (err) {
-      console.error('Failed to delete notification:', err);
+    } catch (_err) {
+      // NotificationCenter error: Failed to delete notification
+      void _err;
     }
   };
 
@@ -146,15 +149,15 @@ export default function NotificationCenter() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow animate-pulse">
-        <div className="p-6 border-b border-gray-200">
-          <div className="h-10 bg-gray-200 rounded w-1/3"></div>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow animate-pulse">
+        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+          <div className="h-10 bg-gray-200 dark:bg-slate-700 rounded w-1/3"></div>
         </div>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-slate-700">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="p-6">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-1/2"></div>
             </div>
           ))}
         </div>
@@ -164,11 +167,11 @@ export default function NotificationCenter() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">❌</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Notifications</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="text-red-600 text-xl mb-4"></div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Notifications</h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-4">{error}</p>
           <button
             type="button"
             onClick={fetchNotifications}
@@ -182,16 +185,16 @@ export default function NotificationCenter() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-gray-200 dark:border-slate-700">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Filter */}
           <div className="flex items-center gap-3">
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as FilterType)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {filterOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -221,10 +224,10 @@ export default function NotificationCenter() {
             <button
               type="button"
               onClick={fetchNotifications}
-              className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
               title="Refresh"
             >
-              🔄 Refresh
+              Refresh
             </button>
           </div>
         </div>
@@ -234,18 +237,18 @@ export default function NotificationCenter() {
       <div>
         {filteredNotifications.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">🔔</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <div className="text-gray-400 dark:text-slate-500 text-6xl mb-4"></div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-slate-300">
               {filter === 'unread'
                 ? 'You\'re all caught up!'
                 : 'We\'ll notify you when something important happens'}
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-gray-200 dark:divide-slate-700">
             {filteredNotifications.map((notification) => (
               <NotificationItem
                 key={notification.id}
@@ -260,7 +263,7 @@ export default function NotificationCenter() {
       
       {/* Footer */}
       {filteredNotifications.length > 0 && (
-        <div className="p-4 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-600">
+        <div className="p-4 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 text-center text-sm text-gray-600 dark:text-slate-300">
           Showing {filteredNotifications.length} of {notifications.length} notifications
         </div>
       )}

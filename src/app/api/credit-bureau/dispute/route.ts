@@ -88,22 +88,18 @@ export async function POST(request: NextRequest) {
     // 5. Submit dispute to bureau
     const result = await CreditBureauService.submitDispute(user.id, dispute);
 
-    // 6. Log action
-    console.log(`Bureau dispute submitted for user ${user.id}, bureau: ${bureau}, item: ${creditItemId}`);
-
-    // 7. Return response
+    // 6. Return response
     return NextResponse.json({
       success: result.success,
       data: result
     });
 
-  } catch (error) {
-    console.error('❌ Bureau dispute API error:', error);
-    
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to submit dispute'
+        error: _error instanceof Error ? _error.message : 'Failed to submit dispute'
       },
       { status: 500 }
     );

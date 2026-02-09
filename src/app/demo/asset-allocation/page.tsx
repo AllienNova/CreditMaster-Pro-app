@@ -111,21 +111,21 @@ export default function AssetAllocationDemoPage() {
     dayChangePercent: 0.76,
     cashBalance: 2750,
     assetAllocation: [
-      { name: 'Stocks', value: 17750, percentage: 53.38 },
-      { name: 'Bonds', value: 10800, percentage: 32.48 },
-      { name: 'Real Estate', value: 2850, percentage: 8.57 },
-      { name: 'Commodities', value: 1850, percentage: 5.56 },
+      { assetClass: 'stock', value: 17750, weight: 0.5338 },
+      { assetClass: 'bonds', value: 10800, weight: 0.3248 },
+      { assetClass: 'etf', value: 2850, weight: 0.0857 },
+      { assetClass: 'commodities', value: 1850, weight: 0.0556 },
     ],
     sectorAllocation: [
-      { name: 'Technology', value: 17750, percentage: 53.38 },
-      { name: 'Fixed Income', value: 10800, percentage: 32.48 },
-      { name: 'Real Estate', value: 2850, percentage: 8.57 },
-      { name: 'Commodities', value: 1850, percentage: 5.56 },
+      { sector: 'Technology', value: 17750, weight: 0.5338, holdings: ['AAPL', 'MSFT'] },
+      { sector: 'Fixed Income', value: 10800, weight: 0.3248, holdings: ['BND'] },
+      { sector: 'Real Estate', value: 2850, weight: 0.0857, holdings: ['VNQ'] },
+      { sector: 'Commodities', value: 1850, weight: 0.0556, holdings: ['GLD'] },
     ],
     performanceHistory: [
-      { date: new Date('2024-01-01'), value: 28000, change: 0, changePercent: 0 },
-      { date: new Date('2024-06-01'), value: 30500, change: 2500, changePercent: 8.93 },
-      { date: new Date('2024-12-01'), value: 33250, change: 2750, changePercent: 9.02 },
+      { date: new Date('2024-01-01'), value: 28000, dayReturn: 0, cumulativeReturn: 0 },
+      { date: new Date('2024-06-01'), value: 30500, dayReturn: 0.02, cumulativeReturn: 0.0893 },
+      { date: new Date('2024-12-01'), value: 33250, dayReturn: 0.015, cumulativeReturn: 0.1875 },
     ],
     createdAt: new Date('2023-01-01'),
     updatedAt: new Date(),
@@ -142,7 +142,7 @@ export default function AssetAllocationDemoPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Asset Allocation Analyzer</h1>
-          <p className="text-gray-400 text-lg">
+          <p className="text-gray-400 dark:text-slate-500 text-lg">
             Optimize your portfolio with Modern Portfolio Theory and intelligent rebalancing recommendations
           </p>
         </div>

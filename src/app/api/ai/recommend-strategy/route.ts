@@ -86,12 +86,12 @@ export async function POST(request: NextRequest) {
       recommendation,
       timestamp: new Date().toISOString(),
     });
-  } catch (error) {
-    console.error('AI strategy recommendation error:', error);
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to generate recommendation' 
+        error: _error instanceof Error ? _error.message : 'Failed to generate recommendation'
       },
       { status: 500 }
     );

@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching holdings:', error);
+      // HoldingsRoute error: Failed to fetch holdings
       return NextResponse.json(
         { success: false, error: 'Failed to fetch holdings' },
         { status: 500 }
@@ -83,8 +83,9 @@ export async function GET(request: NextRequest) {
       data: holdings,
       total: holdings.length,
     });
-  } catch (error) {
-    console.error('Holdings GET error:', error);
+  } catch (_error) {
+    // HoldingsRoute error: Holdings GET failed
+    void _error;
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -173,8 +174,9 @@ export async function POST(request: NextRequest) {
       { success: true, data: transformHolding(data) },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('Holdings POST error:', error);
+  } catch (_error) {
+    // HoldingsRoute error: Holdings POST failed
+    void _error;
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

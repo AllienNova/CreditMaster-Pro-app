@@ -1,5 +1,5 @@
 /**
- * CPFI Score History Screen
+ * Fynvita Score History Screen
  * Interactive timeline chart with date range selector
  */
 
@@ -186,14 +186,14 @@ export default function HistoryScreen() {
   // Export/Share functionality
   const handleShare = async () => {
     try {
-      const message = `My Credit Score Progress:\n\nCurrent: ${currentScore}\nChange: ${totalChange >= 0 ? '+' : ''}${totalChange} points\nHigh: ${highScore}\nLow: ${lowScore}\nAverage: ${avgScore}\n\nTracked with CreditMaster Pro`;
+      const message = `My Credit Score Progress:\n\nCurrent: ${currentScore}\nChange: ${totalChange >= 0 ? '+' : ''}${totalChange} points\nHigh: ${highScore}\nLow: ${lowScore}\nAverage: ${avgScore}\n\nTracked with Fynvita Pro`;
 
       await Share.share({
         message,
         title: 'Credit Score History',
       });
     } catch (error) {
-      console.error('Error sharing:', error);
+      if (__DEV__) console.error('Error sharing:', error);
     }
   };
 

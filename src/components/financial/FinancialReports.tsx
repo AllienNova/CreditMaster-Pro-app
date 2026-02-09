@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { Icon } from '@/components/ui/Icon';
 
 interface ReportConfig {
   type: 'monthly' | 'quarterly' | 'annual' | 'custom';
@@ -85,13 +86,13 @@ export default function FinancialReports() {
   return (
     <div className="space-y-6">
       {/* Generate Report Card */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Generate New Report</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Generate New Report</h2>
         
         <div className="space-y-6">
           {/* Report Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">Report Type</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Report Type</label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {(['monthly', 'quarterly', 'annual', 'custom'] as const).map((type) => (
                 <button
@@ -101,7 +102,7 @@ export default function FinancialReports() {
                   className={`px-4 py-3 rounded-lg border-2 font-semibold capitalize transition-colors ${
                     config.type === type
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                      : 'border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:border-gray-400'
                   }`}
                 >
                   {type}
@@ -113,30 +114,30 @@ export default function FinancialReports() {
           {/* Date Range */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Start Date</label>
               <input
                 type="date"
                 value={config.startDate}
                 onChange={(e) => setConfig({ ...config, startDate: e.target.value })}
                 disabled={config.type !== 'custom'}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:bg-slate-800"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">End Date</label>
               <input
                 type="date"
                 value={config.endDate}
                 onChange={(e) => setConfig({ ...config, endDate: e.target.value })}
                 disabled={config.type !== 'custom'}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:bg-slate-800"
               />
             </div>
           </div>
 
           {/* Format */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">Export Format</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Export Format</label>
             <div className="grid grid-cols-3 gap-3">
               {(['pdf', 'csv', 'excel'] as const).map((format) => (
                 <button
@@ -146,7 +147,7 @@ export default function FinancialReports() {
                   className={`px-4 py-3 rounded-lg border-2 font-semibold uppercase transition-colors ${
                     config.format === format
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                      : 'border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:border-gray-400'
                   }`}
                 >
                   {format}
@@ -157,23 +158,23 @@ export default function FinancialReports() {
 
           {/* Include Options */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">Include in Report</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Include in Report</label>
             <div className="space-y-3">
               {[
-                { key: 'includeTransactions', label: 'Transactions', icon: '💳' },
-                { key: 'includeAccounts', label: 'Account Balances', icon: '🏦' },
-                { key: 'includeBudgets', label: 'Budget Analysis', icon: '📊' },
-                { key: 'includeGoals', label: 'Financial Goals', icon: '🎯' },
+                { key: 'includeTransactions', label: 'Transactions', icon: "sparkles" },
+                { key: 'includeAccounts', label: 'Account Balances', icon: "sparkles" },
+                { key: 'includeBudgets', label: 'Budget Analysis', icon: "sparkles" },
+                { key: 'includeGoals', label: 'Financial Goals', icon: "sparkles" },
               ].map((option) => (
-                <label key={option.key} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                <label key={option.key} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 transition-colors">
                   <input
                     type="checkbox"
                     checked={config[option.key as keyof ReportConfig] as boolean}
                     onChange={(e) => setConfig({ ...config, [option.key]: e.target.checked })}
                     className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-2xl">{option.icon}</span>
-                  <span className="font-medium text-gray-900">{option.label}</span>
+                  <Icon name={option.icon} className="text-2xl inline-block" />
+                  <span className="font-medium text-gray-900 dark:text-white">{option.label}</span>
                 </label>
               ))}
             </div>
@@ -195,29 +196,28 @@ export default function FinancialReports() {
                 Generating Report...
               </span>
             ) : (
-              '📄 Generate Report'
+              'Generate Report'
             )}
           </button>
         </div>
       </div>
 
       {/* Saved Reports */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Saved Reports</h2>
-          <p className="text-sm text-gray-600 mt-1">{savedReports.length} reports</p>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Saved Reports</h2>
+          <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">{savedReports.length} reports</p>
         </div>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-slate-700">
           {savedReports.map((report) => (
-            <div key={report.id} className="p-6 hover:bg-gray-50 transition-colors">
+            <div key={report.id} className="p-6 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white text-2xl">
-                    📄
-                  </div>
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-500 rounded-lg flex items-center justify-center text-white text-2xl">
+                                      </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{report.name}</h3>
-                    <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{report.name}</h3>
+                    <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-slate-300 mt-1">
                       <span>{report.date.toLocaleDateString()}</span>
                       <span>•</span>
                       <span className="uppercase">{report.format}</span>
@@ -247,21 +247,21 @@ export default function FinancialReports() {
       </div>
 
       {/* Report Templates */}
-      <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg shadow p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <span>📋</span>
+      <div className="bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg shadow p-6">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <span></span>
           Quick Report Templates
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { name: 'Monthly Summary', description: 'Income, expenses, and savings for the month', icon: '📅' },
-            { name: 'Tax Report', description: 'Annual income and deductions for tax filing', icon: '📊' },
-            { name: 'Net Worth Statement', description: 'Complete assets and liabilities breakdown', icon: '💎' },
+            { name: 'Monthly Summary', description: 'Income, expenses, and savings for the month', icon: "wallet" },
+            { name: 'Tax Report', description: 'Annual income and deductions for tax filing', icon: "wallet" },
+            { name: 'Net Worth Statement', description: 'Complete assets and liabilities breakdown', icon: "document-text" },
           ].map((template) => (
-            <div key={template.name} className="bg-white rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div key={template.name} className="bg-white dark:bg-slate-800 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer">
               <div className="text-4xl mb-3">{template.icon}</div>
-              <h4 className="font-bold text-gray-900 mb-2">{template.name}</h4>
-              <p className="text-sm text-gray-600 mb-4">{template.description}</p>
+              <h4 className="font-bold text-gray-900 dark:text-white mb-2">{template.name}</h4>
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">{template.description}</p>
               <button
                 type="button"
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-sm"

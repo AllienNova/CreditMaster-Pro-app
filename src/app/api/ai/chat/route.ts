@@ -1,16 +1,32 @@
 /**
  * AI Chat API
- * 
+ *
  * General purpose chat endpoint using AIML API
+ * PROTECTED: Requires authentication
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAIMLService, ChatMessage } from '@/lib/aiml-service';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
+    // AUTHENTICATION CHECK - Required for all AI endpoints
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Unauthorized - Authentication required',
+        },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
-    
+
     // Validate required fields
     const { model, messages } = body;
     
@@ -47,7 +63,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('AI chat error:', error);
+    // Error handled - returning 500
     
     return NextResponse.json(
       {

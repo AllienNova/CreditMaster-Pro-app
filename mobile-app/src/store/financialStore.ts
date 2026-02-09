@@ -1,5 +1,5 @@
 /**
- * CPFI Financial Store
+ * Fynvita Financial Store
  * Manages bank accounts, transactions, budgets, goals, and debt
  */
 
@@ -235,7 +235,7 @@ export const useFinancialStore = create<FinancialState>()(
             }));
           }
         } catch (error) {
-          console.error('Failed to refresh account:', error);
+          if (__DEV__) console.error('Failed to refresh account:', error);
         }
       },
 
@@ -289,7 +289,7 @@ export const useFinancialStore = create<FinancialState>()(
             set({ transactionCategories: response.data.categories });
           }
         } catch (error) {
-          console.error('Failed to fetch categories:', error);
+          if (__DEV__) console.error('Failed to fetch categories:', error);
         }
       },
 
@@ -370,7 +370,7 @@ export const useFinancialStore = create<FinancialState>()(
             set({ budgetAlerts: response.data.alerts });
           }
         } catch (error) {
-          console.error('Failed to fetch budget alerts:', error);
+          if (__DEV__) console.error('Failed to fetch budget alerts:', error);
         }
       },
 

@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Factor Card Component
+ * Fynvita Credit Factor Card Component
  * Displays individual credit score factors with impact indicators
  */
 

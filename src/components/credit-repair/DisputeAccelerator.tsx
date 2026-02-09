@@ -137,19 +137,19 @@ export default function DisputeAccelerator({ userId }: DisputeAcceleratorProps) 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Form */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold mb-4">Generate Dispute Letter</h2>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Item Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Item Type
               </label>
               <select
                 value={formData.itemType}
                 onChange={(e) => setFormData({ ...formData, itemType: e.target.value as DisputeFormData['itemType'] })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               >
                 <option value="account">Account</option>
                 <option value="inquiry">Hard Inquiry</option>
@@ -160,7 +160,7 @@ export default function DisputeAccelerator({ userId }: DisputeAcceleratorProps) 
 
             {/* Item Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Item Description *
               </label>
               <textarea
@@ -169,13 +169,13 @@ export default function DisputeAccelerator({ userId }: DisputeAcceleratorProps) 
                 placeholder="Describe the item you want to dispute..."
                 rows={3}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
 
             {/* Creditor Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Creditor/Company Name
               </label>
               <input
@@ -183,13 +183,13 @@ export default function DisputeAccelerator({ userId }: DisputeAcceleratorProps) 
                 value={formData.creditorName || ''}
                 onChange={(e) => setFormData({ ...formData, creditorName: e.target.value })}
                 placeholder="e.g., Capital One, Experian"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
 
             {/* Account Number */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Account Number (last 4 digits)
               </label>
               <input
@@ -198,19 +198,19 @@ export default function DisputeAccelerator({ userId }: DisputeAcceleratorProps) 
                 onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
                 placeholder="XXXX"
                 maxLength={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
 
             {/* Inaccuracy Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Type of Inaccuracy *
               </label>
               <select
                 value={formData.inaccuracyType}
                 onChange={(e) => setFormData({ ...formData, inaccuracyType: e.target.value as InaccuracyType })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 required
               >
                 {inaccuracyTypes.map((type) => (
@@ -223,13 +223,13 @@ export default function DisputeAccelerator({ userId }: DisputeAcceleratorProps) 
 
             {/* Strategy */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Dispute Strategy *
               </label>
               <select
                 value={formData.strategy}
                 onChange={(e) => setFormData({ ...formData, strategy: e.target.value as DisputeStrategy })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 required
               >
                 {strategies.map((strategy) => (
@@ -250,7 +250,7 @@ export default function DisputeAccelerator({ userId }: DisputeAcceleratorProps) 
 
             {/* Additional Details */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Additional Details (Optional)
               </label>
               <textarea
@@ -258,7 +258,7 @@ export default function DisputeAccelerator({ userId }: DisputeAcceleratorProps) 
                 onChange={(e) => setFormData({ ...formData, additionalDetails: e.target.value })}
                 placeholder="Any additional information that might help..."
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>
 
@@ -280,19 +280,19 @@ export default function DisputeAccelerator({ userId }: DisputeAcceleratorProps) 
         </div>
 
         {/* Preview */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold mb-4">Letter Preview</h2>
           
           {!showPreview && (
-            <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">Fill out the form to generate your dispute letter</p>
+            <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-slate-900 rounded-lg">
+              <p className="text-gray-500 dark:text-slate-400">Fill out the form to generate your dispute letter</p>
             </div>
           )}
 
           {showPreview && generatedLetter && (
             <div className="space-y-4">
-              <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
+              <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4 max-h-96 overflow-y-auto">
+                <pre className="whitespace-pre-wrap text-sm text-gray-800 dark:text-slate-100 font-mono">
                   {generatedLetter}
                 </pre>
               </div>

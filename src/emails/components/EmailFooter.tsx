@@ -12,24 +12,28 @@ interface EmailFooterProps {
   emailType: 'marketing' | 'transactional' | 'disputes' | 'scores' | 'payments';
 }
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://creditmasterpro.com';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://fynvita.com';
 
-export function EmailFooter({ unsubscribeToken, userId, emailType }: EmailFooterProps) {
+export function EmailFooter({
+  unsubscribeToken,
+  userId,
+  emailType,
+}: EmailFooterProps) {
   const unsubscribeUrl = `${baseUrl}/api/email/unsubscribe?token=${unsubscribeToken}&user=${userId}&type=${emailType}`;
   const preferencesUrl = `${baseUrl}/settings/notifications`;
-  
+
   return (
     <Section style={footerStyle}>
       <Hr style={hrStyle} />
-      
+
       <Text style={addressStyle}>
-        CreditMaster Pro, Inc.
+        Fynvita, Inc.
         <br />
         123 Financial District
         <br />
         San Francisco, CA 94111
       </Text>
-      
+
       <Text style={linksStyle}>
         <Link href={preferencesUrl} style={linkStyle}>
           Manage Preferences
@@ -43,19 +47,17 @@ export function EmailFooter({ unsubscribeToken, userId, emailType }: EmailFooter
           Privacy Policy
         </Link>
       </Text>
-      
+
       <Text style={disclaimerStyle}>
-        You received this email because you have an account with CreditMaster Pro.
-        {emailType === 'marketing' && (
-          <> This is a promotional email. </>
-        )}
+        You received this email because you have an account with Fynvita.
+        {emailType === 'marketing' && <> This is a promotional email. </>}
         {emailType === 'transactional' && (
           <> This is a transactional email related to your account. </>
         )}
       </Text>
-      
+
       <Text style={copyrightStyle}>
-        © {new Date().getFullYear()} CreditMaster Pro. All rights reserved.
+        © {new Date().getFullYear()} Fynvita. All rights reserved.
       </Text>
     </Section>
   );
@@ -66,12 +68,12 @@ const footerStyle: React.CSSProperties = {
   marginTop: '32px',
   padding: '24px',
   backgroundColor: '#f9fafb',
-  borderRadius: '8px'
+  borderRadius: '8px',
 };
 
 const hrStyle: React.CSSProperties = {
   borderColor: '#e5e7eb',
-  margin: '0 0 24px 0'
+  margin: '0 0 24px 0',
 };
 
 const addressStyle: React.CSSProperties = {
@@ -79,7 +81,7 @@ const addressStyle: React.CSSProperties = {
   lineHeight: '18px',
   color: '#6b7280',
   textAlign: 'center' as const,
-  margin: '0 0 16px 0'
+  margin: '0 0 16px 0',
 };
 
 const linksStyle: React.CSSProperties = {
@@ -87,12 +89,12 @@ const linksStyle: React.CSSProperties = {
   lineHeight: '18px',
   color: '#6b7280',
   textAlign: 'center' as const,
-  margin: '0 0 16px 0'
+  margin: '0 0 16px 0',
 };
 
 const linkStyle: React.CSSProperties = {
   color: '#10b981',
-  textDecoration: 'underline'
+  textDecoration: 'underline',
 };
 
 const disclaimerStyle: React.CSSProperties = {
@@ -100,7 +102,7 @@ const disclaimerStyle: React.CSSProperties = {
   lineHeight: '16px',
   color: '#9ca3af',
   textAlign: 'center' as const,
-  margin: '0 0 8px 0'
+  margin: '0 0 8px 0',
 };
 
 const copyrightStyle: React.CSSProperties = {
@@ -108,8 +110,7 @@ const copyrightStyle: React.CSSProperties = {
   lineHeight: '16px',
   color: '#9ca3af',
   textAlign: 'center' as const,
-  margin: '0'
+  margin: '0',
 };
 
 export default EmailFooter;
-

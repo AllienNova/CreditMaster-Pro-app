@@ -34,7 +34,7 @@ export class TransUnionClient {
     userPII: UserPII
   ): Promise<BureauResponse<CreditReport>> {
     try {
-      console.log('📊 Retrieving TransUnion credit report...');
+      // TransUnionClient: Retrieving TransUnion credit report
 
       const endpoint = this.environment === 'test'
         ? 'https://netaccess-test.transunion.com/tuapi/creditreport/v3/report'
@@ -98,7 +98,7 @@ export class TransUnionClient {
       // Transform TransUnion response to our format
       const creditReport = this.transformResponse(data, request.user_id);
 
-      console.log('✅ TransUnion report retrieved successfully');
+      // TransUnionClient: TransUnion report retrieved successfully
 
       return {
         success: true,
@@ -109,7 +109,7 @@ export class TransUnionClient {
       };
 
     } catch (error) {
-      console.error('❌ TransUnion API error:', error);
+      // TransUnionClient error: TransUnion API error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -127,7 +127,7 @@ export class TransUnionClient {
     userPII: UserPII
   ): Promise<BureauResponse> {
     try {
-      console.log('📝 Submitting dispute to TransUnion...');
+      // TransUnionClient: Submitting dispute to TransUnion
 
       const endpoint = this.environment === 'test'
         ? 'https://netaccess-test.transunion.com/tuapi/dispute/v1/submit'
@@ -168,7 +168,7 @@ export class TransUnionClient {
 
       const data = await response.json();
 
-      console.log('✅ TransUnion dispute submitted successfully');
+      // TransUnionClient: TransUnion dispute submitted successfully
 
       return {
         success: true,
@@ -179,7 +179,7 @@ export class TransUnionClient {
       };
 
     } catch (error) {
-      console.error('❌ TransUnion dispute error:', error);
+      // TransUnionClient error: TransUnion dispute error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

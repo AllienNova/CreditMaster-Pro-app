@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Score E2E Tests
+ * Fynvita Credit Score E2E Tests
  * Tests credit score viewing and monitoring flows
  */
 

@@ -42,23 +42,23 @@ function FileUpload({ onUpload }: { onUpload: () => void }) {
 
   return (
     <div
-      className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${dragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'}`}
+      className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${dragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 dark:border-slate-600'}`}
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={(e) => { e.preventDefault(); setDragging(false); onUpload(); }}
     >
-      <div className="text-5xl mb-4">📄</div>
-      <h3 className="text-lg font-medium text-gray-900 mb-2">Upload Your Credit Report</h3>
-      <p className="text-gray-600 mb-4">Drag and drop your PDF or paste text from your credit report</p>
+      <div className="text-5xl mb-4"></div>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Upload Your Credit Report</h3>
+      <p className="text-gray-600 dark:text-slate-300 mb-4">Drag and drop your PDF or paste text from your credit report</p>
       <div className="flex gap-4 justify-center">
-        <button onClick={onUpload} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+        <button onClick={onUpload} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
           Choose File
         </button>
-        <button onClick={onUpload} className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+        <button onClick={onUpload} className="px-6 py-2 bg-gray-100 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:bg-slate-700">
           Paste Text
         </button>
       </div>
-      <p className="text-xs text-gray-400 mt-4">Supported: PDF, TXT • Your data is encrypted and never stored</p>
+      <p className="text-xs text-gray-400 dark:text-slate-500 mt-4">Supported: PDF, TXT • Your data is encrypted and never stored</p>
     </div>
   );
 }
@@ -71,27 +71,27 @@ function AnalysisResults({ results }: { results: AnalysisResult[] }) {
     <div className="space-y-6">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl p-4 border border-gray-200 text-center">
-          <p className="text-3xl font-bold text-gray-900">{results.flatMap(r => r.items).length}</p>
-          <p className="text-sm text-gray-500">Items Found</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 text-center">
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">{results.flatMap(r => r.items).length}</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Items Found</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-200 text-center">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 text-center">
           <p className="text-3xl font-bold text-green-600">{totalDisputable}</p>
-          <p className="text-sm text-gray-500">Disputable</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Disputable</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-200 text-center">
-          <p className="text-3xl font-bold text-indigo-600">+45</p>
-          <p className="text-sm text-gray-500">Potential Points</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 text-center">
+          <p className="text-3xl font-bold text-blue-600">+45</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Potential Points</p>
         </div>
       </div>
 
       {/* Results by Category */}
       {results.map((category) => (
-        <div key={category.category} className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900">{category.category}</h3>
+        <div key={category.category} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
+          <div className="p-4 border-b border-gray-100 dark:border-slate-700">
+            <h3 className="font-semibold text-gray-900 dark:text-white">{category.category}</h3>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-slate-700">
             {category.items.map((item, idx) => (
               <div key={idx} className="p-4">
                 <div className="flex items-start justify-between gap-4">
@@ -106,11 +106,11 @@ function AnalysisResults({ results }: { results: AnalysisResult[] }) {
                         </span>
                       )}
                     </div>
-                    <p className="text-gray-900">{item.description}</p>
-                    <p className="text-sm text-gray-500 mt-1">💡 {item.recommendation}</p>
+                    <p className="text-gray-900 dark:text-white">{item.description}</p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{item.recommendation}</p>
                   </div>
                   {item.disputable && (
-                    <button className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                    <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                       Dispute
                     </button>
                   )}
@@ -122,15 +122,15 @@ function AnalysisResults({ results }: { results: AnalysisResult[] }) {
       ))}
 
       {/* Action Plan */}
-      <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100">
-        <h3 className="font-semibold text-gray-900 mb-4">📋 Your Action Plan</h3>
+      <div className="bg-gradient-to-br from-blue-50 to-blue-50 rounded-xl p-6 border border-blue-100">
+        <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Your Action Plan</h3>
         <ol className="space-y-3">
-          <li className="flex gap-3"><span className="font-bold text-indigo-600">1.</span> Dispute the unauthorized inquiry with TransUnion</li>
-          <li className="flex gap-3"><span className="font-bold text-indigo-600">2.</span> Send debt validation letter for medical collection</li>
-          <li className="flex gap-3"><span className="font-bold text-indigo-600">3.</span> Write goodwill letter to Chase for late payment removal</li>
-          <li className="flex gap-3"><span className="font-bold text-indigo-600">4.</span> Pay down Discover card to below 30% utilization</li>
+          <li className="flex gap-3"><span className="font-bold text-blue-600">1.</span> Dispute the unauthorized inquiry with TransUnion</li>
+          <li className="flex gap-3"><span className="font-bold text-blue-600">2.</span> Send debt validation letter for medical collection</li>
+          <li className="flex gap-3"><span className="font-bold text-blue-600">3.</span> Write goodwill letter to Chase for late payment removal</li>
+          <li className="flex gap-3"><span className="font-bold text-blue-600">4.</span> Pay down Discover card to below 30% utilization</li>
         </ol>
-        <button className="mt-4 w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+        <button className="mt-4 w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
           Generate Dispute Letters
         </button>
       </div>
@@ -152,16 +152,16 @@ export default function AnalysisPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Credit Report Analysis</h1>
-        <p className="text-gray-600">AI-powered analysis to identify disputable items</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Credit Report Analysis</h1>
+        <p className="text-gray-600 dark:text-slate-300">AI-powered analysis to identify disputable items</p>
       </div>
 
       {!uploaded && <FileUpload onUpload={handleUpload} />}
 
       {analyzing && (
         <div className="text-center py-12">
-          <div className="animate-spin text-4xl mb-4">🔍</div>
-          <p className="text-gray-600">Analyzing your credit report...</p>
+          <div className="animate-spin text-4xl mb-4"></div>
+          <p className="text-gray-600 dark:text-slate-300">Analyzing your credit report...</p>
         </div>
       )}
 

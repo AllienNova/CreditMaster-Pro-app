@@ -136,11 +136,11 @@ export default function SmartBudgetManagement() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6" data-testid="budget-error">
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">❌</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Budget</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="text-red-600 text-xl mb-4"></div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Budget</h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-4">{error}</p>
           <button
             type="button"
             onClick={fetchBudget}
@@ -154,18 +154,19 @@ export default function SmartBudgetManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="smart-budget-page">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Smart Budget</h1>
-          <p className="text-gray-600 mt-1">AI-powered budget management and recommendations</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Smart Budget</h1>
+          <p className="text-gray-600 dark:text-slate-300 mt-1">AI-powered budget management and recommendations</p>
         </div>
         <div className="flex items-center gap-3">
           <select
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value as any)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            data-testid="budget-period-select"
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
@@ -173,6 +174,7 @@ export default function SmartBudgetManagement() {
           </select>
           <button
             onClick={() => setEditMode(!editMode)}
+            data-testid="edit-budget-button"
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             {editMode ? 'Cancel Edit' : 'Edit Budget'}
@@ -202,4 +204,3 @@ export default function SmartBudgetManagement() {
     </div>
   );
 }
-

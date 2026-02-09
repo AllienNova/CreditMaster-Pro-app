@@ -102,10 +102,11 @@ async function flushEvents(): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ events })
     });
-  } catch (error) {
+  } catch (_error) {
     // Re-queue failed events
     eventQueue.push(...events);
-    console.error('Failed to send analytics:', error);
+    // UserAnalytics error: Failed to send analytics
+    void _error;
   }
 }
 

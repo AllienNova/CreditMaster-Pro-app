@@ -44,8 +44,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json({ success: true, data: transformHolding(data) });
-  } catch (error) {
-    console.error('Holding GET error:', error);
+  } catch (_error) {
+    // HoldingsRoute error: Failed to get holding
+    void _error;
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -103,8 +104,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, data: transformHolding(data) });
-  } catch (error) {
-    console.error('Holding PATCH error:', error);
+  } catch (_error) {
+    // HoldingsRoute error: Failed to update holding
+    void _error;
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -147,8 +149,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, message: 'Holding deleted' });
-  } catch (error) {
-    console.error('Holding DELETE error:', error);
+  } catch (_error) {
+    // HoldingsRoute error: Failed to delete holding
+    void _error;
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

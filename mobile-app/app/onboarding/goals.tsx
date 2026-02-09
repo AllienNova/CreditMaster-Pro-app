@@ -1,14 +1,15 @@
 /**
- * CPFI Onboarding Goals Screen
+ * Fynvita Onboarding Goals Screen
  * Select credit improvement goals
  */
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
+import { withOpacity } from '../../src/constants/theme';
 import { useAuthStore } from '../../src/store/authStore';
 
 const GOALS = [
@@ -23,6 +24,7 @@ const GOALS = [
 ];
 
 export default function OnboardingGoalsScreen() {
+  const { colors, spacing, borderRadius, fontSize, fontWeight, iconSize } = useTheme();
   const { updateProfile } = useAuthStore();
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,49 +54,52 @@ export default function OnboardingGoalsScreen() {
   const progress = 2 / 4;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleSkip}>
-            <Text style={styles.skipText}>Skip</Text>
+            <Text style={{ fontSize: 16, color: colors.primary }}>Skip</Text>
           </TouchableOpacity>
         </View>
 
         {/* Progress Bar */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+        <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.lg }}>
+          <View style={{ height: 4, backgroundColor: colors.border, borderRadius: 2 }}>
+            <View style={{ height: '100%', backgroundColor: colors.primary, borderRadius: 2, width: `${progress * 100}%` }} />
           </View>
-          <Text style={styles.progressText}>Step 2 of 4</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 8, textAlign: 'center' }}>Step 2 of 4</Text>
         </View>
 
         {/* Content */}
-        <View style={styles.content}>
-          <Text style={styles.title}>What are your goals?</Text>
-          <Text style={styles.subtitle}>Select all that apply. We'll customize your experience.</Text>
+        <View style={{ paddingHorizontal: spacing.lg }}>
+          <Text style={{ fontSize: 28, fontWeight: '700', color: colors.text, marginBottom: 8 }}>What are your goals?</Text>
+          <Text style={{ fontSize: 16, color: colors.textSecondary, marginBottom: spacing.xl }}>Select all that apply. We'll customize your experience.</Text>
 
-          <View style={styles.goalsGrid}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
             {GOALS.map((goal) => {
               const isSelected = selectedGoals.includes(goal.id);
               return (
                 <TouchableOpacity
                   key={goal.id}
-                  style={[styles.goalCard, isSelected && { borderColor: goal.color, borderWidth: 2 }]}
+                  style={[
+                    { width: '48%', backgroundColor: colors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, position: 'relative' as const },
+                    isSelected && { borderColor: goal.color, borderWidth: 2 },
+                  ]}
                   onPress={() => toggleGoal(goal.id)}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.goalIcon, { backgroundColor: `${goal.color}20` }]}>
+                  <View style={{ width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.sm, backgroundColor: withOpacity(goal.color, 0.12) }}>
                     <Ionicons name={goal.icon as keyof typeof Ionicons.glyphMap} size={24} color={goal.color} />
                   </View>
-                  <Text style={styles.goalTitle}>{goal.title}</Text>
-                  <Text style={styles.goalDescription}>{goal.description}</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 4 }}>{goal.title}</Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 16 }}>{goal.description}</Text>
                   {isSelected && (
-                    <View style={[styles.checkmark, { backgroundColor: goal.color }]}>
-                      <Ionicons name="checkmark" size={14} color="#fff" />
+                    <View style={{ position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center', backgroundColor: goal.color }}>
+                      <Ionicons name="checkmark" size={14} color={colors.white} />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -105,44 +110,20 @@ export default function OnboardingGoalsScreen() {
       </ScrollView>
 
       {/* Footer */}
-      <View style={styles.footer}>
+      <View style={{ padding: spacing.lg, paddingBottom: spacing.xl }}>
         <TouchableOpacity
-          style={[styles.continueButton, selectedGoals.length === 0 && styles.continueButtonDisabled]}
+          style={[
+            { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, paddingVertical: 16, borderRadius: borderRadius.lg },
+            selectedGoals.length === 0 && { opacity: 0.5 },
+          ]}
           onPress={handleContinue}
           disabled={selectedGoals.length === 0 || isLoading}
         >
-          <Text style={styles.continueButtonText}>{isLoading ? 'Saving...' : 'Continue'}</Text>
-          <Ionicons name="arrow-forward" size={20} color="#fff" />
+          <Text style={{ fontSize: 18, fontWeight: '600', color: colors.white, marginRight: 8 }}>{isLoading ? 'Saving...' : 'Continue'}</Text>
+          <Ionicons name="arrow-forward" size={20} color={colors.white} />
         </TouchableOpacity>
-        <Text style={styles.selectedCount}>{selectedGoals.length} goal{selectedGoals.length !== 1 ? 's' : ''} selected</Text>
+        <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: 12 }}>{selectedGoals.length} goal{selectedGoals.length !== 1 ? 's' : ''} selected</Text>
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
-  scrollView: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md },
-  backButton: { padding: 4 },
-  skipText: { fontSize: 16, color: theme.colors.primary },
-  progressContainer: { paddingHorizontal: theme.spacing.lg, marginBottom: theme.spacing.lg },
-  progressBar: { height: 4, backgroundColor: theme.colors.border, borderRadius: 2 },
-  progressFill: { height: '100%', backgroundColor: theme.colors.primary, borderRadius: 2 },
-  progressText: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 8, textAlign: 'center' },
-  content: { paddingHorizontal: theme.spacing.lg },
-  title: { fontSize: 28, fontWeight: '700', color: theme.colors.text, marginBottom: 8 },
-  subtitle: { fontSize: 16, color: theme.colors.textSecondary, marginBottom: theme.spacing.xl },
-  goalsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  goalCard: { width: '48%', backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.border, position: 'relative' },
-  goalIcon: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: theme.spacing.sm },
-  goalTitle: { fontSize: 14, fontWeight: '600', color: theme.colors.text, marginBottom: 4 },
-  goalDescription: { fontSize: 12, color: theme.colors.textSecondary, lineHeight: 16 },
-  checkmark: { position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
-  footer: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xl },
-  continueButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primary, paddingVertical: 16, borderRadius: theme.borderRadius.lg },
-  continueButtonDisabled: { opacity: 0.5 },
-  continueButtonText: { fontSize: 18, fontWeight: '600', color: '#fff', marginRight: 8 },
-  selectedCount: { fontSize: 13, color: theme.colors.textSecondary, textAlign: 'center', marginTop: 12 },
-});
-

@@ -71,9 +71,9 @@ export async function GET(
       success: true,
       data: card,
     });
-  } catch (error) {
-    console.error('Error getting credit card:', error);
-
+  } catch (_error) {
+    // CreditCardsRoute error: Failed to get credit card
+    void _error;
     return NextResponse.json(
       { error: 'Failed to get credit card' },
       { status: 500 }
@@ -178,9 +178,9 @@ export async function PUT(
       success: true,
       data: card,
     });
-  } catch (error) {
-    console.error('Error updating credit card:', error);
-
+  } catch (_error) {
+    // CreditCardsRoute error: Failed to update credit card
+    void _error;
     return NextResponse.json(
       { error: 'Failed to update credit card' },
       { status: 500 }
@@ -230,9 +230,9 @@ export async function DELETE(
       success: true,
       message: 'Credit card deleted successfully',
     });
-  } catch (error) {
-    console.error('Error deleting credit card:', error);
-
+  } catch (_error) {
+    // CreditCardsRoute error: Failed to delete credit card
+    void _error;
     return NextResponse.json(
       { error: 'Failed to delete credit card' },
       { status: 500 }

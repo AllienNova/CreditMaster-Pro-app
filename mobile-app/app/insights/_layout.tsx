@@ -1,6 +1,6 @@
 /**
- * CPFI Insights Layout
- * Navigation layout for financial insights screens
+ * Fynvita Insights Layout
+ * Navigation layout for AI-powered financial insights screens
  */
 
 import { Stack } from 'expo-router';
@@ -16,8 +16,26 @@ export default function InsightsLayout() {
 
   return (
     <Stack screenOptions={headerOptions}>
-      <Stack.Screen name="index" options={{ title: 'Financial Insights' }} />
+      <Stack.Screen
+        name="index"
+        options={{ title: 'Financial Insights', headerShown: false }}
+      />
+      <Stack.Screen
+        name="alerts"
+        options={{ title: 'Smart Alerts' }}
+      />
+      <Stack.Screen
+        name="weekly-summary"
+        options={{ title: 'Weekly Summary' }}
+      />
+      <Stack.Screen
+        name="spending"
+        options={{ title: 'Spending Analysis' }}
+      />
+      <Stack.Screen
+        name="nudges"
+        options={{ title: 'AI Recommendations' }}
+      />
     </Stack>
   );
 }
-

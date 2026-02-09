@@ -52,7 +52,7 @@ export default function HealthScoreCard() {
 
   const getScoreColor = (score: number): string => {
     if (score >= 90) return 'from-green-500 to-emerald-600';
-    if (score >= 80) return 'from-blue-500 to-cyan-600';
+    if (score >= 80) return 'from-blue-500 to-blue-600';
     if (score >= 70) return 'from-yellow-500 to-orange-500';
     if (score >= 60) return 'from-orange-500 to-red-500';
     return 'from-red-600 to-red-700';
@@ -67,17 +67,17 @@ export default function HealthScoreCard() {
   };
 
   const getTrendIcon = (trend: string): string => {
-    if (trend === 'improving') return '📈';
-    if (trend === 'declining') return '📉';
-    return '➡️';
+    if (trend === 'improving') return '';
+    if (trend === 'declining') return '';
+    return '';
   };
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-        <div className="h-24 bg-gray-200 rounded mb-4"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 animate-pulse">
+        <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/3 mb-4"></div>
+        <div className="h-24 bg-gray-200 dark:bg-slate-700 rounded mb-4"></div>
+        <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2"></div>
       </div>
     );
   }
@@ -129,7 +129,7 @@ export default function HealthScoreCard() {
           </div>
           <Link
             href="/financial/health"
-            className="inline-block px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+            className="inline-block px-4 py-2 bg-white hover:bg-white dark:bg-slate-800/30 rounded-lg text-sm font-medium transition-colors"
           >
             View Details →
           </Link>

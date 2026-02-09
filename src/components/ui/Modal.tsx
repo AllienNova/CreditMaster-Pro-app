@@ -116,14 +116,14 @@ export default function Modal({
             tabIndex={-1}
             className={`
               relative w-full ${sizeClasses[size]} transform overflow-hidden rounded-lg
-              bg-white dark:bg-gray-800 shadow-xl transition-all
+              bg-white dark:bg-slate-800 shadow-xl transition-all
               animate-in fade-in-0 zoom-in-95 duration-200
               ${className}
             `}
           >
             {/* Header */}
             {(title || showCloseButton) && (
-              <div className="flex items-start justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-start justify-between p-4 border-b border-gray-200 dark:border-slate-700">
                 <div>
                   {title && (
                     <h3 id="modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -131,7 +131,7 @@ export default function Modal({
                     </h3>
                   )}
                   {description && (
-                    <p id="modal-description" className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <p id="modal-description" className="mt-1 text-sm text-gray-500 dark:text-slate-400">
                       {description}
                     </p>
                   )}
@@ -140,7 +140,7 @@ export default function Modal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="ml-4 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="ml-4 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:bg-slate-800 hover:text-gray-500 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label="Close modal"
                   >
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -156,7 +156,7 @@ export default function Modal({
 
             {/* Footer */}
             {footer && (
-              <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 dark:border-slate-700">
                 {footer}
               </div>
             )}

@@ -22,6 +22,32 @@ export interface RealtimeConfig {
   filter?: string;
 }
 
+export interface DisputeData {
+  id: string;
+  user_id: string;
+  status: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface NotificationData {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
+export interface CreditScoreData {
+  id: string;
+  user_id: string;
+  score: number;
+  updated_at: string;
+}
+
 // Create browser client
 function getSupabaseClient() {
   return createBrowserClient(
@@ -105,13 +131,13 @@ export function subscribeToCreditScores(
  */
 export function subscribeToDisputes(
   userId: string,
-  onUpdate: (dispute: any, eventType: string) => void
+  onUpdate: (dispute: DisputeData, eventType: string) => void
 ): RealtimeSubscription {
   return subscribeToUserChanges(
     userId,
     'disputes',
     (payload) => {
-      onUpdate(payload.new || payload.old, payload.eventType);
+      onUpdate((payload.new || payload.old) as DisputeData, payload.eventType);
     }
   );
 }
@@ -121,14 +147,14 @@ export function subscribeToDisputes(
  */
 export function subscribeToNotifications(
   userId: string,
-  onNotification: (notification: any) => void
+  onNotification: (notification: NotificationData) => void
 ): RealtimeSubscription {
   return subscribeToUserChanges(
     userId,
     'notifications',
     (payload) => {
       if (payload.eventType === 'INSERT' && payload.new) {
-        onNotification(payload.new);
+        onNotification(payload.new as NotificationData);
       }
     }
   );
@@ -137,10 +163,10 @@ export function subscribeToNotifications(
 /**
  * Subscribe to multiple tables at once
  */
-export function subscribeToMultiple(
+export function subscribeToMultiple<T extends Record<string, unknown>>(
   subscriptions: Array<{
     config: RealtimeConfig;
-    callback: (payload: any) => void;
+    callback: (payload: RealtimePostgresChangesPayload<T>) => void;
   }>
 ): { unsubscribeAll: () => void } {
   const subs = subscriptions.map(({ config, callback }) =>
@@ -170,8 +196,9 @@ export function trackPresence(
 
   channel
     .on('presence', { event: 'sync' }, () => {
-      const state = channel.presenceState();
-      console.log('Presence state:', state);
+      const _state = channel.presenceState();
+      // SupabaseRealtime: Presence state synced
+      void _state;
     })
     .subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {

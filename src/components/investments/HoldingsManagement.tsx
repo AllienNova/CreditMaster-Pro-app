@@ -30,16 +30,10 @@ function SummaryCard({
   isPositive?: boolean;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-      <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+      <p className="text-sm text-gray-500 dark:text-slate-400">{title}</p>
       <p
-        className={`text-xl font-bold mt-1 ${
-          isPositive !== undefined
-            ? isPositive
-              ? 'text-green-600 dark:text-green-400'
-              : 'text-red-600 dark:text-red-400'
-            : 'text-gray-900 dark:text-white'
-        }`}
+        className={`text-xl font-bold mt-1 ${ isPositive !== undefined ? (isPositive ? 'text-green-600' : 'text-red-600') : 'text-gray-900 dark:text-white' }`}
       >
         {value}
       </p>
@@ -67,45 +61,45 @@ function HoldingsTable({
   SortIcon,
 }: HoldingsTableProps) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden" data-testid="holdings-list">
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700">
+        <table className="w-full" aria-label="Holdings table">
+          <thead className="bg-gray-50 dark:bg-slate-700">
             <tr>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort('symbol')}
               >
                 Symbol <SortIcon field="symbol" />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                 Name
               </th>
               <th
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort('shares')}
               >
                 Shares <SortIcon field="shares" />
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                 Avg Cost
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                 Price
               </th>
               <th
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort('totalValue')}
               >
                 Value <SortIcon field="totalValue" />
               </th>
               <th
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer"
                 onClick={() => onSort('gainLoss')}
               >
                 Gain/Loss <SortIcon field="gainLoss" />
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -114,12 +108,12 @@ function HoldingsTable({
             {holdings.map((h) => (
               <tr
                 key={h.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="hover:bg-gray-50 dark:hover:bg-slate-700"
               >
                 <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white">
                   {h.symbol}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400 max-w-[200px] truncate">
+                <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-slate-400 max-w-[200px] truncate">
                   {h.name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-gray-900 dark:text-white">
@@ -170,7 +164,7 @@ function HoldingsTable({
           </tbody>
         </table>
         {holdings.length === 0 && (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+          <div className="text-center py-12 text-gray-500 dark:text-slate-400">
             No holdings found. Add your first holding to get started.
           </div>
         )}
@@ -208,35 +202,41 @@ function AddHoldingModal({ onClose, onSubmit }: AddHoldingModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
-        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+      <div
+        className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md mx-4"
+        role="dialog"
+        aria-modal="true"
+        data-testid="add-holding-modal"
+      >
+        <div className="flex items-center justify-between p-4 border-b dark:border-slate-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Add Holding
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="text-gray-400 hover:text-gray-600 dark:text-slate-300 dark:hover:text-gray-300"
           >
-            ✕
-          </button>
+                      </button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
             <label
               htmlFor="add-symbol"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"
             >
               Symbol *
             </label>
             <input
               id="add-symbol"
+              name="symbol"
               type="text"
               value={formData.symbol}
               onChange={(e) =>
                 setFormData({ ...formData, symbol: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              data-testid="holding-symbol-input"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
               placeholder="AAPL"
               required
             />
@@ -244,18 +244,20 @@ function AddHoldingModal({ onClose, onSubmit }: AddHoldingModalProps) {
           <div>
             <label
               htmlFor="add-name"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"
             >
               Name
             </label>
             <input
               id="add-name"
+              name="name"
               type="text"
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              data-testid="holding-name-input"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
               placeholder="Apple Inc."
             />
           </div>
@@ -263,59 +265,64 @@ function AddHoldingModal({ onClose, onSubmit }: AddHoldingModalProps) {
             <div>
               <label
                 htmlFor="add-shares"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"
               >
                 Shares *
               </label>
-              <input
-                id="add-shares"
-                type="number"
-                step="0.0001"
-                min="0"
-                value={formData.shares || ''}
-                onChange={(e) =>
+            <input
+              id="add-shares"
+              name="shares"
+              type="number"
+              step="0.0001"
+              min="0"
+              value={formData.shares || ''}
+              onChange={(e) =>
                   setFormData({
                     ...formData,
                     shares: parseFloat(e.target.value) || 0,
                   })
                 }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                required
-              />
+              data-testid="holding-shares-input"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+              required
+            />
             </div>
             <div>
               <label
                 htmlFor="add-cost"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"
               >
                 Avg Cost *
               </label>
-              <input
-                id="add-cost"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.averageCostBasis || ''}
-                onChange={(e) =>
+            <input
+              id="add-cost"
+              name="averageCostBasis"
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.averageCostBasis || ''}
+              onChange={(e) =>
                   setFormData({
                     ...formData,
                     averageCostBasis: parseFloat(e.target.value) || 0,
                   })
                 }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                required
-              />
+              data-testid="holding-cost-input"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+              required
+            />
             </div>
           </div>
           <div>
             <label
               htmlFor="add-type"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"
             >
               Asset Type
             </label>
             <select
               id="add-type"
+              name="assetType"
               value={formData.assetType}
               onChange={(e) =>
                 setFormData({
@@ -323,7 +330,8 @@ function AddHoldingModal({ onClose, onSubmit }: AddHoldingModalProps) {
                   assetType: e.target.value as AssetType,
                 })
               }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              data-testid="holding-asset-type-select"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
             >
               <option value="stock">Stock</option>
               <option value="etf">ETF</option>
@@ -337,7 +345,7 @@ function AddHoldingModal({ onClose, onSubmit }: AddHoldingModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              className="px-4 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
             >
               Cancel
             </button>
@@ -393,53 +401,61 @@ function EditHoldingModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
-        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+      <div
+        className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md mx-4"
+        role="dialog"
+        aria-modal="true"
+        data-testid="edit-holding-modal"
+      >
+        <div className="flex items-center justify-between p-4 border-b dark:border-slate-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Edit {holding.symbol}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="text-gray-400 hover:text-gray-600 dark:text-slate-300 dark:hover:text-gray-300"
           >
-            ✕
-          </button>
+                      </button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
             <label
               htmlFor="edit-shares"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"
             >
               Shares
             </label>
             <input
               id="edit-shares"
+              name="shares"
               type="number"
               step="0.0001"
               min="0"
               value={shares}
               onChange={(e) => setShares(parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              data-testid="edit-holding-shares-input"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
               required
             />
           </div>
           <div>
             <label
               htmlFor="edit-cost"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"
             >
               Average Cost Basis
             </label>
             <input
               id="edit-cost"
+              name="averageCostBasis"
               type="number"
               step="0.01"
               min="0"
               value={avgCost}
               onChange={(e) => setAvgCost(parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              data-testid="edit-holding-cost-input"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
               required
             />
           </div>
@@ -447,7 +463,7 @@ function EditHoldingModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              className="px-4 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
             >
               Cancel
             </button>
@@ -472,11 +488,11 @@ function HoldingsSkeleton() {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 h-20"
+            className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 h-20"
           />
         ))}
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-[400px]" />
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 h-[400px]" />
     </div>
   );
 }
@@ -657,6 +673,7 @@ export default function HoldingsManagement() {
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
+            data-testid="add-holding-button"
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             + Add Holding
@@ -664,7 +681,7 @@ export default function HoldingsManagement() {
           <button
             type="button"
             onClick={handleExportCSV}
-            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+            className="px-4 py-2 bg-gray-100 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"
           >
             Export CSV
           </button>
@@ -672,15 +689,17 @@ export default function HoldingsManagement() {
         <div className="flex items-center gap-2">
           <label
             htmlFor="filter-type"
-            className="text-sm text-gray-500 dark:text-gray-400"
+            className="text-sm text-gray-500 dark:text-slate-400"
           >
             Filter:
           </label>
           <select
             id="filter-type"
+            name="filter"
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as AssetType | 'all')}
-            className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm"
+            data-testid="filter-type-select"
+            className="px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm"
           >
             <option value="all">All Types</option>
             <option value="stock">Stocks</option>

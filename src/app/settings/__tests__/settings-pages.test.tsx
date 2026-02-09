@@ -16,6 +16,25 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/settings',
 }));
 
+// Mock Supabase client to prevent env var requirement
+jest.mock('@/lib/supabase/client', () => ({
+  createClient: jest.fn(),
+  getSupabase: jest.fn(),
+}));
+
+jest.mock('@/lib/supabase', () => ({
+  supabase: {},
+  getSupabase: jest.fn(),
+}));
+
+jest.mock('@/lib/supabase/server', () => ({
+  createClient: jest.fn(),
+  supabaseAdmin: {},
+}));
+
+// Import AFTER mocks are set up
+import { createClient } from '@/lib/supabase/client';
+
 // Mock window.matchMedia for theme detection
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -31,8 +50,34 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-// Mock fetch
-global.fetch = jest.fn();
+// Mock fetch - ensure it's a jest mock function
+const mockFetch = global.fetch as jest.Mock;
+
+// Helper to create mock Supabase client
+function createMockSupabaseClient() {
+  return {
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      onAuthStateChange: jest.fn(() => ({
+        data: { subscription: { unsubscribe: jest.fn() } },
+      })),
+      signInWithPassword: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      signUp: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      signOut: jest.fn().mockResolvedValue({ error: null }),
+    },
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    })),
+  };
+}
+
+// Re-setup createClient mock before each test (resetMocks: true wipes factory implementations)
+beforeEach(() => {
+  (createClient as jest.Mock).mockReturnValue(createMockSupabaseClient());
+});
 
 // Helper to wrap components with ThemeProvider
 const renderWithTheme = (component: React.ReactElement) => {
@@ -57,8 +102,8 @@ describe('Settings Hub Page', () => {
 
 describe('Profile Settings Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockResolvedValue({
+    mockFetch.mockClear();
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         profile: {
@@ -89,8 +134,8 @@ describe('Profile Settings Page', () => {
 
 describe('Notifications Settings Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockResolvedValue({
+    mockFetch.mockClear();
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         settings: {
@@ -145,8 +190,8 @@ describe('Privacy Settings Page', () => {
 
 describe('Billing Settings Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockResolvedValue({
+    mockFetch.mockClear();
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         subscription: {

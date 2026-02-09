@@ -13,6 +13,7 @@ import {
   AssetAllocationAnalysis,
   RiskTolerance,
   AssetClass,
+  RebalancingRecommendation,
 } from '@/lib/investments/types/asset-allocation.types';
 import { Portfolio } from '@/lib/investments/types/investment.types';
 import { EfficientFrontierChart } from './EfficientFrontierChart';
@@ -97,20 +98,20 @@ function CollapsibleSection({
     <div
       {...swipeHandlers}
       ref={refPassthrough}
-      className={`bg-white dark:bg-gray-800 rounded-lg overflow-hidden transition-all duration-300 ${
+      className={`bg-white dark:bg-slate-800 rounded-lg overflow-hidden transition-all duration-300 ${
         isActive ? 'ring-2 ring-blue-500 ring-opacity-50' : ''
       }`}
     >
       <button
         onClick={toggleExpanded}
-        className="w-full px-4 py-4 sm:px-6 sm:py-5 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-750 active:bg-gray-100 dark:active:bg-gray-700 transition-colors duration-200 min-h-[44px]"
+        className="w-full px-4 py-4 sm:px-6 sm:py-5 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-slate-750 active:bg-gray-100 dark:bg-slate-800 dark:active:bg-gray-700 transition-colors duration-200 min-h-[44px]"
         aria-expanded={isExpanded}
         aria-controls={`section-${sectionId}`}
       >
         <div className="flex items-center gap-3">
           <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{title}</h3>
           {showSwipeIndicators && isExpanded && (
-            <div className="hidden sm:flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <div className="hidden sm:flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
@@ -122,7 +123,7 @@ function CollapsibleSection({
           )}
         </div>
         <svg
-          className={`w-6 h-6 text-gray-500 dark:text-gray-400 transition-transform duration-300 ${
+          className={`w-6 h-6 text-gray-500 dark:text-slate-400 transition-transform duration-300 ${
             isExpanded ? 'rotate-180' : ''
           }`}
           fill="none"
@@ -147,7 +148,7 @@ function CollapsibleSection({
 
 interface AssetAllocationPanelProps {
   portfolio: Portfolio;
-  onRebalance?: (recommendations: any[]) => void;
+  onRebalance?: (recommendations: RebalancingRecommendation[]) => void;
 }
 
 export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAllocationPanelProps) {
@@ -376,16 +377,16 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
       [AssetClass.STOCKS]: 'bg-blue-500',
       [AssetClass.BONDS]: 'bg-green-500',
       [AssetClass.CASH]: 'bg-gray-500',
-      [AssetClass.REAL_ESTATE]: 'bg-purple-500',
+      [AssetClass.REAL_ESTATE]: 'bg-blue-500',
       [AssetClass.COMMODITIES]: 'bg-yellow-500',
       [AssetClass.CRYPTO]: 'bg-orange-500',
-      [AssetClass.ALTERNATIVES]: 'bg-pink-500',
+      [AssetClass.ALTERNATIVES]: 'bg-emerald-500',
     };
     return colors[assetClass] || 'bg-gray-500';
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 bg-gray-100 dark:bg-gray-900 rounded-lg transition-colors duration-200">
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 bg-gray-100 dark:bg-slate-900 rounded-lg transition-colors duration-200">
       {/* Offline Indicator */}
       <OfflineIndicator
         showCachedTimestamp={true}
@@ -418,7 +419,7 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
             id="risk-tolerance-select"
             value={riskTolerance}
             onChange={(e) => setRiskTolerance(e.target.value as RiskTolerance)}
-            className="w-full sm:w-auto px-4 py-3 sm:py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-base rounded-lg border-2 border-gray-300 dark:border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 min-h-[44px] transition-colors duration-200"
+            className="w-full sm:w-auto px-4 py-3 sm:py-2 bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-base rounded-lg border-2 border-gray-300 dark:border-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-100 dark:focus:ring-offset-gray-900 min-h-[44px] transition-colors duration-200"
             aria-label="Risk tolerance level"
           >
             <option value={RiskTolerance.VERY_CONSERVATIVE}>Very Conservative</option>
@@ -479,7 +480,7 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
                     scrollToSection(index);
                   }}
                   className={`h-2 rounded-full transition-all duration-300 ${
-                    activeSection === index ? 'w-8 bg-blue-500' : 'w-2 bg-gray-400 dark:bg-gray-600'
+                    activeSection === index ? 'w-8 bg-blue-500' : 'w-2 bg-gray-400 dark:bg-slate-600'
                   }`}
                   aria-label={`Navigate to ${section.title}`}
                   aria-current={activeSection === index ? 'true' : 'false'}
@@ -503,14 +504,14 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
               {analysis.currentAllocations.map((allocation) => (
                 <div key={allocation.assetClass} className="space-y-2">
                   <div className="flex justify-between text-sm sm:text-base">
-                    <span className="text-gray-600 dark:text-gray-300 capitalize">
+                    <span className="text-gray-600 dark:text-slate-300 capitalize">
                       {allocation.assetClass.replace('_', ' ')}
                     </span>
                     <span className="text-gray-900 dark:text-white font-semibold">
                       {allocation.percentage.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-2 sm:h-3 transition-colors duration-200">
+                  <div className="w-full bg-gray-300 dark:bg-slate-700 rounded-full h-2 sm:h-3 transition-colors duration-200">
                     <div
                       className={`${getAssetClassColor(allocation.assetClass)} h-2 sm:h-3 rounded-full transition-all duration-500`}
                       style={{ width: `${allocation.percentage}%` }}
@@ -521,7 +522,7 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
                       aria-label={`${allocation.assetClass} allocation: ${allocation.percentage.toFixed(1)}%`}
                     />
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-slate-400">
                     ${allocation.value.toLocaleString()}
                   </div>
                 </div>
@@ -542,7 +543,7 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
           >
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <div className="flex-1 w-full">
-                <div className="w-full bg-gray-300 dark:bg-gray-700 rounded-full h-4 sm:h-6 transition-colors duration-200">
+                <div className="w-full bg-gray-300 dark:bg-slate-700 rounded-full h-4 sm:h-6 transition-colors duration-200">
                   <div
                     className={`h-4 sm:h-6 rounded-full transition-all duration-500 ${
                       analysis.diversificationScore >= 70
@@ -564,12 +565,12 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
                 {analysis.diversificationScore}/100
               </span>
             </div>
-            <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+            <p className="mt-3 text-sm text-gray-600 dark:text-slate-400">
               {analysis.diversificationScore >= 70
-                ? '✓ Well diversified portfolio'
+                ? 'Well diversified portfolio'
                 : analysis.diversificationScore >= 40
-                ? '⚠ Moderate diversification - consider spreading investments'
-                : '⚠ Low diversification - high concentration risk'}
+                ? 'Moderate diversification - consider spreading investments'
+                : 'Low diversification - high concentration risk'}
             </p>
           </CollapsibleSection>
 
@@ -585,33 +586,33 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
             sectionRef={(el) => (sectionRefs.current[2] = el)}
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              <div className="bg-gray-50 dark:bg-gray-750 p-4 rounded-lg transition-colors duration-200">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Volatility</div>
+              <div className="bg-gray-50 dark:bg-slate-750 p-4 rounded-lg transition-colors duration-200">
+                <div className="text-sm text-gray-600 dark:text-slate-400 mb-1">Volatility</div>
                 <div className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
                   {(analysis.riskMetrics.portfolioVolatility * 100).toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Standard deviation</div>
+                <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">Standard deviation</div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-750 p-4 rounded-lg transition-colors duration-200">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Beta</div>
+              <div className="bg-gray-50 dark:bg-slate-750 p-4 rounded-lg transition-colors duration-200">
+                <div className="text-sm text-gray-600 dark:text-slate-400 mb-1">Beta</div>
                 <div className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
                   {analysis.riskMetrics.portfolioBeta.toFixed(2)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Market correlation</div>
+                <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">Market correlation</div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-750 p-4 rounded-lg transition-colors duration-200">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">VaR (95%)</div>
+              <div className="bg-gray-50 dark:bg-slate-750 p-4 rounded-lg transition-colors duration-200">
+                <div className="text-sm text-gray-600 dark:text-slate-400 mb-1">VaR (95%)</div>
                 <div className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
                   ${analysis.riskMetrics.valueAtRisk.toLocaleString()}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Value at risk</div>
+                <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">Value at risk</div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-750 p-4 rounded-lg transition-colors duration-200">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Max Drawdown</div>
+              <div className="bg-gray-50 dark:bg-slate-750 p-4 rounded-lg transition-colors duration-200">
+                <div className="text-sm text-gray-600 dark:text-slate-400 mb-1">Max Drawdown</div>
                 <div className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
                   {(analysis.riskMetrics.maxDrawdown * 100).toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Worst decline</div>
+                <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">Worst decline</div>
               </div>
             </div>
           </CollapsibleSection>
@@ -628,33 +629,33 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
             sectionRef={(el) => (sectionRefs.current[3] = el)}
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              <div className="bg-gray-50 dark:bg-gray-750 p-4 rounded-lg transition-colors duration-200">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Expected Return</div>
+              <div className="bg-gray-50 dark:bg-slate-750 p-4 rounded-lg transition-colors duration-200">
+                <div className="text-sm text-gray-600 dark:text-slate-400 mb-1">Expected Return</div>
                 <div className="text-xl sm:text-2xl font-semibold text-green-600 dark:text-green-400">
                   {(analysis.performanceMetrics.expectedReturn * 100).toFixed(1)}%
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Annual projection</div>
+                <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">Annual projection</div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-750 p-4 rounded-lg transition-colors duration-200">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Sharpe Ratio</div>
+              <div className="bg-gray-50 dark:bg-slate-750 p-4 rounded-lg transition-colors duration-200">
+                <div className="text-sm text-gray-600 dark:text-slate-400 mb-1">Sharpe Ratio</div>
                 <div className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
                   {analysis.performanceMetrics.sharpeRatio.toFixed(2)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Risk-adjusted return</div>
+                <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">Risk-adjusted return</div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-750 p-4 rounded-lg transition-colors duration-200">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Sortino Ratio</div>
+              <div className="bg-gray-50 dark:bg-slate-750 p-4 rounded-lg transition-colors duration-200">
+                <div className="text-sm text-gray-600 dark:text-slate-400 mb-1">Sortino Ratio</div>
                 <div className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
                   {analysis.performanceMetrics.sortinoRatio.toFixed(2)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Downside risk</div>
+                <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">Downside risk</div>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-750 p-4 rounded-lg transition-colors duration-200">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Information Ratio</div>
+              <div className="bg-gray-50 dark:bg-slate-750 p-4 rounded-lg transition-colors duration-200">
+                <div className="text-sm text-gray-600 dark:text-slate-400 mb-1">Information Ratio</div>
                 <div className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
                   {analysis.performanceMetrics.informationRatio.toFixed(2)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">Benchmark comparison</div>
+                <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">Benchmark comparison</div>
               </div>
             </div>
           </CollapsibleSection>
@@ -680,7 +681,7 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
                 />
               </div>
             </div>
-            <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+            <p className="mt-4 text-sm text-gray-600 dark:text-slate-400">
               The efficient frontier shows the optimal risk-return tradeoff. Your current portfolio (red diamond) and recommended portfolio (green star) are plotted against the optimal frontier (blue curve).
             </p>
           </CollapsibleSection>
@@ -707,56 +708,44 @@ export default function AssetAllocationPanel({ portfolio, onRebalance }: AssetAl
                 {analysis.rebalancingRecommendations.map((rec, index) => (
                   <div
                     key={index}
-                    className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors duration-200"
+                    className="p-4 bg-gray-50 dark:bg-slate-700 rounded-lg border-2 border-gray-300 dark:border-slate-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors duration-200"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                       <div className="flex items-center gap-3">
                         <span className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{rec.symbol}</span>
                         <span
-                          className={`px-2 py-1 rounded text-xs font-semibold ${
-                            rec.priority === 'high'
-                              ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                              : rec.priority === 'medium'
-                              ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                              : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                          }`}
+                          className={`px-2 py-1 rounded text-xs font-semibold ${ rec.priority === 'high' ? 'bg-red-100 text-red-700' : rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' }`}
                           aria-label={`Priority: ${rec.priority}`}
                         >
                           {rec.priority.toUpperCase()}
                         </span>
                       </div>
                       <span
-                        className={`px-4 py-2 rounded font-semibold text-sm min-h-[44px] flex items-center justify-center ${
-                          rec.action === 'buy'
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                            : rec.action === 'sell'
-                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                            : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                        }`}
+                        className={`px-4 py-2 rounded font-semibold text-sm min-h-[44px] flex items-center justify-center ${ rec.action === 'buy' ? 'bg-green-100 text-green-700' : rec.action === 'sell' ? 'bg-red-100 text-red-700' : 'bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-300' }`}
                         aria-label={`Action: ${rec.action}`}
                       >
                         {rec.action.toUpperCase()}
                       </span>
                     </div>
-                    <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300 mb-3">{rec.reason}</div>
+                    <div className="text-sm sm:text-base text-gray-700 dark:text-slate-300 mb-3">{rec.reason}</div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs sm:text-sm">
-                      <div className="bg-gray-100 dark:bg-gray-750 p-2 rounded transition-colors duration-200">
-                        <span className="text-gray-600 dark:text-gray-400 block mb-1">Current</span>
+                      <div className="bg-gray-100 dark:bg-slate-750 p-2 rounded transition-colors duration-200">
+                        <span className="text-gray-600 dark:text-slate-400 block mb-1">Current</span>
                         <span className="text-gray-900 dark:text-white font-semibold">{rec.currentPercentage.toFixed(1)}%</span>
                       </div>
-                      <div className="bg-gray-100 dark:bg-gray-750 p-2 rounded transition-colors duration-200">
-                        <span className="text-gray-600 dark:text-gray-400 block mb-1">Target</span>
+                      <div className="bg-gray-100 dark:bg-slate-750 p-2 rounded transition-colors duration-200">
+                        <span className="text-gray-600 dark:text-slate-400 block mb-1">Target</span>
                         <span className="text-gray-900 dark:text-white font-semibold">{rec.targetPercentage.toFixed(1)}%</span>
                       </div>
-                      <div className="bg-gray-100 dark:bg-gray-750 p-2 rounded transition-colors duration-200">
-                        <span className="text-gray-600 dark:text-gray-400 block mb-1">Shares</span>
+                      <div className="bg-gray-100 dark:bg-slate-750 p-2 rounded transition-colors duration-200">
+                        <span className="text-gray-600 dark:text-slate-400 block mb-1">Shares</span>
                         <span className="text-gray-900 dark:text-white font-semibold">
                           {rec.action === 'buy' ? '+' : '-'}
                           {rec.sharesToTrade}
                         </span>
                       </div>
-                      <div className="bg-gray-100 dark:bg-gray-750 p-2 rounded transition-colors duration-200">
-                        <span className="text-gray-600 dark:text-gray-400 block mb-1">Value</span>
+                      <div className="bg-gray-100 dark:bg-slate-750 p-2 rounded transition-colors duration-200">
+                        <span className="text-gray-600 dark:text-slate-400 block mb-1">Value</span>
                         <span className="text-gray-900 dark:text-white font-semibold">${rec.valueToTrade.toLocaleString()}</span>
                       </div>
                     </div>

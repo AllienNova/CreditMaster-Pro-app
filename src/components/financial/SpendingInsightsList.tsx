@@ -73,23 +73,23 @@ export default function SpendingInsightsList({ timeRange = '30d' }: SpendingInsi
 
   const getTypeIcon = (type: string): string => {
     switch (type) {
-      case 'pattern': return '🔄';
-      case 'trend': return '📈';
-      case 'recommendation': return '💡';
-      case 'warning': return '⚠️';
-      case 'opportunity': return '✨';
-      default: return '📊';
+      case 'pattern': return '';
+      case 'trend': return '';
+      case 'recommendation': return '';
+      case 'warning': return '';
+      case 'opportunity': return '';
+      default: return '';
     }
   };
 
   const getTypeColor = (type: string): string => {
     switch (type) {
       case 'pattern': return 'bg-blue-100 border-blue-300';
-      case 'trend': return 'bg-purple-100 border-purple-300';
+      case 'trend': return 'bg-blue-100 border-blue-300';
       case 'recommendation': return 'bg-green-100 border-green-300';
       case 'warning': return 'bg-yellow-100 border-yellow-300';
-      case 'opportunity': return 'bg-indigo-100 border-indigo-300';
-      default: return 'bg-gray-100 border-gray-300';
+      case 'opportunity': return 'bg-blue-100 border-blue-300';
+      default: return 'bg-gray-100 dark:bg-slate-800 border-gray-300 dark:border-slate-600';
     }
   };
 
@@ -98,7 +98,7 @@ export default function SpendingInsightsList({ timeRange = '30d' }: SpendingInsi
       case 'high': return 'bg-red-100 text-red-700';
       case 'medium': return 'bg-yellow-100 text-yellow-700';
       case 'low': return 'bg-green-100 text-green-700';
-      default: return 'bg-gray-100 text-gray-700';
+      default: return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200';
     }
   };
 
@@ -109,11 +109,11 @@ export default function SpendingInsightsList({ timeRange = '30d' }: SpendingInsi
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 animate-pulse">
+        <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/3 mb-4"></div>
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            <div key={i} className="h-32 bg-gray-200 dark:bg-slate-700 rounded"></div>
           ))}
         </div>
       </div>
@@ -121,12 +121,12 @@ export default function SpendingInsightsList({ timeRange = '30d' }: SpendingInsi
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🤖</span>
-          <h3 className="text-lg font-semibold text-gray-900">AI Insights</h3>
+          <span className="text-2xl"></span>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Insights</h3>
           {filteredInsights.length > 0 && (
             <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
               {filteredInsights.length}
@@ -138,21 +138,13 @@ export default function SpendingInsightsList({ timeRange = '30d' }: SpendingInsi
         <div className="flex items-center gap-2">
           <button
             onClick={() => setFilter('all')}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-              filter === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:bg-slate-700' }`}
           >
             All
           </button>
           <button
             onClick={() => setFilter('actionable')}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-              filter === 'actionable'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ filter === 'actionable' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:bg-slate-700' }`}
           >
             Actionable
           </button>
@@ -173,25 +165,25 @@ export default function SpendingInsightsList({ timeRange = '30d' }: SpendingInsi
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-gray-900">{insight.title}</h4>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">{insight.title}</h4>
                         <span className={`text-xs px-2 py-1 rounded-full ${getImpactBadge(insight.impact)}`}>
                           {insight.impact} impact
                         </span>
                       </div>
-                      <div className="text-sm text-gray-600 capitalize">
+                      <div className="text-sm text-gray-600 dark:text-slate-300 capitalize">
                         {insight.category.replace(/_/g, ' ')}
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 dark:text-slate-400">
                       {(insight.confidence * 100).toFixed(0)}% confidence
                     </div>
                   </div>
 
-                  <p className="text-sm text-gray-700 mb-3">{insight.description}</p>
+                  <p className="text-sm text-gray-700 dark:text-slate-200 mb-3">{insight.description}</p>
 
                   {/* Metadata */}
                   {insight.metadata && (
-                    <div className="flex items-center gap-4 mb-3 text-xs text-gray-600">
+                    <div className="flex items-center gap-4 mb-3 text-xs text-gray-600 dark:text-slate-300">
                       {insight.metadata.amount && (
                         <span className="font-medium">
                           Amount: {formatCurrency(insight.metadata.amount)}
@@ -210,7 +202,7 @@ export default function SpendingInsightsList({ timeRange = '30d' }: SpendingInsi
 
                   {/* Actions */}
                   {insight.actions && insight.actions.length > 0 && (
-                    <div className="flex items-center gap-2 pt-3 border-t border-gray-200">
+                    <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-slate-700">
                       {insight.actions.map((action, idx) => (
                         <button
                           key={idx}
@@ -233,9 +225,9 @@ export default function SpendingInsightsList({ timeRange = '30d' }: SpendingInsi
         </div>
       ) : (
         <div className="text-center py-12">
-          <div className="text-4xl mb-3">💡</div>
-          <h4 className="text-lg font-semibold text-gray-900 mb-2">No Insights Available</h4>
-          <p className="text-gray-600">Check back later for AI-generated insights</p>
+          <div className="text-4xl mb-3"></div>
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Insights Available</h4>
+          <p className="text-gray-600 dark:text-slate-300">Check back later for AI-generated insights</p>
         </div>
       )}
     </div>

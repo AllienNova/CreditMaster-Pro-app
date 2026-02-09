@@ -62,7 +62,7 @@ export class ActionExecutor {
           };
       }
     } catch (error) {
-      console.error('Action execution error:', error);
+      // ActionExecutor error: Action execution error
       return {
         success: false,
         type: intent,

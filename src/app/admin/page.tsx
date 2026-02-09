@@ -137,11 +137,11 @@ export default function AdminDashboardPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
         <div className="flex gap-3">
           <button
             type="button"
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+            className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition"
           >
             Export Report
           </button>
@@ -160,10 +160,10 @@ export default function AdminDashboardPage() {
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+            className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700"
           >
-            <p className="text-sm text-gray-500">{stat.label}</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">
+            <p className="text-sm text-gray-500 dark:text-slate-400">{stat.label}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
               {stat.value}
             </p>
             <p
@@ -177,29 +177,29 @@ export default function AdminDashboardPage() {
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Recent Activity */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
+          <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Recent Activity
             </h2>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-slate-700">
             {recentActivity.map((activity, i) => (
               <div key={i} className="p-4 flex items-center gap-4">
                 <span className="text-xl">
-                  {activity.type === 'user' && '👤'}
-                  {activity.type === 'payment' && '💳'}
-                  {activity.type === 'dispute' && '📝'}
-                  {activity.type === 'alert' && '⚠️'}
+                  {activity.type === 'user' && ''}
+                  {activity.type === 'payment' && ''}
+                  {activity.type === 'dispute' && ''}
+                  {activity.type === 'alert' && ''}
                 </span>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-900">{activity.message}</p>
-                  <p className="text-xs text-gray-500">{activity.time}</p>
+                  <p className="text-sm text-gray-900 dark:text-white">{activity.message}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">{activity.time}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 dark:border-slate-700">
             <Link
               href="/admin/logs"
               className="text-sm text-emerald-500 hover:text-emerald-600"
@@ -210,13 +210,13 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* System Status */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
+          <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               System Status
             </h2>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-slate-700">
             {systemStatus.map((service) => (
               <div
                 key={service.name}
@@ -226,7 +226,7 @@ export default function AdminDashboardPage() {
                   <span
                     className={`w-3 h-3 rounded-full ${service.status === 'operational' ? 'bg-emerald-500' : 'bg-yellow-500'}`}
                   />
-                  <span className="text-sm text-gray-900">{service.name}</span>
+                  <span className="text-sm text-gray-900 dark:text-white">{service.name}</span>
                 </div>
                 <div className="text-right">
                   <span
@@ -234,14 +234,14 @@ export default function AdminDashboardPage() {
                   >
                     {service.status}
                   </span>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                     {service.uptime} uptime
                   </p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 dark:border-slate-700">
             <Link
               href="/admin/health"
               className="text-sm text-emerald-500 hover:text-emerald-600"
@@ -253,8 +253,8 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+      <div className="mt-8 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Quick Actions
         </h2>
         <div className="flex flex-wrap gap-3">
@@ -262,25 +262,25 @@ export default function AdminDashboardPage() {
             href="/admin/users"
             className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"
           >
-            👥 Manage Users
+            Manage Users
           </Link>
           <Link
             href="/admin/disputes"
-            className="px-4 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition"
+            className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"
           >
-            📝 Review Disputes
+            Review Disputes
           </Link>
           <Link
             href="/admin/features"
             className="px-4 py-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition"
           >
-            🚩 Feature Flags
+            Feature Flags
           </Link>
           <Link
             href="/admin/config"
-            className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition"
+            className="px-4 py-2 bg-gray-100 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:bg-slate-700 transition"
           >
-            ⚙️ System Config
+            System Config
           </Link>
         </div>
       </div>

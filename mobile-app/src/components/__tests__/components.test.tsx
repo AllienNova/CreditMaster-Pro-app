@@ -1,5 +1,5 @@
 /**
- * CPFI Component Tests
+ * Fynvita Component Tests
  * Unit tests for shared UI components
  */
 

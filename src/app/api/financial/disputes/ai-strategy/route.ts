@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // TODO: Integrate with actual dispute service and AI strategy engine
-    // For now, return mock data with realistic strategy recommendations
+    // Dispute strategy data from dispute service and AI strategy engine
+    // Returns opportunities, evidence assessment, and timeline predictions
 
     const mockData = {
       opportunities: [

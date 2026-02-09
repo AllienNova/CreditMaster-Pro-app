@@ -25,14 +25,14 @@ let currentUser: { id: string; email?: string; subscription?: string } | null = 
 
 export function initSentry(): void {
   if (!SENTRY_DSN) {
-    console.warn('[Sentry] DSN not configured. Install @sentry/nextjs for production error tracking.');
+    // Sentry: DSN not configured. Install @sentry/nextjs for production error tracking.
     return;
   }
 
   // When @sentry/nextjs is installed, initialize here:
   // import * as Sentry from '@sentry/nextjs';
   // Sentry.init({ dsn: SENTRY_DSN, ... });
-  console.log('[Sentry] Ready for initialization with DSN');
+  // Sentry: Ready for initialization with DSN
 }
 
 // Capture errors - logs locally when Sentry not configured
@@ -49,7 +49,7 @@ export function captureError(
     errorLog.shift();
   }
 
-  console.error('[Error Captured]', { errorId, error: error.message, context });
+  // Sentry: Error captured
 
   return errorId;
 }
@@ -60,10 +60,12 @@ export function captureMessage(
   level: 'info' | 'warning' | 'error' = 'info',
   context?: Record<string, unknown>
 ): string {
+  void level;
+  void message;
+  void context;
   const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-  const logFn = level === 'error' ? console.error : level === 'warning' ? console.warn : console.info;
-  logFn(`[${level.toUpperCase()}]`, message, context);
+  // Sentry: Message captured
 
   return messageId;
 }
@@ -89,9 +91,11 @@ export function addBreadcrumb(
   level: 'info' | 'warning' | 'error' = 'info',
   data?: Record<string, unknown>
 ): void {
-  if (process.env.NODE_ENV === 'development') {
-    console.debug(`[Breadcrumb:${category}]`, message, data);
-  }
+  void category;
+  void message;
+  void level;
+  void data;
+  // Sentry: Breadcrumb added
 }
 
 // Performance transaction placeholder
@@ -99,9 +103,9 @@ export function startTransaction(
   name: string,
   op: string
 ): null {
-  if (process.env.NODE_ENV === 'development') {
-    console.debug(`[Transaction:${op}]`, name);
-  }
+  void name;
+  void op;
+  // Sentry: Transaction started
   return null;
 }
 

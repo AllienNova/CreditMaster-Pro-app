@@ -1,0 +1,376 @@
+﻿
+> cpfi-credit-pro-financial-intelligence@1.0.0 test
+> jest src/lib/financial/__tests__/savings-optimizer.test.ts --passWithNoTests
+
+powershell : FAIL src/lib/financial/__tests__/savings-optimizer.test.ts (131.618 s)
+At line:1 char:1
++ powershell -NoLogo -NonInteractive -Command npm test -- "src/lib/fina ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL src/lib/fi....ts (131.618 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  SavingsOptimizer
+    Singleton Pattern
+      ΓêÜ should return the same instance (3 ms)
+    findRecurringCharges()
+      ΓêÜ should detect recurring charges with >90% accuracy (4 ms)
+      ΓêÜ should identify subscriptions with >85% accuracy (2 ms)
+      ΓêÜ should filter by minimum amount (1 ms)
+      ΓêÜ should calculate variance correctly (3 ms)
+    suggestCancelableSubscriptions()
+      ├ù should suggest cancelable subscriptions (10015 ms)
+      ├ù should calculate potential savings correctly (10004 ms)
+      ├ù should provide actionable recommendations (10015 ms)
+    analyzeSpendingForSavings()
+      ├ù should analyze spending and return comprehensive analysis (10008 ms)
+      ├ù should calculate spending summary correctly (10015 ms)
+      ├ù should identify savings opportunities (10011 ms)
+      ├ù should provide category breakdown (10001 ms)
+      ├ù should analyze spending trends (10019 ms)
+    calculatePotentialSavings()
+      ├ù should calculate total potential savings (10003 ms)
+      ├ù should provide breakdown by category (10011 ms)
+      ├ù should identify top opportunities (10018 ms)
+      ├ù should calculate implementation difficulty (10013 ms)
+      ├ù should estimate implementation time (10002 ms)
+    generateSavingsGoalRecommendations()
+      ├ù should generate savings goal recommendations (1 ms)
+      ├ù should provide realistic goal amounts (1 ms)
+      ├ù should include reasoning for each goal
+    Edge Cases
+      ΓêÜ should handle new users with no transactions (2 ms)
+      ΓêÜ should handle irregular spending patterns (1 ms)
+      ΓêÜ should handle users with no subscriptions (1 ms)
+    AI Integration
+      ├ù should handle AI service failures gracefully
+
+  ΓùÅ SavingsOptimizer ΓÇ║ suggestCancelableSubscriptions() ΓÇ║ should suggest cancelable subscriptions
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 221 |[39m     })[33m;[39m
+     [90m 222 |[39m
+    [31m[1m>[22m[39m[90m 223 |[39m     it([32m'should suggest cancelable subscriptions'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 224 |[39m       [36mconst[39m recommendations [33m=[39m [36mawait[39m 
+optimizer[33m.[39msuggestCancelableSubscriptions(mockUserId)[33m;[39m
+     [90m 225 |[39m
+     [90m 226 |[39m       expect(recommendations)[33m.[39mtoBeDefined()[33m;[39m[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:223:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:171:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ suggestCancelableSubscriptions() ΓÇ║ should calculate potential savings correctly
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 228 |[39m     })[33m;[39m
+     [90m 229 |[39m
+    [31m[1m>[22m[39m[90m 230 |[39m     it([32m'should calculate potential savings correctly'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 231 |[39m       [36mconst[39m recommendations [33m=[39m [36mawait[39m 
+optimizer[33m.[39msuggestCancelableSubscriptions(mockUserId)[33m;[39m
+     [90m 232 |[39m
+     [90m 233 |[39m       recommendations[33m.[39mforEach((rec) [33m=>[39m {[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:230:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:171:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ suggestCancelableSubscriptions() ΓÇ║ should provide actionable recommendations
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 237 |[39m     })[33m;[39m
+     [90m 238 |[39m
+    [31m[1m>[22m[39m[90m 239 |[39m     it([32m'should provide actionable recommendations'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 240 |[39m       [36mconst[39m recommendations [33m=[39m [36mawait[39m 
+optimizer[33m.[39msuggestCancelableSubscriptions(mockUserId)[33m;[39m
+     [90m 241 |[39m
+     [90m 242 |[39m       recommendations[33m.[39mforEach((rec) [33m=>[39m {[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:239:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:171:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ analyzeSpendingForSavings() ΓÇ║ should analyze spending and return comprehensive analysis
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 274 |[39m     })[33m;[39m
+     [90m 275 |[39m
+    [31m[1m>[22m[39m[90m 276 |[39m     it([32m'should analyze spending and return comprehensive analysis'[39m[33m,[39m 
+[36masync[39m () [33m=>[39m {
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 277 |[39m       [36mconst[39m analysis [33m=[39m [36mawait[39m 
+optimizer[33m.[39manalyzeSpendingForSavings(mockUserId[33m,[39m [32m'monthly'[39m)[33m;[39m
+     [90m 278 |[39m
+     [90m 279 |[39m       expect(analysis)[33m.[39mtoBeDefined()[33m;[39m[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:276:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:252:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ analyzeSpendingForSavings() ΓÇ║ should calculate spending summary correctly
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 287 |[39m     })[33m;[39m
+     [90m 288 |[39m
+    [31m[1m>[22m[39m[90m 289 |[39m     it([32m'should calculate spending summary correctly'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 290 |[39m       [36mconst[39m analysis [33m=[39m [36mawait[39m 
+optimizer[33m.[39manalyzeSpendingForSavings(mockUserId[33m,[39m [32m'monthly'[39m)[33m;[39m
+     [90m 291 |[39m
+     [90m 292 |[39m       
+expect(analysis[33m.[39msummary[33m.[39mtotalSpending)[33m.[39mtoBeGreaterThan([35m0[39m)[33m;[39m[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:289:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:252:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ analyzeSpendingForSavings() ΓÇ║ should identify savings opportunities
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 298 |[39m     })[33m;[39m
+     [90m 299 |[39m
+    [31m[1m>[22m[39m[90m 300 |[39m     it([32m'should identify savings opportunities'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 301 |[39m       [36mconst[39m analysis [33m=[39m [36mawait[39m 
+optimizer[33m.[39manalyzeSpendingForSavings(mockUserId[33m,[39m [32m'monthly'[39m)[33m;[39m
+     [90m 302 |[39m
+     [90m 303 |[39m       expect(analysis[33m.[39mopportunities)[33m.[39mtoBeDefined()[33m;[39m[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:300:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:252:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ analyzeSpendingForSavings() ΓÇ║ should provide category breakdown
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 312 |[39m     })[33m;[39m
+     [90m 313 |[39m
+    [31m[1m>[22m[39m[90m 314 |[39m     it([32m'should provide category breakdown'[39m[33m,[39m [36masync[39m () [33m=>[39m 
+{
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 315 |[39m       [36mconst[39m analysis [33m=[39m [36mawait[39m 
+optimizer[33m.[39manalyzeSpendingForSavings(mockUserId[33m,[39m [32m'monthly'[39m)[33m;[39m
+     [90m 316 |[39m
+     [90m 317 |[39m       expect(analysis[33m.[39mcategoryBreakdown)[33m.[39mtoBeDefined()[33m;[39m[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:314:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:252:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ analyzeSpendingForSavings() ΓÇ║ should analyze spending trends
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 328 |[39m     })[33m;[39m
+     [90m 329 |[39m
+    [31m[1m>[22m[39m[90m 330 |[39m     it([32m'should analyze spending trends'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 331 |[39m       [36mconst[39m analysis [33m=[39m [36mawait[39m 
+optimizer[33m.[39manalyzeSpendingForSavings(mockUserId[33m,[39m [32m'monthly'[39m)[33m;[39m
+     [90m 332 |[39m
+     [90m 333 |[39m       expect(analysis[33m.[39mtrends)[33m.[39mtoBeDefined()[33m;[39m[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:330:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:252:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ calculatePotentialSavings() ΓÇ║ should calculate total potential savings
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 360 |[39m     })[33m;[39m
+     [90m 361 |[39m
+    [31m[1m>[22m[39m[90m 362 |[39m     it([32m'should calculate total potential savings'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 363 |[39m       [36mconst[39m summary [33m=[39m [36mawait[39m 
+optimizer[33m.[39mcalculatePotentialSavings(mockUserId)[33m;[39m
+     [90m 364 |[39m
+     [90m 365 |[39m       expect(summary)[33m.[39mtoBeDefined()[33m;[39m[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:362:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:340:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ calculatePotentialSavings() ΓÇ║ should provide breakdown by category
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 368 |[39m     })[33m;[39m
+     [90m 369 |[39m
+    [31m[1m>[22m[39m[90m 370 |[39m     it([32m'should provide breakdown by category'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 371 |[39m       [36mconst[39m summary [33m=[39m [36mawait[39m 
+optimizer[33m.[39mcalculatePotentialSavings(mockUserId)[33m;[39m
+     [90m 372 |[39m
+     [90m 373 |[39m       expect(summary[33m.[39mbreakdown)[33m.[39mtoBeDefined()[33m;[39m[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:370:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:340:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ calculatePotentialSavings() ΓÇ║ should identify top opportunities
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 381 |[39m     })[33m;[39m
+     [90m 382 |[39m
+    [31m[1m>[22m[39m[90m 383 |[39m     it([32m'should identify top opportunities'[39m[33m,[39m [36masync[39m () [33m=>[39m 
+{
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 384 |[39m       [36mconst[39m summary [33m=[39m [36mawait[39m 
+optimizer[33m.[39mcalculatePotentialSavings(mockUserId)[33m;[39m
+     [90m 385 |[39m
+     [90m 386 |[39m       expect(summary[33m.[39mtopOpportunities)[33m.[39mtoBeDefined()[33m;[39m[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:383:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:340:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ calculatePotentialSavings() ΓÇ║ should calculate implementation difficulty
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 389 |[39m     })[33m;[39m
+     [90m 390 |[39m
+    [31m[1m>[22m[39m[90m 391 |[39m     it([32m'should calculate implementation difficulty'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 392 |[39m       [36mconst[39m summary [33m=[39m [36mawait[39m 
+optimizer[33m.[39mcalculatePotentialSavings(mockUserId)[33m;[39m
+     [90m 393 |[39m
+     [90m 394 |[39m       
+expect(summary[33m.[39mimplementationDifficulty)[33m.[39mtoMatch([35m/easy|medium|hard/[39m)[33m;[39m[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:391:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:340:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ calculatePotentialSavings() ΓÇ║ should estimate implementation time
+
+    thrown: "Exceeded timeout of 10000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See 
+https://jestjs.io/docs/api#testname-fn-timeout."
+
+    [0m [90m 395 |[39m     })[33m;[39m
+     [90m 396 |[39m
+    [31m[1m>[22m[39m[90m 397 |[39m     it([32m'should estimate implementation time'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {
+     [90m     |[39m     [31m[1m^[22m[39m
+     [90m 398 |[39m       [36mconst[39m summary [33m=[39m [36mawait[39m 
+optimizer[33m.[39mcalculatePotentialSavings(mockUserId)[33m;[39m
+     [90m 399 |[39m
+     [90m 400 |[39m       expect(summary[33m.[39mestimatedTimeToImplement)[33m.[39mtoBeDefined()[33m;[39m[0m
+
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:397:5
+      at src/lib/financial/__tests__/savings-optimizer.test.ts:340:3
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:34:1)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ generateSavingsGoalRecommendations() ΓÇ║ should generate savings goal recommendations
+
+    TypeError: supabase_1.supabase.from(...).select(...).eq(...).single is not a function
+
+    [0m [90m 521 |[39m       [33m.[39mselect([32m'monthly_income'[39m)
+     [90m 522 |[39m       [33m.[39meq([32m'id'[39m[33m,[39m userId)
+    [31m[1m>[22m[39m[90m 523 |[39m       [33m.[39msingle()[33m;[39m
+     [90m     |[39m        [31m[1m^[22m[39m
+     [90m 524 |[39m
+     [90m 525 |[39m     [36mif[39m (error [33m||[39m [33m![39mprofile [33m||[39m [33m![39mprofile[33m.[39mmonthly_income) {
+     [90m 526 |[39m       [90m// Fallback: estimate from transaction history[39m[0m
+
+      at SavingsOptimizer.getUserMonthlyIncome (src/lib/financial/savings-optimizer.ts:523:8)
+      at SavingsOptimizer.generateSavingsGoalRecommendations (src/lib/financial/savings-optimizer.ts:357:38)
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:420:47)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ generateSavingsGoalRecommendations() ΓÇ║ should provide realistic goal amounts
+
+    TypeError: supabase_1.supabase.from(...).select(...).eq(...).single is not a function
+
+    [0m [90m 521 |[39m       [33m.[39mselect([32m'monthly_income'[39m)
+     [90m 522 |[39m       [33m.[39meq([32m'id'[39m[33m,[39m userId)
+    [31m[1m>[22m[39m[90m 523 |[39m       [33m.[39msingle()[33m;[39m
+     [90m     |[39m        [31m[1m^[22m[39m
+     [90m 524 |[39m
+     [90m 525 |[39m     [36mif[39m (error [33m||[39m [33m![39mprofile [33m||[39m [33m![39mprofile[33m.[39mmonthly_income) {
+     [90m 526 |[39m       [90m// Fallback: estimate from transaction history[39m[0m
+
+      at SavingsOptimizer.getUserMonthlyIncome (src/lib/financial/savings-optimizer.ts:523:8)
+      at SavingsOptimizer.generateSavingsGoalRecommendations (src/lib/financial/savings-optimizer.ts:357:38)
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:427:47)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ generateSavingsGoalRecommendations() ΓÇ║ should include reasoning for each goal
+
+    TypeError: supabase_1.supabase.from(...).select(...).eq(...).single is not a function
+
+    [0m [90m 521 |[39m       [33m.[39mselect([32m'monthly_income'[39m)
+     [90m 522 |[39m       [33m.[39meq([32m'id'[39m[33m,[39m userId)
+    [31m[1m>[22m[39m[90m 523 |[39m       [33m.[39msingle()[33m;[39m
+     [90m     |[39m        [31m[1m^[22m[39m
+     [90m 524 |[39m
+     [90m 525 |[39m     [36mif[39m (error [33m||[39m [33m![39mprofile [33m||[39m [33m![39mprofile[33m.[39mmonthly_income) {
+     [90m 526 |[39m       [90m// Fallback: estimate from transaction history[39m[0m
+
+      at SavingsOptimizer.getUserMonthlyIncome (src/lib/financial/savings-optimizer.ts:523:8)
+      at SavingsOptimizer.generateSavingsGoalRecommendations (src/lib/financial/savings-optimizer.ts:357:38)
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:437:47)
+
+  ΓùÅ SavingsOptimizer ΓÇ║ AI Integration ΓÇ║ should handle AI service failures gracefully
+
+    TypeError: supabase_1.supabase.from(...).select(...).eq(...).single is not a function
+
+    [0m [90m 521 |[39m       [33m.[39mselect([32m'monthly_income'[39m)
+     [90m 522 |[39m       [33m.[39meq([32m'id'[39m[33m,[39m userId)
+    [31m[1m>[22m[39m[90m 523 |[39m       [33m.[39msingle()[33m;[39m
+     [90m     |[39m        [31m[1m^[22m[39m
+     [90m 524 |[39m
+     [90m 525 |[39m     [36mif[39m (error [33m||[39m [33m![39mprofile [33m||[39m [33m![39mprofile[33m.[39mmonthly_income) {
+     [90m 526 |[39m       [90m// Fallback: estimate from transaction history[39m[0m
+
+      at SavingsOptimizer.getUserMonthlyIncome (src/lib/financial/savings-optimizer.ts:523:8)
+      at SavingsOptimizer.analyzeSpendingForSavings (src/lib/financial/savings-optimizer.ts:128:38)
+      at Object.<anonymous> (src/lib/financial/__tests__/savings-optimizer.test.ts:541:24)
+
+Test Suites: 1 failed, 1 total
+Tests:       17 failed, 8 passed, 25 total
+Snapshots:   0 total
+Time:        133.326 s
+Ran all test suites matching src/lib/financial/__tests__/savings-optimizer.test.ts.

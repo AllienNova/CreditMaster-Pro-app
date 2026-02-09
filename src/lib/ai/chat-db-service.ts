@@ -142,7 +142,7 @@ class ChatDatabaseService {
       .single();
 
     if (error) {
-      console.error('Failed to create chat session:', error);
+      // Database error:('Failed to create chat session:', error);
       throw new Error(`Failed to create chat session: ${error.message}`);
     }
 
@@ -165,7 +165,7 @@ class ChatDatabaseService {
         // Not found
         return null;
       }
-      console.error('Failed to get chat session:', error);
+      // Database error:('Failed to get chat session:', error);
       throw new Error(`Failed to get chat session: ${error.message}`);
     }
 
@@ -217,7 +217,7 @@ class ChatDatabaseService {
     const { data, error, count } = await query;
 
     if (error) {
-      console.error('Failed to list chat sessions:', error);
+      // Database error:('Failed to list chat sessions:', error);
       throw new Error(`Failed to list chat sessions: ${error.message}`);
     }
 
@@ -261,7 +261,7 @@ class ChatDatabaseService {
       .single();
 
     if (error) {
-      console.error('Failed to update chat session:', error);
+      // Database error:('Failed to update chat session:', error);
       throw new Error(`Failed to update chat session: ${error.message}`);
     }
 
@@ -279,7 +279,7 @@ class ChatDatabaseService {
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Failed to delete chat session:', error);
+      // Database error:('Failed to delete chat session:', error);
       throw new Error(`Failed to delete chat session: ${error.message}`);
     }
   }
@@ -306,7 +306,7 @@ class ChatDatabaseService {
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Failed to update financial snapshot:', error);
+      // Database error:('Failed to update financial snapshot:', error);
       throw new Error(`Failed to update financial snapshot: ${error.message}`);
     }
   }
@@ -346,7 +346,7 @@ class ChatDatabaseService {
       .single();
 
     if (messageError) {
-      console.error('Failed to create message:', messageError);
+      // Database error:('Failed to create message:', messageError);
       throw new Error(`Failed to create message: ${messageError.message}`);
     }
 
@@ -357,7 +357,7 @@ class ChatDatabaseService {
     });
 
     if (updateError) {
-      console.error('Failed to update session stats:', updateError);
+      // Database error:('Failed to update session stats:', updateError);
       // Don't throw - message was created successfully
     }
 
@@ -382,7 +382,7 @@ class ChatDatabaseService {
       if (error.code === 'PGRST116') {
         return null;
       }
-      console.error('Failed to get message:', error);
+      // Database error:('Failed to get message:', error);
       throw new Error(`Failed to get message: ${error.message}`);
     }
 
@@ -407,7 +407,7 @@ class ChatDatabaseService {
       .range(offset, offset + limit - 1);
 
     if (error) {
-      console.error('Failed to list messages:', error);
+      // Database error:('Failed to list messages:', error);
       throw new Error(`Failed to list messages: ${error.message}`);
     }
 
@@ -439,7 +439,7 @@ class ChatDatabaseService {
       .limit(limit);
 
     if (error) {
-      console.error('Failed to get recent messages:', error);
+      // Database error:('Failed to get recent messages:', error);
       throw new Error(`Failed to get recent messages: ${error.message}`);
     }
 
@@ -468,7 +468,7 @@ class ChatDatabaseService {
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Failed to update message feedback:', error);
+      // Database error:('Failed to update message feedback:', error);
       throw new Error(`Failed to update message feedback: ${error.message}`);
     }
   }
@@ -489,7 +489,7 @@ class ChatDatabaseService {
       .single();
 
     if (error) {
-      console.error('Failed to get session stats:', error);
+      // Database error:('Failed to get session stats:', error);
       throw new Error(`Failed to get session stats: ${error.message}`);
     }
 
@@ -523,7 +523,7 @@ class ChatDatabaseService {
     const { data, error } = await dbQuery;
 
     if (error) {
-      console.error('Failed to search messages:', error);
+      // Database error:('Failed to search messages:', error);
       throw new Error(`Failed to search messages: ${error.message}`);
     }
 
@@ -539,7 +539,7 @@ class ChatDatabaseService {
     });
 
     if (error) {
-      console.error('Failed to get user chat stats:', error);
+      // Database error:('Failed to get user chat stats:', error);
       // Return defaults if RPC doesn't exist
       return {
         totalSessions: 0,
@@ -594,7 +594,7 @@ class ChatDatabaseService {
       .select('id');
 
     if (error) {
-      console.error('Failed to cleanup deleted sessions:', error);
+      // Database error:('Failed to cleanup deleted sessions:', error);
       throw new Error(`Failed to cleanup deleted sessions: ${error.message}`);
     }
 

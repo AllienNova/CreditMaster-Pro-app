@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Builder Hub
+ * Fynvita Credit Builder Hub
  * Tool cards grid with 18 tools, progress indicators, recommendations
  */
 
@@ -101,7 +101,7 @@ export default function CreditBuilderScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Credit Builder</Text>
-          <TouchableOpacity onPress={() => router.push('/help/guides/credit-builder')}>
+          <TouchableOpacity onPress={() => router.push('/help/guides/credit-builder' as never)}>
             <Ionicons name="help-circle-outline" size={24} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>

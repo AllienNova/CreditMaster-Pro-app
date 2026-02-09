@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error getting disputes:', error);
+    // DisputesAPI error: Error getting disputes
 
     // Audit log error
     try {
@@ -100,8 +100,8 @@ export async function GET(request: NextRequest) {
         message: `Failed to get disputes: ${(error as Error).message}`,
         severity: 'medium',
       });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
+    } catch {
+      // DisputesAPI error: Failed to log audit event
     }
 
     return NextResponse.json(
@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
       data: dispute,
     }, { status: 201 });
   } catch (error) {
-    console.error('Error creating dispute:', error);
+    // DisputesAPI error: Error creating dispute
 
     // Audit log error
     try {
@@ -242,8 +242,8 @@ export async function POST(request: NextRequest) {
         message: `Failed to create dispute: ${(error as Error).message}`,
         severity: 'high',
       });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
+    } catch {
+      // DisputesAPI error: Failed to log audit event
     }
 
     return NextResponse.json(

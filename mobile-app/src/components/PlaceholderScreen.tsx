@@ -1,5 +1,5 @@
 /**
- * CPFI Placeholder Screen Component
+ * Fynvita Placeholder Screen Component
  * Reusable component for screens that are planned but not yet implemented
  */
 

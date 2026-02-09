@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Store
+ * Fynvita Credit Store
  * Manages credit scores, monitoring alerts, and credit reports
  * Enhanced with real-time updates and background sync
  */
@@ -199,7 +199,7 @@ export const useCreditStore = create<CreditState>()(
             set({ factors });
           }
         } catch (error) {
-          console.error('Failed to fetch factors:', error);
+          if (__DEV__) console.error('Failed to fetch factors:', error);
         }
       },
 
@@ -244,7 +244,7 @@ export const useCreditStore = create<CreditState>()(
             set({ monitoringStatus: response.data });
           }
         } catch (error) {
-          console.error('Failed to fetch monitoring status:', error);
+          if (__DEV__) console.error('Failed to fetch monitoring status:', error);
         }
       },
 
@@ -300,7 +300,7 @@ export const useCreditStore = create<CreditState>()(
             }));
           }
         } catch (error) {
-          console.error('Failed to acknowledge alert:', error);
+          if (__DEV__) console.error('Failed to acknowledge alert:', error);
         }
       },
 
@@ -314,7 +314,7 @@ export const useCreditStore = create<CreditState>()(
             }));
           }
         } catch (error) {
-          console.error('Failed to acknowledge all alerts:', error);
+          if (__DEV__) console.error('Failed to acknowledge all alerts:', error);
         }
       },
 
@@ -328,7 +328,7 @@ export const useCreditStore = create<CreditState>()(
             get().fetchMonitoringStatus();
           }
         } catch (error) {
-          console.error('Failed to toggle bureau monitoring:', error);
+          if (__DEV__) console.error('Failed to toggle bureau monitoring:', error);
         }
       },
 
@@ -351,7 +351,9 @@ export const useCreditStore = create<CreditState>()(
           _backgroundSyncTimer: timer, // MEMORY LEAK FIX: Store in state
         });
 
-        console.log(`📡 Background sync enabled (interval: ${intervalMs}ms)`);
+        if (__DEV__) {
+          console.log(`📡 Background sync enabled (interval: ${intervalMs}ms)`);
+        }
       },
 
       disableBackgroundSync: () => {
@@ -365,7 +367,9 @@ export const useCreditStore = create<CreditState>()(
           isBackgroundSyncEnabled: false,
           _backgroundSyncTimer: null, // MEMORY LEAK FIX: Clear state reference
         });
-        console.log('📡 Background sync disabled');
+        if (__DEV__) {
+          console.log('📡 Background sync disabled');
+        }
       },
 
       performBackgroundSync: async () => {
@@ -390,9 +394,11 @@ export const useCreditStore = create<CreditState>()(
             isSyncingInBackground: false,
           });
 
-          console.log('📡 Background sync completed');
+          if (__DEV__) {
+            console.log('📡 Background sync completed');
+          }
         } catch (error) {
-          console.error('Background sync failed:', error);
+          if (__DEV__) console.error('Background sync failed:', error);
           set({ isSyncingInBackground: false });
         }
       },
@@ -419,9 +425,11 @@ export const useCreditStore = create<CreditState>()(
               );
             }
 
-            console.log(
-              `📊 Score change detected: ${newScore.bureau} ${oldScore.score} → ${newScore.score} (${change > 0 ? '+' : ''}${change})`
-            );
+            if (__DEV__) {
+              console.log(
+                `📊 Score change detected: ${newScore.bureau} ${oldScore.score} → ${newScore.score} (${change > 0 ? '+' : ''}${change})`
+              );
+            }
           }
         }
       },
@@ -444,7 +452,9 @@ export const useCreditStore = create<CreditState>()(
           }
         );
 
-        console.log(`🔔 New alert notification sent: ${alert.title}`);
+        if (__DEV__) {
+          console.log(`🔔 New alert notification sent: ${alert.title}`);
+        }
       },
 
       deleteAlert: async (alertId: string) => {
@@ -456,7 +466,7 @@ export const useCreditStore = create<CreditState>()(
             }));
           }
         } catch (error) {
-          console.error('Failed to delete alert:', error);
+          if (__DEV__) console.error('Failed to delete alert:', error);
         }
       },
 
@@ -468,7 +478,7 @@ export const useCreditStore = create<CreditState>()(
             await get().fetchMonitoringStatus();
           }
         } catch (error) {
-          console.error('Failed to update alert preferences:', error);
+          if (__DEV__) console.error('Failed to update alert preferences:', error);
         }
       },
 
@@ -480,7 +490,7 @@ export const useCreditStore = create<CreditState>()(
             await get().toggleBureauMonitoring(bureau, enabled);
           }
         } catch (error) {
-          console.error('Failed to toggle monitoring:', error);
+          if (__DEV__) console.error('Failed to toggle monitoring:', error);
         }
       },
 

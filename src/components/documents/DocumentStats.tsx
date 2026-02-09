@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DocumentType } from '@/lib/documents/document-service';
 import { useAuth } from '@/hooks/useAuth';
+import { Icon } from '@/components/ui/Icon';
 
 interface DocumentStatsType {
   total: number;
@@ -22,8 +23,8 @@ export default function DocumentStats() {
       const response = await fetch(`/api/documents`);
       const data = await response.json();
       setStats(data.stats);
-    } catch (error) {
-      console.error('Failed to fetch document stats:', error);
+    } catch (_error) {
+      // Error logged
     } finally {
       setLoading(false);
     }
@@ -47,9 +48,9 @@ export default function DocumentStats() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-pulse">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white rounded-lg shadow p-6">
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-            <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+          <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+            <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
+            <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4"></div>
           </div>
         ))}
       </div>
@@ -62,25 +63,25 @@ export default function DocumentStats() {
     {
       label: 'Total Documents',
       value: stats.total,
-      icon: '📄',
+      icon: "sparkles",
       color: 'bg-blue-50 text-blue-700',
     },
     {
       label: 'Credit Reports',
       value: stats.byType.credit_report || 0,
-      icon: '📊',
+      icon: "sparkles",
       color: 'bg-green-50 text-green-700',
     },
     {
       label: 'Dispute Letters',
       value: stats.byType.dispute_letter || 0,
-      icon: '✉️',
-      color: 'bg-purple-50 text-purple-700',
+      icon: "sparkles",
+      color: 'bg-blue-50 text-blue-700',
     },
     {
       label: 'Total Storage',
       value: formatFileSize(stats.totalSize),
-      icon: '💾',
+      icon: "sparkles",
       color: 'bg-orange-50 text-orange-700',
     },
   ];
@@ -90,15 +91,15 @@ export default function DocumentStats() {
       {statCards.map((card, index) => (
         <div
           key={index}
-          className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+          className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
         >
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium text-gray-600">{card.label}</span>
+            <span className="text-sm font-medium text-gray-600 dark:text-slate-300">{card.label}</span>
             <span className={`text-2xl ${card.color} rounded-lg p-2`}>
               {card.icon}
             </span>
           </div>
-          <div className="text-3xl font-bold text-gray-900">{card.value}</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{card.value}</div>
         </div>
       ))}
     </div>

@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
       success: true,
       progress,
     });
-  } catch (error) {
-    console.error('Error fetching credit builder progress:', error);
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
       { error: 'Failed to fetch progress' },
       { status: 500 }

@@ -68,8 +68,8 @@ export class ExperianClient {
 
       return this.accessToken;
 
-    } catch (error) {
-      console.error('❌ Experian token error:', error);
+    } catch (_error) {
+      // ExperianClient error: Experian token error
       throw new Error('Failed to obtain Experian access token');
     }
   }
@@ -82,7 +82,7 @@ export class ExperianClient {
     userPII: UserPII
   ): Promise<BureauResponse<CreditReport>> {
     try {
-      console.log('📊 Retrieving Experian credit report...');
+      // ExperianClient: Retrieving Experian credit report
 
       const endpoint = this.sandbox 
         ? 'https://sandbox-us-api.experian.com/consumerservices/credit-profile/v2/credit-report'
@@ -140,7 +140,7 @@ export class ExperianClient {
       // Transform Experian response to our format
       const creditReport = this.transformResponse(data, request.user_id);
 
-      console.log('✅ Experian report retrieved successfully');
+      // ExperianClient: Experian report retrieved successfully
       
       return {
         success: true,
@@ -151,7 +151,7 @@ export class ExperianClient {
       };
 
     } catch (error) {
-      console.error('❌ Experian API error:', error);
+      // ExperianClient error: Experian API error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -169,7 +169,7 @@ export class ExperianClient {
     userPII: UserPII
   ): Promise<BureauResponse> {
     try {
-      console.log('📝 Submitting dispute to Experian...');
+      // ExperianClient: Submitting dispute to Experian
 
       const endpoint = this.sandbox
         ? 'https://sandbox-us-api.experian.com/consumerservices/dispute/v1/submit'
@@ -209,7 +209,7 @@ export class ExperianClient {
 
       const data = await response.json();
 
-      console.log('✅ Experian dispute submitted successfully');
+      // ExperianClient: Experian dispute submitted successfully
 
       return {
         success: true,
@@ -220,7 +220,7 @@ export class ExperianClient {
       };
 
     } catch (error) {
-      console.error('❌ Experian dispute error:', error);
+      // ExperianClient error: Experian dispute error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

@@ -137,7 +137,7 @@ export async function createNegotiation(
 
     return mapNegotiationFromDb(data as NegotiationRow);
   } catch (error) {
-    console.error('Error creating negotiation:', error);
+    // NegotiationsDB error: Error creating negotiation
     throw new Error(`Failed to create negotiation: ${(error as Error).message}`);
   }
 }
@@ -166,7 +166,7 @@ export async function getNegotiation(
 
     return data ? mapNegotiationFromDb(data as NegotiationRow) : null;
   } catch (error) {
-    console.error('Error getting negotiation:', error);
+    // NegotiationsDB error: Error getting negotiation
     throw new Error(`Failed to get negotiation: ${(error as Error).message}`);
   }
 }
@@ -217,7 +217,7 @@ export async function getNegotiationsByUser(
       total: count || 0,
     };
   } catch (error) {
-    console.error('Error getting negotiations by user:', error);
+    // NegotiationsDB error: Error getting negotiations by user
     throw new Error(`Failed to get negotiations: ${(error as Error).message}`);
   }
 }
@@ -249,7 +249,7 @@ export async function getNegotiationsByStatus(
     const rows = (data ?? []) as NegotiationRow[];
     return rows.map(mapNegotiationFromDb);
   } catch (error) {
-    console.error('Error getting negotiations by status:', error);
+    // NegotiationsDB error: Error getting negotiations by status
     throw new Error(`Failed to get negotiations by status: ${(error as Error).message}`);
   }
 }
@@ -291,7 +291,7 @@ export async function updateNegotiation(
 
     return mapNegotiationFromDb(data as NegotiationRow);
   } catch (error) {
-    console.error('Error updating negotiation:', error);
+    // NegotiationsDB error: Error updating negotiation
     throw new Error(`Failed to update negotiation: ${(error as Error).message}`);
   }
 }
@@ -314,7 +314,7 @@ export async function deleteNegotiation(
 
     return true;
   } catch (error) {
-    console.error('Error deleting negotiation:', error);
+    // NegotiationsDB error: Error deleting negotiation
     throw new Error(`Failed to delete negotiation: ${(error as Error).message}`);
   }
 }
@@ -373,7 +373,7 @@ export async function getNegotiationStats(
       successRate,
     };
   } catch (error) {
-    console.error('Error getting negotiation stats:', error);
+    // NegotiationsDB error: Error getting negotiation stats
     throw new Error(`Failed to get negotiation stats: ${(error as Error).message}`);
   }
 }

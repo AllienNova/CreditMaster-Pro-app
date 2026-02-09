@@ -1,6 +1,6 @@
 /**
  * Financial Intelligence Navigation Layout
- * Stack navigator for CPFI intelligent financial features
+ * Stack navigator for Fynvita intelligent financial features
  */
 
 import { Stack } from 'expo-router';

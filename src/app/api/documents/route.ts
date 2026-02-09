@@ -30,8 +30,9 @@ export async function GET(request: NextRequest) {
     const stats = documentService.getDocumentStats(userId);
     
     return NextResponse.json({ documents, stats });
-  } catch (error) {
-    console.error('Get documents error:', error);
+  } catch (_error) {
+    // DocumentsRoute error: Failed to get documents
+    void _error;
     return NextResponse.json(
       { error: 'Failed to get documents' },
       { status: 500 }
@@ -53,8 +54,9 @@ export async function DELETE(request: NextRequest) {
     
     const success = await documentService.deleteDocument(documentId);
     return NextResponse.json({ success });
-  } catch (error) {
-    console.error('Delete document error:', error);
+  } catch (_error) {
+    // DocumentsRoute error: Failed to delete document
+    void _error;
     return NextResponse.json(
       { error: 'Failed to delete document' },
       { status: 500 }
@@ -98,8 +100,9 @@ export async function PATCH(request: NextRequest) {
     }
     
     return NextResponse.json({ document });
-  } catch (error) {
-    console.error('Update document error:', error);
+  } catch (_error) {
+    // DocumentsRoute error: Failed to update document
+    void _error;
     return NextResponse.json(
       { error: 'Failed to update document' },
       { status: 500 }

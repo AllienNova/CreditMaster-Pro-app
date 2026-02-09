@@ -4,11 +4,11 @@ import Link from 'next/link';
 import HoldingsManagement from '@/components/investments/HoldingsManagement';
 
 export const metadata: Metadata = {
-  title: 'Holdings Management | CPFI',
+  title: 'Holdings Management | Fynvita',
   description:
     'Manage your investment holdings - add, edit, delete positions and track performance',
   openGraph: {
-    title: 'Holdings Management | CPFI',
+    title: 'Holdings Management | Fynvita',
     description:
       'Manage your investment holdings - add, edit, delete positions and track performance',
     type: 'website',
@@ -22,21 +22,21 @@ function HoldingsLoadingSkeleton() {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 h-20"
+            className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 h-20"
           />
         ))}
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-[400px]" />
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 h-[400px]" />
     </div>
   );
 }
 
 export default function HoldingsPage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
-        <nav className="mb-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
+        <nav className="mb-4 flex items-center text-sm text-gray-500 dark:text-slate-400">
           <Link
             href="/investments"
             className="hover:text-blue-600 dark:hover:text-blue-400"
@@ -51,7 +51,7 @@ export default function HoldingsPage() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Holdings Management
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-gray-600 dark:text-slate-400">
             Add, edit, and manage your investment positions. Track performance
             and export data.
           </p>
@@ -64,4 +64,3 @@ export default function HoldingsPage() {
     </div>
   );
 }
-

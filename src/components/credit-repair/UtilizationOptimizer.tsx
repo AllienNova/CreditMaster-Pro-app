@@ -186,7 +186,7 @@ export default function UtilizationOptimizer() {
       </div>
 
       {/* Overall Utilization */}
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-6">
         <h2 className="text-2xl font-bold mb-4">Overall Utilization</h2>
         <div className="flex items-center justify-between">
           <div>
@@ -195,19 +195,19 @@ export default function UtilizationOptimizer() {
                 {overallUtilization}%
               </span>
             </div>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 dark:text-slate-300 mt-2">
               {overallUtilization <= 10 && 'Excellent! Keep it under 10%'}
               {overallUtilization > 10 && overallUtilization <= 30 && 'Good, but aim for under 10%'}
               {overallUtilization > 30 && 'High utilization - pay down ASAP'}
             </p>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-600">Total Balance</div>
-            <div className="text-2xl font-bold text-gray-800">
+            <div className="text-sm text-gray-600 dark:text-slate-300">Total Balance</div>
+            <div className="text-2xl font-bold text-gray-800 dark:text-slate-100">
               ${cards.reduce((sum, card) => sum + card.currentBalance, 0).toLocaleString()}
             </div>
-            <div className="text-sm text-gray-600 mt-2">Total Limit</div>
-            <div className="text-xl font-semibold text-gray-700">
+            <div className="text-sm text-gray-600 dark:text-slate-300 mt-2">Total Limit</div>
+            <div className="text-xl font-semibold text-gray-700 dark:text-slate-200">
               ${cards.reduce((sum, card) => sum + card.creditLimit, 0).toLocaleString()}
             </div>
           </div>
@@ -215,7 +215,7 @@ export default function UtilizationOptimizer() {
       </div>
 
       {/* Cards */}
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold">Your Credit Cards</h2>
           <button
@@ -230,48 +230,48 @@ export default function UtilizationOptimizer() {
           {cards.map((card) => {
             const utilization = calculateUtilization(card.currentBalance, card.creditLimit);
             return (
-              <div key={card.id} className="border border-gray-200 rounded-lg p-4">
+              <div key={card.id} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4">
                 <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Card Name</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Card Name</label>
                     <input
                       type="text"
                       value={card.name}
                       onChange={(e) => updateCard(card.id, 'name', e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Current Balance</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Current Balance</label>
                     <input
                       type="number"
                       value={card.currentBalance}
                       onChange={(e) => updateCard(card.id, 'currentBalance', parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Credit Limit</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Credit Limit</label>
                     <input
                       type="number"
                       value={card.creditLimit}
                       onChange={(e) => updateCard(card.id, 'creditLimit', parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Statement Date</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Statement Date</label>
                     <input
                       type="number"
                       min="1"
                       max="31"
                       value={card.statementDate}
                       onChange={(e) => updateCard(card.id, 'statementDate', parseInt(e.target.value) || 1)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Utilization</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Utilization</label>
                     <div className={`px-2 py-1 rounded text-center font-bold ${getUtilizationBgColor(utilization)}`}>
                       <span className={getUtilizationColor(utilization)}>{utilization}%</span>
                     </div>
@@ -292,11 +292,11 @@ export default function UtilizationOptimizer() {
       </div>
 
       {/* Optimization */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Payment Optimization</h2>
         
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Available Cash for Payments
           </label>
           <input
@@ -304,7 +304,7 @@ export default function UtilizationOptimizer() {
             value={availableCash}
             onChange={(e) => setAvailableCash(parseFloat(e.target.value) || 0)}
             placeholder="Enter amount you can pay"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500"
           />
         </div>
 
@@ -329,20 +329,20 @@ export default function UtilizationOptimizer() {
                   <div className="text-2xl font-bold text-green-800">{optimizedPlan.newScore}%</div>
                 </div>
                 <div>
-                  <div className="text-sm text-purple-600">Estimated Impact</div>
-                  <div className="text-2xl font-bold text-purple-800">+{optimizedPlan.scoreImpact} pts</div>
+                  <div className="text-sm text-blue-600">Estimated Impact</div>
+                  <div className="text-2xl font-bold text-blue-800">+{optimizedPlan.scoreImpact} pts</div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <h3 className="font-semibold text-gray-800">Recommended Payments:</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-slate-100">Recommended Payments:</h3>
               {optimizedPlan.payments.map((payment, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
                   <span className="font-medium">{payment.cardName}</span>
                   <div className="text-right">
                     <div className="font-bold text-green-600">Pay ${payment.paymentAmount.toLocaleString()}</div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-slate-300">
                       New balance: ${payment.newBalance.toLocaleString()} ({payment.newUtilization}%)
                     </div>
                   </div>
@@ -351,7 +351,7 @@ export default function UtilizationOptimizer() {
             </div>
 
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <h3 className="font-semibold text-yellow-800 mb-2">💡 Pro Tip:</h3>
+              <h3 className="font-semibold text-yellow-800 mb-2">Pro Tip:</h3>
               <p className="text-sm text-yellow-700">
                 Make these payments <strong>BEFORE your statement closing date</strong>, not the due date! 
                 This ensures the lower balance is reported to credit bureaus.

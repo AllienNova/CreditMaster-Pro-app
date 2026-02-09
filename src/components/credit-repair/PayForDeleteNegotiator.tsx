@@ -136,13 +136,13 @@ export default function PayForDeleteNegotiator() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Form */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold mb-4">Collection Details</h2>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Collection Agency */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Collection Agency Name *
               </label>
               <input
@@ -151,13 +151,13 @@ export default function PayForDeleteNegotiator() {
                 onChange={(e) => setFormData({ ...formData, collectionAgency: e.target.value })}
                 placeholder="e.g., Portfolio Recovery Associates"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
             </div>
 
             {/* Original Creditor */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Original Creditor *
               </label>
               <input
@@ -166,13 +166,13 @@ export default function PayForDeleteNegotiator() {
                 onChange={(e) => setFormData({ ...formData, originalCreditor: e.target.value })}
                 placeholder="e.g., Verizon, AT&T, Medical Provider"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
             </div>
 
             {/* Account Number */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Account/Reference Number *
               </label>
               <input
@@ -181,13 +181,13 @@ export default function PayForDeleteNegotiator() {
                 onChange={(e) => setFormData({ ...formData, collectionId: e.target.value })}
                 placeholder="Account or reference number"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
             </div>
 
             {/* Original Balance */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Original Balance
               </label>
               <input
@@ -195,13 +195,13 @@ export default function PayForDeleteNegotiator() {
                 value={formData.originalBalance || ''}
                 onChange={(e) => setFormData({ ...formData, originalBalance: parseFloat(e.target.value) || 0 })}
                 placeholder="0.00"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
             </div>
 
             {/* Current Balance */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Current Balance *
               </label>
               <input
@@ -210,13 +210,13 @@ export default function PayForDeleteNegotiator() {
                 onChange={(e) => setFormData({ ...formData, currentBalance: parseFloat(e.target.value) || 0 })}
                 placeholder="0.00"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
             </div>
 
             {/* Settlement Percentage */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Settlement Offer: {formData.settlementPercentage}%
               </label>
               <input
@@ -228,7 +228,7 @@ export default function PayForDeleteNegotiator() {
                 onChange={(e) => setFormData({ ...formData, settlementPercentage: parseInt(e.target.value) })}
                 className="w-full"
               />
-              <div className="flex justify-between text-xs text-gray-600 mt-1">
+              <div className="flex justify-between text-xs text-gray-600 dark:text-slate-300 mt-1">
                 <span>20% (Aggressive)</span>
                 <span>40% (Recommended)</span>
                 <span>70% (Conservative)</span>
@@ -241,15 +241,15 @@ export default function PayForDeleteNegotiator() {
                 <h3 className="font-semibold text-green-800 mb-2">Settlement Calculation</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-700">Current Balance:</span>
+                    <span className="text-gray-700 dark:text-slate-200">Current Balance:</span>
                     <span className="font-semibold">${formData.currentBalance.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-700">Your Offer ({formData.settlementPercentage}%):</span>
+                    <span className="text-gray-700 dark:text-slate-200">Your Offer ({formData.settlementPercentage}%):</span>
                     <span className="font-bold text-green-600">${calculateSettlement().toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between border-t border-green-200 pt-2">
-                    <span className="text-gray-700">You Save:</span>
+                    <span className="text-gray-700 dark:text-slate-200">You Save:</span>
                     <span className="font-bold text-green-700">${calculateSavings().toLocaleString()}</span>
                   </div>
                 </div>
@@ -258,13 +258,13 @@ export default function PayForDeleteNegotiator() {
 
             {/* Account Age */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 How old is this collection?
               </label>
               <select
                 value={formData.accountAge}
                 onChange={(e) => setFormData({ ...formData, accountAge: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               >
                 <option value="<1">Less than 1 year</option>
                 <option value="1-2">1-2 years</option>
@@ -292,56 +292,44 @@ export default function PayForDeleteNegotiator() {
         </div>
 
         {/* Scripts Preview */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold mb-4">Negotiation Scripts</h2>
           
           {!scripts && (
-            <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">Fill out the form to generate your negotiation scripts</p>
+            <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-slate-900 rounded-lg">
+              <p className="text-gray-500 dark:text-slate-400">Fill out the form to generate your negotiation scripts</p>
             </div>
           )}
 
           {scripts && (
             <div className="space-y-4">
               {/* Tabs */}
-              <div className="border-b border-gray-200">
+              <div className="border-b border-gray-200 dark:border-slate-700">
                 <nav className="flex -mb-px">
                   <button
                     onClick={() => setActiveTab('phone')}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 ${
-                      activeTab === 'phone'
-                        ? 'border-orange-500 text-orange-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 ${ activeTab === 'phone' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200' }`}
                   >
-                    📞 Phone Script
+                    Phone Script
                   </button>
                   <button
                     onClick={() => setActiveTab('email')}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 ${
-                      activeTab === 'email'
-                        ? 'border-orange-500 text-orange-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 ${ activeTab === 'email' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200' }`}
                   >
-                    📧 Email Template
+                    Email Template
                   </button>
                   <button
                     onClick={() => setActiveTab('letter')}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 ${
-                      activeTab === 'letter'
-                        ? 'border-orange-500 text-orange-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 ${ activeTab === 'letter' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200' }`}
                   >
-                    📄 Formal Letter
+                    Formal Letter
                   </button>
                 </nav>
               </div>
 
               {/* Content */}
-              <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
+              <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4 max-h-96 overflow-y-auto">
+                <pre className="whitespace-pre-wrap text-sm text-gray-800 dark:text-slate-100 font-mono">
                   {activeTab === 'phone' && scripts.phoneScript}
                   {activeTab === 'email' && scripts.emailScript}
                   {activeTab === 'letter' && scripts.letterScript}
@@ -375,7 +363,7 @@ export default function PayForDeleteNegotiator() {
 
               {/* Tips */}
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h3 className="font-semibold text-yellow-800 mb-2">⚠️ Critical Rules:</h3>
+                <h3 className="font-semibold text-yellow-800 mb-2">Critical Rules:</h3>
                 <ol className="list-decimal list-inside space-y-1 text-sm text-yellow-700">
                   <li><strong>NEVER pay without written agreement</strong></li>
                   <li>Get pay-for-delete in writing before sending money</li>

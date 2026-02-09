@@ -92,15 +92,15 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
     >
       <span className="flex-shrink-0 mt-0.5">{icons[toast.type]}</span>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-900">{toast.title}</p>
-        {toast.message && <p className="text-sm text-gray-600 mt-1">{toast.message}</p>}
+        <p className="font-medium text-gray-900 dark:text-white">{toast.title}</p>
+        {toast.message && <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">{toast.message}</p>}
       </div>
       <button
         onClick={() => {
           setIsExiting(true);
           setTimeout(() => onRemove(toast.id), 300);
         }}
-        className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+        className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:text-slate-300 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

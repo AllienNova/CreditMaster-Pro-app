@@ -1,5 +1,7 @@
 'use client';
 
+
+import { Icon } from '@/components/ui/Icon';
 /**
  * Image Generator Component
  * 
@@ -37,11 +39,11 @@ const SIZE_OPTIONS: { value: ImageGenerationOptions['size']; label: string }[] =
 ];
 
 const STYLE_OPTIONS: { value: ImageGenerationOptions['style']; label: string; icon: string }[] = [
-  { value: 'photorealistic', label: 'Photorealistic', icon: '📸' },
-  { value: 'artistic', label: 'Artistic', icon: '🎨' },
-  { value: 'anime', label: 'Anime', icon: '✨' },
-  { value: 'illustration', label: 'Illustration', icon: '✏️' },
-  { value: '3d-render', label: '3D Render', icon: '🎮' },
+  { value: 'photorealistic', label: 'Photorealistic', icon: "sparkles" },
+  { value: 'artistic', label: 'Artistic', icon: "sparkles" },
+  { value: 'anime', label: 'Anime', icon: "sparkles" },
+  { value: 'illustration', label: 'Illustration', icon: "sparkles" },
+  { value: '3d-render', label: '3D Render', icon: "sparkles" },
 ];
 
 const SAMPLE_PROMPTS = [
@@ -121,18 +123,18 @@ export default function ImageGenerator({
   }, [generatedImage]);
 
   return (
-    <div className={`bg-white rounded-xl shadow-lg p-6 ${className}`}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Image Generator</h3>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 ${className}`}>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">AI Image Generator</h3>
 
       {/* Prompt Input */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Prompt</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Prompt</label>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Describe the image you want to generate..."
           rows={3}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+          className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
         />
         <div className="flex flex-wrap gap-2 mt-2">
           {SAMPLE_PROMPTS.map((sample, i) => (
@@ -140,7 +142,7 @@ export default function ImageGenerator({
               key={i}
               type="button"
               onClick={() => setPrompt(sample)}
-              className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+              className="text-xs px-2 py-1 bg-gray-100 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-200 dark:bg-slate-700 transition-colors"
             >
               {sample.slice(0, 30)}...
             </button>
@@ -151,11 +153,11 @@ export default function ImageGenerator({
       {/* Options */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Size</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Size</label>
           <select
             value={options.size}
             onChange={(e) => setOptions(o => ({ ...o, size: e.target.value as ImageGenerationOptions['size'] }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
             {SIZE_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -163,7 +165,7 @@ export default function ImageGenerator({
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Style</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Style</label>
           <div className="flex flex-wrap gap-2">
             {STYLE_OPTIONS.map(style => (
               <button
@@ -173,7 +175,7 @@ export default function ImageGenerator({
                 className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                   options.style === style.value
                     ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
+                    : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border-gray-300 dark:border-slate-600 hover:border-blue-400'
                 }`}
               >
                 {style.icon} {style.label}
@@ -187,7 +189,7 @@ export default function ImageGenerator({
       <button
         onClick={handleGenerate}
         disabled={isGenerating || !prompt.trim()}
-        className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
       >
         {isGenerating ? (
           <span className="flex items-center justify-center gap-2">
@@ -207,7 +209,7 @@ export default function ImageGenerator({
       {/* Generated Image */}
       {generatedImage && (
         <div className="mt-6">
-          <div className="relative rounded-lg overflow-hidden bg-gray-100">
+          <div className="relative rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-800">
             <img src={generatedImage.url} alt={generatedImage.prompt} className="w-full h-auto" />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
               <p className="text-white text-sm line-clamp-2">{generatedImage.prompt}</p>
@@ -217,7 +219,7 @@ export default function ImageGenerator({
             <button onClick={handleDownload} className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
               Download
             </button>
-            <button onClick={() => setGeneratedImage(null)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+            <button onClick={() => setGeneratedImage(null)} className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors">
               Clear
             </button>
           </div>

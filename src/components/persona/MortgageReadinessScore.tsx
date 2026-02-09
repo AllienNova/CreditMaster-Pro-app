@@ -219,14 +219,14 @@ export default function MortgageReadinessScore() {
       case 'poor':
         return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100';
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Mortgage Readiness Score</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Mortgage Readiness Score</h2>
         <InfoTooltip content="Assess your readiness to apply for a mortgage" />
       </div>
 
@@ -242,8 +242,8 @@ export default function MortgageReadinessScore() {
           <div className={`text-4xl font-bold ${readinessLevel.color}`}>
             {Math.round(readinessPercent)}%
           </div>
-          <div className="text-xl text-gray-600 mt-2">{readinessLevel.label}</div>
-          <div className="text-sm text-gray-500 mt-1">
+          <div className="text-xl text-gray-600 dark:text-slate-300 mt-2">{readinessLevel.label}</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             {totalScore} / {maxScore} points
           </div>
         </div>
@@ -251,12 +251,12 @@ export default function MortgageReadinessScore() {
 
       {/* Readiness Factors */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">Readiness Factors</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Readiness Factors</h3>
         {factors.map((factor) => (
-          <div key={factor.name} className="border border-gray-200 rounded-lg p-4">
+          <div key={factor.name} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-3">
-                <h4 className="font-semibold text-gray-900">{factor.name}</h4>
+                <h4 className="font-semibold text-gray-900 dark:text-white">{factor.name}</h4>
                 <span
                   className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
                     factor.status
@@ -265,17 +265,17 @@ export default function MortgageReadinessScore() {
                   {factor.status.charAt(0).toUpperCase() + factor.status.slice(1)}
                 </span>
               </div>
-              <div className="text-sm font-medium text-gray-600">
+              <div className="text-sm font-medium text-gray-600 dark:text-slate-300">
                 {factor.score} / {factor.maxScore}
               </div>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2 mb-2">
               <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-500"
                 style={{ width: `${(factor.score / factor.maxScore) * 100}%` }}
               />
             </div>
-            <p className="text-sm text-gray-600">{factor.recommendation}</p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">{factor.recommendation}</p>
           </div>
         ))}
       </div>

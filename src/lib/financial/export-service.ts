@@ -306,7 +306,7 @@ export class FinancialExportService {
     const now = new Date();
 
     // Report header
-    csv += 'CPFI FINANCIAL REPORT\n';
+    csv += 'FYNVITA FINANCIAL REPORT\n';
     csv += `Generated: ${formatDate(now)}\n`;
     if (options?.dateRange) {
       csv += `Period: ${formatDate(options.dateRange.startDate)} - ${formatDate(options.dateRange.endDate)}\n`;

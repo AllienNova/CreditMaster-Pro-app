@@ -1,6 +1,6 @@
 /**
  * OpenAPI 3.0 Specification for Financial API
- * 
+ *
  * This file contains the complete OpenAPI specification for all financial API endpoints.
  * Can be used with Swagger UI, Postman, or other API documentation tools.
  */
@@ -8,17 +8,18 @@
 export const openAPISpec = {
   openapi: '3.0.0',
   info: {
-    title: 'CreditMaster Pro - Financial API',
+    title: 'Fynvita - Financial API',
     version: '1.0.0',
-    description: 'Comprehensive REST API for financial data access, health score calculation, goal tracking, and insights management',
+    description:
+      'Comprehensive REST API for financial data access, health score calculation, goal tracking, and insights management',
     contact: {
-      name: 'CreditMaster Pro Support',
-      email: 'support@creditmaster-pro.com',
-      url: 'https://creditmaster-pro.com/support',
+      name: 'Fynvita Support',
+      email: 'support@fynvita.com',
+      url: 'https://fynvita.com/support',
     },
     license: {
       name: 'Proprietary',
-      url: 'https://creditmaster-pro.com/terms',
+      url: 'https://fynvita.com/terms',
     },
   },
   servers: [
@@ -27,7 +28,7 @@ export const openAPISpec = {
       description: 'Development server',
     },
     {
-      url: 'https://app.creditmaster-pro.com',
+      url: 'https://app.fynvita.com',
       description: 'Production server',
     },
   ],
@@ -166,7 +167,8 @@ export const openAPISpec = {
       get: {
         tags: ['Financial Context'],
         summary: 'Get financial context summary',
-        description: 'Returns aggregated financial data including accounts, budgets, goals, health score, and insights',
+        description:
+          'Returns aggregated financial data including accounts, budgets, goals, health score, and insights',
         security: [{ bearerAuth: [] }],
         parameters: [
           {
@@ -195,7 +197,10 @@ export const openAPISpec = {
             headers: {
               'Cache-Control': {
                 description: 'Caching directives',
-                schema: { type: 'string', example: 'private, max-age=300, stale-while-revalidate=60' },
+                schema: {
+                  type: 'string',
+                  example: 'private, max-age=300, stale-while-revalidate=60',
+                },
               },
               'X-RateLimit-Limit': {
                 description: 'Rate limit maximum requests',
@@ -240,7 +245,8 @@ export const openAPISpec = {
       get: {
         tags: ['Health Score'],
         summary: 'Get current health score',
-        description: 'Returns the current financial health score (cached for 1 hour)',
+        description:
+          'Returns the current financial health score (cached for 1 hour)',
         security: [{ bearerAuth: [] }],
         parameters: [
           {
@@ -274,7 +280,8 @@ export const openAPISpec = {
       post: {
         tags: ['Health Score'],
         summary: 'Calculate new health score',
-        description: 'Forces recalculation of health score and saves to database',
+        description:
+          'Forces recalculation of health score and saves to database',
         security: [{ bearerAuth: [] }],
         requestBody: {
           content: {
@@ -285,7 +292,8 @@ export const openAPISpec = {
                   forceRecalculate: {
                     type: 'boolean',
                     default: false,
-                    description: 'Force recalculation even if cached score is valid',
+                    description:
+                      'Force recalculation even if cached score is valid',
                   },
                 },
               },
@@ -318,7 +326,10 @@ export const openAPISpec = {
             in: 'query',
             description: 'Filter by goal status',
             required: false,
-            schema: { type: 'string', enum: ['active', 'completed', 'paused', 'cancelled'] },
+            schema: {
+              type: 'string',
+              enum: ['active', 'completed', 'paused', 'cancelled'],
+            },
           },
           {
             name: 'type',
@@ -332,7 +343,10 @@ export const openAPISpec = {
             in: 'query',
             description: 'Filter by minimum priority',
             required: false,
-            schema: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
+            schema: {
+              type: 'string',
+              enum: ['low', 'medium', 'high', 'urgent'],
+            },
           },
         ],
         responses: {
@@ -357,9 +371,20 @@ export const openAPISpec = {
                   type: { type: 'string', example: 'emergency_fund' },
                   name: { type: 'string', example: 'Build Emergency Fund' },
                   targetAmount: { type: 'number', example: 10000 },
-                  targetDate: { type: 'string', format: 'date', example: '2026-12-31' },
-                  priority: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'], default: 'medium' },
-                  description: { type: 'string', example: 'Save 6 months of expenses' },
+                  targetDate: {
+                    type: 'string',
+                    format: 'date',
+                    example: '2026-12-31',
+                  },
+                  priority: {
+                    type: 'string',
+                    enum: ['low', 'medium', 'high', 'urgent'],
+                    default: 'medium',
+                  },
+                  description: {
+                    type: 'string',
+                    example: 'Save 6 months of expenses',
+                  },
                   currentAmount: { type: 'number', default: 0, example: 2000 },
                 },
               },
@@ -376,4 +401,3 @@ export const openAPISpec = {
     },
   },
 };
-

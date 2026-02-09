@@ -68,7 +68,7 @@ describe('Payment & Subscription', () => {
   describe('Subscription Selection', () => {
     beforeEach(() => {
       // Login before subscription tests
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.get('input[type="email"]').type(testUser.email);
       cy.get('input[type="password"]').type(testUser.password);
       cy.get('button[type="submit"]').click();
@@ -107,7 +107,7 @@ describe('Payment & Subscription', () => {
   describe('Checkout Flow', () => {
     beforeEach(() => {
       // Login before checkout tests
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.get('input[type="email"]').type(testUser.email);
       cy.get('input[type="password"]').type(testUser.password);
       cy.get('button[type="submit"]').click();
@@ -160,7 +160,7 @@ describe('Payment & Subscription', () => {
   describe('Payment Processing', () => {
     beforeEach(() => {
       // Login before payment tests
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.get('input[type="email"]').type(testUser.email);
       cy.get('input[type="password"]').type(testUser.password);
       cy.get('button[type="submit"]').click();
@@ -194,7 +194,7 @@ describe('Payment & Subscription', () => {
   describe('Subscription Management', () => {
     beforeEach(() => {
       // Login before subscription management tests
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.get('input[type="email"]').type(testUser.email);
       cy.get('input[type="password"]').type(testUser.password);
       cy.get('button[type="submit"]').click();
@@ -242,7 +242,7 @@ describe('Payment & Subscription', () => {
   describe('Feature Access Control', () => {
     it('should restrict features for free users', () => {
       // Login
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.get('input[type="email"]').type(testUser.email);
       cy.get('input[type="password"]').type(testUser.password);
       cy.get('button[type="submit"]').click();
@@ -260,7 +260,7 @@ describe('Payment & Subscription', () => {
     });
 
     it('should show upgrade prompts for premium features', () => {
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.get('input[type="email"]').type(testUser.email);
       cy.get('input[type="password"]').type(testUser.password);
       cy.get('button[type="submit"]').click();

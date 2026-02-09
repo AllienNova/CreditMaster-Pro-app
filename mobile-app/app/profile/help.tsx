@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Linking } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { lightTheme } from '../../src/constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
+import { withOpacity } from '../../src/constants/theme';
 
 const FAQ_ITEMS = [
   { id: '1', question: 'How do I dispute an item on my credit report?', answer: 'Navigate to the Disputes tab, tap "New Dispute", select the item type and bureau, then follow the guided wizard to generate and submit your dispute letter.' },
@@ -15,7 +16,7 @@ const FAQ_ITEMS = [
 
 const CONTACT_OPTIONS = [
   { id: 'chat', label: 'Live Chat', description: 'Chat with our support team', icon: 'chatbubbles-outline', available: true },
-  { id: 'email', label: 'Email Support', description: 'support@CPFI.pro', icon: 'mail-outline', available: true },
+  { id: 'email', label: 'Email Support', description: 'support@Fynvita.pro', icon: 'mail-outline', available: true },
   { id: 'phone', label: 'Phone Support', description: 'Premium members only', icon: 'call-outline', available: false },
 ];
 
@@ -23,6 +24,7 @@ export default function HelpScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
+  const { colors, spacing, borderRadius, fontSize, fontWeight } = useTheme();
 
   const filteredFaqs = FAQ_ITEMS.filter(
     faq => faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -31,143 +33,122 @@ export default function HelpScreen() {
 
   const handleContact = (optionId: string) => {
     if (optionId === 'email') {
-      Linking.openURL('mailto:support@CPFI.pro');
+      Linking.openURL('mailto:support@Fynvita.pro');
     } else if (optionId === 'chat') {
-      // Open chat widget
-      console.log('Open chat');
+      // Open live chat support via web interface
+      Linking.openURL('https://fynvita.pro/support/chat');
     }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, paddingTop: 48, backgroundColor: colors.surface }}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={28} color={lightTheme.colors.text} />
+          <Ionicons name="arrow-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Help & Support</Text>
+        <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>Help & Support</Text>
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color={lightTheme.colors.textSecondary} />
+      <ScrollView style={{ flex: 1, padding: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 12, marginBottom: 24 }}>
+          <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
           <TextInput
-            style={styles.searchInput}
+            style={{ flex: 1, padding: 12, fontSize: 16, color: colors.text }}
             placeholder="Search help articles..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor={lightTheme.colors.textSecondary}
+            placeholderTextColor={colors.textSecondary}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={lightTheme.colors.textSecondary} />
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
 
-        <Text style={styles.sectionTitle}>Contact Us</Text>
-        <View style={styles.contactGrid}>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 12 }}>Contact Us</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
           {CONTACT_OPTIONS.map(option => (
             <TouchableOpacity
               key={option.id}
-              style={[styles.contactCard, !option.available && styles.contactCardDisabled]}
+              style={[
+                { flex: 1, minWidth: '45%' as unknown as number, backgroundColor: colors.surface, borderRadius: 12, padding: 16, alignItems: 'center' },
+                !option.available && { opacity: 0.6 },
+              ]}
               onPress={() => option.available && handleContact(option.id)}
               disabled={!option.available}
             >
-              <View style={[styles.contactIcon, !option.available && styles.contactIconDisabled]}>
-                <Ionicons name={option.icon as any} size={28} color={option.available ? lightTheme.colors.primary : lightTheme.colors.textSecondary} />
+              <View style={[
+                { width: 56, height: 56, borderRadius: 28, backgroundColor: withOpacity(colors.primary, 0.08), alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+                !option.available && { backgroundColor: colors.border },
+              ]}>
+                <Ionicons name={option.icon as any} size={28} color={option.available ? colors.primary : colors.textSecondary} />
               </View>
-              <Text style={[styles.contactLabel, !option.available && styles.contactLabelDisabled]}>{option.label}</Text>
-              <Text style={styles.contactDescription}>{option.description}</Text>
+              <Text style={[
+                { fontSize: 16, fontWeight: '600', color: colors.text },
+                !option.available && { color: colors.textSecondary },
+              ]}>{option.label}</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, textAlign: 'center' }}>{option.description}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 12 }}>Frequently Asked Questions</Text>
         {filteredFaqs.length === 0 ? (
-          <View style={styles.noResults}>
-            <Text style={styles.noResultsText}>No results found for "{searchQuery}"</Text>
+          <View style={{ padding: 24, alignItems: 'center' }}>
+            <Text style={{ fontSize: 14, color: colors.textSecondary }}>No results found for "{searchQuery}"</Text>
           </View>
         ) : (
           filteredFaqs.map(faq => (
             <TouchableOpacity
               key={faq.id}
-              style={styles.faqItem}
+              style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 8 }}
               onPress={() => setExpandedFaq(expandedFaq === faq.id ? null : faq.id)}
             >
-              <View style={styles.faqHeader}>
-                <Text style={styles.faqQuestion}>{faq.question}</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ flex: 1, fontSize: 16, fontWeight: '500', color: colors.text, marginRight: 8 }}>{faq.question}</Text>
                 <Ionicons
                   name={expandedFaq === faq.id ? 'chevron-up' : 'chevron-down'}
                   size={20}
-                  color={lightTheme.colors.textSecondary}
+                  color={colors.textSecondary}
                 />
               </View>
               {expandedFaq === faq.id && (
-                <Text style={styles.faqAnswer}>{faq.answer}</Text>
+                <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 12, lineHeight: 22 }}>{faq.answer}</Text>
               )}
             </TouchableOpacity>
           ))
         )}
 
-        <View style={styles.resourcesSection}>
-          <Text style={styles.sectionTitle}>Resources</Text>
-          <TouchableOpacity style={styles.resourceItem} onPress={() => Linking.openURL('https://CPFI.pro/guides')}>
-            <Ionicons name="book-outline" size={24} color={lightTheme.colors.primary} />
-            <View style={styles.resourceInfo}>
-              <Text style={styles.resourceLabel}>Credit Guides</Text>
-              <Text style={styles.resourceDescription}>Learn about credit repair</Text>
+        <View style={{ marginTop: 24, marginBottom: 32 }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 12 }}>Resources</Text>
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 8 }} onPress={() => Linking.openURL('https://Fynvita.pro/guides')}>
+            <Ionicons name="book-outline" size={24} color={colors.primary} />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Credit Guides</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Learn about credit repair</Text>
             </View>
-            <Ionicons name="open-outline" size={20} color={lightTheme.colors.textSecondary} />
+            <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.resourceItem} onPress={() => Linking.openURL('https://CPFI.pro/blog')}>
-            <Ionicons name="newspaper-outline" size={24} color={lightTheme.colors.primary} />
-            <View style={styles.resourceInfo}>
-              <Text style={styles.resourceLabel}>Blog</Text>
-              <Text style={styles.resourceDescription}>Tips and industry news</Text>
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 8 }} onPress={() => Linking.openURL('https://Fynvita.pro/blog')}>
+            <Ionicons name="newspaper-outline" size={24} color={colors.primary} />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Blog</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Tips and industry news</Text>
             </View>
-            <Ionicons name="open-outline" size={20} color={lightTheme.colors.textSecondary} />
+            <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.resourceItem} onPress={() => Linking.openURL('https://www.youtube.com/@CPFI')}>
+          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 8 }} onPress={() => Linking.openURL('https://www.youtube.com/@Fynvita')}>
             <Ionicons name="logo-youtube" size={24} color="#FF0000" />
-            <View style={styles.resourceInfo}>
-              <Text style={styles.resourceLabel}>Video Tutorials</Text>
-              <Text style={styles.resourceDescription}>Step-by-step walkthroughs</Text>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.text }}>Video Tutorials</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Step-by-step walkthroughs</Text>
             </View>
-            <Ionicons name="open-outline" size={20} color={lightTheme.colors.textSecondary} />
+            <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: lightTheme.colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, paddingTop: 48, backgroundColor: lightTheme.colors.surface },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: lightTheme.colors.text },
-  content: { flex: 1, padding: 16 },
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: lightTheme.colors.surface, borderRadius: 12, paddingHorizontal: 12, marginBottom: 24 },
-  searchInput: { flex: 1, padding: 12, fontSize: 16, color: lightTheme.colors.text },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: lightTheme.colors.text, marginBottom: 12 },
-  contactGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
-  contactCard: { flex: 1, minWidth: '45%', backgroundColor: lightTheme.colors.surface, borderRadius: 12, padding: 16, alignItems: 'center' },
-  contactCardDisabled: { opacity: 0.6 },
-  contactIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: lightTheme.colors.primary + '15', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  contactIconDisabled: { backgroundColor: lightTheme.colors.border },
-  contactLabel: { fontSize: 16, fontWeight: '600', color: lightTheme.colors.text },
-  contactLabelDisabled: { color: lightTheme.colors.textSecondary },
-  contactDescription: { fontSize: 12, color: lightTheme.colors.textSecondary, marginTop: 4, textAlign: 'center' },
-  faqItem: { backgroundColor: lightTheme.colors.surface, borderRadius: 12, padding: 16, marginBottom: 8 },
-  faqHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  faqQuestion: { flex: 1, fontSize: 16, fontWeight: '500', color: lightTheme.colors.text, marginRight: 8 },
-  faqAnswer: { fontSize: 14, color: lightTheme.colors.textSecondary, marginTop: 12, lineHeight: 22 },
-  noResults: { padding: 24, alignItems: 'center' },
-  noResultsText: { fontSize: 14, color: lightTheme.colors.textSecondary },
-  resourcesSection: { marginTop: 24, marginBottom: 32 },
-  resourceItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: lightTheme.colors.surface, borderRadius: 12, padding: 16, marginBottom: 8 },
-  resourceInfo: { flex: 1, marginLeft: 12 },
-  resourceLabel: { fontSize: 16, fontWeight: '500', color: lightTheme.colors.text },
-  resourceDescription: { fontSize: 12, color: lightTheme.colors.textSecondary, marginTop: 2 },
-});
-

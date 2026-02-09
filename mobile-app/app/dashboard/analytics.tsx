@@ -1,5 +1,5 @@
 /**
- * CPFI Dashboard Analytics Screen
+ * Fynvita Dashboard Analytics Screen
  * Credit analytics with score progress, dispute stats, and AI recommendations
  */
 

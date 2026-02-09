@@ -1,5 +1,5 @@
 /**
- * CPFI Budget Screen
+ * Fynvita Budget Screen
  * Budget categories, spending vs budget bars, recommendations
  */
 

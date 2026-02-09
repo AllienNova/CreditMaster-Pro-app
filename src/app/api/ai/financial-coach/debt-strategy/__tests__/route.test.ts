@@ -7,17 +7,38 @@
  * Full integration tests with actual service calls should be run separately.
  */
 
-import { POST } from '../route';
 import { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 
-// Mock dependencies
-jest.mock('@supabase/ssr');
-jest.mock('next/headers', () => ({
-  cookies: jest.fn(() => Promise.resolve({
-    getAll: () => [],
-  })),
+// Mock transitive dependencies that require env vars at import time
+jest.mock('@/lib/supabase', () => ({
+  supabase: {},
+  getSupabase: jest.fn(),
 }));
+
+const mockGetUser = jest.fn();
+
+jest.mock('@/lib/supabase/server', () => ({
+  createClient: jest.fn(),
+  supabaseAdmin: {},
+}));
+
+jest.mock('@/lib/financial/financial-context-engine', () => ({
+  financialContextEngine: {
+    getFinancialContext: jest.fn(),
+  },
+}));
+
+jest.mock('@/lib/financial/debt-strategy-optimizer', () => ({
+  debtStrategyOptimizer: {
+    compareStrategies: jest.fn(),
+    calculateSnowball: jest.fn(),
+    calculateAvalanche: jest.fn(),
+  },
+}));
+
+// Import AFTER mocks are set up
+import { POST } from '../route';
+import { createClient } from '@/lib/supabase/server';
 
 describe('POST /api/ai/financial-coach/debt-strategy - Basic Tests', () => {
   const mockUser = {
@@ -43,26 +64,25 @@ describe('POST /api/ai/financial-coach/debt-strategy - Basic Tests', () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
-
-    // Mock Supabase auth
-    (createServerClient as jest.Mock).mockReturnValue({
+    // Re-setup createClient mock (resetMocks: true clears it between tests)
+    (createClient as jest.Mock).mockResolvedValue({
       auth: {
-        getUser: jest.fn().mockResolvedValue({
-          data: { user: mockUser },
-        }),
+        getUser: mockGetUser,
       },
+    });
+
+    // Default: authenticated user
+    mockGetUser.mockResolvedValue({
+      data: { user: mockUser },
+      error: null,
     });
   });
 
   describe('Authentication', () => {
     it('should return 401 if user is not authenticated', async () => {
-      (createServerClient as jest.Mock).mockReturnValue({
-        auth: {
-          getUser: jest.fn().mockResolvedValue({
-            data: { user: null },
-          }),
-        },
+      mockGetUser.mockResolvedValue({
+        data: { user: null },
+        error: { message: 'Not authenticated' },
       });
 
       const request = new NextRequest('http://localhost:3000/api/ai/financial-coach/debt-strategy', {
@@ -128,8 +148,4 @@ describe('POST /api/ai/financial-coach/debt-strategy - Basic Tests', () => {
       expect(data.success).toBe(false);
     });
   });
-
 });
-
-
-

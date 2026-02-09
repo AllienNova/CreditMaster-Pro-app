@@ -80,8 +80,8 @@ export async function GET(request: NextRequest) {
         },
       },
     });
-  } catch (error) {
-    console.error('Error getting credit reports:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to get credit reports' },
       { status: 500 }
@@ -150,8 +150,8 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('Error uploading credit report:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to upload credit report' },
       { status: 500 }

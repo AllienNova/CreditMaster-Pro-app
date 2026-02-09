@@ -93,15 +93,13 @@ export async function GET(request: Request) {
       }
     }
 
-    console.log(`[CRON] send-reminders: ${JSON.stringify(results)}`);
-
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       results,
     });
-  } catch (error) {
-    console.error('[CRON] send-reminders error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json({ error: 'Failed to send reminders' }, { status: 500 });
   }
 }

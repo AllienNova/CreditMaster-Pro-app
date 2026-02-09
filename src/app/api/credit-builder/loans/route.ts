@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
       success: true,
       loans,
     });
-  } catch (error) {
-    console.error('Error fetching credit builder loans:', error);
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
       { error: 'Failed to fetch loans' },
       { status: 500 }

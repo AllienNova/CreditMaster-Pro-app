@@ -51,7 +51,7 @@ export class CreditBureauService {
     );
 
     this.initialized = true;
-    console.log('🏦 Credit Bureau Service initialized');
+    // CreditBureauService: Initialized
   }
 
   /**
@@ -129,7 +129,7 @@ export class CreditBureauService {
       return response;
 
     } catch (error) {
-      console.error(`❌ Error getting ${bureau} credit report:`, error);
+      // CreditBureauService error: Error getting credit report
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -147,7 +147,7 @@ export class CreditBureauService {
     equifax?: BureauResponse<CreditReport>;
     transunion?: BureauResponse<CreditReport>;
   }> {
-    console.log('🏦 Retrieving credit reports from all bureaus...');
+    // CreditBureauService: Retrieving credit reports from all bureaus
 
     // Execute all requests in parallel
     const [experianResult, equifaxResult, transunionResult] = await Promise.allSettled([
@@ -168,7 +168,7 @@ export class CreditBureauService {
       results.transunion = transunionResult.value;
     }
 
-    console.log('✅ Multi-bureau credit report retrieval completed');
+    // CreditBureauService: Multi-bureau credit report retrieval completed
     return results;
   }
 
@@ -219,7 +219,7 @@ export class CreditBureauService {
       return response;
 
     } catch (error) {
-      console.error(`❌ Error submitting dispute to ${dispute.bureau}:`, error);
+      // CreditBureauService error: Error submitting dispute
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -387,7 +387,7 @@ export class CreditBureauService {
       .insert(report);
 
     if (error) {
-      console.error('❌ Error saving credit report:', error);
+      // CreditBureauService error: Error saving credit report
       throw error;
     }
   }
@@ -401,7 +401,7 @@ export class CreditBureauService {
       .insert(dispute);
 
     if (error) {
-      console.error('❌ Error saving dispute record:', error);
+      // CreditBureauService error: Error saving dispute record
       throw error;
     }
   }

@@ -1,5 +1,5 @@
 /**
- * CPFI Authorized User Screen
+ * Fynvita Authorized User Screen
  * Piggyback on good credit
  */
 
@@ -110,7 +110,7 @@ export default function AuthorizedUserScreen() {
         </Card>
 
         {/* Action Button */}
-        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/help/guides/authorized-user')}>
+        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/help/guides/authorized-user' as never)}>
           <Text style={styles.actionButtonText}>Read Full Guide</Text>
           <Ionicons name="arrow-forward" size={20} color="#fff" />
         </TouchableOpacity>

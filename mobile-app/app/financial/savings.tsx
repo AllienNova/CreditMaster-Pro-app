@@ -1,5 +1,5 @@
 /**
- * CPFI Savings Tracker Screen
+ * Fynvita Savings Tracker Screen
  * Track savings accounts and growth
  */
 

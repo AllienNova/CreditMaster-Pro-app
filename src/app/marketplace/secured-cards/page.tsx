@@ -33,53 +33,53 @@ const mockCards: SecuredCard[] = [
 
 function CardComparisonRow({ card }: { card: SecuredCard }) {
   return (
-    <div className={`bg-white rounded-xl p-6 shadow-sm border ${card.recommended ? 'border-indigo-300 ring-2 ring-indigo-100' : 'border-gray-200'}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border ${card.recommended ? 'border-blue-300 ring-2 ring-blue-100' : 'border-gray-200 dark:border-slate-700'}`}>
       {card.recommended && (
-        <span className="inline-block px-2 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-full mb-3">
+        <span className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full mb-3">
           ⭐ AI Recommended
         </span>
       )}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="font-semibold text-gray-900">{card.name}</h3>
-          <p className="text-sm text-gray-500">{card.issuer}</p>
+          <h3 className="font-semibold text-gray-900 dark:text-white">{card.name}</h3>
+          <p className="text-sm text-gray-500 dark:text-slate-400">{card.issuer}</p>
         </div>
         <div className="flex items-center">
-          <span className="text-yellow-400">★</span>
+          <span className="text-yellow-400"></span>
           <span className="ml-1 font-medium">{card.rating}</span>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
         <div>
-          <p className="text-gray-500">Annual Fee</p>
+          <p className="text-gray-500 dark:text-slate-400">Annual Fee</p>
           <p className="font-semibold">{card.annualFee === 0 ? 'None' : `$${card.annualFee}`}</p>
         </div>
         <div>
-          <p className="text-gray-500">Min Deposit</p>
+          <p className="text-gray-500 dark:text-slate-400">Min Deposit</p>
           <p className="font-semibold">${card.minDeposit}</p>
         </div>
         <div>
-          <p className="text-gray-500">APR</p>
+          <p className="text-gray-500 dark:text-slate-400">APR</p>
           <p className="font-semibold">{card.apr}</p>
         </div>
         <div>
-          <p className="text-gray-500">Rewards</p>
+          <p className="text-gray-500 dark:text-slate-400">Rewards</p>
           <p className="font-semibold text-xs">{card.rewards}</p>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-1 mb-4">
         {card.features.slice(0, 3).map((f) => (
-          <span key={f} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">{f}</span>
+          <span key={f} className="px-2 py-1 text-xs bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 rounded">{f}</span>
         ))}
       </div>
 
       <div className="flex gap-2">
-        <button className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+        <button className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
           Apply Now
         </button>
-        <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+        <button className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900">
           Details
         </button>
       </div>
@@ -98,20 +98,20 @@ export default function SecuredCardsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Secured Credit Cards</h1>
-        <p className="text-gray-600">Compare the best secured cards for building credit</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Secured Credit Cards</h1>
+        <p className="text-gray-600 dark:text-slate-300">Compare the best secured cards for building credit</p>
       </div>
 
       {/* AI Recommendation Banner */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 text-white">
-        <h2 className="text-lg font-semibold mb-2">🤖 AI Recommendation</h2>
-        <p className="text-indigo-100">Based on your profile, we recommend the <strong>Discover it® Secured</strong> for its cash back rewards and $0 annual fee.</p>
+      <div className="bg-gradient-to-r from-blue-600 to-blue-600 rounded-xl p-6 text-white">
+        <h2 className="text-lg font-semibold mb-2">AI Recommendation</h2>
+        <p className="text-blue-100">Based on your profile, we recommend the <strong>Discover it® Secured</strong> for its cash back rewards and $0 annual fee.</p>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+      <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'rating' | 'fee' | 'deposit')}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+          className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm">
           <option value="rating">Highest Rated</option>
           <option value="fee">Lowest Fee</option>
           <option value="deposit">Lowest Deposit</option>

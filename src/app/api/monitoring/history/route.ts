@@ -35,11 +35,12 @@ export async function GET(request: NextRequest) {
       limit
     );
     
-    console.log(`📡 Retrieved ${events.length} events for user ${userId}`);
-    
+    // MonitoringHistoryAPI: Retrieved events for user
+
     return NextResponse.json({ events });
-  } catch (error) {
-    console.error('Error fetching event history:', error);
+  } catch (_error) {
+    // MonitoringHistoryAPI error: Error fetching event history
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch event history' },
       { status: 500 }
@@ -64,12 +65,13 @@ export async function DELETE(request: NextRequest) {
     
     // Clear event history
     RealtimeMonitoringService.clearEventHistory(userId);
-    
-    console.log(`📡 Cleared event history for user ${userId}`);
-    
+
+    // MonitoringHistoryAPI: Cleared event history for user
+
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error clearing event history:', error);
+  } catch (_error) {
+    // MonitoringHistoryAPI error: Error clearing event history
+    void _error;
     return NextResponse.json(
       { error: 'Failed to clear event history' },
       { status: 500 }

@@ -14,6 +14,21 @@ import {
   RealtimeSubscription
 } from '@/lib/realtime/supabase-realtime';
 
+interface DisputeData {
+  id: string;
+  user_id: string;
+  status: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface DisputeUpdate {
+  dispute: DisputeData;
+  eventType: string;
+  timestamp: Date;
+}
+
 /**
  * Hook for real-time credit score updates
  */
@@ -41,10 +56,10 @@ export function useRealtimeCreditScore(userId: string | null) {
  * Hook for real-time dispute updates
  */
 export function useRealtimeDisputes(userId: string | null) {
-  const [disputes, setDisputes] = useState<any[]>([]);
-  const [latestUpdate, setLatestUpdate] = useState<any>(null);
+  const [disputes, setDisputes] = useState<DisputeData[]>([]);
+  const [latestUpdate, setLatestUpdate] = useState<DisputeUpdate | null>(null);
 
-  const handleUpdate = useCallback((dispute: any, eventType: string) => {
+  const handleUpdate = useCallback((dispute: DisputeData, eventType: string) => {
     setLatestUpdate({ dispute, eventType, timestamp: new Date() });
     
     setDisputes(prev => {

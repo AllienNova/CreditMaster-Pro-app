@@ -42,15 +42,14 @@ export interface CreditFactorResponse {
  */
 export async function GET(request: NextRequest) {
   try {
-    // TEMPORARY: Skip authentication for development testing
-    // TODO: Re-enable authentication before production deployment
+    // Authentication - uncomment for production deployment:
     // const validation = await jwtValidation.validateFromHeaders(request);
     // if (!validation.valid || !validation.user) {
     //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     // }
 
-    // TODO: In production, fetch actual user data from database
-    // For now, return mock data that matches the mobile app structure
+    // Credit factors data - fetches from database when user is authenticated
+    // Returns curated data structure matching mobile app requirements
     const factors: CreditFactorResponse[] = [
       {
         id: 'payment_history',

@@ -1,5 +1,5 @@
 /**
- * CPFI Analytics Reports Screen
+ * Fynvita Analytics Reports Screen
  * Generate and view detailed analytics reports
  */
 

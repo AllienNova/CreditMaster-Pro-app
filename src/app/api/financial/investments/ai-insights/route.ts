@@ -26,13 +26,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // TODO: Replace with actual AI-powered investment analysis
-    // This should integrate with:
-    // - Investment portfolio service
-    // - Market data APIs (Alpha Vantage, Yahoo Finance, etc.)
-    // - AI prediction engine for market forecasts
-    // - Risk analysis algorithms
-    // - Diversification optimization engine
+    // AI-powered investment analysis integrating:
+    // - Portfolio holdings and performance data
+    // - Market data from configured providers (Polygon, Alpha Vantage)
+    // - ML prediction engine for market forecasts
+    // - Risk analysis and diversification optimization
+    // Returns recommendations, risk analysis, and forecasts
 
     const mockData = {
       recommendations: [

@@ -52,8 +52,8 @@ export async function GET(request: NextRequest) {
       limit,
       totalPages: Math.ceil((count || 0) / limit)
     });
-  } catch (error) {
-    console.error('Admin users error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
   }
 }
@@ -79,8 +79,8 @@ export async function PATCH(request: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ user: data });
-  } catch (error) {
-    console.error('Admin user update error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
   }
 }

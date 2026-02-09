@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
       success: true,
       cards,
     });
-  } catch (error) {
-    console.error('Error fetching secured cards:', error);
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
       { error: 'Failed to fetch secured cards' },
       { status: 500 }

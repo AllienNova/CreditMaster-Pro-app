@@ -52,9 +52,9 @@ export function ChartTooltip({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-[150px]">
+    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-3 min-w-[150px]">
       {label && (
-        <p className="text-sm font-medium text-gray-900 dark:text-white mb-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <p className="text-sm font-medium text-gray-900 dark:text-white mb-2 border-b border-gray-200 dark:border-slate-700 pb-2">
           {formatLabel(label)}
         </p>
       )}
@@ -66,7 +66,7 @@ export function ChartTooltip({
                 className="w-3 h-3 rounded-full flex-shrink-0"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-sm text-gray-600 dark:text-gray-400">{entry.name}</span>
+              <span className="text-sm text-gray-600 dark:text-slate-400">{entry.name}</span>
             </div>
             <span className="text-sm font-medium text-gray-900 dark:text-white">
               {formatValue(entry.value, entry.name)}
@@ -144,7 +144,7 @@ export function ChartLegend({
             className="w-3 h-3 rounded-full flex-shrink-0"
             style={{ backgroundColor: item.color }}
           />
-          <span className="text-gray-600 dark:text-gray-400">{item.name}</span>
+          <span className="text-gray-600 dark:text-slate-400">{item.name}</span>
           {showValues && item.value !== undefined && (
             <span className="font-medium text-gray-900 dark:text-white">
               {formatValue(item.value)}

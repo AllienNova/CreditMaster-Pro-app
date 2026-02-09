@@ -71,7 +71,7 @@ export default function PaymentOptimizerPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-slate-300">Loading...</p>
         </div>
       </div>
     );
@@ -171,7 +171,7 @@ export default function PaymentOptimizerPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
             href="/credit-builder"
@@ -179,17 +179,17 @@ export default function PaymentOptimizerPage() {
           >
             ← Back to Credit Builder
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Payment Optimizer
           </h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
             Strategic debt payoff planner to save money and build credit faster
           </p>
         </div>
       </div>
 
       {/* Summary Banner */}
-      <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white">
+      <div className="bg-gradient-to-r from-red-500 to-emerald-500 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
@@ -221,8 +221,8 @@ export default function PaymentOptimizerPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Strategy Selector */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Payment Strategy
           </h2>
 
@@ -232,11 +232,11 @@ export default function PaymentOptimizerPage() {
               className={`p-6 rounded-lg border-2 transition-all ${
                 strategy === 'avalanche'
                   ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-blue-300'
+                  : 'border-gray-200 dark:border-slate-700 hover:border-blue-300'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Avalanche
                 </h3>
                 {strategy === 'avalanche' && (
@@ -253,7 +253,7 @@ export default function PaymentOptimizerPage() {
                   </svg>
                 )}
               </div>
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-3">
                 Pay highest APR first
               </p>
               <div className="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full inline-block">
@@ -266,11 +266,11 @@ export default function PaymentOptimizerPage() {
               className={`p-6 rounded-lg border-2 transition-all ${
                 strategy === 'snowball'
                   ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-blue-300'
+                  : 'border-gray-200 dark:border-slate-700 hover:border-blue-300'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Snowball
                 </h3>
                 {strategy === 'snowball' && (
@@ -287,10 +287,10 @@ export default function PaymentOptimizerPage() {
                   </svg>
                 )}
               </div>
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-3">
                 Pay smallest balance first
               </p>
-              <div className="bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full inline-block">
+              <div className="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full inline-block">
                 Quick Wins
               </div>
             </button>
@@ -300,11 +300,11 @@ export default function PaymentOptimizerPage() {
               className={`p-6 rounded-lg border-2 transition-all ${
                 strategy === 'utilization'
                   ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-blue-300'
+                  : 'border-gray-200 dark:border-slate-700 hover:border-blue-300'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Utilization
                 </h3>
                 {strategy === 'utilization' && (
@@ -321,7 +321,7 @@ export default function PaymentOptimizerPage() {
                   </svg>
                 )}
               </div>
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-3">
                 Pay credit cards first
               </p>
               <div className="bg-yellow-100 text-yellow-700 text-xs font-semibold px-3 py-1 rounded-full inline-block">
@@ -333,24 +333,24 @@ export default function PaymentOptimizerPage() {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-900">
               {strategy === 'avalanche' &&
-                '💡 Avalanche method saves the most money by targeting high-interest debt first. Best for maximizing savings.'}
+                'Avalanche method saves the most money by targeting high-interest debt first. Best for maximizing savings.'}
               {strategy === 'snowball' &&
-                '💡 Snowball method builds momentum with quick wins. Psychological boost from eliminating accounts faster.'}
+                'Snowball method builds momentum with quick wins. Psychological boost from eliminating accounts faster.'}
               {strategy === 'utilization' &&
-                '💡 Utilization-first method improves your credit score fastest by reducing credit card balances.'}
+                'Utilization-first method improves your credit score fastest by reducing credit card balances.'}
             </p>
           </div>
         </div>
 
         {/* Monthly Budget */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Monthly Budget
           </h2>
 
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-gray-700 dark:text-slate-200">
                 Total Monthly Payment
               </label>
               <span className="text-3xl font-bold text-blue-600">
@@ -366,27 +366,27 @@ export default function PaymentOptimizerPage() {
               onChange={(e) => setMonthlyBudget(parseInt(e.target.value))}
               className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer"
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-2">
+            <div className="flex justify-between text-xs text-gray-500 dark:text-slate-400 mt-2">
               <span>Min: ${totalMinPayment}</span>
               <span>Max: $2,000</span>
             </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">Minimum Payments</div>
-              <div className="text-2xl font-bold text-gray-900">
+            <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Minimum Payments</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 ${totalMinPayment}
               </div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">Extra Payment</div>
+            <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Extra Payment</div>
               <div className="text-2xl font-bold text-green-600">
                 ${monthlyBudget - totalMinPayment}
               </div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">Payoff Timeline</div>
+            <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Payoff Timeline</div>
               <div className="text-2xl font-bold text-blue-600">
                 {payoffMonths} months
               </div>
@@ -395,8 +395,8 @@ export default function PaymentOptimizerPage() {
         </div>
 
         {/* Account List */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Payment Priority Order
           </h2>
 
@@ -404,7 +404,7 @@ export default function PaymentOptimizerPage() {
             {getSortedAccounts().map((account, index) => (
               <div
                 key={account.id}
-                className="border-2 border-gray-200 rounded-lg p-6"
+                className="border-2 border-gray-200 dark:border-slate-700 rounded-lg p-6"
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
@@ -414,39 +414,39 @@ export default function PaymentOptimizerPage() {
                       </span>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                         {account.name}
                       </h3>
-                      <p className="text-sm text-gray-600 capitalize">
+                      <p className="text-sm text-gray-600 dark:text-slate-300 capitalize">
                         {account.type.replace('_', ' ')}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-gray-900">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
                       ${account.balance.toLocaleString()}
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-slate-300">
                       {account.apr}% APR
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-gray-50 rounded p-3">
-                    <div className="text-xs text-gray-600">Min Payment</div>
-                    <div className="text-lg font-bold text-gray-900">
+                  <div className="bg-gray-50 dark:bg-slate-900 rounded p-3">
+                    <div className="text-xs text-gray-600 dark:text-slate-300">Min Payment</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white">
                       ${account.minPayment}
                     </div>
                   </div>
-                  <div className="bg-gray-50 rounded p-3">
-                    <div className="text-xs text-gray-600">Due Date</div>
-                    <div className="text-lg font-bold text-gray-900">
+                  <div className="bg-gray-50 dark:bg-slate-900 rounded p-3">
+                    <div className="text-xs text-gray-600 dark:text-slate-300">Due Date</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white">
                       {account.dueDate}th
                     </div>
                   </div>
-                  <div className="bg-gray-50 rounded p-3">
-                    <div className="text-xs text-gray-600">
+                  <div className="bg-gray-50 dark:bg-slate-900 rounded p-3">
+                    <div className="text-xs text-gray-600 dark:text-slate-300">
                       Monthly Interest
                     </div>
                     <div className="text-lg font-bold text-red-600">
@@ -460,19 +460,19 @@ export default function PaymentOptimizerPage() {
         </div>
 
         {/* Timeline Visualization */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Payoff Timeline
           </h2>
 
           <div className="space-y-4">
             {plan.slice(0, 12).map((month) => (
               <div key={month.month} className="flex items-center space-x-4">
-                <div className="w-24 text-sm font-medium text-gray-600">
+                <div className="w-24 text-sm font-medium text-gray-600 dark:text-slate-300">
                   Month {month.month}
                 </div>
                 <div className="flex-1">
-                  <div className="w-full bg-gray-200 rounded-full h-6 relative overflow-hidden">
+                  <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-6 relative overflow-hidden">
                     <div
                       className="bg-gradient-to-r from-green-500 to-blue-500 h-6 rounded-full transition-all duration-500 flex items-center justify-end pr-3"
                       style={{
@@ -487,7 +487,7 @@ export default function PaymentOptimizerPage() {
                     </div>
                   </div>
                 </div>
-                <div className="w-16 text-sm font-semibold text-gray-900">
+                <div className="w-16 text-sm font-semibold text-gray-900 dark:text-white">
                   {month.score}
                 </div>
               </div>
@@ -495,42 +495,42 @@ export default function PaymentOptimizerPage() {
           </div>
 
           {plan.length > 12 && (
-            <div className="mt-4 text-center text-sm text-gray-600">
+            <div className="mt-4 text-center text-sm text-gray-600 dark:text-slate-300">
               Showing first 12 months of {plan.length}-month plan
             </div>
           )}
         </div>
 
         {/* Comparison Chart */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Strategy Comparison
           </h2>
 
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                <tr className="border-b-2 border-gray-200 dark:border-slate-700">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">
                     Strategy
                   </th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-900">
+                  <th className="text-right py-3 px-4 font-semibold text-gray-900 dark:text-white">
                     Payoff Time
                   </th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-900">
+                  <th className="text-right py-3 px-4 font-semibold text-gray-900 dark:text-white">
                     Interest Paid
                   </th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-900">
+                  <th className="text-right py-3 px-4 font-semibold text-gray-900 dark:text-white">
                     Score Increase
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white">
                     Best For
                   </th>
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-gray-200">
-                  <td className="py-4 px-4 font-medium text-gray-900">
+                <tr className="border-b border-gray-200 dark:border-slate-700">
+                  <td className="py-4 px-4 font-medium text-gray-900 dark:text-white">
                     Avalanche
                   </td>
                   <td className="text-right py-4 px-4">
@@ -540,12 +540,12 @@ export default function PaymentOptimizerPage() {
                     $1,250
                   </td>
                   <td className="text-right py-4 px-4">+45 points</td>
-                  <td className="py-4 px-4 text-sm text-gray-600">
+                  <td className="py-4 px-4 text-sm text-gray-600 dark:text-slate-300">
                     Saving money
                   </td>
                 </tr>
-                <tr className="border-b border-gray-200">
-                  <td className="py-4 px-4 font-medium text-gray-900">
+                <tr className="border-b border-gray-200 dark:border-slate-700">
+                  <td className="py-4 px-4 font-medium text-gray-900 dark:text-white">
                     Snowball
                   </td>
                   <td className="text-right py-4 px-4">
@@ -553,12 +553,12 @@ export default function PaymentOptimizerPage() {
                   </td>
                   <td className="text-right py-4 px-4">$1,425</td>
                   <td className="text-right py-4 px-4">+42 points</td>
-                  <td className="py-4 px-4 text-sm text-gray-600">
+                  <td className="py-4 px-4 text-sm text-gray-600 dark:text-slate-300">
                     Motivation
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-4 px-4 font-medium text-gray-900">
+                  <td className="py-4 px-4 font-medium text-gray-900 dark:text-white">
                     Utilization
                   </td>
                   <td className="text-right py-4 px-4">
@@ -568,7 +568,7 @@ export default function PaymentOptimizerPage() {
                   <td className="text-right py-4 px-4 text-green-600 font-semibold">
                     +52 points
                   </td>
-                  <td className="py-4 px-4 text-sm text-gray-600">
+                  <td className="py-4 px-4 text-sm text-gray-600 dark:text-slate-300">
                     Credit score
                   </td>
                 </tr>

@@ -32,7 +32,7 @@ export default function CreditScoreCard({
   const getScoreRating = (score: number) => {
     if (score >= 800) return { label: 'Excellent', color: 'text-green-600', bg: 'bg-green-50' };
     if (score >= 740) return { label: 'Very Good', color: 'text-blue-600', bg: 'bg-blue-50' };
-    if (score >= 670) return { label: 'Good', color: 'text-cyan-600', bg: 'bg-cyan-50' };
+    if (score >= 670) return { label: 'Good', color: 'text-blue-600', bg: 'bg-blue-50' };
     if (score >= 580) return { label: 'Fair', color: 'text-yellow-600', bg: 'bg-yellow-50' };
     return { label: 'Poor', color: 'text-red-600', bg: 'bg-red-50' };
   };
@@ -43,7 +43,7 @@ export default function CreditScoreCard({
   const bureauColors = {
     experian: 'from-blue-500 to-blue-600',
     equifax: 'from-red-500 to-red-600',
-    transunion: 'from-purple-500 to-purple-600',
+    transunion: 'from-blue-500 to-blue-600',
   };
 
   // Bureau names
@@ -59,12 +59,12 @@ export default function CreditScoreCard({
   const normalizedScore = ((score - minScore) / (maxScore - minScore)) * 180;
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 hover:shadow-xl transition-shadow">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
           <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${bureauColors[bureau]}`} />
-          <h3 className="text-lg font-semibold text-gray-900">{bureauNames[bureau]}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{bureauNames[bureau]}</h3>
         </div>
         <span className={`px-3 py-1 rounded-full text-sm font-medium ${rating.bg} ${rating.color}`}>
           {rating.label}
@@ -105,8 +105,8 @@ export default function CreditScoreCard({
 
           {/* Score Number */}
           <div className="absolute inset-0 flex flex-col items-center justify-center mt-4">
-            <div className="text-5xl font-bold text-gray-900">{score}</div>
-            <div className="text-sm text-gray-500">out of 850</div>
+            <div className="text-5xl font-bold text-gray-900 dark:text-white">{score}</div>
+            <div className="text-sm text-gray-500 dark:text-slate-400">out of 850</div>
           </div>
         </div>
 
@@ -140,14 +140,14 @@ export default function CreditScoreCard({
                 </span>
               </>
             ) : (
-              <span className="text-gray-500 font-semibold">No change</span>
+              <span className="text-gray-500 dark:text-slate-400 font-semibold">No change</span>
             )}
           </div>
         )}
       </div>
 
       {/* Last Updated */}
-      <div className="text-center text-sm text-gray-500 mb-4">
+      <div className="text-center text-sm text-gray-500 dark:text-slate-400 mb-4">
         Last updated: {lastUpdated.toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
@@ -157,10 +157,10 @@ export default function CreditScoreCard({
 
       {/* Score Factors */}
       {factors && (
-        <div className="border-t border-gray-200 pt-4">
+        <div className="border-t border-gray-200 dark:border-slate-700 pt-4">
           <button
             onClick={() => setShowFactors(!showFactors)}
-            className="w-full flex items-center justify-between text-sm font-medium text-gray-700 hover:text-gray-900"
+            className="w-full flex items-center justify-between text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-white dark:hover:text-white"
           >
             <span>Score Factors</span>
             <svg
@@ -190,7 +190,7 @@ export default function CreditScoreCard({
                   </h4>
                   <ul className="space-y-1">
                     {factors.positive.map((factor, index) => (
-                      <li key={index} className="text-sm text-gray-600 pl-5">
+                      <li key={index} className="text-sm text-gray-600 dark:text-slate-300 pl-5">
                         • {factor}
                       </li>
                     ))}
@@ -213,7 +213,7 @@ export default function CreditScoreCard({
                   </h4>
                   <ul className="space-y-1">
                     {factors.negative.map((factor, index) => (
-                      <li key={index} className="text-sm text-gray-600 pl-5">
+                      <li key={index} className="text-sm text-gray-600 dark:text-slate-300 pl-5">
                         • {factor}
                       </li>
                     ))}

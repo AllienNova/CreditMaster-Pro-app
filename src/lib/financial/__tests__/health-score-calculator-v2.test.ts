@@ -7,7 +7,11 @@ import { AggregatedFinancialContext } from '../types/aggregated-context.types';
 
 // Mock Supabase
 const mockFrom = jest.fn();
-jest.mock('@/lib/supabase', () => ({ supabase: { from: mockFrom } }));
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: (...args: any[]) => mockFrom(...args)
+  }
+}));
 
 describe('HealthScoreCalculatorV2', () => {
   let calculator: HealthScoreCalculatorV2;

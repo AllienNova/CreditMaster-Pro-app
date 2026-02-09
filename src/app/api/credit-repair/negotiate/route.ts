@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error getting negotiations:', error);
+    // NegotiateAPI error: Error getting negotiations
 
     // Audit log error
     try {
@@ -129,8 +129,8 @@ export async function GET(request: NextRequest) {
         message: `Failed to get negotiations: ${(error as Error).message}`,
         severity: 'medium',
       });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
+    } catch {
+      // NegotiateAPI error: Failed to log audit event
     }
 
     return NextResponse.json(
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating negotiation:', error);
+    // NegotiateAPI error: Error creating negotiation
 
     // Audit log error
     try {
@@ -253,8 +253,8 @@ export async function POST(request: NextRequest) {
         message: `Failed to create negotiation: ${(error as Error).message}`,
         severity: 'high',
       });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
+    } catch {
+      // NegotiateAPI error: Failed to log audit event
     }
 
     return NextResponse.json(

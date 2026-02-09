@@ -35,32 +35,38 @@ const DEFAULT_OPTIONS: Required<Omit<RetryOptions, 'onRetry'>> = {
 /**
  * Check if an error is retryable
  */
-function isRetryableError(error: any, options: Required<Omit<RetryOptions, 'onRetry'>>): boolean {
+interface RetryableError extends Error {
+  code?: string;
+  status?: number;
+}
+
+function isRetryableError(error: unknown, options: Required<Omit<RetryOptions, 'onRetry'>>): boolean {
+  const err = error as RetryableError;
   // Network errors
-  if (error.code && options.retryableErrors.includes(error.code)) {
+  if (err.code && options.retryableErrors.includes(err.code)) {
     return true;
   }
-  
+
   // HTTP status codes
-  if (error.status && options.retryableStatusCodes.includes(error.status)) {
+  if (err.status && options.retryableStatusCodes.includes(err.status)) {
     return true;
   }
-  
+
   // Rate limiting
-  if (error.message?.toLowerCase().includes('rate limit')) {
+  if (err.message?.toLowerCase().includes('rate limit')) {
     return true;
   }
-  
+
   // Timeout errors
-  if (error.message?.toLowerCase().includes('timeout')) {
+  if (err.message?.toLowerCase().includes('timeout')) {
     return true;
   }
-  
+
   // Connection errors
-  if (error.message?.toLowerCase().includes('connection')) {
+  if (err.message?.toLowerCase().includes('connection')) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -88,8 +94,8 @@ export async function withRetry<T>(
   for (let attempt = 1; attempt <= opts.maxRetries + 1; attempt++) {
     try {
       return await fn();
-    } catch (error: any) {
-      lastError = error;
+    } catch (error: unknown) {
+      lastError = error instanceof Error ? error : new Error(String(error));
       
       // Check if we should retry
       if (attempt > opts.maxRetries || !isRetryableError(error, opts)) {
@@ -101,11 +107,11 @@ export async function withRetry<T>(
       
       // Call retry callback if provided
       if (options?.onRetry) {
-        options.onRetry(error, attempt);
+        options.onRetry(error instanceof Error ? error : new Error(String(error)), attempt);
       }
       
       // Log retry attempt
-      console.warn(`Retry attempt ${attempt}/${opts.maxRetries} after ${delay}ms:`, error.message);
+      // Retrying after transient failure
       
       // Wait before retrying
       await new Promise(resolve => setTimeout(resolve, delay));
@@ -128,8 +134,8 @@ export function createRetryableFetch(options?: RetryOptions) {
       
       // Throw on retryable status codes
       if (!response.ok && DEFAULT_OPTIONS.retryableStatusCodes.includes(response.status)) {
-        const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-        (error as any).status = response.status;
+        const error = new Error(`HTTP ${response.status}: ${response.statusText}`) as RetryableError;
+        error.status = response.status;
         throw error;
       }
       
@@ -139,28 +145,31 @@ export function createRetryableFetch(options?: RetryOptions) {
 }
 
 // Pre-configured retry functions for different services
+// Note: onRetry callbacks are no-ops in production to avoid console logging
+const noopRetryCallback = () => { /* retry in progress */ };
+
 export const experianRetry = <T>(fn: () => Promise<T>) => withRetry(fn, {
   maxRetries: 3,
   initialDelay: 2000,
-  onRetry: (err, attempt) => console.log(`Experian retry ${attempt}:`, err.message)
+  onRetry: noopRetryCallback
 });
 
 export const plaidRetry = <T>(fn: () => Promise<T>) => withRetry(fn, {
   maxRetries: 3,
   initialDelay: 1000,
-  onRetry: (err, attempt) => console.log(`Plaid retry ${attempt}:`, err.message)
+  onRetry: noopRetryCallback
 });
 
 export const stripeRetry = <T>(fn: () => Promise<T>) => withRetry(fn, {
   maxRetries: 2,
   initialDelay: 500,
-  onRetry: (err, attempt) => console.log(`Stripe retry ${attempt}:`, err.message)
+  onRetry: noopRetryCallback
 });
 
 export const aimlRetry = <T>(fn: () => Promise<T>) => withRetry(fn, {
   maxRetries: 2,
   initialDelay: 1000,
   retryableStatusCodes: [429, 500, 502, 503],
-  onRetry: (err, attempt) => console.log(`AIML retry ${attempt}:`, err.message)
+  onRetry: noopRetryCallback
 });
 

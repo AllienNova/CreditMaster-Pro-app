@@ -87,14 +87,14 @@ export async function GET(request: NextRequest) {
         dataQuality: healthScore.dataQuality,
       },
     });
-  } catch (error) {
-    console.error('Health Score V2 GET error:', error);
+  } catch (_error) {
+    // HealthScoreV2Route error: GET failed
     return NextResponse.json(
       {
         error: 'Internal Server Error',
         message:
-          error instanceof Error
-            ? error.message
+          _error instanceof Error
+            ? _error.message
             : 'Failed to calculate health score',
       },
       { status: 500 }
@@ -155,14 +155,14 @@ export async function POST(request: NextRequest) {
         saved: saveScore,
       },
     });
-  } catch (error) {
-    console.error('Health Score V2 POST error:', error);
+  } catch (_error) {
+    // HealthScoreV2Route error: POST failed
     return NextResponse.json(
       {
         error: 'Internal Server Error',
         message:
-          error instanceof Error
-            ? error.message
+          _error instanceof Error
+            ? _error.message
             : 'Failed to calculate health score',
       },
       { status: 500 }

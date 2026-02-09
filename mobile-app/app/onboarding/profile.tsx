@@ -1,18 +1,20 @@
 /**
- * CPFI Onboarding Profile Setup Screen
+ * Fynvita Onboarding Profile Setup Screen
  * Collect user profile information
  */
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
+import { withOpacity } from '../../src/constants/theme';
 import { Card } from '../../src/components/Card';
 import { useAuthStore } from '../../src/store/authStore';
 
 export default function OnboardingProfileScreen() {
+  const { colors, spacing, borderRadius, fontSize, fontWeight, iconSize } = useTheme();
   const { user, updateProfile } = useAuthStore();
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
@@ -43,125 +45,103 @@ export default function OnboardingProfileScreen() {
   const progress = 1 / 4;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
           {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>
+            <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleSkip}>
-              <Text style={styles.skipText}>Skip</Text>
+              <Text style={{ fontSize: 16, color: colors.primary }}>Skip</Text>
             </TouchableOpacity>
           </View>
 
           {/* Progress Bar */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+          <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.lg }}>
+            <View style={{ height: 4, backgroundColor: colors.border, borderRadius: 2 }}>
+              <View style={{ height: '100%', backgroundColor: colors.primary, borderRadius: 2, width: `${progress * 100}%` }} />
             </View>
-            <Text style={styles.progressText}>Step 1 of 4</Text>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 8, textAlign: 'center' }}>Step 1 of 4</Text>
           </View>
 
           {/* Content */}
-          <View style={styles.content}>
-            <Text style={styles.title}>Let's set up your profile</Text>
-            <Text style={styles.subtitle}>This helps us personalize your experience</Text>
+          <View style={{ paddingHorizontal: spacing.lg }}>
+            <Text style={{ fontSize: 28, fontWeight: '700', color: colors.text, marginBottom: 8 }}>Let's set up your profile</Text>
+            <Text style={{ fontSize: 16, color: colors.textSecondary, marginBottom: spacing.xl }}>This helps us personalize your experience</Text>
 
-            <Card style={styles.formCard}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>First Name *</Text>
+            <Card style={{ marginBottom: spacing.md }}>
+              <View style={{ marginBottom: spacing.md }}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: 8 }}>First Name *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.md, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: colors.text }}
                   value={firstName}
                   onChangeText={setFirstName}
                   placeholder="Enter your first name"
-                  placeholderTextColor={theme.colors.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   autoCapitalize="words"
                 />
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Last Name *</Text>
+              <View style={{ marginBottom: spacing.md }}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: 8 }}>Last Name *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.md, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: colors.text }}
                   value={lastName}
                   onChangeText={setLastName}
                   placeholder="Enter your last name"
-                  placeholderTextColor={theme.colors.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   autoCapitalize="words"
                 />
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Phone Number</Text>
+              <View style={{ marginBottom: spacing.md }}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: 8 }}>Phone Number</Text>
                 <TextInput
-                  style={styles.input}
+                  style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.md, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: colors.text }}
                   value={phone}
                   onChangeText={setPhone}
                   placeholder="(555) 123-4567"
-                  placeholderTextColor={theme.colors.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="phone-pad"
                 />
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Date of Birth</Text>
+              <View style={{ marginBottom: spacing.md }}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: 8 }}>Date of Birth</Text>
                 <TextInput
-                  style={styles.input}
+                  style={{ backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.md, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: colors.text }}
                   value={dateOfBirth}
                   onChangeText={setDateOfBirth}
                   placeholder="MM/DD/YYYY"
-                  placeholderTextColor={theme.colors.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="numeric"
                 />
               </View>
             </Card>
 
-            <Text style={styles.privacyNote}>
-              <Ionicons name="lock-closed" size={14} color={theme.colors.textSecondary} /> Your information is encrypted and secure
+            <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }}>
+              <Ionicons name="lock-closed" size={14} color={colors.textSecondary} /> Your information is encrypted and secure
             </Text>
           </View>
         </ScrollView>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <View style={{ padding: spacing.lg, paddingBottom: spacing.xl }}>
           <TouchableOpacity
-            style={[styles.continueButton, (!firstName.trim() || !lastName.trim()) && styles.continueButtonDisabled]}
+            style={[
+              { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, paddingVertical: 16, borderRadius: borderRadius.lg },
+              (!firstName.trim() || !lastName.trim()) && { opacity: 0.5 },
+            ]}
             onPress={handleContinue}
             disabled={!firstName.trim() || !lastName.trim() || isLoading}
           >
-            <Text style={styles.continueButtonText}>{isLoading ? 'Saving...' : 'Continue'}</Text>
-            <Ionicons name="arrow-forward" size={20} color="#fff" />
+            <Text style={{ fontSize: 18, fontWeight: '600', color: colors.white, marginRight: 8 }}>{isLoading ? 'Saving...' : 'Continue'}</Text>
+            <Ionicons name="arrow-forward" size={20} color={colors.white} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
-  scrollView: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md },
-  backButton: { padding: 4 },
-  skipText: { fontSize: 16, color: theme.colors.primary },
-  progressContainer: { paddingHorizontal: theme.spacing.lg, marginBottom: theme.spacing.lg },
-  progressBar: { height: 4, backgroundColor: theme.colors.border, borderRadius: 2 },
-  progressFill: { height: '100%', backgroundColor: theme.colors.primary, borderRadius: 2 },
-  progressText: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 8, textAlign: 'center' },
-  content: { paddingHorizontal: theme.spacing.lg },
-  title: { fontSize: 28, fontWeight: '700', color: theme.colors.text, marginBottom: 8 },
-  subtitle: { fontSize: 16, color: theme.colors.textSecondary, marginBottom: theme.spacing.xl },
-  formCard: { marginBottom: theme.spacing.md },
-  inputGroup: { marginBottom: theme.spacing.md },
-  label: { fontSize: 14, fontWeight: '500', color: theme.colors.text, marginBottom: 8 },
-  input: { backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.borderRadius.md, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: theme.colors.text },
-  privacyNote: { fontSize: 13, color: theme.colors.textSecondary, textAlign: 'center' },
-  footer: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xl },
-  continueButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primary, paddingVertical: 16, borderRadius: theme.borderRadius.lg },
-  continueButtonDisabled: { opacity: 0.5 },
-  continueButtonText: { fontSize: 18, fontWeight: '600', color: '#fff', marginRight: 8 },
-});
-

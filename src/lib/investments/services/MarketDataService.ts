@@ -101,7 +101,7 @@ export class MarketDataService {
         const quote = await this.getQuote(symbol);
         results.set(symbol, quote);
       } catch (error) {
-        console.error(`Failed to fetch quote for ${symbol}:`, error);
+        // Market data error: Failed to fetch quote
       }
     });
     await Promise.all(promises);
@@ -204,7 +204,7 @@ export class MarketDataService {
 
     // Using Polygon.io WebSocket as example
     if (!this.polygonKey) {
-      console.warn('No Polygon API key configured for real-time data');
+      // Market data warning: No Polygon API key configured for real-time data
       return;
     }
 
@@ -212,7 +212,7 @@ export class MarketDataService {
       const ws = new WebSocket(`wss://socket.polygon.io/stocks`);
 
       ws.onopen = () => {
-        console.log(`WebSocket connected for ${symbol}`);
+        // Market data: WebSocket connected
         this.reconnectAttempts.set(symbol, 0);
 
         // Authenticate and subscribe
@@ -237,16 +237,16 @@ export class MarketDataService {
             }
           }
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
+          // Market data error: Failed to parse WebSocket message
         }
       };
 
       ws.onerror = (error) => {
-        console.error(`WebSocket error for ${symbol}:`, error);
+        // Market data error: WebSocket error
       };
 
       ws.onclose = () => {
-        console.log(`WebSocket closed for ${symbol}`);
+        // Market data: WebSocket closed
         this.wsConnections.delete(symbol);
 
         // Attempt reconnect if still subscribed
@@ -257,7 +257,7 @@ export class MarketDataService {
 
       this.wsConnections.set(symbol, ws);
     } catch (error) {
-      console.error(`Failed to create WebSocket for ${symbol}:`, error);
+      // Market data error: Failed to create WebSocket
     }
   }
 
@@ -265,7 +265,7 @@ export class MarketDataService {
     const attempts = this.reconnectAttempts.get(symbol) || 0;
 
     if (attempts >= this.maxReconnectAttempts) {
-      console.error(`Max reconnect attempts reached for ${symbol}`);
+      // Market data error: Max reconnect attempts reached
       return;
     }
 
@@ -294,7 +294,7 @@ export class MarketDataService {
         try {
           callback(update);
         } catch (error) {
-          console.error('Error in realtime callback:', error);
+          // Market data error: Error in realtime callback
         }
       });
     }
@@ -318,9 +318,7 @@ export class MarketDataService {
       try {
         return await this.fetchAlphaVantageQuote(symbol);
       } catch (error) {
-        console.warn(
-          `Alpha Vantage quote failed for ${symbol}, trying fallback`
-        );
+        // Market data warning: Alpha Vantage quote failed, trying fallback
       }
     }
 
@@ -338,9 +336,7 @@ export class MarketDataService {
       try {
         return await this.fetchAlphaVantageHistorical(symbol, timeframe, limit);
       } catch (error) {
-        console.warn(
-          `Alpha Vantage historical failed for ${symbol}, trying fallback`
-        );
+        // Market data warning: Alpha Vantage historical failed, trying fallback
       }
     }
 

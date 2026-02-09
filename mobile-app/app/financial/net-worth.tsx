@@ -1,5 +1,5 @@
 /**
- * CPFI Net Worth Tracker Screen
+ * Fynvita Net Worth Tracker Screen
  * Track assets, liabilities, and net worth over time with real charts
  */
 
@@ -85,7 +85,7 @@ export default function NetWorthScreen() {
 
       setHistory(MOCK_HISTORY); // Would come from API in production
     } catch (err) {
-      console.warn('Using mock net worth data:', err);
+      // Fallback to mock data silently in production
       setAssets(MOCK_ASSETS);
       setLiabilities(MOCK_LIABILITIES);
       setHistory(MOCK_HISTORY);

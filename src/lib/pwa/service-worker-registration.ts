@@ -17,13 +17,13 @@ export async function registerServiceWorker(
   config?: ServiceWorkerConfig
 ): Promise<ServiceWorkerRegistration | null> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
-    console.log('Service workers not supported');
+    // Service workers not supported
     return null;
   }
 
   // Only register in production
   if (process.env.NODE_ENV !== 'production') {
-    console.log('Service worker disabled in development');
+    // Service worker disabled in development
     return null;
   }
 
@@ -41,11 +41,11 @@ export async function registerServiceWorker(
         if (installingWorker.state === 'installed') {
           if (navigator.serviceWorker.controller) {
             // New content available
-            console.log('New content available; please refresh.');
+            // New content available
             config?.onUpdate?.(registration);
           } else {
             // Content cached for offline use
-            console.log('Content cached for offline use.');
+            // Content cached for offline use
             config?.onSuccess?.(registration);
           }
         }
@@ -54,7 +54,7 @@ export async function registerServiceWorker(
 
     return registration;
   } catch (error) {
-    console.error('Service worker registration failed:', error);
+    // Service worker registration failed
     config?.onError?.(error as Error);
     return null;
   }
@@ -72,7 +72,7 @@ export async function unregisterServiceWorker(): Promise<boolean> {
     const registration = await navigator.serviceWorker.ready;
     return await registration.unregister();
   } catch (error) {
-    console.error('Service worker unregistration failed:', error);
+    // Service worker unregistration failed
     return false;
   }
 }
@@ -121,7 +121,7 @@ export async function subscribeToPushNotifications(
 
     return subscription;
   } catch (error) {
-    console.error('Push subscription failed:', error);
+    // Push subscription failed
     return null;
   }
 }

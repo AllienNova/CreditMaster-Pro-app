@@ -35,8 +35,9 @@ export async function GET(
     }
 
     return NextResponse.json({ bill });
-  } catch (error) {
-    console.error('Error fetching bill:', error);
+  } catch (_error) {
+    // BillsRoute error: Failed to fetch bill
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch bill' },
       { status: 500 }
@@ -102,8 +103,9 @@ export async function PATCH(
     const bill = await billDetectionService.updateBill(id, userId, input);
 
     return NextResponse.json({ bill });
-  } catch (error) {
-    console.error('Error updating bill:', error);
+  } catch (_error) {
+    // BillsRoute error: Failed to update bill
+    void _error;
     return NextResponse.json(
       { error: 'Failed to update bill' },
       { status: 500 }
@@ -138,8 +140,9 @@ export async function DELETE(
     await billDetectionService.deleteBill(id, userId);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting bill:', error);
+  } catch (_error) {
+    // BillsRoute error: Failed to delete bill
+    void _error;
     return NextResponse.json(
       { error: 'Failed to delete bill' },
       { status: 500 }

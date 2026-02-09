@@ -50,13 +50,13 @@ export default function UserDisputesPage() {
 
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
-      draft: 'bg-gray-100 text-gray-800',
+      draft: 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100',
       sent: 'bg-blue-100 text-blue-800',
       under_review: 'bg-yellow-100 text-yellow-800',
       resolved: 'bg-green-100 text-green-800',
       rejected: 'bg-red-100 text-red-800',
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100';
   };
 
   const getBureauColor = (bureau: string) => {
@@ -65,28 +65,28 @@ export default function UserDisputesPage() {
       equifax: 'text-red-600',
       transunion: 'text-green-600',
     };
-    return colors[bureau] || 'text-gray-600';
+    return colors[bureau] || 'text-gray-600 dark:text-slate-300';
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50 p-8">
         <div className="animate-pulse space-y-4 max-w-4xl mx-auto">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/4"></div>
+          <div className="h-64 bg-gray-200 dark:bg-slate-700 rounded"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50">
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-white/20 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
+      <header className="bg-white dark:bg-slate-800/80 backdrop-blur-sm shadow-sm border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">← Back</Link>
-              <h1 className="text-xl font-bold text-gray-900">My Disputes</h1>
+              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-white">← Back</Link>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">My Disputes</h1>
             </div>
             <Link
               href="/credit-builder"
@@ -105,9 +105,7 @@ export default function UserDisputesPage() {
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
-              className={`p-4 rounded-lg text-center transition-all ${
-                filterStatus === status ? 'bg-blue-600 text-white' : 'bg-white text-gray-900 hover:bg-gray-50'
-              }`}
+              className={`p-4 rounded-lg text-center transition-all ${ filterStatus === status ? 'bg-blue-600 text-white' : 'bg-white text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900' }`}
             >
               <p className="text-2xl font-bold">
                 {status === 'all' ? disputes.length : disputes.filter(d => d.status === status).length}
@@ -120,7 +118,7 @@ export default function UserDisputesPage() {
         {/* Disputes List */}
         <div className="space-y-4">
           {filteredDisputes.map((dispute) => (
-            <div key={dispute.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div key={dispute.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
@@ -131,9 +129,9 @@ export default function UserDisputesPage() {
                       {dispute.status.replace('_', ' ')}
                     </span>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900">{dispute.item_type}</h3>
-                  <p className="text-gray-600 text-sm mt-1">{dispute.item_description}</p>
-                  <p className="text-gray-400 text-xs mt-2">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">{dispute.item_type}</h3>
+                  <p className="text-gray-600 dark:text-slate-300 text-sm mt-1">{dispute.item_description}</p>
+                  <p className="text-gray-400 dark:text-slate-500 text-xs mt-2">
                     Created: {new Date(dispute.created_at).toLocaleDateString()}
                     {dispute.outcome && <span className="ml-4">Outcome: <span className="text-green-600 font-medium">{dispute.outcome}</span></span>}
                   </p>
@@ -143,7 +141,7 @@ export default function UserDisputesPage() {
             </div>
           ))}
           {filteredDisputes.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-gray-500 dark:text-slate-400">
               <p className="text-lg">No disputes found</p>
               <Link href="/credit-builder" className="text-blue-600 hover:underline mt-2 inline-block">
                 Start a new dispute →

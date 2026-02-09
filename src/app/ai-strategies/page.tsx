@@ -80,11 +80,11 @@ function AIStrategiesContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-8">
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
-            <div className="h-96 bg-gray-200 rounded"></div>
+            <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/3 mb-8"></div>
+            <div className="h-96 bg-gray-200 dark:bg-slate-700 rounded"></div>
           </div>
         </div>
       </div>
@@ -93,14 +93,14 @@ function AIStrategiesContent() {
 
   if (!loanId) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-12 text-center">
+            <svg className="w-16 h-16 text-gray-400 dark:text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">No Loan Selected</h2>
-            <p className="text-gray-600 mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">No Loan Selected</h2>
+            <p className="text-gray-600 dark:text-slate-300 mb-6">
               Please select a loan from your portfolio to view AI-powered strategies
             </p>
             <a
@@ -116,17 +116,17 @@ function AIStrategiesContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300 mb-2">
             <a href="/student-loans" className="hover:text-blue-600">Student Loans</a>
             <span>/</span>
             <span>AI Strategies</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">AI-Powered Strategies</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">AI-Powered Strategies</h1>
+          <p className="text-gray-600 dark:text-slate-300 mt-2">
             Personalized recommendations powered by 300+ AI models
           </p>
         </div>
@@ -139,37 +139,25 @@ function AIStrategiesContent() {
         )}
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
-          <div className="border-b border-gray-200">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm mb-6">
+          <div className="border-b border-gray-200 dark:border-slate-700">
             <nav className="flex -mb-px">
               <button
                 onClick={() => setActiveTab('recommendations')}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'recommendations'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${ activeTab === 'recommendations' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600' }`}
               >
                 Strategy Recommendations
               </button>
               <button
                 onClick={() => setActiveTab('execution')}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'execution'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${ activeTab === 'execution' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600' }`}
                 disabled={!executionPlan}
               >
                 Execution Plan
               </button>
               <button
                 onClick={() => setActiveTab('predictions')}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'predictions'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${ activeTab === 'predictions' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600' }`}
                 disabled={!selectedStrategy}
               >
                 Predictive Analysis
@@ -183,7 +171,7 @@ function AIStrategiesContent() {
               <div className="space-y-6">
                 {strategies.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-gray-500">No strategies available for this loan</p>
+                    <p className="text-gray-500 dark:text-slate-400">No strategies available for this loan</p>
                   </div>
                 ) : (
                   strategies.map((strategy, index) => (
@@ -212,7 +200,7 @@ function AIStrategiesContent() {
 
         {/* AI Confidence Badge */}
         {selectedStrategy && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-50 rounded-lg p-6 border border-blue-200">
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
                 <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
@@ -222,8 +210,8 @@ function AIStrategiesContent() {
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">AI Confidence Score</h3>
-                <p className="text-sm text-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">AI Confidence Score</h3>
+                <p className="text-sm text-gray-700 dark:text-slate-200">
                   Our AI models are {Math.round(selectedStrategy.ai_confidence_score * 100)}% confident in this strategy
                   based on analysis of similar cases and federal regulations.
                 </p>

@@ -95,9 +95,8 @@ export async function GET(request: NextRequest) {
       monthlyRevenue,
       userGrowth: Math.round(userGrowth * 10) / 10,
     });
-  } catch (error) {
-    console.error('Admin stats error:', error);
-    // Return mock data on error
+  } catch (_error) {
+    // Error silently caught - return mock data on error
     return NextResponse.json({
       totalUsers: 1247,
       activeSubscriptions: 892,

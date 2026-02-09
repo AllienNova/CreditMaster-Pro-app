@@ -104,9 +104,9 @@ class CreditRepairService {
         estimatedImpact: Math.round(estimatedImpact),
         timeline,
       };
-    } catch (error) {
-      console.error('Error calculating credit repair score:', error);
-      throw error;
+    } catch (_error) {
+      // CreditRepairService error: Error calculating credit repair score
+      throw _error;
     }
   }
 
@@ -204,8 +204,9 @@ class CreditRepairService {
       quickWins.sort((a, b) => b.impact - a.impact);
       
       return quickWins;
-    } catch (error) {
-      console.error('Error getting quick wins:', error);
+    } catch (_error) {
+      // CreditRepairService error: Error getting quick wins
+      void _error;
       return quickWins;
     }
   }
@@ -257,8 +258,9 @@ class CreditRepairService {
       });
       
       return opportunities;
-    } catch (error) {
-      console.error('Error getting opportunities:', error);
+    } catch (_error) {
+      // CreditRepairService error: Error getting opportunities
+      void _error;
       return opportunities;
     }
   }
@@ -305,8 +307,9 @@ class CreditRepairService {
         default:
           return 0;
       }
-    } catch (error) {
-      console.error('Error calculating impact:', error);
+    } catch (_error) {
+      // CreditRepairService error: Error calculating impact
+      void _error;
       return 0;
     }
   }
@@ -384,8 +387,9 @@ class CreditRepairService {
         totalActions,
         milestones,
       };
-    } catch (error) {
-      console.error('Error getting progress:', error);
+    } catch (_error) {
+      // CreditRepairService error: Error getting progress
+      void _error;
       return null;
     }
   }

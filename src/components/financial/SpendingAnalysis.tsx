@@ -238,35 +238,35 @@ export default function SpendingAnalysis() {
 
   const getCategoryIcon = (category: string): string => {
     const icons: Record<string, string> = {
-      'Food and Drink': '🍔',
-      Restaurants: '🍽️',
-      Groceries: '🛒',
-      Shopping: '🛍️',
-      Transportation: '🚗',
-      Travel: '✈️',
-      Entertainment: '🎬',
-      Bills: '📄',
-      Healthcare: '🏥',
-      Education: '📚',
-      Personal: '👤',
-      Transfer: '💸',
-      Payment: '💳',
+      'Food and Drink': '',
+      Restaurants: '',
+      Groceries: '',
+      Shopping: '',
+      Transportation: '',
+      Travel: '',
+      Entertainment: '',
+      Bills: '',
+      Healthcare: '',
+      Education: '',
+      Personal: '',
+      Transfer: '',
+      Payment: '',
     };
-    return icons[category] || '💰';
+    return icons[category] || '';
   };
 
   const getCategoryColor = (index: number): string => {
     const colors = [
       'bg-blue-500',
-      'bg-purple-500',
-      'bg-pink-500',
+      'bg-blue-500',
+      'bg-emerald-500',
       'bg-orange-500',
       'bg-green-500',
       'bg-yellow-500',
       'bg-red-500',
-      'bg-indigo-500',
+      'bg-blue-500',
       'bg-teal-500',
-      'bg-cyan-500',
+      'bg-blue-500',
     ];
     return colors[index % colors.length];
   };
@@ -314,9 +314,9 @@ export default function SpendingAnalysis() {
   ];
 
   const getTrendIcon = (trend: 'increasing' | 'decreasing' | 'stable') => {
-    if (trend === 'increasing') return '📈';
-    if (trend === 'decreasing') return '📉';
-    return '➡️';
+    if (trend === 'increasing') return '';
+    if (trend === 'decreasing') return '';
+    return '';
   };
 
   const getHealthColor = (status: string) => {
@@ -330,7 +330,7 @@ export default function SpendingAnalysis() {
       case 'poor':
         return 'text-red-600 bg-red-100 dark:bg-red-900/30';
       default:
-        return 'text-gray-600 bg-gray-100 dark:bg-gray-900/30';
+        return 'text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-900/30';
     }
   };
 
@@ -341,16 +341,16 @@ export default function SpendingAnalysis() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+              className="bg-white dark:bg-slate-800 rounded-lg shadow p-6"
             >
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4" />
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4" />
+              <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
             </div>
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-80" />
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-80" />
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 h-80" />
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 h-80" />
         </div>
       </div>
     );
@@ -358,13 +358,13 @@ export default function SpendingAnalysis() {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">❌</div>
+          <div className="text-red-600 text-xl mb-4"></div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Error Loading Data
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+          <p className="text-gray-600 dark:text-slate-400 mb-4">{error}</p>
           <button
             type="button"
             onClick={() => void fetchSpendingData()}
@@ -387,42 +387,30 @@ export default function SpendingAnalysis() {
       <AISpendingInsights />
 
       {/* Tab Selector and Date Range */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
         <div className="flex flex-col gap-4">
           {/* Tab Buttons */}
-          <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-4">
+          <div className="flex gap-2 border-b border-gray-200 dark:border-slate-700 pb-4">
             <button
               type="button"
               onClick={() => setActiveTab('spending')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                activeTab === 'spending'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${ activeTab === 'spending' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
             >
-              📊 Spending Analysis
+              Spending Analysis
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('cashflow')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                activeTab === 'cashflow'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${ activeTab === 'cashflow' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
             >
-              💰 Cash Flow
+              Cash Flow
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('forecast')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                activeTab === 'forecast'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${ activeTab === 'forecast' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
             >
-              🔮 Forecast
+              Forecast
             </button>
           </div>
 
@@ -437,11 +425,7 @@ export default function SpendingAnalysis() {
                   key={days}
                   type="button"
                   onClick={() => setDateRange(days)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                    dateRange === days
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${ dateRange === days ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
                 >
                   {days === '30'
                     ? '30 Days'
@@ -457,7 +441,7 @@ export default function SpendingAnalysis() {
                 onClick={() => {
                   window.location.href = `/api/financial/export?type=spending&format=csv&days=${dateRange}`;
                 }}
-                className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-2 text-sm"
+                className="px-3 py-2 bg-gray-100 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 flex items-center gap-2 text-sm"
                 title="Export to CSV"
               >
                 <svg
@@ -543,7 +527,7 @@ export default function SpendingAnalysis() {
                 <h3 className="text-sm font-semibold opacity-90">
                   Savings Rate
                 </h3>
-                <span className="text-2xl">💎</span>
+                <span className="text-2xl"></span>
               </div>
               <div className="text-3xl font-bold">
                 {cashFlowData.summary.avgSavingsRate.toFixed(1)}%
@@ -565,9 +549,9 @@ export default function SpendingAnalysis() {
 
           {/* Cash Flow Health & Recommendations */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <span>🏥</span>
+                <span></span>
                 Cash Flow Health
               </h3>
               <div
@@ -585,21 +569,21 @@ export default function SpendingAnalysis() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg shadow p-6">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-50 dark:from-blue-900/20 dark:to-blue-900/20 rounded-lg shadow p-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <span>💡</span>
+                <span></span>
                 Recommendations
               </h3>
               <div className="space-y-3">
                 {cashFlowData.recommendations.map((rec, index) => (
                   <div
                     key={index}
-                    className="flex items-start gap-3 bg-white dark:bg-gray-800 rounded-lg p-3"
+                    className="flex items-start gap-3 bg-white dark:bg-slate-800 rounded-lg p-3"
                   >
                     <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                       {index + 1}
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <p className="text-sm text-gray-700 dark:text-slate-300">
                       {rec}
                     </p>
                   </div>
@@ -620,7 +604,7 @@ export default function SpendingAnalysis() {
                 <h3 className="text-sm font-semibold opacity-90">
                   Total Spending
                 </h3>
-                <span className="text-2xl">💸</span>
+                <span className="text-2xl"></span>
               </div>
               <div className="text-3xl font-bold">
                 {formatCurrency(data.totalSpending)}
@@ -633,7 +617,7 @@ export default function SpendingAnalysis() {
             <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow p-6 text-white">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold opacity-90">Income</h3>
-                <span className="text-2xl">💰</span>
+                <span className="text-2xl"></span>
               </div>
               <div className="text-3xl font-bold">
                 {formatCurrency(data.income || 0)}
@@ -649,7 +633,7 @@ export default function SpendingAnalysis() {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold opacity-90">Cash Flow</h3>
                 <span className="text-2xl">
-                  {(data.cashFlow || 0) >= 0 ? '📈' : '📉'}
+                  {(data.cashFlow || 0) >= 0 ? '' : ''}
                 </span>
               </div>
               <div className="text-3xl font-bold">
@@ -660,17 +644,17 @@ export default function SpendingAnalysis() {
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 border border-gray-200 dark:border-slate-700">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-400">
                   Transactions
                 </h3>
-                <span className="text-2xl">📊</span>
+                <span className="text-2xl"></span>
               </div>
               <div className="text-3xl font-bold text-gray-900 dark:text-white">
                 {data.transactionCount}
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
                 Avg: {formatCurrency(data.averageTransaction)}
               </div>
             </div>
@@ -694,7 +678,7 @@ export default function SpendingAnalysis() {
           </div>
 
           {/* Category Breakdown List */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
               Category Breakdown
             </h3>
@@ -716,18 +700,18 @@ export default function SpendingAnalysis() {
                         <div className="font-bold text-gray-900 dark:text-white">
                           {formatCurrency(cat.amount)}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-sm text-gray-500 dark:text-slate-400">
                           {cat.percentage.toFixed(1)}%
                         </div>
                       </div>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                    <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
                       <div
                         className={`${getCategoryColor(index)} h-3 rounded-full transition-all duration-500`}
                         style={{ width: `${widthPercent}%` }}
                       />
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                       {cat.transactionCount} transactions
                     </div>
                   </div>
@@ -742,7 +726,7 @@ export default function SpendingAnalysis() {
           </ChartContainer>
 
           {/* Top Merchants List */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
               Top Merchants
             </h3>
@@ -750,17 +734,17 @@ export default function SpendingAnalysis() {
               {data.topMerchants.slice(0, 6).map((merchant, index) => (
                 <div
                   key={merchant.name}
-                  className="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
+                  className="border-2 border-gray-200 dark:border-slate-700 rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
                       #{index + 1}
                     </div>
                     <div className="text-right">
                       <div className="text-xl font-bold text-gray-900 dark:text-white">
                         {formatCurrency(merchant.amount)}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-xs text-gray-500 dark:text-slate-400">
                         {merchant.transactionCount} transactions
                       </div>
                     </div>
@@ -774,21 +758,21 @@ export default function SpendingAnalysis() {
           </div>
 
           {/* Insights */}
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg shadow p-6">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-50 dark:from-blue-900/20 dark:to-blue-900/20 rounded-lg shadow p-6">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <span>💡</span>
+              <span></span>
               Spending Insights
             </h3>
             <div className="space-y-3">
               {data.insights.map((insight, index) => (
                 <div
                   key={index}
-                  className="flex items-start gap-3 bg-white dark:bg-gray-800 rounded-lg p-4"
+                  className="flex items-start gap-3 bg-white dark:bg-slate-800 rounded-lg p-4"
                 >
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
                     {index + 1}
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300 flex-1">
+                  <p className="text-gray-700 dark:text-slate-300 flex-1">
                     {insight}
                   </p>
                 </div>
@@ -803,24 +787,16 @@ export default function SpendingAnalysis() {
         <>
           {/* Forecast Accuracy Banner */}
           <div
-            className={`rounded-lg shadow p-4 ${
-              forecastData.accuracy.dataQuality === 'excellent'
-                ? 'bg-green-50 dark:bg-green-900/20'
-                : forecastData.accuracy.dataQuality === 'good'
-                  ? 'bg-blue-50 dark:bg-blue-900/20'
-                  : forecastData.accuracy.dataQuality === 'fair'
-                    ? 'bg-yellow-50 dark:bg-yellow-900/20'
-                    : 'bg-red-50 dark:bg-red-900/20'
-            }`}
+            className={`rounded-lg shadow p-4 ${ forecastData.accuracy.dataQuality === 'excellent' ? 'bg-green-50' : forecastData.accuracy.dataQuality === 'good' ? 'bg-blue-50' : forecastData.accuracy.dataQuality === 'fair' ? 'bg-yellow-50' : 'bg-red-50 dark:bg-red-900/20' }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">🎯</span>
+                <span className="text-2xl"></span>
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white">
                     Forecast Accuracy: {forecastData.accuracy.overallScore}%
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-gray-600 dark:text-slate-400">
                     Based on {forecastData.accuracy.historicalMonths} months of
                     data ({forecastData.accuracy.dataQuality} quality)
                   </p>
@@ -834,24 +810,24 @@ export default function SpendingAnalysis() {
             {forecastData.predictions.slice(0, 4).map((pred) => (
               <div
                 key={pred.month}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+                className="bg-white dark:bg-slate-800 rounded-lg shadow p-6"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                  <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-400">
                     {pred.monthLabel}
                   </h3>
                   <span className="text-lg">
                     {pred.trend === 'increasing'
-                      ? '📈'
+                      ? ''
                       : pred.trend === 'decreasing'
-                        ? '📉'
-                        : '➡️'}
+                        ? ''
+                        : ''}
                   </span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                   {formatCurrency(pred.predictedSpending)}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs text-gray-500 dark:text-slate-400">
                   Range: {formatCurrency(pred.confidenceInterval.low)} -{' '}
                   {formatCurrency(pred.confidenceInterval.high)}
                 </div>
@@ -903,28 +879,22 @@ export default function SpendingAnalysis() {
 
           {/* Category Forecasts */}
           {forecastData.categoryForecasts.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                📊 Category Forecasts
+                Category Forecasts
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {forecastData.categoryForecasts.slice(0, 6).map((cat) => (
                   <div
                     key={cat.category}
-                    className="border dark:border-gray-700 rounded-lg p-4"
+                    className="border dark:border-slate-700 rounded-lg p-4"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold text-gray-900 dark:text-white">
                         {cat.displayName}
                       </span>
                       <span
-                        className={`text-sm px-2 py-1 rounded ${
-                          cat.trend === 'increasing'
-                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                            : cat.trend === 'decreasing'
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                        }`}
+                        className={`text-sm px-2 py-1 rounded ${ cat.trend === 'increasing' ? 'bg-red-100 text-red-700' : cat.trend === 'decreasing' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300' }`}
                       >
                         {cat.trend === 'increasing'
                           ? '↑'
@@ -935,7 +905,7 @@ export default function SpendingAnalysis() {
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">
+                      <span className="text-gray-600 dark:text-slate-400">
                         Current: {formatCurrency(cat.currentMonthlyAvg)}/mo
                       </span>
                       <span className="text-gray-900 dark:text-white font-medium">
@@ -950,35 +920,29 @@ export default function SpendingAnalysis() {
 
           {/* Forecast Insights */}
           {forecastData.insights.length > 0 && (
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg shadow p-6">
+            <div className="bg-gradient-to-br from-blue-50 to-emerald-50 dark:from-blue-900/20 dark:to-emerald-900/20 rounded-lg shadow p-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <span>🔮</span>
+                <span></span>
                 Forecast Insights
               </h3>
               <div className="space-y-3">
                 {forecastData.insights.map((insight) => (
                   <div
                     key={insight.id}
-                    className={`flex items-start gap-3 rounded-lg p-4 ${
-                      insight.impact === 'positive'
-                        ? 'bg-green-50 dark:bg-green-900/20'
-                        : insight.impact === 'negative'
-                          ? 'bg-red-50 dark:bg-red-900/20'
-                          : 'bg-white dark:bg-gray-800'
-                    }`}
+                    className={`flex items-start gap-3 rounded-lg p-4 ${ insight.impact === 'positive' ? 'bg-green-50' : insight.impact === 'negative' ? 'bg-red-50' : 'bg-white dark:bg-slate-800' }`}
                   >
                     <span className="text-xl">
                       {insight.impact === 'positive'
-                        ? '✅'
+                        ? ''
                         : insight.impact === 'negative'
-                          ? '⚠️'
+                          ? ''
                           : 'ℹ️'}
                     </span>
                     <div>
                       <h4 className="font-semibold text-gray-900 dark:text-white">
                         {insight.title}
                       </h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-sm text-gray-600 dark:text-slate-400">
                         {insight.description}
                       </p>
                       {insight.potentialSavings && (
@@ -996,16 +960,16 @@ export default function SpendingAnalysis() {
 
           {/* Recommendations */}
           {forecastData.recommendations.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <span>💡</span>
+                <span></span>
                 Recommendations
               </h3>
               <ul className="space-y-2">
                 {forecastData.recommendations.map((rec, index) => (
                   <li
                     key={index}
-                    className="flex items-start gap-2 text-gray-700 dark:text-gray-300"
+                    className="flex items-start gap-2 text-gray-700 dark:text-slate-300"
                   >
                     <span className="text-blue-500">•</span>
                     {rec}
@@ -1019,12 +983,12 @@ export default function SpendingAnalysis() {
 
       {/* Forecast Tab - No Data State */}
       {activeTab === 'forecast' && !forecastData && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
-          <div className="text-4xl mb-4">🔮</div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12 text-center">
+          <div className="text-4xl mb-4"></div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             Spending Forecast
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
+          <p className="text-gray-600 dark:text-slate-400 mb-4">
             We need more transaction history to generate accurate spending
             forecasts. Keep tracking your spending and check back soon!
           </p>

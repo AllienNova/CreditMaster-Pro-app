@@ -11,6 +11,15 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 
+const E2E_USER: User = {
+  id: 'e2e-user-id',
+  aud: 'authenticated',
+  email: 'e2e@example.com',
+  app_metadata: {},
+  user_metadata: { full_name: 'E2E User' },
+  created_at: new Date().toISOString(),
+} as User;
+
 interface SignInCredentials {
   email: string;
   password: string;
@@ -31,16 +40,21 @@ interface UseAuthReturn {
   signOut: () => Promise<void>;
 }
 
-export function useAuth(redirectTo: string = '/login'): UseAuthReturn {
+export function useAuth(redirectTo: string = '/auth/login'): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const bypassAuth = process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS === 'true';
 
   const signIn = useCallback(async (credentials: SignInCredentials): Promise<boolean> => {
     try {
       setLoading(true);
       setError(null);
+      if (bypassAuth) {
+        setUser(E2E_USER);
+        return true;
+      }
       const supabase = createClient();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: credentials.email,
@@ -65,12 +79,16 @@ export function useAuth(redirectTo: string = '/login'): UseAuthReturn {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, bypassAuth]);
 
   const signUp = useCallback(async (credentials: SignUpCredentials): Promise<boolean> => {
     try {
       setLoading(true);
       setError(null);
+      if (bypassAuth) {
+        setUser(E2E_USER);
+        return true;
+      }
       const supabase = createClient();
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: credentials.email,
@@ -99,25 +117,35 @@ export function useAuth(redirectTo: string = '/login'): UseAuthReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [bypassAuth]);
 
   const signOut = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
+      if (bypassAuth) {
+        setUser(null);
+        router.push(redirectTo);
+        return;
+      }
       const supabase = createClient();
       await supabase.auth.signOut();
       setUser(null);
-      router.push('/login');
+      router.push('/auth/login');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign out failed');
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, redirectTo, bypassAuth]);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        if (bypassAuth) {
+          setUser(E2E_USER);
+          setLoading(false);
+          return;
+        }
         const supabase = createClient();
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -144,6 +172,9 @@ export function useAuth(redirectTo: string = '/login'): UseAuthReturn {
     checkAuth();
 
     // Subscribe to auth changes
+    if (bypassAuth) {
+      return;
+    }
     const supabase = createClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       if (session?.user) {
@@ -156,7 +187,7 @@ export function useAuth(redirectTo: string = '/login'): UseAuthReturn {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [bypassAuth]);
 
   return { user, loading, error, signIn, signUp, signOut };
 }

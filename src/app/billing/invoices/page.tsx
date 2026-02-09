@@ -25,7 +25,7 @@ export default function InvoiceHistoryPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+      router.push('/auth/login');
       return;
     }
 
@@ -53,16 +53,16 @@ export default function InvoiceHistoryPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center text-gray-600">Loading invoice history…</div>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="text-center text-gray-600 dark:text-slate-300">Loading invoice history…</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow text-center space-y-4 max-w-md">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow text-center space-y-4 max-w-md">
           <p className="text-red-600">{error}</p>
           <button
             type="button"
@@ -77,25 +77,25 @@ export default function InvoiceHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500 uppercase tracking-wide">Billing</p>
-            <h1 className="text-3xl font-bold text-gray-900">Invoice history</h1>
+            <p className="text-sm text-gray-500 dark:text-slate-400 uppercase tracking-wide">Billing</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Invoice history</h1>
           </div>
           <button
             type="button"
             onClick={() => router.push('/billing')}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+            className="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900"
           >
             Back to billing
           </button>
         </div>
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-100 text-sm text-gray-700">
-            <thead className="bg-gray-50 text-xs font-semibold uppercase text-gray-500">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-100 dark:divide-slate-700 text-sm text-gray-700 dark:text-slate-200">
+            <thead className="bg-gray-50 dark:bg-slate-900 text-xs font-semibold uppercase text-gray-500 dark:text-slate-400">
               <tr>
                 <th className="px-6 py-3 text-left">Invoice</th>
                 <th className="px-6 py-3 text-left">Date</th>
@@ -104,10 +104,10 @@ export default function InvoiceHistoryPage() {
                 <th className="px-6 py-3 text-right">Receipt</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
               {invoices.map((invoice) => (
                 <tr key={invoice.id}>
-                  <td className="px-6 py-4 font-semibold text-gray-900">{invoice.id}</td>
+                  <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{invoice.id}</td>
                   <td className="px-6 py-4">
                     {new Date(invoice.created).toLocaleDateString(undefined, {
                       year: 'numeric',
@@ -140,7 +140,7 @@ export default function InvoiceHistoryPage() {
                         Download PDF
                       </a>
                     ) : (
-                      <span className="text-gray-400">N/A</span>
+                      <span className="text-gray-400 dark:text-slate-500">N/A</span>
                     )}
                   </td>
                 </tr>

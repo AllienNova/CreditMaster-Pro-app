@@ -3,9 +3,11 @@
  *
  * GET /api/ai/chat/sessions - List chat sessions
  * POST /api/ai/chat/sessions - Create a new chat session
+ * PROTECTED: Requires authentication
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 import { chatDbService } from '@/lib/ai/chat-db-service';
 import type {
   CreateSessionRequest,
@@ -16,14 +18,31 @@ import type {
 // List sessions
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Add authentication middleware
-    const userId = request.headers.get('x-user-id') || 'user_mock';
+    // AUTHENTICATION CHECK - Required for all AI endpoints
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+        },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id;
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
     const listRequest: ListSessionsRequest = {
       status: (searchParams.get('status') as any) || undefined,
-      sessionType: (searchParams.get('sessionType') as SessionType) || undefined,
+      sessionType:
+        (searchParams.get('sessionType') as SessionType) || undefined,
       limit: parseInt(searchParams.get('limit') || '20'),
       offset: parseInt(searchParams.get('offset') || '0'),
       sortBy: (searchParams.get('sortBy') as any) || 'updatedAt',
@@ -37,15 +56,16 @@ export async function GET(request: NextRequest) {
       success: true,
       data: sessions,
     });
-  } catch (error) {
-    console.error('List sessions API error:', error);
+  } catch (_error) {
+    // ChatSessionsRoute error: Failed to list sessions
 
     return NextResponse.json(
       {
         success: false,
         error: {
           code: 'LIST_SESSIONS_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown error occurred',
+          message:
+            _error instanceof Error ? _error.message : 'Unknown error occurred',
         },
       },
       { status: 500 }
@@ -56,8 +76,24 @@ export async function GET(request: NextRequest) {
 // Create session
 export async function POST(request: NextRequest) {
   try {
-    // TODO: Add authentication middleware
-    const userId = request.headers.get('x-user-id') || 'user_mock';
+    // AUTHENTICATION CHECK - Required for all AI endpoints
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+        },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id;
 
     // Parse request body
     const body: CreateSessionRequest = await request.json();
@@ -106,8 +142,9 @@ export async function POST(request: NextRequest) {
           },
           { includeContext: false }
         );
-      } catch (error) {
-        console.error('Failed to send initial message:', error);
+      } catch (_err) {
+        // ChatSessionsRoute: Failed to send initial message
+        void _err;
         // Don't fail the session creation if initial message fails
       }
     }
@@ -119,15 +156,16 @@ export async function POST(request: NextRequest) {
         initialResponse,
       },
     });
-  } catch (error) {
-    console.error('Create session API error:', error);
+  } catch (_error) {
+    // ChatSessionsRoute error: Create session failed
 
     return NextResponse.json(
       {
         success: false,
         error: {
           code: 'CREATE_SESSION_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown error occurred',
+          message:
+            _error instanceof Error ? _error.message : 'Unknown error occurred',
         },
       },
       { status: 500 }

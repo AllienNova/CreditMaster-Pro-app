@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Repair Hub Screen
+ * Fynvita Credit Repair Hub Screen
  * Central hub for all credit repair tools
  */
 

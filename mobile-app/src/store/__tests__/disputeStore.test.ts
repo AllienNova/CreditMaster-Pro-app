@@ -1,5 +1,5 @@
 /**
- * CPFI Dispute Store Unit Tests
+ * Fynvita Dispute Store Unit Tests
  */
 
 import { act } from '@testing-library/react-native';

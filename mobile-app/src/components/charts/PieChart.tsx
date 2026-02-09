@@ -1,5 +1,5 @@
 /**
- * CPFI Pie Chart Component
+ * Fynvita Pie Chart Component
  * Reusable pie/donut chart for spending breakdown, allocations, etc.
  */
 

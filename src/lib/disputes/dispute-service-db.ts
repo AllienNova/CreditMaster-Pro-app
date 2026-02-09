@@ -85,7 +85,7 @@ class DisputeServiceDB {
       .single();
 
     if (error) {
-      console.error('Failed to create dispute:', error);
+      // DisputeServiceDB error: Failed to create dispute
       throw new Error(`Failed to create dispute: ${error.message}`);
     }
 
@@ -106,7 +106,7 @@ class DisputeServiceDB {
         // Not found
         return null;
       }
-      console.error('Failed to fetch dispute:', error);
+      // DisputeServiceDB error: Failed to fetch dispute
       throw new Error(`Failed to fetch dispute: ${error.message}`);
     }
 
@@ -132,7 +132,7 @@ class DisputeServiceDB {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Failed to fetch user disputes:', error);
+      // DisputeServiceDB error: Failed to fetch user disputes
       throw new Error(`Failed to fetch user disputes: ${error.message}`);
     }
 
@@ -159,7 +159,7 @@ class DisputeServiceDB {
       .single();
 
     if (error) {
-      console.error('Failed to send dispute:', error);
+      // DisputeServiceDB error: Failed to send dispute
       throw new Error(`Failed to send dispute: ${error.message}`);
     }
 
@@ -188,7 +188,7 @@ class DisputeServiceDB {
       .single();
 
     if (error) {
-      console.error('Failed to update dispute status:', error);
+      // DisputeServiceDB error: Failed to update dispute status
       throw new Error(`Failed to update dispute status: ${error.message}`);
     }
 
@@ -217,7 +217,7 @@ class DisputeServiceDB {
       .single();
 
     if (error) {
-      console.error('Failed to resolve dispute:', error);
+      // DisputeServiceDB error: Failed to resolve dispute
       throw new Error(`Failed to resolve dispute: ${error.message}`);
     }
 
@@ -274,7 +274,7 @@ class DisputeServiceDB {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Failed to fetch disputes by bureau:', error);
+      // DisputeServiceDB error: Failed to fetch disputes by bureau
       throw new Error(`Failed to fetch disputes by bureau: ${error.message}`);
     }
 
@@ -288,7 +288,7 @@ class DisputeServiceDB {
     const { error } = await disputes().delete().eq('id', disputeId);
 
     if (error) {
-      console.error('Failed to delete dispute:', error);
+      // DisputeServiceDB error: Failed to delete dispute
       return false;
     }
 

@@ -74,14 +74,14 @@ export async function POST(request: NextRequest) {
       orchestration,
       timestamp: new Date().toISOString(),
     });
-  } catch (error) {
-    console.error('Strategy orchestration error:', error);
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
       {
         success: false,
         error:
-          error instanceof Error
-            ? error.message
+          _error instanceof Error
+            ? _error.message
             : 'Failed to orchestrate strategies',
       },
       { status: 500 }

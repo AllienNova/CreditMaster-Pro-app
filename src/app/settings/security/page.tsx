@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import TwoFactorSettings from '@/components/auth/TwoFactorSettings';
 import SessionManagement from '@/components/auth/SessionManagement';
 import BackupCodesManagement from '@/components/auth/BackupCodesManagement';
+import PasskeyManagement from '@/components/auth/PasskeyManagement';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -13,13 +14,13 @@ export default function SecuritySettingsPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+      router.push('/auth/login');
     }
   }, [user, loading, router]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -34,18 +35,18 @@ export default function SecuritySettingsPage() {
   const userRole = user.app_metadata?.role || user.user_metadata?.role || 'user';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Security Settings</h1>
-              <p className="text-gray-600 mt-1">Manage your account security and authentication</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Security Settings</h1>
+              <p className="text-gray-600 dark:text-slate-300 mt-1">Manage your account security and authentication</p>
             </div>
             <button
               onClick={() => router.push('/dashboard')}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium"
+              className="px-4 py-2 text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-white font-medium"
             >
               Back to Dashboard
             </button>
@@ -57,23 +58,30 @@ export default function SecuritySettingsPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* User Info */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account Information</h3>
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium text-gray-600">Email</label>
-                <p className="text-gray-900">{user.email}</p>
+                <label className="text-sm font-medium text-gray-600 dark:text-slate-300">Email</label>
+                <p className="text-gray-900 dark:text-white">{user.email}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Name</label>
-                <p className="text-gray-900">{userName}</p>
+                <label className="text-sm font-medium text-gray-600 dark:text-slate-300">Name</label>
+                <p className="text-gray-900 dark:text-white">{userName}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Role</label>
-                <p className="text-gray-900 capitalize">{userRole}</p>
+                <label className="text-sm font-medium text-gray-600 dark:text-slate-300">Role</label>
+                <p className="text-gray-900 dark:text-white capitalize">{userRole}</p>
               </div>
             </div>
           </div>
+
+          {/* Passkeys / WebAuthn */}
+          <PasskeyManagement
+            userId={user.id}
+            userName={user.email || ''}
+            displayName={userName}
+          />
 
           {/* Two-Factor Authentication */}
           <TwoFactorSettings />
@@ -85,30 +93,30 @@ export default function SecuritySettingsPage() {
           <SessionManagement />
 
           {/* Password Management */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Password</h3>
-            <p className="text-sm text-gray-600 mb-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Password</h3>
+            <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
               Change your password or reset it if you have forgotten it
             </p>
             <button
-              onClick={() => router.push('/login')}
-              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all"
+              onClick={() => router.push('/auth/login')}
+              className="px-6 py-2 bg-gray-100 text-gray-700 dark:text-slate-200 rounded-lg font-medium hover:bg-gray-200 dark:bg-slate-700 transition-all"
             >
               Change Password
             </button>
           </div>
 
           {/* Active Sessions */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Sessions</h3>
-            <p className="text-sm text-gray-600 mb-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Active Sessions</h3>
+            <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
               Manage your active sessions across different devices
             </p>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-900">Current Session</p>
-                  <p className="text-sm text-gray-600">This device</p>
+                  <p className="font-medium text-gray-900 dark:text-white">Current Session</p>
+                  <p className="text-sm text-gray-600 dark:text-slate-300">This device</p>
                 </div>
                 <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
                   Active

@@ -100,15 +100,15 @@ export default function AdminAnalyticsPage() {
         </div>
 
         {/* Disputes by Status */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Disputes by Status</h3>
           <div className="space-y-3">
             {data?.disputesByStatus.map((item, i) => (
               <div key={i} className="flex items-center">
-                <span className="w-24 text-sm text-gray-600 capitalize">{item.status.replace('_', ' ')}</span>
-                <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                <span className="w-24 text-sm text-gray-600 dark:text-slate-300 capitalize">{item.status.replace('_', ' ')}</span>
+                <div className="flex-1 h-6 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-purple-500 rounded-full"
+                    className="h-full bg-blue-500 rounded-full"
                     style={{ width: `${(item.count / Math.max(...data.disputesByStatus.map(d => d.count))) * 100}%` }}
                   ></div>
                 </div>
@@ -119,15 +119,15 @@ export default function AdminAnalyticsPage() {
         </div>
 
         {/* Subscriptions by Tier */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Subscriptions by Tier</h3>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Subscriptions by Tier</h3>
           <div className="space-y-3">
             {data?.subscriptionsByTier.map((item, i) => {
-              const colors = ['bg-gray-400', 'bg-blue-500', 'bg-purple-500', 'bg-yellow-500'];
+              const colors = ['bg-gray-400', 'bg-blue-500', 'bg-blue-500', 'bg-yellow-500'];
               return (
                 <div key={i} className="flex items-center">
-                  <span className="w-24 text-sm text-gray-600 capitalize">{item.tier}</span>
-                  <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                  <span className="w-24 text-sm text-gray-600 dark:text-slate-300 capitalize">{item.tier}</span>
+                  <div className="flex-1 h-6 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div
                       className={`h-full ${colors[i % colors.length]} rounded-full`}
                       style={{ width: `${(item.count / Math.max(...data.subscriptionsByTier.map(d => d.count))) * 100}%` }}
@@ -142,13 +142,13 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Top Features */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Features by Usage</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Features by Usage</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {data?.topFeatures.map((item, i) => (
-            <div key={i} className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">{item.usage.toLocaleString()}</p>
-              <p className="text-sm text-gray-600">{item.feature}</p>
+            <div key={i} className="text-center p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{item.usage.toLocaleString()}</p>
+              <p className="text-sm text-gray-600 dark:text-slate-300">{item.feature}</p>
             </div>
           ))}
         </div>

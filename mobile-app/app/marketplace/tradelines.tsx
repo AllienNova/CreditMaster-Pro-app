@@ -1,5 +1,5 @@
 /**
- * CPFI Tradelines Marketplace Screen
+ * Fynvita Tradelines Marketplace Screen
  * Authorized user tradelines
  */
 

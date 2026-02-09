@@ -1,5 +1,5 @@
 /**
- * CPFI Financial Index - Redirects to tab
+ * Fynvita Financial Index - Redirects to tab
  */
 
 import { Redirect } from 'expo-router';

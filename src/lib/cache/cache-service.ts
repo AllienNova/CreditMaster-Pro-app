@@ -197,7 +197,7 @@ export class CacheService {
     }
 
     if (removed > 0) {
-      console.log(`🧹 Cache cleanup: removed ${removed} expired entries`);
+      // CacheService: Cache cleanup removed expired entries
     }
   }
   
@@ -227,7 +227,7 @@ export class CacheService {
     fetchFn: (key: string) => Promise<T>,
     ttl?: number
   ): Promise<void> {
-    console.log(`🔥 Warming up cache with ${keys.length} keys`);
+    // CacheService: Warming up cache
     
     await Promise.all(
       keys.map(async (key) => {
@@ -235,12 +235,12 @@ export class CacheService {
           const value = await fetchFn(key);
           this.set(key, value, ttl);
         } catch (error) {
-          console.error(`Failed to warm up cache for key ${key}:`, error);
+          // CacheService error: Failed to warm up cache for key
         }
       })
     );
     
-    console.log(`✅ Cache warmed up: ${this.cache.size} entries`);
+    // CacheService: Cache warmed up
   }
 }
 

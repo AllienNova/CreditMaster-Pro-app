@@ -1,5 +1,5 @@
 /**
- * CPFI Document Detail Screen
+ * Fynvita Document Detail Screen
  * View and manage individual document
  */
 

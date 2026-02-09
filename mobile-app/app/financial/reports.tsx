@@ -1,5 +1,5 @@
 /**
- * CPFI Financial Reports Screen
+ * Fynvita Financial Reports Screen
  * Generate and view financial reports
  */
 

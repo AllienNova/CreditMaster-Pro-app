@@ -97,15 +97,13 @@ export default function ModelMonitoring({
     <div className={`space-y-6 ${className}`}>
       {/* Header with Date Range */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">AI Model Monitoring</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">AI Model Monitoring</h2>
         <div className="flex gap-2">
           {(['day', 'week', 'month'] as const).map(range => (
             <button
               key={range}
               onClick={() => handleRangeChange(range)}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                selectedRange === range ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${ selectedRange === range ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:bg-slate-700' }`}
             >
               {range.charAt(0).toUpperCase() + range.slice(1)}
             </button>
@@ -115,27 +113,27 @@ export default function ModelMonitoring({
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-md p-4">
-          <p className="text-sm text-gray-500">Total Requests</p>
-          <p className="text-2xl font-bold text-gray-900">{formatNumber(totals.requests)}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+          <p className="text-sm text-gray-500 dark:text-slate-400">Total Requests</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatNumber(totals.requests)}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-md p-4">
-          <p className="text-sm text-gray-500">Total Cost</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+          <p className="text-sm text-gray-500 dark:text-slate-400">Total Cost</p>
           <p className="text-2xl font-bold text-green-600">{formatCurrency(totals.cost)}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-md p-4">
-          <p className="text-sm text-gray-500">Total Tokens</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+          <p className="text-sm text-gray-500 dark:text-slate-400">Total Tokens</p>
           <p className="text-2xl font-bold text-blue-600">{formatTokens(totals.inputTokens + totals.outputTokens)}</p>
         </div>
-        <div className="bg-white rounded-xl shadow-md p-4">
-          <p className="text-sm text-gray-500">Avg Latency</p>
-          <p className="text-2xl font-bold text-purple-600">{totals.avgLatency.toFixed(0)}ms</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+          <p className="text-sm text-gray-500 dark:text-slate-400">Avg Latency</p>
+          <p className="text-2xl font-bold text-blue-600">{totals.avgLatency.toFixed(0)}ms</p>
         </div>
       </div>
 
       {/* Usage Trend Chart (simplified bar representation) */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Usage Trend</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Usage Trend</h3>
         <div className="flex items-end justify-between h-32 gap-2">
           {trends.map((trend, i) => {
             const maxCost = Math.max(...trends.map(t => t.cost));
@@ -147,7 +145,7 @@ export default function ModelMonitoring({
                   style={{ height: `${height}%` }}
                   title={`${trend.date}: ${formatCurrency(trend.cost)}`}
                 />
-                <span className="text-xs text-gray-500 mt-1">{trend.date.slice(-2)}</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400 mt-1">{trend.date.slice(-2)}</span>
               </div>
             );
           })}
@@ -155,15 +153,15 @@ export default function ModelMonitoring({
       </div>
 
       {/* Model Usage Table */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="p-4 border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Model Usage by Provider</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Model Usage by Provider</h3>
             <div className="flex gap-2">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'requests' | 'cost' | 'latency')}
-                className="text-sm border border-gray-300 rounded-lg px-2 py-1"
+                className="text-sm border border-gray-300 dark:border-slate-600 rounded-lg px-2 py-1"
               >
                 <option value="cost">Sort by Cost</option>
                 <option value="requests">Sort by Requests</option>
@@ -171,7 +169,7 @@ export default function ModelMonitoring({
               </select>
               <button
                 onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
-                className="px-2 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-2 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900"
               >
                 {sortOrder === 'desc' ? '↓' : '↑'}
               </button>
@@ -180,29 +178,29 @@ export default function ModelMonitoring({
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-slate-900">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Model</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Requests</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Input Tokens</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Output Tokens</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Cost</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Avg Latency</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Success Rate</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Model</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Requests</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Input Tokens</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Output Tokens</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Cost</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Avg Latency</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Success Rate</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
               {sortedData.map((model) => (
-                <tr key={model.modelId} className="hover:bg-gray-50">
+                <tr key={model.modelId} className="hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{model.modelName}</div>
-                    <div className="text-xs text-gray-500">{model.provider}</div>
+                    <div className="font-medium text-gray-900 dark:text-white">{model.modelName}</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400">{model.provider}</div>
                   </td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-900">{formatNumber(model.requests)}</td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-600">{formatTokens(model.inputTokens)}</td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-600">{formatTokens(model.outputTokens)}</td>
+                  <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-white">{formatNumber(model.requests)}</td>
+                  <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-300">{formatTokens(model.inputTokens)}</td>
+                  <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-300">{formatTokens(model.outputTokens)}</td>
                   <td className="px-4 py-3 text-right text-sm font-medium text-green-600">{formatCurrency(model.totalCost)}</td>
-                  <td className="px-4 py-3 text-right text-sm text-gray-600">{model.avgLatency}ms</td>
+                  <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-300">{model.avgLatency}ms</td>
                   <td className="px-4 py-3 text-right">
                     <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                       model.successRate >= 99 ? 'bg-green-100 text-green-800' :
@@ -219,8 +217,8 @@ export default function ModelMonitoring({
       </div>
 
       {/* Cost Breakdown by Provider */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Cost Breakdown by Provider</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Cost Breakdown by Provider</h3>
         <div className="space-y-3">
           {Object.entries(
             usageData.reduce((acc, d) => {
@@ -232,10 +230,10 @@ export default function ModelMonitoring({
             return (
               <div key={provider}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium text-gray-900">{provider}</span>
-                  <span className="text-gray-600">{formatCurrency(cost)} ({percentage.toFixed(1)}%)</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{provider}</span>
+                  <span className="text-gray-600 dark:text-slate-300">{formatCurrency(cost)} ({percentage.toFixed(1)}%)</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                   <div
                     className="bg-blue-600 rounded-full h-2 transition-all"
                     style={{ width: `${percentage}%` }}

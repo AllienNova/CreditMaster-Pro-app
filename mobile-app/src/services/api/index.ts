@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile API Service Layer
+ * Fynvita Mobile API Service Layer
  *
  * Comprehensive API service with:
  * - Type-safe API calls
@@ -67,6 +67,42 @@ export {
   type LoanType,
   type LoanStatus,
 } from './studentLoans';
+export {
+  gamificationApi,
+  type GamificationProgress,
+  type Badge,
+  type UserBadge,
+  type BadgeProgress,
+  type BadgesResponse,
+  type DailyQuest,
+  type UserQuestProgress,
+  type QuestsResponse,
+  type LeaderboardEntry,
+  type LeaderboardResponse,
+  type LeaderboardType,
+  type BadgeCategory,
+  type BadgeRarity,
+} from './gamification';
+export {
+  taxAnalysisApi,
+  taxScenariosApi,
+  taxCalendarApi,
+  taxDeductionsApi,
+  taxDocumentsApi,
+  taxTipsApi,
+  taxComparisonApi,
+  type TaxAnalysis,
+  type TaxRecommendation,
+  type TaxProjection,
+  type TaxScenarioInput,
+  type TaxScenarioResult,
+  type TaxEvent,
+  type TaxDeduction,
+  type DeductionCategory,
+  type TaxDocument,
+  type TaxBracket,
+  type TaxBracketVisualization,
+} from './tax';
 
 // Type exports
 export * from './types';
@@ -78,6 +114,16 @@ import financialApiDefault from './financial';
 import userApiDefault from './user';
 import investmentsApiDefault from './investments';
 import { studentLoansApi } from './studentLoans';
+import { gamificationApi } from './gamification';
+import {
+  taxAnalysisApi,
+  taxScenariosApi,
+  taxCalendarApi,
+  taxDeductionsApi,
+  taxDocumentsApi,
+  taxTipsApi,
+  taxComparisonApi,
+} from './tax';
 
 /**
  * Unified API object for easy access to all services
@@ -100,6 +146,20 @@ export const cpfiApi = {
 
   // Student loans services
   studentLoans: studentLoansApi,
+
+  // Gamification services
+  gamification: gamificationApi,
+
+  // Tax services
+  tax: {
+    analysis: taxAnalysisApi,
+    scenarios: taxScenariosApi,
+    calendar: taxCalendarApi,
+    deductions: taxDeductionsApi,
+    documents: taxDocumentsApi,
+    tips: taxTipsApi,
+    comparison: taxComparisonApi,
+  },
 };
 
 export default cpfiApi;

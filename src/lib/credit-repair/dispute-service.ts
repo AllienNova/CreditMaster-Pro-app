@@ -102,8 +102,8 @@ class DisputeService {
       }
       
       return inaccuracies;
-    } catch (error) {
-      console.error('Error scanning for inaccuracies:', error);
+    } catch (_error) {
+      // DisputeService error: Error scanning for inaccuracies
       return inaccuracies;
     }
   }
@@ -302,7 +302,7 @@ class DisputeService {
         followUpDate,
       };
     } catch (error) {
-      console.error('Error generating dispute letter:', error);
+      // DisputeService error: Error generating dispute letter
       throw error;
     }
   }
@@ -321,8 +321,8 @@ class DisputeService {
       if (error) throw error;
       
       return data as DisputeItem;
-    } catch (error) {
-      console.error('Error tracking dispute:', error);
+    } catch (_error) {
+      // DisputeService error: Error tracking dispute
       return null;
     }
   }
@@ -365,7 +365,7 @@ Sincerely,
       
       return complaint;
     } catch (error) {
-      console.error('Error generating CFPB complaint:', error);
+      // DisputeService error: Error generating CFPB complaint
       throw error;
     }
   }

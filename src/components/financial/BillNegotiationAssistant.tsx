@@ -60,9 +60,10 @@ export default function BillNegotiationAssistant() {
         const activeData = await activeRes.json();
         setActiveNegotiations(activeData.negotiations || []);
       }
-    } catch (err) {
+    } catch (_err) {
       showError('Failed to load negotiation data');
-      console.error(err);
+      // BillNegotiationAssistant error: Failed to load negotiation data
+      void _err;
     } finally {
       setLoading(false);
     }
@@ -92,9 +93,10 @@ export default function BillNegotiationAssistant() {
       setShowStartModal(false);
       showSuccess('Negotiation started! Check out your scripts.');
       fetchData();
-    } catch (err) {
+    } catch (_err) {
       showError('Failed to start negotiation');
-      console.error(err);
+      // BillNegotiationAssistant error: Failed to start negotiation
+      void _err;
     }
   };
 
@@ -124,9 +126,10 @@ export default function BillNegotiationAssistant() {
         showSuccess('Congratulations on your successful negotiation!');
       }
       fetchData();
-    } catch (err) {
+    } catch (_err) {
       showError('Failed to record attempt');
-      console.error(err);
+      // BillNegotiationAssistant error: Failed to record attempt
+      void _err;
     }
   };
 
@@ -150,45 +153,41 @@ export default function BillNegotiationAssistant() {
           title="Total Savings"
           value={`$${summary?.totalSavings?.toFixed(2) || '0.00'}`}
           subtitle="All time"
-          icon="💰"
+          icon=""
           gradient="from-green-500 to-emerald-600"
         />
         <SummaryCard
           title="Monthly Savings"
           value={`$${summary?.monthlySavings?.toFixed(2) || '0.00'}`}
           subtitle="Per month"
-          icon="📅"
-          gradient="from-blue-500 to-cyan-600"
+          icon=""
+          gradient="from-blue-500 to-blue-600"
         />
         <SummaryCard
           title="Success Rate"
           value={`${summary?.successRate?.toFixed(0) || '0'}%`}
           subtitle={`${summary?.completedNegotiations || 0} completed`}
-          icon="🎯"
-          gradient="from-purple-500 to-pink-600"
+          icon=""
+          gradient="from-blue-500 to-emerald-600"
         />
         <SummaryCard
           title="Active"
           value={`${summary?.activeNegotiations || 0}`}
           subtitle="In progress"
-          icon="⚡"
+          icon=""
           gradient="from-orange-500 to-red-600"
         />
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className="border-b border-gray-200 dark:border-slate-700">
         <nav className="flex space-x-8">
           {(['overview', 'opportunities', 'active', 'scripts'] as const).map(
             (tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${
-                  activeTab === tab
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
+                className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${ activeTab === tab ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-gray-300' }`}
               >
                 {tab}
               </button>
@@ -285,28 +284,20 @@ function OverviewTab({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Insights */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          💡 Insights & Tips
+          Insights & Tips
         </h3>
         <div className="space-y-4">
           {insights.map((insight, idx) => (
             <div
               key={idx}
-              className={`p-4 rounded-lg ${
-                insight.type === 'success_story'
-                  ? 'bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500'
-                  : insight.type === 'opportunity'
-                    ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
-                    : insight.type === 'warning'
-                      ? 'bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500'
-                      : 'bg-gray-50 dark:bg-gray-700 border-l-4 border-gray-400'
-              }`}
+              className={`p-4 rounded-lg ${ insight.type === 'success_story' ? 'bg-green-50 border-l-4 border-green-500' : insight.type === 'opportunity' ? 'bg-blue-50 border-l-4 border-blue-500' : insight.type === 'warning' ? 'bg-yellow-50 border-l-4 border-yellow-500' : 'bg-gray-50 dark:bg-slate-700 border-l-4 border-gray-400' }`}
             >
               <h4 className="font-medium text-gray-900 dark:text-white">
                 {insight.title}
               </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+              <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
                 {insight.description}
               </p>
               {insight.potentialSavings && (
@@ -320,12 +311,12 @@ function OverviewTab({
       </div>
 
       {/* Recent Successes */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          🏆 Recent Wins
+          Recent Wins
         </h3>
         {recentSuccesses.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-gray-500 dark:text-slate-400">
             No successful negotiations yet. Start one today!
           </p>
         ) : (
@@ -340,7 +331,7 @@ function OverviewTab({
                     <h4 className="font-medium text-gray-900 dark:text-white">
                       {success.merchantName}
                     </h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 capitalize">
+                    <p className="text-sm text-gray-600 dark:text-slate-300 capitalize">
                       {success.category}
                     </p>
                   </div>
@@ -348,7 +339,7 @@ function OverviewTab({
                     <p className="text-lg font-bold text-green-600 dark:text-green-400">
                       -${success.actualSavings?.toFixed(2)}/mo
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
                       ${success.currentAmount} → $
                       {success.currentAmount - (success.actualSavings || 0)}
                     </p>
@@ -372,11 +363,11 @@ function OpportunitiesTab({
 }) {
   if (opportunities.length === 0) {
     return (
-      <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl">
-        <p className="text-gray-500 dark:text-gray-400">
+      <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-xl">
+        <p className="text-gray-500 dark:text-slate-400">
           No negotiation opportunities found.
         </p>
-        <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+        <p className="text-sm text-gray-400 dark:text-slate-500 mt-2">
           Add more bills to discover savings opportunities.
         </p>
       </div>
@@ -388,14 +379,14 @@ function OpportunitiesTab({
       {opportunities.map((opp) => (
         <div
           key={opp.billId}
-          className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm"
+          className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm"
         >
           <div className="flex justify-between items-start mb-4">
             <div>
               <h4 className="font-semibold text-gray-900 dark:text-white">
                 {opp.merchantName}
               </h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+              <p className="text-sm text-gray-500 dark:text-slate-400 capitalize">
                 {opp.category}
               </p>
             </div>
@@ -406,13 +397,13 @@ function OpportunitiesTab({
 
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500 dark:text-gray-400">Current</span>
+              <span className="text-gray-500 dark:text-slate-400">Current</span>
               <span className="text-gray-900 dark:text-white">
                 ${opp.currentAmount}/mo
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500 dark:text-gray-400">
+              <span className="text-gray-500 dark:text-slate-400">
                 Potential Savings
               </span>
               <span className="text-green-600 dark:text-green-400 font-medium">
@@ -421,7 +412,7 @@ function OpportunitiesTab({
             </div>
           </div>
 
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+          <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
             {opp.reason}
           </p>
 
@@ -447,11 +438,11 @@ function ActiveNegotiationsTab({
 }) {
   if (negotiations.length === 0) {
     return (
-      <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl">
-        <p className="text-gray-500 dark:text-gray-400">
+      <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-xl">
+        <p className="text-gray-500 dark:text-slate-400">
           No active negotiations.
         </p>
-        <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+        <p className="text-sm text-gray-400 dark:text-slate-500 mt-2">
           Check the Opportunities tab to start one.
         </p>
       </div>
@@ -463,7 +454,7 @@ function ActiveNegotiationsTab({
       {negotiations.map((neg) => (
         <div
           key={neg.id}
-          className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => onSelect(neg)}
         >
           <div className="flex justify-between items-start">
@@ -471,27 +462,21 @@ function ActiveNegotiationsTab({
               <h4 className="font-semibold text-gray-900 dark:text-white">
                 {neg.merchantName}
               </h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+              <p className="text-sm text-gray-500 dark:text-slate-400 capitalize">
                 {neg.negotiationType.replace('_', ' ')}
               </p>
             </div>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                neg.status === 'in_progress'
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                  : neg.status === 'awaiting_response'
-                    ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-              }`}
+              className={`px-3 py-1 rounded-full text-xs font-medium ${ neg.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : neg.status === 'awaiting_response' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300' }`}
             >
               {neg.status.replace('_', ' ')}
             </span>
           </div>
           <div className="mt-4 flex justify-between text-sm">
-            <span className="text-gray-500 dark:text-gray-400">
+            <span className="text-gray-500 dark:text-slate-400">
               Target: ${neg.targetAmount}/mo
             </span>
-            <span className="text-gray-500 dark:text-gray-400">
+            <span className="text-gray-500 dark:text-slate-400">
               {neg.attemptHistory.length} attempts
             </span>
           </div>
@@ -529,12 +514,12 @@ function ScriptsTab({
       {contactInfo && (
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-            📞 Contact Information
+            Contact Information
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {contactInfo.phone && (
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500 dark:text-slate-400">
                   Phone
                 </p>
                 <p className="font-medium text-gray-900 dark:text-white">
@@ -544,7 +529,7 @@ function ScriptsTab({
             )}
             {contactInfo.retentionDepartment && (
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500 dark:text-slate-400">
                   Ask For
                 </p>
                 <p className="font-medium text-gray-900 dark:text-white">
@@ -554,7 +539,7 @@ function ScriptsTab({
             )}
             {contactInfo.bestTimeToCall && (
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500 dark:text-slate-400">
                   Best Time
                 </p>
                 <p className="font-medium text-gray-900 dark:text-white">
@@ -565,10 +550,10 @@ function ScriptsTab({
           </div>
           {contactInfo.tips && contactInfo.tips.length > 0 && (
             <div className="mt-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              <p className="text-sm text-gray-500 dark:text-slate-400 mb-2">
                 Tips
               </p>
-              <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300">
+              <ul className="list-disc list-inside text-sm text-gray-700 dark:text-slate-300">
                 {contactInfo.tips.map((tip, idx) => (
                   <li key={idx}>{tip}</li>
                 ))}
@@ -580,15 +565,15 @@ function ScriptsTab({
 
       {/* Talking Points */}
       {talkingPoints.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-            🎯 Key Talking Points
+            Key Talking Points
           </h3>
           <ul className="space-y-2">
             {talkingPoints.map((point, idx) => (
               <li key={idx} className="flex items-start gap-2">
-                <span className="text-green-500 mt-1">✓</span>
-                <span className="text-gray-700 dark:text-gray-300">
+                <span className="text-green-500 mt-1"></span>
+                <span className="text-gray-700 dark:text-slate-300">
                   {point}
                 </span>
               </li>
@@ -599,8 +584,8 @@ function ScriptsTab({
 
       {/* Script Tabs */}
       {scripts && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-          <div className="border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden">
+          <div className="border-b border-gray-200 dark:border-slate-700">
             <nav className="flex">
               {(['phone', 'email', 'chat', 'retention'] as const).map(
                 (type) => (
@@ -608,26 +593,22 @@ function ScriptsTab({
                     key={type}
                     type="button"
                     onClick={() => setActiveScript(type)}
-                    className={`flex-1 py-3 px-4 text-sm font-medium capitalize ${
-                      activeScript === type
-                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
-                        : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
+                    className={`flex-1 py-3 px-4 text-sm font-medium capitalize ${ activeScript === type ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-b-2 border-blue-500' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700' }`}
                   >
                     {type === 'retention'
-                      ? '🔒 Retention'
+                      ? 'Retention'
                       : type === 'phone'
-                        ? '📞 Phone'
+                        ? 'Phone'
                         : type === 'email'
-                          ? '✉️ Email'
-                          : '💬 Chat'}
+                          ? 'Email'
+                          : 'Chat'}
                   </button>
                 )
               )}
             </nav>
           </div>
           <div className="p-6">
-            <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-sans leading-relaxed">
+            <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-slate-300 font-sans leading-relaxed">
               {activeScript === 'phone' && scripts.phoneScript}
               {activeScript === 'email' && scripts.emailScript}
               {activeScript === 'chat' && scripts.chatScript}
@@ -646,9 +627,9 @@ function ScriptsTab({
                         : scripts.retentionScript;
                 navigator.clipboard.writeText(text);
               }}
-              className="mt-4 px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+              className="mt-4 px-4 py-2 text-sm bg-gray-100 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"
             >
-              📋 Copy Script
+              Copy Script
             </button>
           </div>
         </div>
@@ -661,7 +642,7 @@ function ScriptsTab({
           onClick={() => setShowRecordModal(true)}
           className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium"
         >
-          ✅ Record Negotiation Attempt
+          Record Negotiation Attempt
         </button>
       </div>
 
@@ -712,7 +693,7 @@ function RecordAttemptModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md">
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-full max-w-md">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Record Attempt
         </h3>
@@ -721,7 +702,7 @@ function RecordAttemptModal({
           <div>
             <label
               htmlFor="attempt-method"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"
             >
               Method
             </label>
@@ -731,7 +712,7 @@ function RecordAttemptModal({
               onChange={(e) =>
                 setMethod(e.target.value as 'phone' | 'email' | 'chat')
               }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
             >
               <option value="phone">Phone</option>
               <option value="email">Email</option>
@@ -742,7 +723,7 @@ function RecordAttemptModal({
           <div>
             <label
               htmlFor="attempt-outcome"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"
             >
               Outcome
             </label>
@@ -758,7 +739,7 @@ function RecordAttemptModal({
                     | 'pending'
                 )
               }
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
             >
               <option value="success">Success - Got the discount!</option>
               <option value="partial_success">
@@ -773,7 +754,7 @@ function RecordAttemptModal({
             <div>
               <label
                 htmlFor="offered-amount"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"
               >
                 New Monthly Amount
               </label>
@@ -783,7 +764,7 @@ function RecordAttemptModal({
                 value={offeredAmount}
                 onChange={(e) => setOfferedAmount(e.target.value)}
                 placeholder="e.g., 45.00"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
               />
             </div>
           )}
@@ -791,7 +772,7 @@ function RecordAttemptModal({
           <div>
             <label
               htmlFor="attempt-notes"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"
             >
               Notes
             </label>
@@ -801,7 +782,7 @@ function RecordAttemptModal({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="What happened during the call?"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
             />
           </div>
         </div>
@@ -810,7 +791,7 @@ function RecordAttemptModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
           >
             Cancel
           </button>
@@ -874,11 +855,11 @@ function StartNegotiationModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg">
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-full max-w-lg">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
           Start Negotiation
         </h3>
-        <p className="text-gray-500 dark:text-gray-400 mb-4">
+        <p className="text-gray-500 dark:text-slate-400 mb-4">
           {opportunity.merchantName} - ${opportunity.currentAmount}/mo
         </p>
 
@@ -889,7 +870,7 @@ function StartNegotiationModal({
               className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer ${
                 selectedType === type.value
                   ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'
               }`}
             >
               <input
@@ -904,7 +885,7 @@ function StartNegotiationModal({
                 <p className="font-medium text-gray-900 dark:text-white">
                   {type.label}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500 dark:text-slate-400">
                   {type.description}
                 </p>
               </div>
@@ -921,7 +902,7 @@ function StartNegotiationModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
           >
             Cancel
           </button>

@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile API Client
+ * Fynvita Mobile API Client
  * Core HTTP client with authentication, retry logic, offline support, and error handling
  */
 
@@ -9,12 +9,32 @@ import { supabase } from '../supabase';
 import type { ApiResponse, ApiError, RequestConfig } from './types';
 
 // Configuration
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://cpfi.com/api';
+// For Android emulator, use 10.0.2.2 to access localhost
+// For iOS simulator, use localhost
+// For physical device, use your machine's IP address
+const getDefaultApiUrl = (): string => {
+  if (__DEV__) {
+    // In development, prefer explicit env var, fallback to localhost with /api prefix
+    if (process.env.EXPO_PUBLIC_API_URL) {
+      return process.env.EXPO_PUBLIC_API_URL;
+    }
+    // Android emulator needs 10.0.2.2 to reach host machine
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:3000/api';
+    }
+    // iOS simulator can use localhost
+    return 'http://localhost:3000/api';
+  }
+  // Production URL
+  return process.env.EXPO_PUBLIC_API_URL || 'https://api.fynvita.com/api';
+};
+
+const API_BASE_URL = getDefaultApiUrl();
 const DEFAULT_TIMEOUT = 30000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
-const CACHE_PREFIX = 'cpfi_cache_';
-const OFFLINE_QUEUE_KEY = 'cpfi_offline_queue';
+const CACHE_PREFIX = 'fynvita_cache_';
+const OFFLINE_QUEUE_KEY = 'fynvita_offline_queue';
 
 // Retry configuration for different error types
 const RETRYABLE_STATUS_CODES = [408, 429, 500, 502, 503, 504];
@@ -41,7 +61,9 @@ export async function initializeApiClient(): Promise<void> {
       offlineQueue = JSON.parse(stored);
     }
   } catch (error) {
-    console.warn('Failed to load offline queue:', error);
+    if (__DEV__) {
+      console.warn('Failed to load offline queue:', error);
+    }
   }
 }
 
@@ -65,7 +87,7 @@ async function getAuthToken(): Promise<string | null> {
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token || null;
   } catch (error) {
-    console.error('Failed to get auth token:', error);
+    if (__DEV__) console.error('Failed to get auth token:', error);
     return null;
   }
 }
@@ -127,7 +149,9 @@ async function setCachedResponse<T>(key: string, data: T, ttlMs: number): Promis
       expiry: Date.now() + ttlMs,
     }));
   } catch (error) {
-    console.warn('Failed to cache response:', error);
+    if (__DEV__) {
+      console.warn('Failed to cache response:', error);
+    }
   }
 }
 
@@ -273,7 +297,9 @@ export async function apiRequest<T>(
         // Retry on retryable errors
         if (attempt <= retryCount && isRetryableError(error, response.status)) {
           const delay = calculateRetryDelay(attempt, retryDelay);
-          console.warn(`API retry attempt ${attempt}/${retryCount} in ${delay}ms:`, error.message);
+          if (__DEV__) {
+            console.warn(`API retry attempt ${attempt}/${retryCount} in ${delay}ms:`, error.message);
+          }
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
@@ -286,14 +312,44 @@ export async function apiRequest<T>(
         };
       }
 
+      // Unwrap { success, data } wrapper from Next.js API responses
+      // Backend returns: { success: true, data: {...} } or { success: false, error: {...} }
+      // We normalize to always return the inner data for successful responses
+      let unwrappedData: T;
+      if (
+        responseData &&
+        typeof responseData === 'object' &&
+        'success' in responseData &&
+        'data' in responseData
+      ) {
+        // Response has wrapper format - extract the data
+        if (!responseData.success) {
+          // Backend returned success: false - treat as error
+          return {
+            success: false,
+            error: createApiError(
+              responseData.error?.message || responseData.message || 'Request failed',
+              responseData.error?.code || 'API_ERROR',
+              responseData.error
+            ),
+            message: responseData.error?.message || responseData.message,
+            timestamp: new Date().toISOString(),
+          };
+        }
+        unwrappedData = responseData.data as T;
+      } else {
+        // Response doesn't have wrapper - use as-is (legacy endpoints or direct data)
+        unwrappedData = responseData as T;
+      }
+
       // Success - cache if applicable
       if (enableCache && (!fetchOptions.method || fetchOptions.method === 'GET')) {
-        await setCachedResponse(cacheKey, responseData, cacheTime);
+        await setCachedResponse(cacheKey, unwrappedData, cacheTime);
       }
 
       return {
         success: true,
-        data: responseData as T,
+        data: unwrappedData,
         timestamp: new Date().toISOString(),
       };
 
@@ -305,7 +361,9 @@ export async function apiRequest<T>(
       if (error.name === 'AbortError') {
         if (attempt <= retryCount) {
           const delay = calculateRetryDelay(attempt, retryDelay);
-          console.warn(`API timeout, retry attempt ${attempt}/${retryCount} in ${delay}ms`);
+          if (__DEV__) {
+            console.warn(`API timeout, retry attempt ${attempt}/${retryCount} in ${delay}ms`);
+          }
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
@@ -319,7 +377,9 @@ export async function apiRequest<T>(
       // Handle network errors
       if (isRetryableError(error) && attempt <= retryCount) {
         const delay = calculateRetryDelay(attempt, retryDelay);
-        console.warn(`API error, retry attempt ${attempt}/${retryCount} in ${delay}ms:`, error.message);
+        if (__DEV__) {
+          console.warn(`API error, retry attempt ${attempt}/${retryCount} in ${delay}ms:`, error.message);
+        }
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }

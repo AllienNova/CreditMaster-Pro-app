@@ -1,5 +1,5 @@
 /**
- * CPFI Credit API Service Tests
+ * Fynvita Credit API Service Tests
  */
 
 import { creditScoreApi, creditMonitoringApi, creditReportApi } from '../credit';

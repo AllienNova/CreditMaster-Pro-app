@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Repair Navigation Layout
+ * Fynvita Credit Repair Navigation Layout
  */
 
 import { Stack } from 'expo-router';

@@ -117,7 +117,7 @@ export class AnalyticsEngine {
    */
   static async getUserAnalytics(userId: string): Promise<UserAnalytics> {
     // In production, fetch from database
-    console.log(`📊 Generating analytics for user ${userId}`);
+    // Analytics: Generating analytics for user
     
     return {
       user_id: userId,
@@ -143,7 +143,7 @@ export class AnalyticsEngine {
     startDate?: string,
     endDate?: string
   ): Promise<DisputeAnalytics> {
-    console.log(`📊 Generating dispute analytics`, { userId, startDate, endDate });
+    // Analytics: Generating dispute analytics
     
     return {
       total_disputes: 0,
@@ -176,7 +176,7 @@ export class AnalyticsEngine {
    * Get strategy analytics
    */
   static async getStrategyAnalytics(strategyId?: string): Promise<StrategyAnalytics[]> {
-    console.log(`📊 Generating strategy analytics`, { strategyId });
+    // Analytics: Generating strategy analytics
     
     // In production, fetch from database and calculate metrics
     return [];
@@ -190,7 +190,7 @@ export class AnalyticsEngine {
     startDate?: string,
     endDate?: string
   ): Promise<WorkflowAnalytics> {
-    console.log(`📊 Generating workflow analytics`, { userId, startDate, endDate });
+    // Analytics: Generating workflow analytics
     
     return {
       total_workflows: 0,
@@ -222,11 +222,7 @@ export class AnalyticsEngine {
     startDate?: string,
     endDate?: string
   ): Promise<AIUsageAnalytics> {
-    console.log(`📊 Generating AI usage analytics`, {
-      userId,
-      startDate,
-      endDate,
-    });
+    // Analytics: Generating AI usage analytics
     
     return {
       total_requests: 0,
@@ -243,7 +239,7 @@ export class AnalyticsEngine {
    * Get financial impact analysis
    */
   static async getFinancialImpact(userId?: string): Promise<FinancialImpact> {
-    console.log(`📊 Generating financial impact analysis`, { userId });
+    // Analytics: Generating financial impact analysis
     
     return {
       total_debt_disputed: 0,
@@ -265,12 +261,7 @@ export class AnalyticsEngine {
     endDate?: string,
     interval: 'day' | 'week' | 'month' = 'day'
   ): Promise<TimeSeriesData[]> {
-    console.log(`📊 Generating time series data for ${metric}`, {
-      userId,
-      startDate,
-      endDate,
-      interval,
-    });
+    // Analytics: Generating time series data
     
     // In production, fetch from database and aggregate
     return [];
@@ -285,7 +276,7 @@ export class AnalyticsEngine {
     startDate?: string,
     endDate?: string
   ): Promise<AnalyticsReport> {
-    console.log(`📊 Generating ${reportType} report`);
+    // Analytics: Generating report
     
     const reportId = `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const now = new Date().toISOString();
@@ -358,7 +349,7 @@ export class AnalyticsEngine {
     ai_usage: AIUsageAnalytics;
     recent_activity: TimeSeriesData[];
   }> {
-    console.log(`📊 Generating dashboard metrics for user ${userId}`);
+    // Analytics: Generating dashboard metrics
     
     const [disputes, workflows, financial, ai_usage, recent_activity] = await Promise.all([
       this.getDisputeAnalytics(userId),

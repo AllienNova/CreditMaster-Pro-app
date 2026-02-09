@@ -1,5 +1,5 @@
 /**
- * CPFI Guide Detail Screen
+ * Fynvita Guide Detail Screen
  * Display full guide content
  */
 
@@ -51,7 +51,7 @@ export default function GuideDetailScreen() {
     try {
       await Share.share({ message: `Check out this guide: ${guide.title}`, title: guide.title });
     } catch (error) {
-      console.error('Error sharing:', error);
+      if (__DEV__) console.error('Error sharing:', error);
     }
   };
 

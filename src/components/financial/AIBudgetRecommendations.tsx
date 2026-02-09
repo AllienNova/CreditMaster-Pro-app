@@ -38,8 +38,8 @@ export default function AIBudgetRecommendations({ onApply, period }: AIBudgetRec
       
       const data = await response.json();
       setRecommendations(data.data || []);
-    } catch (error) {
-      console.error('Error fetching recommendations:', error);
+    } catch (_error) {
+      // Error logged
     } finally {
       setLoading(false);
     }
@@ -72,17 +72,17 @@ export default function AIBudgetRecommendations({ onApply, period }: AIBudgetRec
       case 'high': return 'bg-red-100 text-red-700';
       case 'medium': return 'bg-yellow-100 text-yellow-700';
       case 'low': return 'bg-green-100 text-green-700';
-      default: return 'bg-gray-100 text-gray-700';
+      default: return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200';
     }
   };
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 animate-pulse">
+        <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-gray-200 rounded"></div>
+            <div key={i} className="h-20 bg-gray-200 dark:bg-slate-700 rounded"></div>
           ))}
         </div>
       </div>
@@ -90,24 +90,24 @@ export default function AIBudgetRecommendations({ onApply, period }: AIBudgetRec
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-2xl">🤖</span>
-        <h3 className="text-lg font-semibold text-gray-900">AI Recommendations</h3>
+        <span className="text-2xl"></span>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Recommendations</h3>
       </div>
 
       {/* Recommendations List */}
       {recommendations.length > 0 ? (
         <div className="space-y-4 mb-6">
           {recommendations.slice(0, 5).map((rec, index) => (
-            <div key={index} className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+            <div key={index} className="p-4 bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg border border-blue-100">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
-                  <div className="font-medium text-gray-900 capitalize mb-1">
+                  <div className="font-medium text-gray-900 dark:text-white capitalize mb-1">
                     {rec.category.replace(/_/g, ' ')}
                   </div>
-                  <div className="text-sm text-gray-600 mb-2">{rec.reason}</div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300 mb-2">{rec.reason}</div>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full ${getImpactColor(rec.impact)}`}>
                   {rec.impact}
@@ -115,16 +115,16 @@ export default function AIBudgetRecommendations({ onApply, period }: AIBudgetRec
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div>
-                  <span className="text-gray-500">Current: </span>
-                  <span className="font-semibold text-gray-900">{formatCurrency(rec.currentBudget)}</span>
+                  <span className="text-gray-500 dark:text-slate-400">Current: </span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(rec.currentBudget)}</span>
                 </div>
                 <div className="text-blue-600">→</div>
                 <div>
-                  <span className="text-gray-500">Suggested: </span>
+                  <span className="text-gray-500 dark:text-slate-400">Suggested: </span>
                   <span className="font-semibold text-blue-600">{formatCurrency(rec.suggestedBudget)}</span>
                 </div>
               </div>
-              <div className="mt-2 text-xs text-gray-500">
+              <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">
                 Confidence: {(rec.confidence * 100).toFixed(0)}%
               </div>
             </div>
@@ -132,9 +132,9 @@ export default function AIBudgetRecommendations({ onApply, period }: AIBudgetRec
         </div>
       ) : (
         <div className="text-center py-8">
-          <div className="text-4xl mb-3">✨</div>
-          <p className="text-gray-600 mb-2">No recommendations available</p>
-          <p className="text-sm text-gray-500">Your budget looks good!</p>
+          <div className="text-4xl mb-3"></div>
+          <p className="text-gray-600 dark:text-slate-300 mb-2">No recommendations available</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Your budget looks good!</p>
         </div>
       )}
 
@@ -143,16 +143,16 @@ export default function AIBudgetRecommendations({ onApply, period }: AIBudgetRec
         <button
           onClick={handleApply}
           disabled={applying}
-          className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-lg hover:from-blue-700 hover:to-blue-700 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {applying ? 'Applying...' : 'Apply AI Recommendations'}
         </button>
       )}
 
       {/* Info */}
-      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-        <div className="text-xs text-gray-600">
-          <div className="font-medium mb-1">💡 How it works:</div>
+      <div className="mt-4 p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
+        <div className="text-xs text-gray-600 dark:text-slate-300">
+          <div className="font-medium mb-1">How it works:</div>
           <ul className="space-y-1 ml-4 list-disc">
             <li>AI analyzes your spending patterns</li>
             <li>Compares with similar users</li>

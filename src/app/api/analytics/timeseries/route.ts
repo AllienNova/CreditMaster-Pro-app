@@ -43,11 +43,9 @@ export async function GET(request: NextRequest) {
       interval
     );
     
-    console.log(`📊 Retrieved ${metric} time series data for ${scope}`);
-    
     return NextResponse.json({ data });
-  } catch (error) {
-    console.error('Error fetching time series data:', error);
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
       { error: 'Failed to fetch time series data' },
       { status: 500 }

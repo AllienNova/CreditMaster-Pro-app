@@ -1,5 +1,5 @@
 /**
- * CPFI Dispute Tracking Dashboard
+ * Fynvita Dispute Tracking Dashboard
  * Status timeline, bureau responses, follow-up reminders
  */
 

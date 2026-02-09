@@ -1,5 +1,5 @@
 /**
- * CPFI Student Loan Store
+ * Fynvita Student Loan Store
  * Manages student loan portfolio and AI repayment strategies
  */
 

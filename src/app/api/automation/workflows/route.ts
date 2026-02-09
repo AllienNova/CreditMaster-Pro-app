@@ -23,11 +23,12 @@ export async function GET(request: NextRequest) {
 
     const duration = Date.now() - startTime;
 
-    console.log(`✅ Fetched ${workflows.length} workflows for user ${validation.user.id} in ${duration}ms`);
+    // WorkflowsAPI: Fetched workflows for user
 
     return NextResponse.json({ workflows });
-  } catch (error) {
-    console.error('Error fetching workflows:', error);
+  } catch (_error) {
+    // WorkflowsAPI error: Error fetching workflows
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch workflows' },
       { status: 500 }
@@ -74,11 +75,12 @@ export async function POST(request: NextRequest) {
 
     const duration = Date.now() - startTime;
 
-    console.log(`✅ Created workflow ${workflow.id} for user ${validation.user.id} in ${duration}ms`);
+    // WorkflowsAPI: Created workflow for user
 
     return NextResponse.json({ workflow });
-  } catch (error) {
-    console.error('Error creating workflow:', error);
+  } catch (_error) {
+    // WorkflowsAPI error: Error creating workflow
+    void _error;
     return NextResponse.json(
       { error: 'Failed to create workflow' },
       { status: 500 }

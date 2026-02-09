@@ -1,14 +1,14 @@
 # CLAUDE.md - Pair Programming Guide
 
-> **This document is specifically designed for Claude (or other AI assistants) to understand the CPFI (Credit Pro & Financial Intelligence) platform for effective pair programming.**
+> **This document is specifically designed for Claude (or other AI assistants) to understand the Fynvita platform for effective pair programming.**
 
 ---
 
 ## 🎯 Quick Context
 
-**Project**: CPFI (Credit Pro & Financial Intelligence) - AI-Powered Credit Repair Platform  
-**Repository**: https://github.com/AllienNova/CPFI-Pro-app  
-**Status**: 100/110 complete (90.9%) - Production Ready  
+**Project**: Fynvita - Your Financial Vitality Platform
+**Repository**: https://github.com/AllienNova/CreditMaster-Pro-app
+**Status**: 100/110 complete (90.9%) - Production Ready
 **Your Role**: Pair programming partner for feature development, bug fixes, and enhancements
 
 ---
@@ -37,9 +37,9 @@
 
 ## 🌟 Project Overview
 
-### What is CPFI (Credit Pro & Financial Intelligence)?
+### What is Fynvita?
 
-CPFI (Credit Pro & Financial Intelligence) is a production-ready SaaS platform that helps users repair their credit through AI-powered tools. It's the world's most advanced credit repair platform with access to 300+ AI models.
+Fynvita is your complete financial health platform. We combine AI-powered credit repair, financial wellness tools, and investment intelligence to help you achieve total financial vitality. It's the world's most advanced holistic financial platform with access to 300+ AI models.
 
 ### Key Statistics
 

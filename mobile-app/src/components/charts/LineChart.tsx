@@ -1,5 +1,5 @@
 /**
- * CPFI Line Chart Component
+ * Fynvita Line Chart Component
  * Reusable line chart for credit score history, trends, etc.
  */
 

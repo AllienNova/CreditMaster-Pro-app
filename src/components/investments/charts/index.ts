@@ -1,15 +1,25 @@
 /**
  * Investment Charts - Barrel Export
- * 
- * TradingView Lightweight Charts integration for CreditMaster Pro
+ *
+ * TradingView Lightweight Charts integration for Fynvita
  */
 
 // Core Chart Component
-export { InvestmentChart, default as InvestmentChartDefault } from './InvestmentChart';
-export type { InvestmentChartProps, IndicatorConfig, CrosshairData } from './InvestmentChart';
+export {
+  InvestmentChart,
+  default as InvestmentChartDefault,
+} from './InvestmentChart';
+export type {
+  InvestmentChartProps,
+  IndicatorConfig,
+  CrosshairData,
+} from './InvestmentChart';
 
 // Advanced Chart Container
-export { AdvancedChartContainer, default as AdvancedChartContainerDefault } from './AdvancedChartContainer';
+export {
+  AdvancedChartContainer,
+  default as AdvancedChartContainerDefault,
+} from './AdvancedChartContainer';
 
 // Technical Indicators
 export {
@@ -40,4 +50,3 @@ export type {
   DrawingToolManager,
   SupportResistanceLevel,
 } from './ChartDrawingTools';
-

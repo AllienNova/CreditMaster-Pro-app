@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile App Components
+ * Fynvita Mobile App Components
  * Centralized export for all reusable components
  */
 
@@ -40,3 +40,9 @@ export {
   SkeletonListItem,
   SkeletonChart,
 } from './LoadingSkeleton';
+
+// Gamification Components
+export { XpBar, StreakDisplay, BadgeCard, QuestCard } from './gamification';
+
+// AI Components
+export { NudgeToast, InsightCard, CoachingCard } from './ai';

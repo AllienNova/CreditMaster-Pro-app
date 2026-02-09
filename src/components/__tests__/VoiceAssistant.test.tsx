@@ -30,7 +30,7 @@ jest.mock('../voice-assistant/VoiceAssistant', () => {
         data-testid="mic-button"
         onClick={() => onTranscript?.('Test transcript')}
       >
-        🎤
+        Mic
       </button>
       <button
         type="button"

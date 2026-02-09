@@ -144,9 +144,9 @@ describe('AI API Endpoints', () => {
       const data = await response.json();
 
       expect(response.ok).toBe(true);
-      expect(data.data).toHaveProperty('creditHealthScore');
-      expect(data.data).toHaveProperty('scorePredictions');
-      expect(data.data).toHaveProperty('factorImpacts');
+      expect(data.data).toHaveProperty('overallHealthScore');
+      expect(data.data).toHaveProperty('predictions');
+      expect(data.data).toHaveProperty('factorAnalysis');
       expect(data.data).toHaveProperty('improvementOpportunities');
       expect(data.data).toHaveProperty('alerts');
     });

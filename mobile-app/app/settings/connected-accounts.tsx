@@ -1,5 +1,5 @@
 /**
- * CPFI Connected Accounts Settings Screen
+ * Fynvita Connected Accounts Settings Screen
  * Manage linked financial accounts and credit bureaus
  */
 

@@ -96,13 +96,13 @@ export default function SessionManagement() {
   const getDeviceIcon = (deviceType: string) => {
     switch (deviceType) {
       case 'desktop':
-        return '🖥️';
+        return '';
       case 'mobile':
-        return '📱';
+        return '';
       case 'tablet':
-        return '📱';
+        return '';
       default:
-        return '💻';
+        return '';
     }
   };
 
@@ -121,18 +121,18 @@ export default function SessionManagement() {
 
   if (!user) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-600">Please log in to manage sessions.</p>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <p className="text-gray-600 dark:text-slate-300">Please log in to manage sessions.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Active Sessions</h3>
-          <p className="text-sm text-gray-600 mt-1">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Active Sessions</h3>
+          <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
             Manage your active sessions across different devices
           </p>
         </div>
@@ -165,7 +165,7 @@ export default function SessionManagement() {
         </div>
       ) : sessions.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-600">No active sessions found</p>
+          <p className="text-gray-600 dark:text-slate-300">No active sessions found</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -173,7 +173,7 @@ export default function SessionManagement() {
             <div
               key={session.id}
               className={`border rounded-lg p-4 ${
-                session.isCurrent ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                session.isCurrent ? 'border-blue-500 bg-blue-50' : 'border-gray-200 dark:border-slate-700'
               }`}
             >
               <div className="flex items-start justify-between">
@@ -181,7 +181,7 @@ export default function SessionManagement() {
                   <div className="text-3xl">{getDeviceIcon(session.deviceType)}</div>
                   <div>
                     <div className="flex items-center space-x-2">
-                      <h4 className="font-medium text-gray-900">
+                      <h4 className="font-medium text-gray-900 dark:text-white">
                         {session.deviceName || `${session.browser} on ${session.os}`}
                       </h4>
                       {session.isCurrent && (
@@ -190,7 +190,7 @@ export default function SessionManagement() {
                         </span>
                       )}
                     </div>
-                    <div className="mt-1 space-y-1 text-sm text-gray-600">
+                    <div className="mt-1 space-y-1 text-sm text-gray-600 dark:text-slate-300">
                       <p>
                         <span className="font-medium">Browser:</span> {session.browser}
                       </p>
@@ -231,9 +231,9 @@ export default function SessionManagement() {
         </div>
       )}
 
-      <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <h4 className="font-medium text-gray-900 mb-2">Session Security Tips</h4>
-        <ul className="space-y-1 text-sm text-gray-600">
+      <div className="mt-6 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Session Security Tips</h4>
+        <ul className="space-y-1 text-sm text-gray-600 dark:text-slate-300">
           <li>• Revoke sessions from devices you no longer use</li>
           <li>• Check for suspicious activity regularly</li>
           <li>• Use different devices for different purposes</li>

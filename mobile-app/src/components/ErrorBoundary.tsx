@@ -1,5 +1,5 @@
 /**
- * CPFI Error Boundary Component
+ * Fynvita Error Boundary Component
  * Catches and displays errors gracefully
  */
 

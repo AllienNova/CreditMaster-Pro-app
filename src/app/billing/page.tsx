@@ -54,7 +54,7 @@ export default function BillingDashboard() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+      router.push('/auth/login');
       return;
     }
 
@@ -82,10 +82,10 @@ export default function BillingDashboard() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-gray-600">Loading billing dashboard…</p>
+          <p className="text-gray-600 dark:text-slate-300">Loading billing dashboard…</p>
         </div>
       </div>
     );
@@ -93,8 +93,8 @@ export default function BillingDashboard() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white shadow rounded-lg p-8 max-w-md text-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="bg-white dark:bg-slate-800 shadow rounded-lg p-8 max-w-md text-center">
           <p className="text-red-600 font-semibold mb-4">{error ?? 'Unknown error'}</p>
           <button
             type="button"
@@ -111,29 +111,29 @@ export default function BillingDashboard() {
   const activePlan = data.plans.find((plan) => plan.id === data.subscription.planId);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <header className="space-y-2">
-          <p className="text-sm text-gray-500 uppercase tracking-wide">Billing</p>
-          <h1 className="text-3xl font-bold text-gray-900">Subscriptions & invoices</h1>
-          <p className="text-gray-600">
+          <p className="text-sm text-gray-500 dark:text-slate-400 uppercase tracking-wide">Billing</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Subscriptions & invoices</h1>
+          <p className="text-gray-600 dark:text-slate-300">
             Manage your plan, payment methods, and invoice history. Changes propagate to the Stripe
             workspace instantly.
           </p>
         </header>
 
         {/* Current plan */}
-        <section className="bg-white rounded-xl shadow p-6">
+        <section className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <p className="text-sm uppercase text-gray-500 tracking-wide">Current plan</p>
-              <h2 className="text-2xl font-semibold text-gray-900">
+              <p className="text-sm uppercase text-gray-500 dark:text-slate-400 tracking-wide">Current plan</p>
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {activePlan?.name ?? 'Custom plan'}
               </h2>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-slate-300">
                 {activePlan ? `$${activePlan.price}/${activePlan.interval}` : 'Contact support'}
               </p>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
                 Status:{' '}
                 <span className="font-medium capitalize">{data.subscription.status}</span> · Next
                 renewal {new Date(data.subscription.currentPeriodEnd).toLocaleDateString()}
@@ -147,7 +147,7 @@ export default function BillingDashboard() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href="/billing/subscription"
-                className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-center"
+                className="px-5 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 text-center"
               >
                 Manage subscription
               </Link>
@@ -160,10 +160,10 @@ export default function BillingDashboard() {
             </div>
           </div>
           {activePlan && (
-            <ul className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-700">
+            <ul className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-700 dark:text-slate-200">
               {activePlan.features.map((feature) => (
                 <li key={feature} className="flex items-center gap-2">
-                  <span className="text-green-600">✔</span>
+                  <span className="text-green-600"></span>
                   {feature}
                 </li>
               ))}
@@ -172,15 +172,15 @@ export default function BillingDashboard() {
         </section>
 
         {/* Payment methods */}
-        <section className="bg-white rounded-xl shadow p-6">
+        <section className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm uppercase text-gray-500 tracking-wide">Payment methods</p>
-              <h2 className="text-xl font-semibold text-gray-900">Saved cards</h2>
+              <p className="text-sm uppercase text-gray-500 dark:text-slate-400 tracking-wide">Payment methods</p>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Saved cards</h2>
             </div>
             <button
               type="button"
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900"
             >
               Update card
             </button>
@@ -189,11 +189,11 @@ export default function BillingDashboard() {
             {data.paymentMethods.map((method) => (
               <div
                 key={method.id}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between border border-gray-200 rounded-lg p-4"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between border border-gray-200 dark:border-slate-700 rounded-lg p-4"
               >
                 <div>
-                  <p className="text-gray-900 font-medium capitalize">{method.brand} ending in {method.last4}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-gray-900 dark:text-white font-medium capitalize">{method.brand} ending in {method.last4}</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
                     Expires {method.expMonth}/{method.expYear}
                   </p>
                 </div>
@@ -208,19 +208,19 @@ export default function BillingDashboard() {
         </section>
 
         {/* Invoice history */}
-        <section className="bg-white rounded-xl shadow p-6">
+        <section className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm uppercase text-gray-500 tracking-wide">Invoices</p>
-              <h2 className="text-xl font-semibold text-gray-900">Recent billing activity</h2>
+              <p className="text-sm uppercase text-gray-500 dark:text-slate-400 tracking-wide">Invoices</p>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent billing activity</h2>
             </div>
             <Link href="/billing/invoices" className="text-sm text-blue-600 hover:text-blue-700">
               View full history →
             </Link>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            <table className="min-w-full divide-y divide-gray-100 dark:divide-slate-700">
+              <thead className="text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">
                 <tr>
                   <th className="py-3">Invoice</th>
                   <th className="py-3">Date</th>
@@ -229,10 +229,10 @@ export default function BillingDashboard() {
                   <th className="py-3 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-700 text-sm text-gray-700 dark:text-slate-200">
                 {data.invoices.slice(0, 5).map((invoice) => (
                   <tr key={invoice.id}>
-                    <td className="py-4 font-medium text-gray-900">{invoice.id}</td>
+                    <td className="py-4 font-medium text-gray-900 dark:text-white">{invoice.id}</td>
                     <td className="py-4">{new Date(invoice.created).toLocaleDateString()}</td>
                     <td className="py-4">${invoice.amount.toFixed(2)}</td>
                     <td className="py-4">
@@ -259,7 +259,7 @@ export default function BillingDashboard() {
                           Download PDF
                         </a>
                       ) : (
-                        <span className="text-gray-400">N/A</span>
+                        <span className="text-gray-400 dark:text-slate-500">N/A</span>
                       )}
                     </td>
                   </tr>

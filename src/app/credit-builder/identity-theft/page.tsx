@@ -34,7 +34,13 @@ interface FraudulentAccount {
 interface Document {
   id: string;
   name: string;
-  type: 'police_report' | 'ftc_report' | 'affidavit' | 'dispute_letter' | 'correspondence' | 'evidence';
+  type:
+    | 'police_report'
+    | 'ftc_report'
+    | 'affidavit'
+    | 'dispute_letter'
+    | 'correspondence'
+    | 'evidence';
   uploadDate: Date;
   url?: string;
 }
@@ -50,9 +56,13 @@ interface Contact {
 export default function IdentityTheftRecovery() {
   const { user, loading: authLoading } = useAuth();
 
-  const [currentPhase, setCurrentPhase] = useState<'assessment' | 'immediate' | 'recovery' | 'monitoring'>('assessment');
+  const [currentPhase, setCurrentPhase] = useState<
+    'assessment' | 'immediate' | 'recovery' | 'monitoring'
+  >('assessment');
   const [recoverySteps, setRecoverySteps] = useState<RecoveryStep[]>([]);
-  const [fraudulentAccounts, setFraudulentAccounts] = useState<FraudulentAccount[]>([]);
+  const [fraudulentAccounts, setFraudulentAccounts] = useState<
+    FraudulentAccount[]
+  >([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [selectedStep, setSelectedStep] = useState<RecoveryStep | null>(null);
@@ -77,7 +87,8 @@ export default function IdentityTheftRecovery() {
     {
       organization: 'Equifax Fraud Alert',
       phone: '1-800-525-6285',
-      website: 'https://www.equifax.com/personal/credit-report-services/credit-fraud-alerts/',
+      website:
+        'https://www.equifax.com/personal/credit-report-services/credit-fraud-alerts/',
       purpose: 'Place fraud alert on credit report',
       hours: '24/7',
     },
@@ -124,11 +135,16 @@ export default function IdentityTheftRecovery() {
         id: 'place_fraud_alert',
         category: 'immediate',
         title: 'Place Fraud Alert on Credit Reports',
-        description: 'Contact one credit bureau to place a fraud alert. They will notify the other two.',
+        description:
+          'Contact one credit bureau to place a fraud alert. They will notify the other two.',
         completed: false,
         priority: 'critical',
         estimatedTime: '15 minutes',
-        resources: ['Experian: 1-888-397-3742', 'Equifax: 1-800-525-6285', 'TransUnion: 1-800-680-7289'],
+        resources: [
+          'Experian: 1-888-397-3742',
+          'Equifax: 1-800-525-6285',
+          'TransUnion: 1-800-680-7289',
+        ],
         substeps: [
           'Call any ONE of the three bureaus',
           'Request a fraud alert be placed',
@@ -140,27 +156,35 @@ export default function IdentityTheftRecovery() {
         id: 'report_ftc',
         category: 'immediate',
         title: 'Report to FTC at IdentityTheft.gov',
-        description: 'File an official identity theft report with the Federal Trade Commission.',
+        description:
+          'File an official identity theft report with the Federal Trade Commission.',
         completed: false,
         priority: 'critical',
         estimatedTime: '30 minutes',
-        resources: ['Website: https://www.identitytheft.gov', 'Phone: 1-877-438-4338'],
+        resources: [
+          'Website: https://www.identitytheft.gov',
+          'Phone: 1-877-438-4338',
+        ],
         substeps: [
           'Go to IdentityTheft.gov',
           'Answer questions about what happened',
           'Get your Identity Theft Report',
-          'Print and save your report (you\'ll need it)',
+          "Print and save your report (you'll need it)",
         ],
       },
       {
         id: 'file_police_report',
         category: 'immediate',
         title: 'File Police Report',
-        description: 'Report the identity theft to your local police department.',
+        description:
+          'Report the identity theft to your local police department.',
         completed: false,
         priority: 'critical',
         estimatedTime: '1-2 hours',
-        resources: ['Local police non-emergency number', 'FTC Identity Theft Report (bring with you)'],
+        resources: [
+          'Local police non-emergency number',
+          'FTC Identity Theft Report (bring with you)',
+        ],
         substeps: [
           'Call your local police department',
           'Ask to file an identity theft report',
@@ -172,14 +196,19 @@ export default function IdentityTheftRecovery() {
         id: 'notify_creditors',
         category: 'immediate',
         title: 'Contact Fraud Departments',
-        description: 'Call fraud departments of affected companies immediately.',
+        description:
+          'Call fraud departments of affected companies immediately.',
         completed: false,
         priority: 'critical',
         estimatedTime: '2-4 hours',
-        resources: ['List of fraudulent accounts', 'Account numbers', 'FTC report number'],
+        resources: [
+          'List of fraudulent accounts',
+          'Account numbers',
+          'FTC report number',
+        ],
         substeps: [
           'Make a list of all affected accounts',
-          'Call each company\'s fraud department',
+          "Call each company's fraud department",
           'Request accounts be closed or frozen',
           'Get confirmation numbers',
         ],
@@ -190,13 +219,14 @@ export default function IdentityTheftRecovery() {
         id: 'freeze_credit',
         category: 'short_term',
         title: 'Freeze Credit at All Bureaus',
-        description: 'Place a security freeze at all three credit bureaus to prevent new accounts.',
+        description:
+          'Place a security freeze at all three credit bureaus to prevent new accounts.',
         completed: false,
         priority: 'high',
         estimatedTime: '30 minutes',
         resources: ['Experian freeze', 'Equifax freeze', 'TransUnion freeze'],
         substeps: [
-          'Visit each bureau\'s freeze page',
+          "Visit each bureau's freeze page",
           'Create an account and verify identity',
           'Place the freeze',
           'Save your PIN/passwords',
@@ -206,11 +236,16 @@ export default function IdentityTheftRecovery() {
         id: 'dispute_fraudulent',
         category: 'short_term',
         title: 'Dispute Fraudulent Accounts',
-        description: 'File disputes with credit bureaus for all fraudulent accounts.',
+        description:
+          'File disputes with credit bureaus for all fraudulent accounts.',
         completed: false,
         priority: 'high',
         estimatedTime: '2-3 hours',
-        resources: ['FTC report', 'Police report', 'Dispute forms from each bureau'],
+        resources: [
+          'FTC report',
+          'Police report',
+          'Dispute forms from each bureau',
+        ],
         substeps: [
           'Get your credit reports from all three bureaus',
           'Identify all fraudulent accounts',
@@ -238,7 +273,8 @@ export default function IdentityTheftRecovery() {
         id: 'request_reports',
         category: 'short_term',
         title: 'Request Extended Fraud Alert',
-        description: 'With police report, extend fraud alert from 1 year to 7 years.',
+        description:
+          'With police report, extend fraud alert from 1 year to 7 years.',
         completed: false,
         priority: 'medium',
         estimatedTime: '20 minutes',
@@ -250,17 +286,19 @@ export default function IdentityTheftRecovery() {
         id: 'monitor_credit',
         category: 'long_term',
         title: 'Set Up Credit Monitoring',
-        description: 'Enroll in credit monitoring service to watch for new fraudulent activity.',
+        description:
+          'Enroll in credit monitoring service to watch for new fraudulent activity.',
         completed: false,
         priority: 'high',
         estimatedTime: '30 minutes',
-        resources: ['CPFI monitoring', 'Free bureau monitoring services'],
+        resources: ['Fynvita monitoring', 'Free bureau monitoring services'],
       },
       {
         id: 'review_mail',
         category: 'long_term',
         title: 'Review All Mail & Statements',
-        description: 'Check all mail for signs of identity theft for next 6-12 months.',
+        description:
+          'Check all mail for signs of identity theft for next 6-12 months.',
         completed: false,
         priority: 'medium',
         estimatedTime: 'Ongoing',
@@ -274,13 +312,18 @@ export default function IdentityTheftRecovery() {
         completed: false,
         priority: 'high',
         estimatedTime: '2-4 weeks',
-        resources: ['FTC report', 'Police report', 'Dispute confirmation numbers'],
+        resources: [
+          'FTC report',
+          'Police report',
+          'Dispute confirmation numbers',
+        ],
       },
       {
         id: 'check_public_records',
         category: 'long_term',
         title: 'Check Public Records',
-        description: 'Verify no fraudulent activity in court records, DMV, etc.',
+        description:
+          'Verify no fraudulent activity in court records, DMV, etc.',
         completed: false,
         priority: 'medium',
         estimatedTime: '2-3 hours',
@@ -292,7 +335,8 @@ export default function IdentityTheftRecovery() {
         id: 'monitor_ongoing',
         category: 'ongoing',
         title: 'Maintain Vigilant Monitoring',
-        description: 'Continue monitoring credit reports and accounts indefinitely.',
+        description:
+          'Continue monitoring credit reports and accounts indefinitely.',
         completed: false,
         priority: 'high',
         estimatedTime: 'Ongoing',
@@ -325,7 +369,9 @@ export default function IdentityTheftRecovery() {
 
   const fetchFraudulentAccounts = async () => {
     try {
-      const response = await fetch('/api/credit-builder/identity-theft/accounts');
+      const response = await fetch(
+        '/api/credit-builder/identity-theft/accounts'
+      );
       if (response.ok) {
         const data = await response.json();
         setFraudulentAccounts(data.accounts || []);
@@ -337,7 +383,9 @@ export default function IdentityTheftRecovery() {
 
   const fetchDocuments = async () => {
     try {
-      const response = await fetch('/api/credit-builder/identity-theft/documents');
+      const response = await fetch(
+        '/api/credit-builder/identity-theft/documents'
+      );
       if (response.ok) {
         const data = await response.json();
         setDocuments(data.documents || []);
@@ -348,25 +396,28 @@ export default function IdentityTheftRecovery() {
   };
 
   const toggleStepCompletion = (stepId: string) => {
-    setRecoverySteps(prev =>
-      prev.map(step =>
+    setRecoverySteps((prev) =>
+      prev.map((step) =>
         step.id === stepId ? { ...step, completed: !step.completed } : step
       )
     );
   };
 
   const getProgressByCategory = (category: string) => {
-    const categorySteps = recoverySteps.filter(s => s.category === category);
-    const completed = categorySteps.filter(s => s.completed).length;
+    const categorySteps = recoverySteps.filter((s) => s.category === category);
+    const completed = categorySteps.filter((s) => s.completed).length;
     return {
       total: categorySteps.length,
       completed,
-      percentage: categorySteps.length > 0 ? Math.round((completed / categorySteps.length) * 100) : 0,
+      percentage:
+        categorySteps.length > 0
+          ? Math.round((completed / categorySteps.length) * 100)
+          : 0,
     };
   };
 
   const getOverallProgress = () => {
-    const completed = recoverySteps.filter(s => s.completed).length;
+    const completed = recoverySteps.filter((s) => s.completed).length;
     return {
       total: recoverySteps.length,
       completed,
@@ -379,7 +430,9 @@ export default function IdentityTheftRecovery() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto"></div>
-          <p className="mt-6 text-lg text-gray-700 font-medium">Loading Identity Theft Recovery Center...</p>
+          <p className="mt-6 text-lg text-gray-700 dark:text-slate-200 font-medium">
+            Loading Identity Theft Recovery Center...
+          </p>
         </div>
       </div>
     );
@@ -402,11 +455,13 @@ export default function IdentityTheftRecovery() {
           >
             ← Back to Credit Builder
           </Link>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Identity Theft Recovery Center 🚨
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            Identity Theft Recovery Center 
           </h1>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Complete step-by-step recovery plan for identity theft victims. We'll guide you through every action needed to restore your identity and credit.
+          <p className="text-lg text-gray-600 dark:text-slate-300 max-w-3xl mx-auto">
+            Complete step-by-step recovery plan for identity theft victims.
+            We'll guide you through every action needed to restore your identity
+            and credit.
           </p>
         </div>
 
@@ -415,16 +470,19 @@ export default function IdentityTheftRecovery() {
           <div className="flex items-start gap-4">
             <span className="text-4xl">🆘</span>
             <div className="flex-1">
-              <h2 className="text-2xl font-bold mb-2">If You're a Victim of Identity Theft</h2>
+              <h2 className="text-2xl font-bold mb-2">
+                If You're a Victim of Identity Theft
+              </h2>
               <p className="mb-4 opacity-90">
-                Take immediate action! The first 24-48 hours are critical. Follow the steps below in order.
+                Take immediate action! The first 24-48 hours are critical.
+                Follow the steps below in order.
               </p>
               <div className="flex flex-wrap gap-3">
                 <a
                   href="https://www.identitytheft.gov"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-white text-red-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors"
+                  className="px-4 py-2 bg-white text-red-600 font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 transition-colors"
                 >
                   Report to FTC Now →
                 </a>
@@ -440,19 +498,24 @@ export default function IdentityTheftRecovery() {
         </div>
 
         {/* Overall Progress */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Recovery Progress</h2>
-              <p className="text-gray-600">
-                {overallProgress.completed} of {overallProgress.total} steps completed
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Recovery Progress
+              </h2>
+              <p className="text-gray-600 dark:text-slate-300">
+                {overallProgress.completed} of {overallProgress.total} steps
+                completed
               </p>
             </div>
             <div className="text-right">
-              <p className="text-4xl font-bold text-gray-900">{overallProgress.percentage}%</p>
+              <p className="text-4xl font-bold text-gray-900 dark:text-white">
+                {overallProgress.percentage}%
+              </p>
             </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-4">
+          <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-4">
             <div
               className="bg-gradient-to-r from-red-500 to-orange-500 h-4 rounded-full transition-all"
               style={{ width: `${overallProgress.percentage}%` }}
@@ -461,24 +524,40 @@ export default function IdentityTheftRecovery() {
 
           <div className="grid md:grid-cols-4 gap-4 mt-6">
             <div className="text-center p-4 bg-red-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Immediate</p>
-              <p className="text-2xl font-bold text-red-600">{immediateProgress.percentage}%</p>
-              <p className="text-xs text-gray-500">{immediateProgress.completed}/{immediateProgress.total}</p>
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-1">Immediate</p>
+              <p className="text-2xl font-bold text-red-600">
+                {immediateProgress.percentage}%
+              </p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                {immediateProgress.completed}/{immediateProgress.total}
+              </p>
             </div>
             <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Short-term</p>
-              <p className="text-2xl font-bold text-orange-600">{shortTermProgress.percentage}%</p>
-              <p className="text-xs text-gray-500">{shortTermProgress.completed}/{shortTermProgress.total}</p>
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-1">Short-term</p>
+              <p className="text-2xl font-bold text-orange-600">
+                {shortTermProgress.percentage}%
+              </p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                {shortTermProgress.completed}/{shortTermProgress.total}
+              </p>
             </div>
             <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Long-term</p>
-              <p className="text-2xl font-bold text-yellow-600">{longTermProgress.percentage}%</p>
-              <p className="text-xs text-gray-500">{longTermProgress.completed}/{longTermProgress.total}</p>
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-1">Long-term</p>
+              <p className="text-2xl font-bold text-yellow-600">
+                {longTermProgress.percentage}%
+              </p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                {longTermProgress.completed}/{longTermProgress.total}
+              </p>
             </div>
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Ongoing</p>
-              <p className="text-2xl font-bold text-blue-600">{ongoingProgress.percentage}%</p>
-              <p className="text-xs text-gray-500">{ongoingProgress.completed}/{ongoingProgress.total}</p>
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-1">Ongoing</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {ongoingProgress.percentage}%
+              </p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                {ongoingProgress.completed}/{ongoingProgress.total}
+              </p>
             </div>
           </div>
         </div>
@@ -487,20 +566,20 @@ export default function IdentityTheftRecovery() {
           {/* Left Column: Recovery Steps */}
           <div className="lg:col-span-2 space-y-6">
             {/* Immediate Actions */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
               <h3 className="text-xl font-bold text-red-600 mb-4 flex items-center gap-2">
-                <span>🚨</span> Immediate Actions (Within 24 Hours)
+                <span></span> Immediate Actions (Within 24 Hours)
               </h3>
               <div className="space-y-3">
                 {recoverySteps
-                  .filter(step => step.category === 'immediate')
-                  .map(step => (
+                  .filter((step) => step.category === 'immediate')
+                  .map((step) => (
                     <div
                       key={step.id}
                       className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                         step.completed
                           ? 'bg-green-50 border-green-300'
-                          : 'bg-white border-red-300 hover:border-red-400'
+                          : 'bg-white dark:bg-slate-800 border-red-300 hover:border-red-400'
                       }`}
                       onClick={() => setSelectedStep(step)}
                     >
@@ -513,26 +592,47 @@ export default function IdentityTheftRecovery() {
                           className={`mt-1 w-6 h-6 rounded border-2 flex items-center justify-center ${
                             step.completed
                               ? 'bg-green-500 border-green-500'
-                              : 'border-gray-300 hover:border-green-500'
+                              : 'border-gray-300 dark:border-slate-600 hover:border-green-500'
                           }`}
                         >
                           {step.completed && (
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            <svg
+                              className="w-4 h-4 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                           )}
                         </button>
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-900">{step.title}</p>
-                          <p className="text-sm text-gray-600">{step.description}</p>
-                          <p className="text-xs text-gray-500 mt-1">Est. time: {step.estimatedTime}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">
+                            {step.title}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-slate-300">
+                            {step.description}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                            Est. time: {step.estimatedTime}
+                          </p>
                         </div>
-                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                          step.priority === 'critical' ? 'bg-red-100 text-red-800' :
-                          step.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                          step.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                            step.priority === 'critical'
+                              ? 'bg-red-100 text-red-800'
+                              : step.priority === 'high'
+                                ? 'bg-orange-100 text-orange-800'
+                                : step.priority === 'medium'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100'
+                          }`}
+                        >
                           {step.priority}
                         </span>
                       </div>
@@ -542,20 +642,20 @@ export default function IdentityTheftRecovery() {
             </div>
 
             {/* Short-term Actions */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
               <h3 className="text-xl font-bold text-orange-600 mb-4 flex items-center gap-2">
-                <span>⚡</span> Short-term Actions (Within 1 Week)
+                <span></span> Short-term Actions (Within 1 Week)
               </h3>
               <div className="space-y-3">
                 {recoverySteps
-                  .filter(step => step.category === 'short_term')
-                  .map(step => (
+                  .filter((step) => step.category === 'short_term')
+                  .map((step) => (
                     <div
                       key={step.id}
                       className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                         step.completed
                           ? 'bg-green-50 border-green-300'
-                          : 'bg-white border-orange-300 hover:border-orange-400'
+                          : 'bg-white dark:bg-slate-800 border-orange-300 hover:border-orange-400'
                       }`}
                       onClick={() => setSelectedStep(step)}
                     >
@@ -568,19 +668,35 @@ export default function IdentityTheftRecovery() {
                           className={`mt-1 w-6 h-6 rounded border-2 flex items-center justify-center ${
                             step.completed
                               ? 'bg-green-500 border-green-500'
-                              : 'border-gray-300 hover:border-green-500'
+                              : 'border-gray-300 dark:border-slate-600 hover:border-green-500'
                           }`}
                         >
                           {step.completed && (
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            <svg
+                              className="w-4 h-4 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                           )}
                         </button>
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-900">{step.title}</p>
-                          <p className="text-sm text-gray-600">{step.description}</p>
-                          <p className="text-xs text-gray-500 mt-1">Est. time: {step.estimatedTime}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">
+                            {step.title}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-slate-300">
+                            {step.description}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                            Est. time: {step.estimatedTime}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -589,20 +705,20 @@ export default function IdentityTheftRecovery() {
             </div>
 
             {/* Long-term Actions */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
               <h3 className="text-xl font-bold text-yellow-600 mb-4 flex items-center gap-2">
-                <span>📅</span> Long-term Actions (Within 1 Month)
+                <span></span> Long-term Actions (Within 1 Month)
               </h3>
               <div className="space-y-3">
                 {recoverySteps
-                  .filter(step => step.category === 'long_term')
-                  .map(step => (
+                  .filter((step) => step.category === 'long_term')
+                  .map((step) => (
                     <div
                       key={step.id}
                       className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                         step.completed
                           ? 'bg-green-50 border-green-300'
-                          : 'bg-white border-yellow-300 hover:border-yellow-400'
+                          : 'bg-white dark:bg-slate-800 border-yellow-300 hover:border-yellow-400'
                       }`}
                       onClick={() => setSelectedStep(step)}
                     >
@@ -615,19 +731,35 @@ export default function IdentityTheftRecovery() {
                           className={`mt-1 w-6 h-6 rounded border-2 flex items-center justify-center ${
                             step.completed
                               ? 'bg-green-500 border-green-500'
-                              : 'border-gray-300 hover:border-green-500'
+                              : 'border-gray-300 dark:border-slate-600 hover:border-green-500'
                           }`}
                         >
                           {step.completed && (
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            <svg
+                              className="w-4 h-4 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                           )}
                         </button>
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-900">{step.title}</p>
-                          <p className="text-sm text-gray-600">{step.description}</p>
-                          <p className="text-xs text-gray-500 mt-1">Est. time: {step.estimatedTime}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">
+                            {step.title}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-slate-300">
+                            {step.description}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                            Est. time: {step.estimatedTime}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -636,20 +768,20 @@ export default function IdentityTheftRecovery() {
             </div>
 
             {/* Ongoing Actions */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
               <h3 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
-                <span>♾️</span> Ongoing Actions
+                <span></span> Ongoing Actions
               </h3>
               <div className="space-y-3">
                 {recoverySteps
-                  .filter(step => step.category === 'ongoing')
-                  .map(step => (
+                  .filter((step) => step.category === 'ongoing')
+                  .map((step) => (
                     <div
                       key={step.id}
                       className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                         step.completed
                           ? 'bg-green-50 border-green-300'
-                          : 'bg-white border-blue-300 hover:border-blue-400'
+                          : 'bg-white dark:bg-slate-800 border-blue-300 hover:border-blue-400'
                       }`}
                       onClick={() => setSelectedStep(step)}
                     >
@@ -662,19 +794,35 @@ export default function IdentityTheftRecovery() {
                           className={`mt-1 w-6 h-6 rounded border-2 flex items-center justify-center ${
                             step.completed
                               ? 'bg-green-500 border-green-500'
-                              : 'border-gray-300 hover:border-green-500'
+                              : 'border-gray-300 dark:border-slate-600 hover:border-green-500'
                           }`}
                         >
                           {step.completed && (
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            <svg
+                              className="w-4 h-4 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                           )}
                         </button>
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-900">{step.title}</p>
-                          <p className="text-sm text-gray-600">{step.description}</p>
-                          <p className="text-xs text-gray-500 mt-1">Est. time: {step.estimatedTime}</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">
+                            {step.title}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-slate-300">
+                            {step.description}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                            Est. time: {step.estimatedTime}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -686,14 +834,17 @@ export default function IdentityTheftRecovery() {
           {/* Right Column: Resources & Tracking */}
           <div className="space-y-6">
             {/* Important Contacts */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
-                Important Contacts 📞
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                Important Contacts 
               </h3>
               <div className="space-y-4">
                 {importantContacts.map((contact, idx) => (
-                  <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="font-semibold text-gray-900 text-sm mb-1">
+                  <div
+                    key={idx}
+                    className="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700"
+                  >
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm mb-1">
                       {contact.organization}
                     </p>
                     <a
@@ -712,17 +863,21 @@ export default function IdentityTheftRecovery() {
                         Visit website →
                       </a>
                     )}
-                    <p className="text-xs text-gray-600 mt-1">{contact.purpose}</p>
-                    <p className="text-xs text-gray-500">Hours: {contact.hours}</p>
+                    <p className="text-xs text-gray-600 dark:text-slate-300 mt-1">
+                      {contact.purpose}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
+                      Hours: {contact.hours}
+                    </p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Fraudulent Accounts Tracker */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                   Fraudulent Accounts
                 </h3>
                 <button
@@ -733,23 +888,34 @@ export default function IdentityTheftRecovery() {
                 </button>
               </div>
               {fraudulentAccounts.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-gray-500 dark:text-slate-400 text-center py-4">
                   No accounts tracked yet
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {fraudulentAccounts.map(account => (
-                    <div key={account.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="font-semibold text-gray-900 text-sm">{account.creditor}</p>
-                      <p className="text-xs text-gray-600">
-                        {account.type.replace('_', ' ')} • ${account.amountOwed.toLocaleString()}
+                  {fraudulentAccounts.map((account) => (
+                    <div
+                      key={account.id}
+                      className="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700"
+                    >
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                        {account.creditor}
                       </p>
-                      <span className={`inline-block mt-2 px-2 py-1 rounded text-xs font-semibold ${
-                        account.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                        account.status === 'investigating' ? 'bg-yellow-100 text-yellow-800' :
-                        account.status === 'disputed' ? 'bg-orange-100 text-orange-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
+                      <p className="text-xs text-gray-600 dark:text-slate-300">
+                        {account.type.replace('_', ' ')} • $
+                        {account.amountOwed.toLocaleString()}
+                      </p>
+                      <span
+                        className={`inline-block mt-2 px-2 py-1 rounded text-xs font-semibold ${
+                          account.status === 'resolved'
+                            ? 'bg-green-100 text-green-800'
+                            : account.status === 'investigating'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : account.status === 'disputed'
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-red-100 text-red-800'
+                        }`}
+                      >
                         {account.status.replace('_', ' ')}
                       </span>
                     </div>
@@ -759,27 +925,33 @@ export default function IdentityTheftRecovery() {
             </div>
 
             {/* Documents */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
-                Documents 📄
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                Documents 
               </h3>
               {documents.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-sm text-gray-500 dark:text-slate-400 text-center py-4">
                   No documents uploaded yet
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {documents.map(doc => (
-                    <div key={doc.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="font-semibold text-gray-900 text-sm">{doc.name}</p>
-                      <p className="text-xs text-gray-600">
-                        {doc.type.replace('_', ' ')} • {new Date(doc.uploadDate).toLocaleDateString()}
+                  {documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700"
+                    >
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                        {doc.name}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-slate-300">
+                        {doc.type.replace('_', ' ')} •{' '}
+                        {new Date(doc.uploadDate).toLocaleDateString()}
                       </p>
                     </div>
                   ))}
                 </div>
               )}
-              <button className="w-full mt-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors">
+              <button className="w-full mt-4 py-2 bg-gray-100 text-gray-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-gray-200 dark:bg-slate-700 transition-colors">
                 Upload Document
               </button>
             </div>
@@ -789,40 +961,60 @@ export default function IdentityTheftRecovery() {
         {/* Step Detail Modal */}
         {selectedStep && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-start mb-4">
-                <h3 className="text-2xl font-bold text-gray-900">{selectedStep.title}</h3>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {selectedStep.title}
+                </h3>
                 <button
                   onClick={() => setSelectedStep(null)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 dark:text-slate-300"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
 
-              <p className="text-gray-700 mb-4">{selectedStep.description}</p>
+              <p className="text-gray-700 dark:text-slate-200 mb-4">{selectedStep.description}</p>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600">Estimated Time</p>
-                  <p className="font-semibold text-gray-900">{selectedStep.estimatedTime}</p>
+                <div className="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
+                  <p className="text-xs text-gray-600 dark:text-slate-300">Estimated Time</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {selectedStep.estimatedTime}
+                  </p>
                 </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600">Priority</p>
-                  <p className="font-semibold text-gray-900 capitalize">{selectedStep.priority}</p>
+                <div className="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
+                  <p className="text-xs text-gray-600 dark:text-slate-300">Priority</p>
+                  <p className="font-semibold text-gray-900 dark:text-white capitalize">
+                    {selectedStep.priority}
+                  </p>
                 </div>
               </div>
 
               {selectedStep.substeps && selectedStep.substeps.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="font-semibold text-gray-900 mb-3">Step-by-Step Instructions</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
+                    Step-by-Step Instructions
+                  </h4>
                   <ol className="space-y-2">
                     {selectedStep.substeps.map((substep, idx) => (
                       <li key={idx} className="flex gap-3">
-                        <span className="font-semibold text-gray-600">{idx + 1}.</span>
-                        <span className="text-gray-700">{substep}</span>
+                        <span className="font-semibold text-gray-600 dark:text-slate-300">
+                          {idx + 1}.
+                        </span>
+                        <span className="text-gray-700 dark:text-slate-200">{substep}</span>
                       </li>
                     ))}
                   </ol>
@@ -831,10 +1023,12 @@ export default function IdentityTheftRecovery() {
 
               {selectedStep.resources.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="font-semibold text-gray-900 mb-3">Resources</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
+                    Resources
+                  </h4>
                   <ul className="space-y-1">
                     {selectedStep.resources.map((resource, idx) => (
-                      <li key={idx} className="text-sm text-gray-700">
+                      <li key={idx} className="text-sm text-gray-700 dark:text-slate-200">
                         • {resource}
                       </li>
                     ))}

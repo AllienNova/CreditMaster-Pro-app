@@ -1,5 +1,5 @@
 /**
- * CPFI Debt Negotiation Screen
+ * Fynvita Debt Negotiation Screen
  * Negotiate with creditors
  */
 

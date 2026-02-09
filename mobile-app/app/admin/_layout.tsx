@@ -1,5 +1,5 @@
 /**
- * CPFI Admin Navigation Layout
+ * Fynvita Admin Navigation Layout
  */
 
 import { Stack } from 'expo-router';
@@ -19,6 +19,7 @@ export default function AdminLayout() {
       <Stack.Screen name="health" options={{ title: 'System Health' }} />
       <Stack.Screen name="logs" options={{ title: 'System Logs' }} />
       <Stack.Screen name="subscriptions" options={{ title: 'Subscriptions' }} />
+      <Stack.Screen name="settings" options={{ title: 'Settings' }} />
     </Stack>
   );
 }

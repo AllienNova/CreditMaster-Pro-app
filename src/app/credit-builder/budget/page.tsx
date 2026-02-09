@@ -279,7 +279,7 @@ export default function BudgetOptimizer() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mx-auto"></div>
-          <p className="mt-6 text-lg text-gray-700 font-medium">Loading Budget & Cash Flow Optimizer...</p>
+          <p className="mt-6 text-lg text-gray-700 dark:text-slate-200 font-medium">Loading Budget & Cash Flow Optimizer...</p>
         </div>
       </div>
     );
@@ -303,10 +303,10 @@ export default function BudgetOptimizer() {
           >
             ← Back to Credit Builder
           </Link>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Budget & Cash Flow Optimizer 💚
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            Budget & Cash Flow Optimizer 
           </h1>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-slate-300 max-w-3xl mx-auto">
             Optimize your cash flow, track spending, and maximize savings. Smart budgeting is the foundation of credit improvement.
           </p>
         </div>
@@ -337,7 +337,7 @@ export default function BudgetOptimizer() {
 
         {/* Budget Method Selector */}
         <div className="text-center mb-8">
-          <p className="text-sm text-gray-600 mb-3">Budget Framework:</p>
+          <p className="text-sm text-gray-600 dark:text-slate-300 mb-3">Budget Framework:</p>
           <div className="inline-flex gap-3">
             {(['50-30-20', '80-20', '60-20-20'] as const).map(method => (
               <button
@@ -346,14 +346,14 @@ export default function BudgetOptimizer() {
                 className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
                   budgetMethod === method
                     ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-green-300'
+                    : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border-2 border-gray-200 dark:border-slate-700 hover:border-green-300'
                 }`}
               >
                 {method}
               </button>
             ))}
           </div>
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
             {budgetMethod === '50-30-20' && '50% needs, 30% wants, 20% savings'}
             {budgetMethod === '80-20' && '80% spending, 20% savings'}
             {budgetMethod === '60-20-20' && '60% needs, 20% wants, 20% savings'}
@@ -364,9 +364,9 @@ export default function BudgetOptimizer() {
           {/* Left Column: Income & Expenses */}
           <div className="space-y-6">
             {/* Income */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Income</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Income</h2>
                 <button
                   onClick={() => setShowAddIncome(!showAddIncome)}
                   className="px-3 py-1 bg-green-600 text-white text-sm font-semibold rounded hover:bg-green-700"
@@ -376,7 +376,7 @@ export default function BudgetOptimizer() {
               </div>
 
               {showAddIncome && (
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
+                <div className="mb-4 p-4 bg-gray-50 dark:bg-slate-900 rounded-lg border">
                   <input
                     type="text"
                     placeholder="Source (e.g., Salary)"
@@ -397,7 +397,7 @@ export default function BudgetOptimizer() {
                 {incomes.map(income => (
                   <div key={income.id} className="p-3 bg-green-50 rounded-lg border border-green-200">
                     <div className="flex justify-between">
-                      <p className="font-semibold text-gray-900">{income.source}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{income.source}</p>
                       <p className="font-bold text-green-600">
                         ${normalizeToMonthly(income.amount, income.frequency).toLocaleString()}/mo
                       </p>
@@ -408,9 +408,9 @@ export default function BudgetOptimizer() {
             </div>
 
             {/* Expenses */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Expenses</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Expenses</h2>
                 <button
                   onClick={() => setShowAddExpense(!showAddExpense)}
                   className="px-3 py-1 bg-red-600 text-white text-sm font-semibold rounded hover:bg-red-700"
@@ -420,7 +420,7 @@ export default function BudgetOptimizer() {
               </div>
 
               {showAddExpense && (
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
+                <div className="mb-4 p-4 bg-gray-50 dark:bg-slate-900 rounded-lg border">
                   <input
                     type="text"
                     placeholder="Expense name"
@@ -443,8 +443,8 @@ export default function BudgetOptimizer() {
                   <div key={expense.id} className="p-3 bg-red-50 rounded-lg border border-red-200">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="font-semibold text-gray-900">{expense.name}</p>
-                        <p className="text-xs text-gray-600">{expense.category}</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{expense.name}</p>
+                        <p className="text-xs text-gray-600 dark:text-slate-300">{expense.category}</p>
                       </div>
                       <p className="font-bold text-red-600">
                         ${normalizeToMonthly(expense.amount, expense.frequency).toLocaleString()}
@@ -459,19 +459,19 @@ export default function BudgetOptimizer() {
           {/* Middle Column: Visualization */}
           <div className="lg:col-span-2 space-y-6">
             {/* Budget Breakdown */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                 Budget Breakdown
               </h2>
 
               <div className="mb-8">
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-700">Needs (Essential)</span>
-                  <span className="text-sm font-semibold text-gray-700">
+                  <span className="text-sm font-semibold text-gray-700 dark:text-slate-200">Needs (Essential)</span>
+                  <span className="text-sm font-semibold text-gray-700 dark:text-slate-200">
                     ${essential.toLocaleString()} ({((essential / totalIncome) * 100).toFixed(1)}%)
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-4">
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-4">
                   <div
                     className="bg-blue-500 h-4 rounded-full"
                     style={{ width: `${Math.min((essential / totalIncome) * 100, 100)}%` }}
@@ -481,14 +481,14 @@ export default function BudgetOptimizer() {
 
               <div className="mb-8">
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-700">Wants (Discretionary)</span>
-                  <span className="text-sm font-semibold text-gray-700">
+                  <span className="text-sm font-semibold text-gray-700 dark:text-slate-200">Wants (Discretionary)</span>
+                  <span className="text-sm font-semibold text-gray-700 dark:text-slate-200">
                     ${discretionary.toLocaleString()} ({((discretionary / totalIncome) * 100).toFixed(1)}%)
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-4">
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-4">
                   <div
-                    className="bg-purple-500 h-4 rounded-full"
+                    className="bg-blue-500 h-4 rounded-full"
                     style={{ width: `${Math.min((discretionary / totalIncome) * 100, 100)}%` }}
                   ></div>
                 </div>
@@ -496,12 +496,12 @@ export default function BudgetOptimizer() {
 
               <div>
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-700">Savings</span>
-                  <span className="text-sm font-semibold text-gray-700">
+                  <span className="text-sm font-semibold text-gray-700 dark:text-slate-200">Savings</span>
+                  <span className="text-sm font-semibold text-gray-700 dark:text-slate-200">
                     ${Math.max(0, surplus).toLocaleString()} ({Math.max(0, savingsRate).toFixed(1)}%)
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-4">
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-4">
                   <div
                     className="bg-green-500 h-4 rounded-full"
                     style={{ width: `${Math.min(Math.max(0, savingsRate), 100)}%` }}
@@ -511,8 +511,8 @@ export default function BudgetOptimizer() {
             </div>
 
             {/* Spending by Category */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                 Spending by Category
               </h2>
 
@@ -522,12 +522,12 @@ export default function BudgetOptimizer() {
                   .map(([category, amount]) => (
                     <div key={category}>
                       <div className="flex justify-between mb-1">
-                        <span className="text-sm text-gray-700">{category}</span>
-                        <span className="text-sm font-semibold text-gray-900">
+                        <span className="text-sm text-gray-700 dark:text-slate-200">{category}</span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
                           ${amount.toLocaleString()} ({((amount / totalIncome) * 100).toFixed(1)}%)
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                         <div
                           className="bg-gradient-to-r from-orange-400 to-red-400 h-2 rounded-full"
                           style={{ width: `${(amount / totalIncome) * 100}%` }}
@@ -539,8 +539,8 @@ export default function BudgetOptimizer() {
             </div>
 
             {/* Insights & Recommendations */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                 AI Insights & Recommendations
               </h2>
 
@@ -561,10 +561,10 @@ export default function BudgetOptimizer() {
                       insight.type === 'success' ? 'text-green-900' :
                       'text-blue-900'
                     }`}>
-                      {insight.type === 'critical' && '🚨 '}
-                      {insight.type === 'warning' && '⚠️ '}
-                      {insight.type === 'success' && '✅ '}
-                      {insight.type === 'info' && '💡 '}
+                      {insight.type === 'critical' && ''}
+                      {insight.type === 'warning' && ''}
+                      {insight.type === 'success' && ''}
+                      {insight.type === 'info' && ''}
                       {insight.title}
                     </h3>
                     <p className={`text-sm mb-2 ${

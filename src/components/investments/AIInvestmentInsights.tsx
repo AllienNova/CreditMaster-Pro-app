@@ -107,9 +107,9 @@ export default function AIInvestmentInsights() {
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6 mb-6 animate-pulse">
-        <div className="h-8 bg-white/20 rounded w-1/3 mb-4"></div>
-        <div className="h-24 bg-white/20 rounded"></div>
+      <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 mb-6 animate-pulse">
+        <div className="h-8 bg-white dark:bg-slate-800/20 rounded w-1/3 mb-4"></div>
+        <div className="h-24 bg-white dark:bg-slate-800/20 rounded"></div>
       </div>
     );
   }
@@ -132,13 +132,12 @@ export default function AIInvestmentInsights() {
   if (!data) return null;
 
   return (
-    <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6 mb-6 text-white">
+    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 mb-6 text-white">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
-            📈
-          </div>
+          <div className="w-10 h-10 bg-white dark:bg-slate-800/20 rounded-lg flex items-center justify-center text-2xl">
+                      </div>
           <div>
             <h2 className="text-xl font-bold">AI Investment Intelligence</h2>
             <p className="text-blue-100 text-sm">Powered by advanced market analysis</p>
@@ -146,7 +145,7 @@ export default function AIInvestmentInsights() {
         </div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          className="p-2 hover:bg-white dark:bg-slate-800/10 rounded-lg transition-colors"
         >
           {isExpanded ? (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,17 +162,17 @@ export default function AIInvestmentInsights() {
       {isExpanded && (
         <div className="space-y-6">
           {/* Portfolio Health Score */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold flex items-center space-x-2">
-                <span className="text-xl">💪</span>
+                <span className="text-xl"></span>
                 <span>Portfolio Health Score</span>
               </h3>
               <span className="text-2xl font-bold">{data.portfolioHealthScore}/100</span>
             </div>
-            <div className="w-full bg-white/20 rounded-full h-3">
+            <div className="w-full bg-white dark:bg-slate-800/20 rounded-full h-3">
               <div
-                className="bg-white rounded-full h-3 transition-all duration-500"
+                className="bg-white dark:bg-slate-800 rounded-full h-3 transition-all duration-500"
                 style={{ width: `${data.portfolioHealthScore}%` }}
               ></div>
             </div>
@@ -185,14 +184,14 @@ export default function AIInvestmentInsights() {
           </div>
 
           {/* AI Investment Recommendations */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
             <h3 className="font-semibold mb-3 flex items-center space-x-2">
-              <span className="text-xl">🎯</span>
+              <span className="text-xl"></span>
               <span>AI Investment Recommendations</span>
             </h3>
             <div className="space-y-3">
               {data.recommendations.slice(0, 3).map((rec) => (
-                <div key={rec.id} className="bg-white/10 rounded-lg p-3">
+                <div key={rec.id} className="bg-white dark:bg-slate-800/10 rounded-lg p-3">
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <div className="flex items-center space-x-2">
@@ -225,9 +224,9 @@ export default function AIInvestmentInsights() {
           </div>
 
           {/* Risk Analysis */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
             <h3 className="font-semibold mb-3 flex items-center space-x-2">
-              <span className="text-xl">⚠️</span>
+              <span className="text-xl"></span>
               <span>Portfolio Risk Analysis</span>
             </h3>
             <div className="flex items-center justify-between mb-3">
@@ -263,14 +262,14 @@ export default function AIInvestmentInsights() {
           </div>
 
           {/* Diversification Suggestions */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
             <h3 className="font-semibold mb-3 flex items-center space-x-2">
-              <span className="text-xl">📊</span>
+              <span className="text-xl"></span>
               <span>Diversification Suggestions</span>
             </h3>
             <div className="space-y-3">
               {data.diversificationSuggestions.slice(0, 3).map((suggestion) => (
-                <div key={suggestion.id} className="bg-white/10 rounded-lg p-3">
+                <div key={suggestion.id} className="bg-white dark:bg-slate-800/10 rounded-lg p-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium">{suggestion.assetClass}</span>
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
@@ -297,7 +296,7 @@ export default function AIInvestmentInsights() {
           {/* Market Predictions & Performance Forecasts */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Market Predictions */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
               <h3 className="font-semibold mb-3 text-sm">Market Predictions</h3>
               <div className="space-y-2">
                 {data.marketPredictions.map((pred, idx) => (
@@ -318,7 +317,7 @@ export default function AIInvestmentInsights() {
             </div>
 
             {/* Performance Forecasts */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
               <h3 className="font-semibold mb-3 text-sm">Performance Forecasts</h3>
               <div className="space-y-2">
                 {data.performanceForecasts.slice(0, 3).map((forecast, idx) => (
@@ -337,7 +336,7 @@ export default function AIInvestmentInsights() {
           </div>
 
           {/* AI Insights */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
             <h3 className="font-semibold mb-3">Key AI Insights</h3>
             <ul className="space-y-2">
               {data.aiInsights.map((insight, idx) => (

@@ -220,8 +220,8 @@ export class BillNegotiator {
         }
       );
       aiResponse = response.choices[0]?.message?.content || '';
-    } catch (error) {
-      console.error('AI script generation failed, using template:', error);
+    } catch (_error) {
+      // BillNegotiator error: AI script generation failed, using template
       aiResponse = this.generateTemplateScript(bill, marketAnalysis, profile);
     }
 
@@ -264,7 +264,7 @@ export class BillNegotiator {
     }]);
 
     if (error) {
-      console.error('Error tracking negotiation outcome:', error);
+      // BillNegotiator error: Error tracking negotiation outcome
       throw new Error('Failed to track negotiation outcome');
     }
 
@@ -286,7 +286,7 @@ export class BillNegotiator {
       .returns<BillNegotiationOutcomeRow[]>();
 
     if (error) {
-      console.error('Error fetching negotiation history:', error);
+      // BillNegotiator error: Error fetching negotiation history
       return [];
     }
 
@@ -386,7 +386,7 @@ export class BillNegotiator {
       .returns<Array<Omit<Transaction, 'date'> & { date: string }>>();
 
     if (error) {
-      console.error('Error fetching transactions:', error);
+      // BillNegotiator error: Error fetching transactions
       return [];
     }
 
@@ -894,8 +894,8 @@ Format the response as JSON with the following structure:
         generatedAt: new Date(),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       };
-    } catch (error) {
-      console.error('Failed to parse AI response, using template:', error);
+    } catch (_error) {
+      // BillNegotiator error: Failed to parse AI response, using template
       // Fallback to template
       const templateResponse = this.generateTemplateScript(bill,
         {

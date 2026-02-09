@@ -28,6 +28,17 @@ export interface CreditItem {
   accountType?: string;
   creditorName?: string;
   age?: number; // Age in months
+  date_reported?: string;
+  created_at?: string;
+  balance?: number;
+  has_documentation?: boolean;
+}
+
+export interface StrategyPrerequisites {
+  minItemAgeMonths?: number;
+  maxItemAgeMonths?: number;
+  minBalance?: number;
+  requiresDocumentation?: boolean;
 }
 
 export interface UserProfile {
@@ -126,7 +137,7 @@ class MLStrategyIntegration {
       return recommendations.slice(0, 5);
       
     } catch (error) {
-      console.error('Error recommending strategies:', error);
+      // MLStrategyIntegration error: Error recommending strategies
       throw error;
     }
   }
@@ -255,17 +266,58 @@ class MLStrategyIntegration {
     return strategies.filter(strategy => {
       // Check if strategy targets this item type
       const targetsItemType = strategy.target_items.includes(creditItem.type);
-      
+
       // Check if strategy is active
       const isActive = strategy.is_active;
-      
-      // Check prerequisites (simplified - in production, check actual conditions)
-      const meetsPrerequisites = true; // TODO: Implement prerequisite checking
-      
+
+      // Check prerequisites based on credit item properties
+      const meetsPrerequisites = this.checkStrategyPrerequisites(strategy, creditItem);
+
       return targetsItemType && isActive && meetsPrerequisites;
     });
   }
   
+  /**
+   * Check if credit item meets strategy prerequisites
+   */
+  private checkStrategyPrerequisites(strategy: Strategy, creditItem: CreditItem): boolean {
+    // prerequisites may be a string[] or an object with specific fields
+    const prereqs = strategy.prerequisites as unknown as StrategyPrerequisites | string[] | undefined;
+    if (!prereqs || Array.isArray(prereqs)) {
+      return true; // No structured prerequisites to check
+    }
+
+    // Check minimum item age requirements
+    if (prereqs.minItemAgeMonths) {
+      const itemAge = this.calculateItemAge(creditItem.date_reported || creditItem.created_at || '');
+      if (itemAge < prereqs.minItemAgeMonths) {
+        return false;
+      }
+    }
+
+    // Check maximum item age requirements
+    if (prereqs.maxItemAgeMonths) {
+      const itemAge = this.calculateItemAge(creditItem.date_reported || creditItem.created_at || '');
+      if (itemAge > prereqs.maxItemAgeMonths) {
+        return false;
+      }
+    }
+
+    // Check balance threshold for collection strategies
+    if (prereqs.minBalance && creditItem.balance) {
+      if (creditItem.balance < prereqs.minBalance) {
+        return false;
+      }
+    }
+
+    // Check if item has required documentation
+    if (prereqs.requiresDocumentation && !creditItem.has_documentation) {
+      return false;
+    }
+
+    return true;
+  }
+
   /**
    * Calculate item age in months
    */

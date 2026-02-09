@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error getting credit cards:', error);
+    // CardsAPI error: Error getting credit cards
 
     // Audit log error
     try {
@@ -83,8 +83,8 @@ export async function GET(request: NextRequest) {
         message: `Failed to get credit cards: ${(error as Error).message}`,
         severity: 'medium',
       });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
+    } catch {
+      // CardsAPI error: Failed to log audit event
     }
 
     return NextResponse.json(
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
       data: card,
     }, { status: 201 });
   } catch (error) {
-    console.error('Error adding credit card:', error);
+    // CardsAPI error: Error adding credit card
 
     // Audit log error
     try {
@@ -197,8 +197,8 @@ export async function POST(request: NextRequest) {
         message: `Failed to add credit card: ${(error as Error).message}`,
         severity: 'high',
       });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
+    } catch {
+      // CardsAPI error: Failed to log audit event
     }
 
     return NextResponse.json(

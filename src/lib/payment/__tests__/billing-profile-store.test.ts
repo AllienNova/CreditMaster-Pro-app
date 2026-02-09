@@ -6,14 +6,15 @@ describe('billingProfileStore', () => {
     expect(profile.customerId).toBe('cus_test-user');
     expect(profile.currentPlanId).toBeDefined();
 
-    const updated = await billingProfileStore.updatePlan('test-user', 'enterprise');
-    expect(updated.currentPlanId).toBe('enterprise');
+    const updated = await billingProfileStore.updatePlan('test-user', 'pro');
+    expect(updated.currentPlanId).toBe('pro');
     expect(updated.invoices.length).toBeGreaterThan(1);
   });
 
   it('marks subscription for cancellation', async () => {
     await billingProfileStore.getProfile('cancel-user');
-    const canceled = await billingProfileStore.cancelSubscription('cancel-user');
+    const canceled =
+      await billingProfileStore.cancelSubscription('cancel-user');
     expect(canceled.cancelAtPeriodEnd).toBe(true);
   });
 });

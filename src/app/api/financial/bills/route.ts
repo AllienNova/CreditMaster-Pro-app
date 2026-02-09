@@ -45,8 +45,9 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ bills });
-  } catch (error) {
-    console.error('Error fetching bills:', error);
+  } catch (_error) {
+    // BillsRoute error: Failed to fetch bills
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch bills' },
       { status: 500 }
@@ -116,8 +117,9 @@ export async function POST(request: NextRequest) {
     const bill = await billDetectionService.createBill(userId, input);
 
     return NextResponse.json({ bill }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating bill:', error);
+  } catch (_error) {
+    // BillsRoute error: Failed to create bill
+    void _error;
     return NextResponse.json(
       { error: 'Failed to create bill' },
       { status: 500 }

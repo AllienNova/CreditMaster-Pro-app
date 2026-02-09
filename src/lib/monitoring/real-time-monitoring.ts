@@ -92,7 +92,7 @@ export class RealtimeMonitoringService {
     
     this.subscriptions.set(subscriptionId, subscription);
     
-    console.log(`📡 User ${userId} subscribed to events: ${eventTypes.join(', ')}`);
+    // RealtimeMonitoring: User subscribed to events
     
     return subscriptionId;
   }
@@ -104,7 +104,7 @@ export class RealtimeMonitoringService {
     const subscription = this.subscriptions.get(subscriptionId);
     if (subscription) {
       this.subscriptions.delete(subscriptionId);
-      console.log(`📡 Unsubscribed: ${subscriptionId}`);
+      // RealtimeMonitoring: Unsubscribed
       return true;
     }
     return false;
@@ -132,12 +132,12 @@ export class RealtimeMonitoringService {
         try {
           subscription.callback(fullEvent);
         } catch (error) {
-          console.error(`Error in subscription callback: ${subscription.id}`, error);
+          // RealtimeMonitoring error: Error in subscription callback
         }
       }
     });
     
-    console.log(`📡 Published event: ${event.type} for user ${event.userId}`);
+    // RealtimeMonitoring: Published event
   }
   
   /**
@@ -183,7 +183,7 @@ export class RealtimeMonitoringService {
    */
   static clearEventHistory(userId: string): void {
     this.eventHistory.delete(userId);
-    console.log(`📡 Cleared event history for user ${userId}`);
+    // RealtimeMonitoring: Cleared event history for user
   }
   
   /**
@@ -380,7 +380,7 @@ export class RealtimeMonitoringService {
   static clearAll(): void {
     this.subscriptions.clear();
     this.eventHistory.clear();
-    console.log('📡 Cleared all subscriptions and event history');
+    // RealtimeMonitoring: Cleared all subscriptions and event history
   }
 }
 

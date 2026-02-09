@@ -1,5 +1,5 @@
 /**
- * CPFI Push Notifications Hook
+ * Fynvita Push Notifications Hook
  * React hook for managing push notifications
  */
 

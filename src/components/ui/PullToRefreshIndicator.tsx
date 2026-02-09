@@ -80,7 +80,7 @@ export function PullToRefreshIndicator({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                className="text-gray-600"
+                className="text-gray-600 dark:text-slate-300"
               />
               <circle
                 cx="16"
@@ -92,14 +92,14 @@ export function PullToRefreshIndicator({
                 strokeDasharray={`${2 * Math.PI * 14}`}
                 strokeDashoffset={`${2 * Math.PI * 14 * (1 - progress / 100)}`}
                 className={`transition-all duration-200 ${
-                  shouldTrigger ? 'text-blue-500' : 'text-gray-400'
+                  shouldTrigger ? 'text-blue-500' : 'text-gray-400 dark:text-slate-500'
                 }`}
               />
             </svg>
             {/* Arrow Icon */}
             <svg
               className={`absolute inset-0 m-auto w-4 h-4 transition-transform duration-200 ${
-                shouldTrigger ? 'rotate-180 text-blue-500' : 'text-gray-400'
+                shouldTrigger ? 'rotate-180 text-blue-500' : 'text-gray-400 dark:text-slate-500'
               }`}
               fill="none"
               stroke="currentColor"
@@ -117,7 +117,7 @@ export function PullToRefreshIndicator({
         )}
 
         {/* Status Text */}
-        <span className="text-xs text-gray-400 font-medium">
+        <span className="text-xs text-gray-400 dark:text-slate-500 font-medium">
           {isRefreshing
             ? 'Refreshing...'
             : shouldTrigger

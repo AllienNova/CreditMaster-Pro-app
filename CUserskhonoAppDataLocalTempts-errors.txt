@@ -1,0 +1,25 @@
+src/app/api/ai/financial-coach/debt-strategy/route.ts(259,33): error TS2345: Argument of type 'DebtComparison | { userId: string; generatedAt: Date; strategies: DebtPayoffPlan[]; recommendation: string; reasonForRecommendation: string; potentialSavings: { ...; }; timelineDifferences: { ...; }; insights: string[]; warnings: never[]; }' is not assignable to parameter of type 'DebtComparison'.
+src/app/api/tax/documents/upload/route.ts(97,8): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "planned" | "exact" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "tax_documents", never, "POST">', gave the following error.
+  Overload 2 of 2, '(values: never[], options?: { count?: "planned" | "exact" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "tax_documents", never, "POST">', gave the following error.
+src/app/api/tax/documents/upload/route.ts(138,38): error TS2339: Property 'id' does not exist on type 'never'.
+src/lib/__tests__/federal-integration-service.test.ts(73,67): error TS2345: Argument of type '{ user_id: string; loan_id: string; program_type: "consolidation"; application_data: {}; status: "pending"; submitted_at: string; }' is not assignable to parameter of type 'ConsolidationApplicationData'.
+src/lib/__tests__/student-loan-agent.test.ts(108,52): error TS2559: Type '{ loans: { type: string; balance: number; status: string; servicer: string; }[]; creditReport: { score: number; negativeItems: number; }; }' has no properties in common with type 'LoanAnalysis'.
+src/lib/__tests__/student-loan-agent.test.ts(128,52): error TS2559: Type '{ loans: { type: string; balance: number; status: string; servicer: string; }[]; creditReport: { score: number; negativeItems: number; }; }' has no properties in common with type 'LoanAnalysis'.
+src/lib/__tests__/student-loan-agent.test.ts(144,52): error TS2559: Type '{ loans: { type: string; balance: number; status: string; }[]; creditReport: { score: number; negativeItems: number; }; }' has no properties in common with type 'LoanAnalysis'.
+src/lib/__tests__/student-loan-agent.test.ts(157,55): error TS2345: Argument of type '{ id: string; priority: string; estimatedImpact: number; }[]' is not assignable to parameter of type 'LoanStrategy[]'.
+src/lib/__tests__/student-loan-agent.test.ts(176,48): error TS2345: Argument of type '{ type: string; steps: string[]; complexity: string; }' is not assignable to parameter of type 'LoanStrategy'.
+src/lib/__tests__/student-loan-agent.test.ts(188,48): error TS2345: Argument of type '{ type: string; steps: string[]; complexity: string; }' is not assignable to parameter of type 'LoanStrategy'.
+src/lib/__tests__/student-loan-agent.test.ts(205,62): error TS2345: Argument of type '{ type: string; regulation: string; }' is not assignable to parameter of type 'LoanStrategy'.
+src/lib/__tests__/student-loan-agent.test.ts(221,62): error TS2345: Argument of type '{ type: string; regulation: string; }' is not assignable to parameter of type 'LoanStrategy'.
+src/lib/ai-personalization/__tests__/behavioral-coach.test.ts(8,54): error TS2307: Cannot find module 'vitest' or its corresponding type declarations.
+src/lib/investments/services/PortfolioRebalanceService.ts(358,38): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/lib/monitoring/error-tracking.ts(71,52): error TS2345: Argument of type '{ fingerprint: string; userId?: string; requestId?: string; url?: string; method?: string; userAgent?: string; ip?: string; tags?: Record<string, string>; extra?: Record<string, unknown>; }' is not assignable to parameter of type 'LogContext'.
+src/lib/tax/__tests__/TaxBracketCalculator.test.ts(44,5): error TS2322: Type '"none"' is not assignable to type 'BusinessType'.
+src/lib/tax/documents/TaxDocumentProcessor.ts(242,9): error TS2322: Type 'TaxDocumentType' is not assignable to type '"unknown" | "w2" | "1099_div" | "1099_int" | "1099_b" | "1099_misc" | "1099_nec" | "1099_r" | "1098" | "1098_e" | "charitable_receipt"'.
+src/lib/tax/services/RetirementAccountOptimizer.ts(397,7): error TS2322: Type '0' is not assignable to type '7000'.
+src/lib/tax/services/RetirementAccountOptimizer.ts(406,7): error TS2322: Type 'number' is not assignable to type '7000'.
+src/lib/tax/services/RetirementAccountOptimizer.ts(417,9): error TS2367: This comparison appears to be unintentional because the types '7000' and '0' have no overlap.
+src/lib/trading/realtime/order-execution-engine.ts(745,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+src/lib/trading/realtime/order-execution-engine.ts(770,9): error TS2322: Type '{ id: string; client_order_id: string | undefined; status: OrderStatus; filled_qty: number; filled_avg_price: number | undefined; }[]' is not assignable to type 'BrokerOrder[]'.
+src/lib/trading/realtime/order-execution-engine.ts(787,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.

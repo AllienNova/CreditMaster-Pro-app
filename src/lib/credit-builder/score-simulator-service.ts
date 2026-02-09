@@ -74,7 +74,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
     impact: 15,
     timeframe: '1 month',
     difficulty: 'medium',
-    icon: '💳',
+    icon: 'credit-card',
   },
   {
     id: 'pay_down_30',
@@ -84,7 +84,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
     impact: 30,
     timeframe: '1-2 months',
     difficulty: 'medium',
-    icon: '💰',
+    icon: 'credit-card',
   },
   {
     id: 'pay_down_10',
@@ -94,7 +94,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
     impact: 50,
     timeframe: '2-3 months',
     difficulty: 'hard',
-    icon: '🎯',
+    icon: 'credit-card',
   },
   {
     id: 'on_time_6mo',
@@ -104,7 +104,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
     impact: 25,
     timeframe: '6 months',
     difficulty: 'easy',
-    icon: '✅',
+    icon: 'clock',
   },
   {
     id: 'on_time_12mo',
@@ -114,7 +114,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
     impact: 50,
     timeframe: '12 months',
     difficulty: 'easy',
-    icon: '📅',
+    icon: 'clock',
   },
   {
     id: 'remove_negative',
@@ -124,7 +124,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
     impact: 40,
     timeframe: '30-45 days',
     difficulty: 'medium',
-    icon: '🗑️',
+    icon: 'x-circle',
   },
   {
     id: 'remove_collection',
@@ -134,7 +134,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
     impact: 20,
     timeframe: 'Immediate',
     difficulty: 'medium',
-    icon: '💵',
+    icon: 'banknotes',
   },
   {
     id: 'new_credit_card',
@@ -144,7 +144,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
     impact: -10,
     timeframe: 'Immediate',
     difficulty: 'easy',
-    icon: '🆕',
+    icon: 'sparkles',
   },
   {
     id: 'credit_builder_loan',
@@ -154,7 +154,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
     impact: 15,
     timeframe: '3-6 months',
     difficulty: 'easy',
-    icon: '🏦',
+    icon: 'building',
   },
   {
     id: 'authorized_user',
@@ -164,7 +164,7 @@ export const SIMULATION_SCENARIOS: SimulationScenario[] = [
     impact: 30,
     timeframe: '30-60 days',
     difficulty: 'easy',
-    icon: '👥',
+    icon: 'user',
   },
 ];
 

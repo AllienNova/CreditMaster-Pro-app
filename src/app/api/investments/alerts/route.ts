@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching alerts:', error);
+      // AlertsAPI error: Error fetching alerts
       return NextResponse.json(
         { error: 'Failed to fetch alerts' },
         { status: 500 }
@@ -59,8 +59,9 @@ export async function GET(request: NextRequest) {
       alerts: data || [],
       total: data?.length || 0,
     });
-  } catch (error) {
-    console.error('Alerts GET error:', error);
+  } catch (_error) {
+    // AlertsAPI error: Alerts GET error
+    void _error;
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error creating alert:', error);
+      // AlertsAPI error: Error creating alert
       return NextResponse.json(
         { error: 'Failed to create alert' },
         { status: 500 }
@@ -146,8 +147,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ alert: data }, { status: 201 });
-  } catch (error) {
-    console.error('Alerts POST error:', error);
+  } catch (_error) {
+    // AlertsAPI error: Alerts POST error
+    void _error;
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -181,7 +183,7 @@ export async function DELETE(request: NextRequest) {
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Error deleting alert:', error);
+      // AlertsAPI error: Error deleting alert
       return NextResponse.json(
         { error: 'Failed to delete alert' },
         { status: 500 }
@@ -189,8 +191,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Alerts DELETE error:', error);
+  } catch (_error) {
+    // AlertsAPI error: Alerts DELETE error
+    void _error;
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

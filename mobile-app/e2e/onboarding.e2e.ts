@@ -1,5 +1,5 @@
 /**
- * CPFI Onboarding E2E Tests
+ * Fynvita Onboarding E2E Tests
  * Tests complete onboarding flow for new users
  */
 
@@ -12,7 +12,7 @@ describe('Onboarding Flow', () => {
     it('should display welcome screen', async () => {
       await expect(element(by.id('welcome-screen'))).toBeVisible();
       await expect(element(by.id('app-logo'))).toBeVisible();
-      await expect(element(by.text('Welcome to CreditMaster Pro'))).toBeVisible();
+      await expect(element(by.text('Welcome to Fynvita Pro'))).toBeVisible();
     });
 
     it('should navigate through intro slides', async () => {

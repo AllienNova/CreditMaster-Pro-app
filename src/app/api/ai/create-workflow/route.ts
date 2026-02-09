@@ -75,13 +75,13 @@ export async function POST(request: NextRequest) {
       workflow,
       timestamp: new Date().toISOString(),
     });
-  } catch (error) {
-    console.error('Workflow creation error:', error);
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
       {
         success: false,
         error:
-          error instanceof Error ? error.message : 'Failed to create workflow',
+          _error instanceof Error ? _error.message : 'Failed to create workflow',
       },
       { status: 500 }
     );

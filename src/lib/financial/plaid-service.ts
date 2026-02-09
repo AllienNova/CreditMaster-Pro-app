@@ -1,6 +1,6 @@
 /**
  * Plaid Service
- * 
+ *
  * Handles bank account connection and transaction syncing via Plaid API
  */
 
@@ -10,11 +10,12 @@ import { supabase } from '@/lib/supabase';
 const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID || '';
 const PLAID_SECRET = process.env.PLAID_SECRET || '';
 const PLAID_ENV = process.env.PLAID_ENV || 'sandbox'; // sandbox, development, production
-const PLAID_API_URL = PLAID_ENV === 'production' 
-  ? 'https://production.plaid.com'
-  : PLAID_ENV === 'development'
-  ? 'https://development.plaid.com'
-  : 'https://sandbox.plaid.com';
+const PLAID_API_URL =
+  PLAID_ENV === 'production'
+    ? 'https://production.plaid.com'
+    : PLAID_ENV === 'development'
+      ? 'https://development.plaid.com'
+      : 'https://sandbox.plaid.com';
 
 // Types
 export interface PlaidLinkToken {
@@ -123,7 +124,7 @@ class PlaidService {
         },
         body: JSON.stringify({
           user: { client_user_id: userId },
-          client_name: 'CPFI',
+          client_name: 'Fynvita',
           products: ['transactions', 'auth', 'identity'],
           country_codes: ['US'],
           language: 'en',
@@ -136,13 +137,13 @@ class PlaidService {
       }
 
       const data = await response.json();
-      
+
       return {
         linkToken: data.link_token,
         expiration: new Date(data.expiration),
       };
     } catch (error) {
-      console.error('Error creating link token:', error);
+      // PlaidService error: Error creating link token
       throw error;
     }
   }
@@ -150,17 +151,23 @@ class PlaidService {
   /**
    * Exchange public token for access token
    */
-  async exchangePublicToken(publicToken: string, userId: string): Promise<string> {
+  async exchangePublicToken(
+    publicToken: string,
+    userId: string
+  ): Promise<string> {
     try {
-      const response = await fetch(`${PLAID_API_URL}/item/public_token/exchange`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'PLAID-CLIENT-ID': PLAID_CLIENT_ID,
-          'PLAID-SECRET': PLAID_SECRET,
-        },
-        body: JSON.stringify({ public_token: publicToken }),
-      });
+      const response = await fetch(
+        `${PLAID_API_URL}/item/public_token/exchange`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'PLAID-CLIENT-ID': PLAID_CLIENT_ID,
+            'PLAID-SECRET': PLAID_SECRET,
+          },
+          body: JSON.stringify({ public_token: publicToken }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to exchange public token');
@@ -175,7 +182,7 @@ class PlaidService {
 
       return itemId;
     } catch (error) {
-      console.error('Error exchanging public token:', error);
+      // PlaidService error: Error exchanging public token
       throw error;
     }
   }
@@ -183,15 +190,17 @@ class PlaidService {
   /**
    * Store access token securely
    */
-  private async storeAccessToken(userId: string, itemId: string, accessToken: string): Promise<void> {
-    const { error } = await supabase
-      .from('plaid_items')
-      .insert({
-        user_id: userId,
-        item_id: itemId,
-        access_token: accessToken,
-        created_at: new Date().toISOString(),
-      });
+  private async storeAccessToken(
+    userId: string,
+    itemId: string,
+    accessToken: string
+  ): Promise<void> {
+    const { error } = await supabase.from('plaid_items').insert({
+      user_id: userId,
+      item_id: itemId,
+      access_token: accessToken,
+      created_at: new Date().toISOString(),
+    });
 
     if (error) {
       throw new Error('Failed to store access token');
@@ -283,7 +292,7 @@ class PlaidService {
 
       return accounts;
     } catch (error) {
-      console.error('Error syncing accounts:', error);
+      // PlaidService error: Error syncing accounts
       throw error;
     }
   }
@@ -292,28 +301,26 @@ class PlaidService {
    * Store account in database
    */
   private async storeAccount(account: PlaidAccount): Promise<void> {
-    const { error } = await supabase
-      .from('financial_accounts')
-      .upsert({
-        id: account.id,
-        item_id: account.itemId,
-        user_id: account.userId,
-        account_id: account.accountId,
-        institution_id: account.institutionId,
-        institution_name: account.institutionName,
-        account_name: account.accountName,
-        account_type: account.accountType,
-        account_subtype: account.accountSubtype,
-        mask: account.mask,
-        current_balance: account.currentBalance,
-        available_balance: account.availableBalance,
-        currency: account.currency,
-        last_synced: account.lastSynced.toISOString(),
-        created_at: account.createdAt.toISOString(),
-      });
+    const { error } = await supabase.from('financial_accounts').upsert({
+      id: account.id,
+      item_id: account.itemId,
+      user_id: account.userId,
+      account_id: account.accountId,
+      institution_id: account.institutionId,
+      institution_name: account.institutionName,
+      account_name: account.accountName,
+      account_type: account.accountType,
+      account_subtype: account.accountSubtype,
+      mask: account.mask,
+      current_balance: account.currentBalance,
+      available_balance: account.availableBalance,
+      currency: account.currency,
+      last_synced: account.lastSynced.toISOString(),
+      created_at: account.createdAt.toISOString(),
+    });
 
     if (error) {
-      console.error('Error storing account:', error);
+      // PlaidService error: Error storing account
     }
   }
 
@@ -344,7 +351,11 @@ class PlaidService {
   /**
    * Sync transactions from Plaid
    */
-  async syncTransactions(itemId: string, userId: string, days: number = 30): Promise<PlaidTransaction[]> {
+  async syncTransactions(
+    itemId: string,
+    userId: string,
+    days: number = 30
+  ): Promise<PlaidTransaction[]> {
     try {
       const accessToken = await this.getAccessToken(itemId);
       const startDate = new Date();
@@ -396,7 +407,7 @@ class PlaidService {
 
       return transactions;
     } catch (error) {
-      console.error('Error syncing transactions:', error);
+      // PlaidService error: Error syncing transactions
       throw error;
     }
   }
@@ -405,26 +416,24 @@ class PlaidService {
    * Store transaction in database
    */
   private async storeTransaction(transaction: PlaidTransaction): Promise<void> {
-    const { error } = await supabase
-      .from('transactions')
-      .upsert({
-        id: transaction.id,
-        account_id: transaction.accountId,
-        user_id: transaction.userId,
-        transaction_id: transaction.transactionId,
-        date: transaction.date.toISOString(),
-        amount: transaction.amount,
-        name: transaction.name,
-        merchant_name: transaction.merchantName,
-        category: transaction.category,
-        pending: transaction.pending,
-        payment_channel: transaction.paymentChannel,
-        location: transaction.location,
-        created_at: transaction.createdAt.toISOString(),
-      });
+    const { error } = await supabase.from('transactions').upsert({
+      id: transaction.id,
+      account_id: transaction.accountId,
+      user_id: transaction.userId,
+      transaction_id: transaction.transactionId,
+      date: transaction.date.toISOString(),
+      amount: transaction.amount,
+      name: transaction.name,
+      merchant_name: transaction.merchantName,
+      category: transaction.category,
+      pending: transaction.pending,
+      payment_channel: transaction.paymentChannel,
+      location: transaction.location,
+      created_at: transaction.createdAt.toISOString(),
+    });
 
     if (error) {
-      console.error('Error storing transaction:', error);
+      // PlaidService error: Error storing transaction
     }
   }
 
@@ -441,11 +450,11 @@ class PlaidService {
       institutionName: data.institution_name,
       accountName: data.account_name,
       accountType: data.account_type,
-    accountSubtype: data.account_subtype,
-    mask: data.mask,
-    currentBalance: data.current_balance,
-    availableBalance: data.available_balance ?? undefined,
-    currency: data.currency,
+      accountSubtype: data.account_subtype,
+      mask: data.mask,
+      currentBalance: data.current_balance,
+      availableBalance: data.available_balance ?? undefined,
+      currency: data.currency,
       lastSynced: new Date(data.last_synced),
       createdAt: new Date(data.created_at),
     };
@@ -454,20 +463,22 @@ class PlaidService {
   /**
    * Map database record to PlaidTransaction
    */
-  private mapDatabaseToTransaction(data: PlaidTransactionRow): PlaidTransaction {
+  private mapDatabaseToTransaction(
+    data: PlaidTransactionRow
+  ): PlaidTransaction {
     return {
       id: data.id,
       accountId: data.account_id,
       userId: data.user_id,
       transactionId: data.transaction_id,
       date: new Date(data.date),
-    amount: data.amount,
-    name: data.name,
-    merchantName: data.merchant_name ?? undefined,
-    category: data.category ?? [],
-    pending: data.pending,
-    paymentChannel: data.payment_channel,
-    location: data.location ?? undefined,
+      amount: data.amount,
+      name: data.name,
+      merchantName: data.merchant_name ?? undefined,
+      category: data.category ?? [],
+      pending: data.pending,
+      paymentChannel: data.payment_channel,
+      location: data.location ?? undefined,
       createdAt: new Date(data.created_at),
     };
   }

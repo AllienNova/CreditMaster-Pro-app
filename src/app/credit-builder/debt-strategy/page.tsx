@@ -442,7 +442,7 @@ export default function DebtStrategyAnalyzer() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-600 mx-auto"></div>
-          <p className="mt-6 text-lg text-gray-700 font-medium">
+          <p className="mt-6 text-lg text-gray-700 dark:text-slate-200 font-medium">
             Loading Debt Strategy Analyzer...
           </p>
         </div>
@@ -469,10 +469,10 @@ export default function DebtStrategyAnalyzer() {
           >
             ← Back to Credit Builder
           </Link>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Debt Strategy Analyzer 📊
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            Debt Strategy Analyzer 
           </h1>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-slate-300 max-w-3xl mx-auto">
             Compare settlement, consolidation, snowball, and avalanche methods.
             Find the optimal debt payoff strategy for your situation.
           </p>
@@ -508,9 +508,9 @@ export default function DebtStrategyAnalyzer() {
           {/* Left Column: Debt Input */}
           <div className="space-y-6">
             {/* Debt List */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Your Debts</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Debts</h2>
                 <button
                   onClick={() => setShowAddDebt(!showAddDebt)}
                   className="px-4 py-2 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition-colors"
@@ -520,7 +520,7 @@ export default function DebtStrategyAnalyzer() {
               </div>
 
               {showAddDebt && (
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="mb-4 p-4 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700">
                   <div className="space-y-3">
                     <input
                       type="text"
@@ -529,14 +529,14 @@ export default function DebtStrategyAnalyzer() {
                       onChange={(e) =>
                         setNewDebt({ ...newDebt, name: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm"
                     />
                     <select
                       value={newDebt.type}
                       onChange={(e) =>
                         setNewDebt({ ...newDebt, type: e.target.value as any })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm"
                     >
                       <option value="credit_card">Credit Card</option>
                       <option value="personal_loan">Personal Loan</option>
@@ -555,7 +555,7 @@ export default function DebtStrategyAnalyzer() {
                           balance: parseFloat(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm"
                     />
                     <input
                       type="number"
@@ -568,7 +568,7 @@ export default function DebtStrategyAnalyzer() {
                           interestRate: parseFloat(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm"
                     />
                     <input
                       type="number"
@@ -580,7 +580,7 @@ export default function DebtStrategyAnalyzer() {
                           minimumPayment: parseFloat(e.target.value) || 0,
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm"
                     />
                     <button
                       onClick={addDebt}
@@ -596,14 +596,14 @@ export default function DebtStrategyAnalyzer() {
                 {debts.map((debt) => (
                   <div
                     key={debt.id}
-                    className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                    className="p-4 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700"
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <p className="font-semibold text-gray-900">
+                        <p className="font-semibold text-gray-900 dark:text-white">
                           {debt.name}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 dark:text-slate-300">
                           {debt.type.replace('_', ' ')}
                         </p>
                       </div>
@@ -616,17 +616,17 @@ export default function DebtStrategyAnalyzer() {
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <p className="text-gray-600">Balance</p>
+                        <p className="text-gray-600 dark:text-slate-300">Balance</p>
                         <p className="font-semibold">
                           ${debt.balance.toLocaleString()}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-600">APR</p>
+                        <p className="text-gray-600 dark:text-slate-300">APR</p>
                         <p className="font-semibold">{debt.interestRate}%</p>
                       </div>
                       <div className="col-span-2">
-                        <p className="text-gray-600">Minimum Payment</p>
+                        <p className="text-gray-600 dark:text-slate-300">Minimum Payment</p>
                         <p className="font-semibold">
                           ${debt.minimumPayment.toLocaleString()}/mo
                         </p>
@@ -636,7 +636,7 @@ export default function DebtStrategyAnalyzer() {
                 ))}
 
                 {debts.length === 0 && (
-                  <p className="text-center text-gray-500 py-8">
+                  <p className="text-center text-gray-500 dark:text-slate-400 py-8">
                     No debts added yet. Click "Add Debt" to get started.
                   </p>
                 )}
@@ -644,23 +644,23 @@ export default function DebtStrategyAnalyzer() {
             </div>
 
             {/* Monthly Budget */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 Monthly Payment Budget
               </h3>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                   How much can you pay toward debt each month?
                 </label>
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl font-bold text-gray-900">$</span>
+                  <span className="text-2xl font-bold text-gray-900 dark:text-white">$</span>
                   <input
                     type="number"
                     value={monthlyBudget}
                     onChange={(e) =>
                       setMonthlyBudget(parseFloat(e.target.value) || 0)
                     }
-                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg text-2xl font-bold focus:ring-2 focus:ring-orange-500"
+                    className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-slate-600 rounded-lg text-2xl font-bold focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
                 <input
@@ -691,8 +691,8 @@ export default function DebtStrategyAnalyzer() {
             {results.length > 0 && (
               <>
                 {/* Strategy Comparison */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                     Strategy Comparison
                   </h2>
 
@@ -702,13 +702,13 @@ export default function DebtStrategyAnalyzer() {
                         key={result.strategyName}
                         className="p-4 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl border-2 border-orange-200"
                       >
-                        <h3 className="font-bold text-gray-900 mb-3">
+                        <h3 className="font-bold text-gray-900 dark:text-white mb-3">
                           {result.strategyName}
                         </h3>
 
                         <div className="space-y-2 text-sm">
                           <div>
-                            <p className="text-gray-600">Time to payoff</p>
+                            <p className="text-gray-600 dark:text-slate-300">Time to payoff</p>
                             <p className="text-xl font-bold text-orange-600">
                               {Math.floor(result.timeToPayoff / 12)}y{' '}
                               {result.timeToPayoff % 12}m
@@ -716,14 +716,14 @@ export default function DebtStrategyAnalyzer() {
                           </div>
 
                           <div>
-                            <p className="text-gray-600">Total interest</p>
+                            <p className="text-gray-600 dark:text-slate-300">Total interest</p>
                             <p className="font-semibold">
                               ${result.totalInterestPaid.toLocaleString()}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-gray-600">Total paid</p>
+                            <p className="text-gray-600 dark:text-slate-300">Total paid</p>
                             <p className="font-semibold">
                               ${result.totalPaid.toLocaleString()}
                             </p>
@@ -743,7 +743,7 @@ export default function DebtStrategyAnalyzer() {
                     return (
                       <div className="p-4 bg-green-50 border-2 border-green-300 rounded-lg">
                         <p className="font-semibold text-green-900 mb-2">
-                          💡 Recommended: {best.strategyName}
+                          Recommended: {best.strategyName}
                         </p>
                         <p className="text-sm text-green-800">
                           Saves $
@@ -764,20 +764,20 @@ export default function DebtStrategyAnalyzer() {
                 {results.map((result) => (
                   <div
                     key={result.strategyName}
-                    className="bg-white rounded-xl shadow-lg p-6"
+                    className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6"
                   >
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                       {result.strategyName} - Detailed Analysis
                     </h3>
 
                     <div className="grid md:grid-cols-2 gap-6 mb-6">
                       <div>
                         <h4 className="font-semibold text-green-700 mb-2 flex items-center gap-2">
-                          <span>✓</span> Pros
+                          <span></span> Pros
                         </h4>
                         <ul className="space-y-1">
                           {result.pros.map((pro, idx) => (
-                            <li key={idx} className="text-sm text-gray-700">
+                            <li key={idx} className="text-sm text-gray-700 dark:text-slate-200">
                               • {pro}
                             </li>
                           ))}
@@ -786,11 +786,11 @@ export default function DebtStrategyAnalyzer() {
 
                       <div>
                         <h4 className="font-semibold text-red-700 mb-2 flex items-center gap-2">
-                          <span>✗</span> Cons
+                          <span></span> Cons
                         </h4>
                         <ul className="space-y-1">
                           {result.cons.map((con, idx) => (
-                            <li key={idx} className="text-sm text-gray-700">
+                            <li key={idx} className="text-sm text-gray-700 dark:text-slate-200">
                               • {con}
                             </li>
                           ))}
@@ -814,8 +814,8 @@ export default function DebtStrategyAnalyzer() {
                 ))}
 
                 {/* Consolidation Options */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                     Consolidation Options
                   </h2>
 
@@ -828,10 +828,10 @@ export default function DebtStrategyAnalyzer() {
                       return (
                         <div
                           key={option.id}
-                          className="p-4 bg-gray-50 rounded-lg border-2 border-gray-200"
+                          className="p-4 bg-gray-50 dark:bg-slate-900 rounded-lg border-2 border-gray-200 dark:border-slate-700"
                         >
                           <div className="flex justify-between items-start mb-3">
-                            <h3 className="font-bold text-gray-900">
+                            <h3 className="font-bold text-gray-900 dark:text-white">
                               {option.name}
                             </h3>
                             <span
@@ -839,7 +839,7 @@ export default function DebtStrategyAnalyzer() {
                                 option.creditImpact === 'positive'
                                   ? 'bg-green-100 text-green-800'
                                   : option.creditImpact === 'neutral'
-                                    ? 'bg-gray-100 text-gray-800'
+                                    ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100'
                                     : 'bg-red-100 text-red-800'
                               }`}
                             >
@@ -849,25 +849,25 @@ export default function DebtStrategyAnalyzer() {
 
                           <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
                             <div>
-                              <p className="text-gray-600">APR</p>
+                              <p className="text-gray-600 dark:text-slate-300">APR</p>
                               <p className="font-semibold">
                                 {option.interestRate}%
                               </p>
                             </div>
                             <div>
-                              <p className="text-gray-600">Term</p>
+                              <p className="text-gray-600 dark:text-slate-300">Term</p>
                               <p className="font-semibold">
                                 {option.term} months
                               </p>
                             </div>
                             <div>
-                              <p className="text-gray-600">Monthly</p>
+                              <p className="text-gray-600 dark:text-slate-300">Monthly</p>
                               <p className="font-semibold">
                                 ${monthlyPayment.toFixed(0)}
                               </p>
                             </div>
                             <div>
-                              <p className="text-gray-600">Total Interest</p>
+                              <p className="text-gray-600 dark:text-slate-300">Total Interest</p>
                               <p className="font-semibold">
                                 ${totalInterest.toFixed(0)}
                               </p>
@@ -875,10 +875,10 @@ export default function DebtStrategyAnalyzer() {
                           </div>
 
                           <div className="mb-3">
-                            <p className="text-xs font-semibold text-gray-700 mb-1">
+                            <p className="text-xs font-semibold text-gray-700 dark:text-slate-200 mb-1">
                               Requirements:
                             </p>
-                            <ul className="text-xs text-gray-600 space-y-1">
+                            <ul className="text-xs text-gray-600 dark:text-slate-300 space-y-1">
                               {option.requirements.map((req, idx) => (
                                 <li key={idx}>• {req}</li>
                               ))}
@@ -886,7 +886,7 @@ export default function DebtStrategyAnalyzer() {
                           </div>
 
                           <details className="text-xs">
-                            <summary className="cursor-pointer font-semibold text-gray-700">
+                            <summary className="cursor-pointer font-semibold text-gray-700 dark:text-slate-200">
                               Pros & Cons
                             </summary>
                             <div className="mt-2 space-y-2">
@@ -894,7 +894,7 @@ export default function DebtStrategyAnalyzer() {
                                 <p className="font-semibold text-green-700">
                                   Pros:
                                 </p>
-                                <ul className="text-gray-600">
+                                <ul className="text-gray-600 dark:text-slate-300">
                                   {option.pros.slice(0, 2).map((pro, idx) => (
                                     <li key={idx}>• {pro}</li>
                                   ))}
@@ -904,7 +904,7 @@ export default function DebtStrategyAnalyzer() {
                                 <p className="font-semibold text-red-700">
                                   Cons:
                                 </p>
-                                <ul className="text-gray-600">
+                                <ul className="text-gray-600 dark:text-slate-300">
                                   {option.cons.slice(0, 2).map((con, idx) => (
                                     <li key={idx}>• {con}</li>
                                   ))}
@@ -921,9 +921,9 @@ export default function DebtStrategyAnalyzer() {
             )}
 
             {debts.length === 0 && (
-              <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-                <span className="text-6xl mb-4 block">📊</span>
-                <p className="text-gray-500">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-12 text-center">
+                <span className="text-6xl mb-4 block"></span>
+                <p className="text-gray-500 dark:text-slate-400">
                   Add your debts and set a monthly budget to see personalized
                   strategies
                 </p>

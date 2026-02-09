@@ -131,7 +131,7 @@ class CreditMonitoringService {
 
       return scores;
     } catch (error) {
-      console.error('Error fetching current scores:', error);
+      // Credit monitoring error: fetching current scores
       return {};
     }
   }
@@ -168,7 +168,7 @@ class CreditMonitoringService {
         })),
       };
     } catch (error) {
-      console.error('Error fetching score history:', error);
+      // Credit monitoring error: fetching score history
       return { bureau, scores: [] };
     }
   }
@@ -230,7 +230,7 @@ class CreditMonitoringService {
         createdAt: new Date(data.created_at),
       };
     } catch (error) {
-      console.error('Error adding credit score:', error);
+      // Credit monitoring error: adding credit score
       return null;
     }
   }
@@ -275,7 +275,7 @@ class CreditMonitoringService {
         scoreChangeThreshold: data.score_change_threshold || 10,
       };
     } catch (error) {
-      console.error('Error fetching monitoring settings:', error);
+      // Credit monitoring error: fetching monitoring settings
       throw error;
     }
   }
@@ -303,7 +303,7 @@ class CreditMonitoringService {
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error updating monitoring settings:', error);
+      // Credit monitoring error: updating monitoring settings
       return false;
     }
   }
@@ -345,7 +345,7 @@ class CreditMonitoringService {
       const rows = (data ?? []) as CreditAlertRow[];
       return rows.map((alert) => this.mapAlertRow(alert));
     } catch (error) {
-      console.error('Error fetching alerts:', error);
+      // Credit monitoring error: fetching alerts
       return [];
     }
   }
@@ -385,7 +385,7 @@ class CreditMonitoringService {
 
       return data ? this.mapAlertRow(data as CreditAlertRow) : null;
     } catch (error) {
-      console.error('Error creating alert:', error);
+      // Credit monitoring error: creating alert
       return null;
     }
   }
@@ -403,7 +403,7 @@ class CreditMonitoringService {
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error marking alert as read:', error);
+      // Credit monitoring error: marking alert as read
       return false;
     }
   }
@@ -422,7 +422,7 @@ class CreditMonitoringService {
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error marking all alerts as read:', error);
+      // Credit monitoring error: marking all alerts as read
       return false;
     }
   }
@@ -474,7 +474,7 @@ class CreditMonitoringService {
         history,
       };
     } catch (error) {
-      console.error('Error fetching monitoring dashboard:', error);
+      // Credit monitoring error: fetching monitoring dashboard
       throw error;
     }
   }

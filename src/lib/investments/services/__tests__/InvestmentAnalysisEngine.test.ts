@@ -126,7 +126,9 @@ describe('InvestmentAnalysisEngine', () => {
         userProfile: {
           riskTolerance: 'conservative',
           investmentHorizon: 'long_term',
-          preferredAssetClasses: ['stock'],
+          portfolioSize: 100000,
+          preferredSectors: ['Technology'],
+          goals: [{ type: 'growth' }],
         },
       });
 
@@ -147,7 +149,7 @@ describe('InvestmentAnalysisEngine', () => {
       {
         symbol: 'AAPL',
         shares: 10,
-        averageCost: 140.0,
+        costBasis: 140.0,
         currentPrice: 150.0,
         assetClass: 'stock',
         sector: 'Technology',
@@ -155,7 +157,7 @@ describe('InvestmentAnalysisEngine', () => {
       {
         symbol: 'MSFT',
         shares: 5,
-        averageCost: 240.0,
+        costBasis: 240.0,
         currentPrice: 250.0,
         assetClass: 'stock',
         sector: 'Technology',
@@ -163,7 +165,7 @@ describe('InvestmentAnalysisEngine', () => {
       {
         symbol: 'JNJ',
         shares: 8,
-        averageCost: 160.0,
+        costBasis: 160.0,
         currentPrice: 165.0,
         assetClass: 'stock',
         sector: 'Healthcare',

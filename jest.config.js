@@ -26,7 +26,13 @@ module.exports = {
   },
   coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
-  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.[jt]sx?$',
+  testRegex: '(/__tests__/.*\\.(test|spec))\\.[jt]sx?$',
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/__tests__/mocks/',
+    '/__tests__/utils/',
+    '/__tests__/fixtures/',
+  ],
   testEnvironment: 'jsdom',
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],

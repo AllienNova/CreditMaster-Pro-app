@@ -2,309 +2,460 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════
+   FYNVITA DESIGN SYSTEM — Single Source of Truth
+
+   Token Architecture:
+   1. CSS Custom Properties (semantic, theme-aware)
+   2. Tailwind config references these via hsl(var(--*))
+   3. Components use Tailwind classes exclusively
+
+   Brand: Vital Green (#10B981) + Trust Blue (#3B82F6)
+   Font: Inter (sans-serif)
+   ═══════════════════════════════════════════════════════ */
+
+/* ─── Font Loading ─── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @layer base {
+  /* ═══ LIGHT THEME TOKENS ═══ */
   :root {
+    /* Surfaces */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    /* Brand — Vital Green primary action */
+    --primary: 160 84% 39%;         /* #10B981 — Vital Green */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary — Trust Blue */
+    --secondary: 217 91% 60%;       /* #3B82F6 — Trust Blue */
+    --secondary-foreground: 0 0% 100%;
+
+    /* Neutral surfaces */
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
+
+    /* Semantic */
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 160 84% 39%;         /* Vital Green */
+    --warning: 38 92% 50%;          /* Energy Gold #F59E0B */
+    --info: 217 91% 60%;            /* Trust Blue */
+
+    /* Chrome */
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 160 84% 39%;            /* Focus ring = primary */
     --radius: 0.5rem;
 
-    /* Custom CPFI colors */
-    --cpfi-blue: 217 91% 60%;
-    --cpfi-purple: 262 83% 58%;
-    --cpfi-green: 142 76% 36%;
-    --cpfi-orange: 25 95% 53%;
-    --cpfi-red: 0 84% 60%;
+    /* Fynvita brand tokens */
+    --fynvita-green: 160 84% 39%;   /* #10B981 */
+    --fynvita-blue: 217 91% 60%;    /* #3B82F6 */
+    --fynvita-navy: 224 76% 48%;    /* #1E40AF */
+    --fynvita-gold: 38 92% 50%;     /* #F59E0B */
+    --fynvita-purple: 271 81% 56%;  /* #A855F7 — AI/premium accent */
+
+    /* Elevation (light) */
+    --shadow-color: 220 3% 15%;
   }
 
+  /* ═══ DARK THEME TOKENS ═══ */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    /* Surfaces — Slate tones, never pure black */
+    --background: 222.2 47.4% 11.2%;  /* #0F172A */
+    --foreground: 210 40% 98%;        /* #F8FAFC */
+    --card: 217.2 32.6% 17.5%;        /* #1E293B */
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 217.2 32.6% 17.5%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+
+    /* Brand — brighter for dark backgrounds */
+    --primary: 160 72% 55%;           /* #34D399 — bright Vital Green */
     --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+
+    /* Secondary — brighter Trust Blue */
+    --secondary: 213 94% 68%;         /* #60A5FA */
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    /* Neutral surfaces */
     --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted-foreground: 215 20.2% 65.1%;  /* #94A3B8 */
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+
+    /* Semantic — brightened for visibility */
+    --destructive: 0 72.2% 50.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
+    --success: 160 72% 55%;
+    --warning: 43 96% 56%;           /* #FBBF24 */
+    --info: 213 94% 68%;             /* #60A5FA */
+
+    /* Chrome */
+    --border: 217.2 32.6% 25%;       /* #334155 */
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 160 72% 55%;
 
-    /* Custom CPFI colors - dark mode */
-    --cpfi-blue: 217 91% 70%;
-    --cpfi-purple: 262 83% 68%;
-    --cpfi-green: 142 76% 46%;
-    --cpfi-orange: 25 95% 63%;
-    --cpfi-red: 0 84% 70%;
+    /* Fynvita brand tokens (dark) */
+    --fynvita-green: 160 72% 55%;    /* #34D399 */
+    --fynvita-blue: 213 94% 68%;     /* #60A5FA */
+    --fynvita-navy: 224 76% 48%;     /* Same — enough contrast on dark */
+    --fynvita-gold: 43 96% 56%;      /* #FBBF24 */
+    --fynvita-purple: 263 70% 71%;   /* #A78BFA */
+
+    /* Elevation (dark) */
+    --shadow-color: 220 40% 2%;
   }
-}
 
-@layer base {
+  /* ═══ BASE STYLES ═══ */
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-white text-gray-900 font-sans transition-colors duration-200;
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
+
+  body {
+    @apply bg-white text-gray-900 font-sans transition-colors duration-normal;
+  }
+
   .dark body {
     @apply bg-slate-900 text-gray-100;
   }
+
   html.dark {
     color-scheme: dark;
   }
 }
 
-/* Apple-inspired animations */
+/* ═══════════════════════════════════════════════════════
+   ANIMATIONS — GPU-accelerated, transform + opacity only
+   ═══════════════════════════════════════════════════════ */
+
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 @keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-16px); }
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(59, 130, 246, 0.8);
-  }
+  0%, 100% { box-shadow: 0 0 16px hsl(var(--fynvita-blue) / 0.4); }
+  50%      { box-shadow: 0 0 32px hsl(var(--fynvita-blue) / 0.7); }
 }
 
-.animate-fadeInUp {
-  animation: fadeInUp 0.8s ease-out forwards;
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 1s ease-out forwards;
-}
+.animate-fadeInUp    { animation: fadeInUp 0.6s cubic-bezier(0, 0, 0.2, 1) forwards; }
+.animate-fadeIn      { animation: fadeIn 0.5s cubic-bezier(0, 0, 0.2, 1) forwards; }
+.animate-scaleIn     { animation: scaleIn 0.25s cubic-bezier(0, 0, 0.2, 1) forwards; }
+.animate-slideInLeft { animation: slideInLeft 0.6s cubic-bezier(0, 0, 0.2, 1) forwards; }
+.animate-slideInRight{ animation: slideInRight 0.6s cubic-bezier(0, 0, 0.2, 1) forwards; }
+.animate-float       { animation: float 6s ease-in-out infinite; }
+.animate-pulse-glow  { animation: pulse-glow 2s ease-in-out infinite; }
 
-.animate-scaleIn {
-  animation: scaleIn 0.6s ease-out forwards;
-}
+/* ═══════════════════════════════════════════════════════
+   SURFACE EFFECTS
+   ═══════════════════════════════════════════════════════ */
 
-.animate-slideInLeft {
-  animation: slideInLeft 0.8s ease-out forwards;
-}
-
-.animate-slideInRight {
-  animation: slideInRight 0.8s ease-out forwards;
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* Apple-inspired glass effect */
+/* Glass morphism — use sparingly, hero/nav only */
 .glass-effect {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.glass-effect-dark {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.dark .glass-effect {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Premium gradients */
-.gradient-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+/* ═══════════════════════════════════════════════════════
+   BRAND GRADIENTS — Vital Green → Trust Blue only
+   ═══════════════════════════════════════════════════════ */
+
+/* Primary brand gradient (CTAs, hero accents) */
+.gradient-brand {
+  background: linear-gradient(135deg, #10b981, #3b82f6);
 }
 
+.gradient-brand:hover {
+  background: linear-gradient(135deg, #059669, #2563eb);
+}
+
+/* Success gradient (achievements, positive outcomes) */
 .gradient-success {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #10b981, #059669);
 }
 
+/* Premium gradient (AI features, premium tier) */
 .gradient-premium {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, #3b82f6, #a855f7);
 }
 
+/* Text gradient — brand colors on text */
 .gradient-text {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #10b981, #3b82f6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Smooth transitions */
-.transition-smooth {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* Legacy aliases — keep for backward compatibility */
+.gradient-primary { background: linear-gradient(135deg, #10b981, #3b82f6); }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Hero section styles */
+/* Hero section background */
 .hero-gradient {
-  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
 
-/* Feature card hover effect */
+.dark .hero-gradient {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+}
+
+/* ═══════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════ */
+
+/* Smooth cubic-bezier transition */
+.transition-smooth {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Feature card hover — 2px lift, shadow increase */
 .feature-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .feature-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -8px rgb(0 0 0 / 0.12), 0 4px 8px -4px rgb(0 0 0 / 0.08);
 }
 
-/* Button styles */
+.dark .feature-card:hover {
+  box-shadow: 0 12px 24px -8px rgb(0 0 0 / 0.4), 0 4px 8px -4px rgb(0 0 0 / 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════
+   BUTTON SYSTEM
+   ═══════════════════════════════════════════════════════ */
+
 .btn-primary {
-  @apply bg-blue-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl;
+  @apply bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-6 py-3 rounded-lg
+    font-semibold hover:from-emerald-600 hover:to-blue-600
+    transition-all duration-fast shadow-sm hover:shadow-md
+    focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2
+    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm;
 }
 
 .btn-secondary {
-  @apply bg-white text-blue-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-50 transition-all duration-300 border-2 border-blue-600;
+  @apply bg-white text-gray-700 px-6 py-3 rounded-lg font-semibold
+    border border-gray-300 hover:bg-gray-50
+    transition-all duration-fast shadow-xs hover:shadow-sm
+    focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
+    disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
-/* Typography */
+.dark .btn-secondary {
+  @apply bg-slate-800 text-gray-200 border-slate-600 hover:bg-slate-700;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TYPOGRAPHY UTILITIES
+   ═══════════════════════════════════════════════════════ */
+
 .heading-xl {
-  @apply text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight;
+  @apply text-5xl md:text-5xl lg:text-5xl font-bold tracking-tight;
 }
 
 .heading-lg {
-  @apply text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight;
+  @apply text-2xl md:text-2xl lg:text-2xl font-bold tracking-tight;
 }
 
 .heading-md {
-  @apply text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight;
+  @apply text-xl md:text-xl lg:text-xl font-bold tracking-tight;
 }
 
 .heading-sm {
-  @apply text-2xl md:text-3xl font-bold tracking-tight;
+  @apply text-lg md:text-lg font-bold tracking-tight;
 }
 
-/* Responsive utilities */
+/* ═══════════════════════════════════════════════════════
+   SCROLLBAR — Theme-aware
+   ═══════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(210 20% 96%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(215 14% 68%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(215 14% 55%);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: hsl(217 33% 17%);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(215 19% 35%);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(215 16% 47%);
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE UTILITIES
+   ═══════════════════════════════════════════════════════ */
+
 @media (max-width: 768px) {
   .mobile-padding {
     @apply px-4 py-2;
   }
-  
   .mobile-text {
     @apply text-sm;
   }
 }
 
-/* Print styles */
+/* ═══════════════════════════════════════════════════════
+   PRINT STYLES
+   ═══════════════════════════════════════════════════════ */
+
 @media print {
   .no-print {
     display: none !important;
   }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
 }
 
-/* Skeleton loading animations */
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
+/* ═══════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════ */
+
+/* Reduced motion — respect user preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-  100% {
-    transform: translateX(100%);
+
+  .animate-fadeInUp,
+  .animate-fadeIn,
+  .animate-scaleIn,
+  .animate-slideInLeft,
+  .animate-slideInRight,
+  .animate-float,
+  .animate-pulse-glow,
+  .animate-pulse,
+  .skeleton-wave::after,
+  .skeleton-shimmer {
+    animation: none !important;
   }
 }
+
+/* Focus states — visible, consistent, brand-colored */
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-emerald-500;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  @apply ring-2 ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 outline-none;
+}
+
+/* Skip to content — screen readers */
+.skip-link {
+  @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50
+    focus:px-4 focus:py-2 focus:bg-emerald-600 focus:text-white focus:rounded-md;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  :root {
+    --border: 0 0% 0%;
+  }
+
+  .dark {
+    --border: 0 0% 100%;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    @apply border-2;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   SKELETON LOADING
+   ═══════════════════════════════════════════════════════ */
 
 .skeleton-wave {
   position: relative;
@@ -314,32 +465,35 @@
 .skeleton-wave::after {
   content: '';
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   transform: translateX(-100%);
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0) 100%
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
   );
   animation: shimmer 2s infinite;
 }
 
+.dark .skeleton-wave::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    transparent 100%
+  );
+}
+
 .skeleton-shimmer {
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   transform: translateX(-100%);
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0) 100%
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
   );
   animation: shimmer 2s infinite;
 }

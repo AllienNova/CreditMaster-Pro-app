@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId);
 
     if (holdingsError) {
-      console.error('Error fetching holdings:', holdingsError);
+      // PortfolioRoute error: Failed to fetch holdings
       return NextResponse.json(
         { success: false, error: 'Failed to fetch holdings' },
         { status: 500 }
@@ -113,8 +113,9 @@ export async function GET(request: NextRequest) {
     };
 
     return NextResponse.json({ success: true, data: portfolio });
-  } catch (error) {
-    console.error('Portfolio API error:', error);
+  } catch (_error) {
+    // PortfolioRoute error: API failed
+    void _error;
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

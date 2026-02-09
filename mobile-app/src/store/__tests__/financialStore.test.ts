@@ -1,5 +1,5 @@
 /**
- * CPFI Financial Store Unit Tests
+ * Fynvita Financial Store Unit Tests
  */
 
 import { act } from '@testing-library/react-native';

@@ -200,8 +200,9 @@ export class IntentRecognizer {
       }
 
       return intent;
-    } catch (error) {
-      console.error('Intent recognition error:', error);
+    } catch (_error) {
+      // IntentRecognizer error: Intent recognition error
+      void _error;
 
       // Fallback to rule-based classification
       return this.fallbackRecognition(userMessage, conversationContext);
@@ -290,7 +291,7 @@ export class IntentRecognizer {
       const json = JSON.parse(jsonMatch[0]);
       return json;
     } catch (error) {
-      console.error('Failed to parse intent response:', error);
+      // IntentRecognizer error: Failed to parse intent response
       throw error;
     }
   }
@@ -356,9 +357,7 @@ export class IntentRecognizer {
     }
 
     // Default to general_question if invalid
-    console.warn(
-      `Unknown intent type: ${intent}, defaulting to general_question`
-    );
+    // IntentRecognizer warning: Unknown intent type, defaulting to general_question
     return 'general_question';
   }
 

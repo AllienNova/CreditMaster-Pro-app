@@ -1,5 +1,5 @@
 /**
- * CPFI Goodwill Letters Screen
+ * Fynvita Goodwill Letters Screen
  * Request late payment removal
  */
 

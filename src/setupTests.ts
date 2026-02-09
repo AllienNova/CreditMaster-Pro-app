@@ -12,7 +12,8 @@ global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as typeof global.TextDecoder;
 
 // Polyfill fetch, Response, Request, and Headers for MSW
-global.fetch = fetch as any;
+// Use jest.fn() to make fetch mockable in tests
+global.fetch = jest.fn(fetch as any) as any;
 global.Response = Response as any;
 global.Request = Request as any;
 global.Headers = Headers as any;

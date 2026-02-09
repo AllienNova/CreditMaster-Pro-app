@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
       success: true,
       data: alerts,
     });
-  } catch (error) {
-    console.error('Error fetching alerts:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to fetch alerts' },
       { status: 500 }
@@ -95,8 +95,8 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({
       success: true,
     });
-  } catch (error) {
-    console.error('Error marking alerts as read:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to mark alerts as read' },
       { status: 500 }

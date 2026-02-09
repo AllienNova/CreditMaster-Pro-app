@@ -21,24 +21,24 @@ export default function NotificationItem({
       case 'dispute_created':
       case 'dispute_updated':
       case 'dispute_resolved':
-        return '📋';
+        return '';
       case 'credit_score_changed':
-        return '📊';
+        return '';
       case 'payment_successful':
-        return '💳';
+        return '';
       case 'payment_failed':
-        return '❌';
+        return '';
       case 'subscription_renewed':
       case 'subscription_canceled':
-        return '🔄';
+        return '';
       case 'document_uploaded':
-        return '📄';
+        return '';
       case 'welcome':
-        return '👋';
+        return '';
       case 'password_reset':
-        return '🔒';
+        return '';
       default:
-        return '🔔';
+        return '';
     }
   };
 
@@ -50,7 +50,7 @@ export default function NotificationItem({
       case 'dispute_resolved':
         return 'bg-green-50 text-green-700 border-green-200';
       case 'credit_score_changed':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'payment_successful':
       case 'subscription_renewed':
         return 'bg-green-50 text-green-700 border-green-200';
@@ -64,7 +64,7 @@ export default function NotificationItem({
       case 'password_reset':
         return 'bg-yellow-50 text-yellow-700 border-yellow-200';
       default:
-        return 'bg-gray-50 text-gray-700 border-gray-200';
+        return 'bg-gray-50 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-700';
     }
   };
 
@@ -106,7 +106,7 @@ export default function NotificationItem({
 
   return (
     <div
-      className={`p-6 hover:bg-gray-50 transition-colors cursor-pointer ${
+      className={`p-6 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors cursor-pointer ${
         !notification.read ? 'bg-blue-50/30' : ''
       }`}
       onClick={handleClick}
@@ -126,20 +126,18 @@ export default function NotificationItem({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <h3
-                className={`text-sm font-semibold mb-1 ${
-                  !notification.read ? 'text-gray-900' : 'text-gray-700'
-                }`}
+                className={`text-sm font-semibold mb-1 ${ !notification.read ? 'text-gray-900' : 'text-gray-700 dark:text-slate-200' }`}
               >
                 {notification.title}
                 {!notification.read && (
                   <span className="ml-2 inline-block w-2 h-2 bg-blue-600 rounded-full"></span>
                 )}
               </h3>
-              <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-2">{notification.message}</p>
+              <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-slate-400">
                 <span>{formatDate(notification.createdAt)}</span>
                 {notification.data && Object.keys(notification.data).length > 0 && (
-                  <span className="px-2 py-1 bg-gray-100 rounded">
+                  <span className="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded">
                     {notification.type.replace(/_/g, ' ')}
                   </span>
                 )}

@@ -58,9 +58,8 @@ export async function GET(
       success: true,
       data: report,
     });
-  } catch (error) {
-    console.error('Error getting credit report:', error);
-
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to get credit report' },
       { status: 500 }
@@ -113,9 +112,8 @@ export async function DELETE(
       success: true,
       message: 'Credit report deleted successfully',
     });
-  } catch (error) {
-    console.error('Error deleting credit report:', error);
-
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to delete credit report' },
       { status: 500 }

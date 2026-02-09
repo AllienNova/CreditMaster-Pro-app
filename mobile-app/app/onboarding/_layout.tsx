@@ -1,5 +1,5 @@
 /**
- * CPFI Onboarding Layout
+ * Fynvita Onboarding Layout
  * Stack navigator for onboarding flow
  */
 

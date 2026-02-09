@@ -112,35 +112,35 @@ Sincerely,
   return (
     <div className="max-w-6xl mx-auto p-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg p-8 text-white mb-6">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg p-8 text-white mb-6">
         <h1 className="text-3xl font-bold mb-2">Inquiry Removal Tool</h1>
-        <p className="text-indigo-100">
+        <p className="text-blue-100">
           Remove unauthorized hard inquiries - 50% success rate, 5-10 points each
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Total Inquiries</div>
-          <div className="text-3xl font-bold text-gray-800">{inquiries.length}</div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+          <div className="text-sm text-gray-600 dark:text-slate-300">Total Inquiries</div>
+          <div className="text-3xl font-bold text-gray-800 dark:text-slate-100">{inquiries.length}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Unauthorized</div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+          <div className="text-sm text-gray-600 dark:text-slate-300">Unauthorized</div>
           <div className="text-3xl font-bold text-red-600">{unauthorizedCount}</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600">Potential Impact</div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+          <div className="text-sm text-gray-600 dark:text-slate-300">Potential Impact</div>
           <div className="text-3xl font-bold text-green-600">+{potentialImpact} pts</div>
         </div>
       </div>
 
       {/* Add Inquiry Form */}
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-6">
         <h2 className="text-2xl font-bold mb-4">Add Hard Inquiry</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
               Creditor Name
             </label>
             <input
@@ -148,24 +148,24 @@ Sincerely,
               value={newInquiry.creditorName}
               onChange={(e) => setNewInquiry({ ...newInquiry, creditorName: e.target.value })}
               placeholder="e.g., Capital One, Chase"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
               Inquiry Date
             </label>
             <input
               type="date"
               value={newInquiry.inquiryDate}
               onChange={(e) => setNewInquiry({ ...newInquiry, inquiryDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg"
             />
           </div>
           <div className="flex items-end">
             <button
               onClick={addInquiry}
-              className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Add Inquiry
             </button>
@@ -179,28 +179,28 @@ Sincerely,
               onChange={(e) => setNewInquiry({ ...newInquiry, authorized: e.target.checked })}
               className="mr-2"
             />
-            <span className="text-sm text-gray-700">I authorized this inquiry (for tracking only)</span>
+            <span className="text-sm text-gray-700 dark:text-slate-200">I authorized this inquiry (for tracking only)</span>
           </label>
         </div>
       </div>
 
       {/* Inquiries List */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Your Hard Inquiries</h2>
         
         {inquiries.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-gray-500 dark:text-slate-400">
             No inquiries added yet. Add your hard inquiries above.
           </div>
         )}
 
         <div className="space-y-4">
           {inquiries.map((inquiry) => (
-            <div key={inquiry.id} className="border border-gray-200 rounded-lg p-4">
+            <div key={inquiry.id} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-lg font-semibold text-gray-800">{inquiry.creditorName}</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-slate-100">{inquiry.creditorName}</h3>
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       inquiry.authorized 
                         ? 'bg-green-100 text-green-800' 
@@ -209,12 +209,12 @@ Sincerely,
                       {inquiry.authorized ? 'Authorized' : 'Unauthorized'}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-slate-300">
                     Date: {new Date(inquiry.inquiryDate).toLocaleDateString()}
                   </p>
                   {!inquiry.authorized && (
                     <p className="text-sm text-green-600 mt-1">
-                      ✓ Can be disputed - Estimated impact: +5-10 points
+                      Can be disputed - Estimated impact: +5-10 points
                     </p>
                   )}
                 </div>
@@ -232,7 +232,7 @@ Sincerely,
                     <button
                       onClick={() => generateLetter(inquiry)}
                       disabled={loading}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
                     >
                       Generate Dispute Letter
                     </button>
@@ -257,11 +257,11 @@ Sincerely,
 
               {generatedLetters[inquiry.id] && (
                 <details className="mt-3">
-                  <summary className="cursor-pointer text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                  <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-700 font-medium">
                     View Letter
                   </summary>
-                  <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                    <pre className="whitespace-pre-wrap text-xs text-gray-800 font-mono">
+                  <div className="mt-2 p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
+                    <pre className="whitespace-pre-wrap text-xs text-gray-800 dark:text-slate-100 font-mono">
                       {generatedLetters[inquiry.id]}
                     </pre>
                   </div>

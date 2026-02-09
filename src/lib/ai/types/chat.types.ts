@@ -24,7 +24,7 @@ export interface ChatSession {
   userId: string;
   title: string;
   sessionType: SessionType;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
   financialSnapshot: FinancialSnapshot | null;
   messageCount: number;
   totalTokensUsed: number;
@@ -68,7 +68,7 @@ export interface ChatMessage {
   entities: ExtractedEntities | null;
   actionTaken: ActionTaken | null;
   actionResult: ActionResult | null;
-  referencedData: Record<string, any> | null;
+  referencedData: Record<string, unknown> | null;
   tokensUsed: number;
   modelUsed: string | null;
   latencyMs: number;
@@ -102,7 +102,7 @@ export interface Intent {
   confidence: number;       // 0-1
   reason: string;          // Why this intent was chosen
   requiresConfirmation: boolean;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 // ============================================================================
@@ -117,7 +117,7 @@ export interface ExtractedEntities {
   goalTypes?: string[];
   percentages?: number[];
   timeframes?: string[];
-  [key: string]: any;
+  [key: string]: MoneyAmount[] | DateEntity[] | string[] | number[] | undefined;
 }
 
 export interface MoneyAmount {
@@ -140,7 +140,7 @@ export interface DateEntity {
 
 export interface ActionTaken {
   type: IntentType;
-  params: Record<string, any>;
+  params: Record<string, unknown>;
   requiresConfirmation: boolean;
   confirmedAt: Date | null;
 }
@@ -148,7 +148,7 @@ export interface ActionTaken {
 export interface ActionResult {
   success: boolean;
   type: string;
-  data: any;
+  data: unknown;
   message: string;
   error?: string;
 }
@@ -187,7 +187,7 @@ export interface ChatResponse {
 export interface CreateSessionRequest {
   sessionType: SessionType;
   initialMessage?: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 export interface ListSessionsRequest {
@@ -202,7 +202,7 @@ export interface ListSessionsRequest {
 export interface UpdateSessionRequest {
   title?: string;
   status?: SessionStatus;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 // ============================================================================
@@ -217,7 +217,7 @@ export interface KnowledgeDocument {
   summary: string;
   tags: string[];
   embedding: number[];
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -250,7 +250,7 @@ export interface ConversationContext {
   pendingAction: PendingAction | null;
   conversationSummary: string | null;
   topics: string[];
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export interface PendingAction {
@@ -389,7 +389,7 @@ export class ChatError extends Error {
   constructor(
     message: string,
     public code: ChatErrorCode,
-    public details?: Record<string, any>
+    public details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'ChatError';
@@ -425,7 +425,7 @@ export interface ApiResponse<T> {
   error?: {
     code: string;
     message: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
   };
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }

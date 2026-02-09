@@ -16,7 +16,7 @@ export default function CreditScoreCard({ bureau, score, change }: CreditScoreCa
       case 'equifax':
         return 'from-blue-500 to-blue-600';
       case 'transunion':
-        return 'from-purple-500 to-purple-600';
+        return 'from-blue-500 to-blue-600';
     }
   };
 
@@ -34,15 +34,15 @@ export default function CreditScoreCard({ bureau, score, change }: CreditScoreCa
 
   if (!score) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">{getBureauName(bureau)}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{getBureauName(bureau)}</h3>
           <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${getBureauColor(bureau)} flex items-center justify-center text-white text-xl`}>
             {bureau.charAt(0).toUpperCase()}
           </div>
         </div>
         <div className="text-center py-8">
-          <p className="text-gray-500">No score available</p>
+          <p className="text-gray-500 dark:text-slate-400">No score available</p>
           <button
             type="button"
             className="mt-4 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -57,16 +57,16 @@ export default function CreditScoreCard({ bureau, score, change }: CreditScoreCa
   const rating = getScoreRating(score);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{getBureauName(bureau)}</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{getBureauName(bureau)}</h3>
         <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${getBureauColor(bureau)} flex items-center justify-center text-white text-xl`}>
           {bureau.charAt(0).toUpperCase()}
         </div>
       </div>
       
       <div className="mb-4">
-        <div className="text-4xl font-bold text-gray-900">{score}</div>
+        <div className="text-4xl font-bold text-gray-900 dark:text-white">{score}</div>
         <div className={`text-sm font-semibold ${rating.color} mt-1`}>{rating.label}</div>
       </div>
       
@@ -75,19 +75,19 @@ export default function CreditScoreCard({ bureau, score, change }: CreditScoreCa
           <span className={`text-sm font-semibold ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {change >= 0 ? '↑' : '↓'} {Math.abs(change)} points
           </span>
-          <span className="text-xs text-gray-500">30 days</span>
+          <span className="text-xs text-gray-500 dark:text-slate-400">30 days</span>
         </div>
       )}
       
       {/* Score Range Bar */}
       <div className="mt-4">
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
           <div
             className={`h-full bg-gradient-to-r ${getBureauColor(bureau)}`}
             style={{ width: `${(score / 850) * 100}%` }}
           ></div>
         </div>
-        <div className="flex justify-between text-xs text-gray-500 mt-1">
+        <div className="flex justify-between text-xs text-gray-500 dark:text-slate-400 mt-1">
           <span>300</span>
           <span>850</span>
         </div>

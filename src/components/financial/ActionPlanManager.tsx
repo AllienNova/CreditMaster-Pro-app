@@ -52,9 +52,19 @@ export default function ActionPlanManager() {
         throw new Error('Failed to fetch action plans');
       }
 
+      interface ApiRecommendation {
+        id?: string;
+        title: string;
+        description: string;
+        priority?: 'critical' | 'high' | 'medium' | 'low';
+        category?: string;
+        impact?: string;
+        timeframe?: string;
+        steps?: string[];
+      }
       const data = await response.json();
       // Transform recommendations into action plans
-      const plans: ActionPlan[] = data.recommendations?.map((rec: any, idx: number) => ({
+      const plans: ActionPlan[] = data.recommendations?.map((rec: ApiRecommendation, idx: number) => ({
         id: rec.id || `plan-${idx}`,
         title: rec.title,
         description: rec.description,
@@ -73,8 +83,8 @@ export default function ActionPlanManager() {
       })) || [];
 
       setActionPlans(plans);
-    } catch (error) {
-      console.error('Error fetching action plans:', error);
+    } catch (_error) {
+      // Error logged
       toast.error('Failed to load action plans', 'Please try again later');
     } finally {
       setLoading(false);
@@ -122,7 +132,7 @@ export default function ActionPlanManager() {
         : plan
     ));
 
-    toast.success('Action plan completed! 🎉', 'Congratulations on your progress!');
+    toast.success('Action plan completed! ', 'Congratulations on your progress!');
     setSelectedPlan(null);
   };
 
@@ -132,7 +142,7 @@ export default function ActionPlanManager() {
       case 'high': return 'bg-orange-100 text-orange-800 border-orange-300';
       case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'low': return 'bg-blue-100 text-blue-800 border-blue-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+      default: return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 border-gray-300 dark:border-slate-600';
     }
   };
 
@@ -157,7 +167,7 @@ export default function ActionPlanManager() {
       <div className="space-y-6 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-gray-200 rounded-lg h-64" />
+            <div key={i} className="bg-gray-200 dark:bg-slate-700 rounded-lg h-64" />
           ))}
         </div>
       </div>
@@ -171,31 +181,19 @@ export default function ActionPlanManager() {
         <div className="flex space-x-2">
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${ filter === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 border border-gray-300 dark:border-slate-600' }`}
           >
             All Plans ({actionPlans.length})
           </button>
           <button
             onClick={() => setFilter('active')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === 'active'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${ filter === 'active' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 border border-gray-300 dark:border-slate-600' }`}
           >
             Active ({actionPlans.filter(p => !p.completed).length})
           </button>
           <button
             onClick={() => setFilter('completed')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === 'completed'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${ filter === 'completed' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 border border-gray-300 dark:border-slate-600' }`}
           >
             Completed ({actionPlans.filter(p => p.completed).length})
           </button>
@@ -204,12 +202,12 @@ export default function ActionPlanManager() {
 
       {/* Action Plans Grid */}
       {filteredPlans.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="text-center py-12 bg-white dark:bg-slate-800 rounded-lg shadow">
+          <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No action plans</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No action plans</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
             {filter === 'completed' ? 'No completed plans yet' : 'Get started by visiting your AI Coach'}
           </p>
         </div>
@@ -219,7 +217,7 @@ export default function ActionPlanManager() {
             <div
               key={plan.id}
               className={`border-2 rounded-lg p-6 cursor-pointer hover:shadow-lg transition-all ${
-                plan.completed ? 'bg-green-50 border-green-200' : 'bg-white ' + getPriorityColor(plan.priority).split(' ')[2]
+                plan.completed ? 'bg-green-50 border-green-200' : 'bg-white dark:bg-slate-800 ' + getPriorityColor(plan.priority).split(' ')[2]
               }`}
               onClick={() => setSelectedPlan(plan)}
             >
@@ -227,11 +225,11 @@ export default function ActionPlanManager() {
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
                     <div className={`w-3 h-3 rounded-full mr-2 ${getPriorityBadgeColor(plan.priority)}`} />
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">
                       {plan.category}
                     </span>
                   </div>
-                  <h3 className="font-bold text-gray-900 text-lg mb-1">{plan.title}</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-1">{plan.title}</h3>
                 </div>
                 {plan.completed && (
                   <svg className="w-6 h-6 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -240,20 +238,20 @@ export default function ActionPlanManager() {
                 )}
               </div>
 
-              <p className="text-sm text-gray-600 mb-4 line-clamp-2">{plan.description}</p>
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-4 line-clamp-2">{plan.description}</p>
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-slate-400">
                   <span>Impact: {plan.estimatedImpact}</span>
                   <span>{plan.timeframe}</span>
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                  <div className="flex items-center justify-between text-xs text-gray-600 dark:text-slate-300 mb-1">
                     <span>Progress</span>
                     <span className="font-semibold">{Math.round(plan.progress)}%</span>
                   </div>
-                  <div className="bg-gray-200 rounded-full h-2">
+                  <div className="bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full transition-all ${plan.completed ? 'bg-green-500' : 'bg-blue-500'}`}
                       style={{ width: `${plan.progress}%` }}
@@ -261,7 +259,7 @@ export default function ActionPlanManager() {
                   </div>
                 </div>
 
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-slate-400">
                   {plan.steps.filter(s => s.completed).length} of {plan.steps.length} steps completed
                 </div>
               </div>
@@ -282,26 +280,26 @@ export default function ActionPlanManager() {
               <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(selectedPlan.priority)}`}>
                 {selectedPlan.priority.toUpperCase()}
               </span>
-              <span className="text-sm text-gray-500">{selectedPlan.category}</span>
+              <span className="text-sm text-gray-500 dark:text-slate-400">{selectedPlan.category}</span>
             </div>
 
-            <p className="text-gray-700">{selectedPlan.description}</p>
+            <p className="text-gray-700 dark:text-slate-200">{selectedPlan.description}</p>
 
-            <div className="grid grid-cols-2 gap-4 py-4 border-y border-gray-200">
+            <div className="grid grid-cols-2 gap-4 py-4 border-y border-gray-200 dark:border-slate-700">
               <div>
-                <div className="text-sm text-gray-500">Estimated Impact</div>
-                <div className="font-semibold text-gray-900">{selectedPlan.estimatedImpact}</div>
+                <div className="text-sm text-gray-500 dark:text-slate-400">Estimated Impact</div>
+                <div className="font-semibold text-gray-900 dark:text-white">{selectedPlan.estimatedImpact}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Timeframe</div>
-                <div className="font-semibold text-gray-900">{selectedPlan.timeframe}</div>
+                <div className="text-sm text-gray-500 dark:text-slate-400">Timeframe</div>
+                <div className="font-semibold text-gray-900 dark:text-white">{selectedPlan.timeframe}</div>
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-900">Action Steps</h4>
-                <span className="text-sm text-gray-500">
+                <h4 className="font-semibold text-gray-900 dark:text-white">Action Steps</h4>
+                <span className="text-sm text-gray-500 dark:text-slate-400">
                   {selectedPlan.steps.filter(s => s.completed).length}/{selectedPlan.steps.length} completed
                 </span>
               </div>
@@ -310,18 +308,18 @@ export default function ActionPlanManager() {
                   <div
                     key={step.id}
                     className={`flex items-start p-3 rounded-lg border ${
-                      step.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'
+                      step.completed ? 'bg-green-50 border-green-200' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={step.completed}
                       onChange={() => handleToggleStep(selectedPlan.id, step.id)}
-                      className="mt-1 mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="mt-1 mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded"
                       disabled={selectedPlan.completed}
                     />
                     <div className="flex-1">
-                      <span className={`text-sm ${step.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                      <span className={`text-sm ${step.completed ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>
                         {idx + 1}. {step.description}
                       </span>
                     </div>

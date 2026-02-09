@@ -64,12 +64,12 @@ export default function GoalCard({ goal, onEdit, onDelete, onToggleAutoSave }: G
 
   const getGoalIcon = (type: string): string => {
     switch (type) {
-      case 'emergency_fund': return '🚨';
-      case 'debt_payoff': return '💳';
-      case 'savings': return '💰';
-      case 'investment': return '📈';
-      case 'retirement': return '🏖️';
-      default: return '🎯';
+      case 'emergency_fund': return '';
+      case 'debt_payoff': return '';
+      case 'savings': return '';
+      case 'investment': return '';
+      case 'retirement': return '';
+      default: return '';
     }
   };
 
@@ -77,8 +77,8 @@ export default function GoalCard({ goal, onEdit, onDelete, onToggleAutoSave }: G
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-700';
       case 'active': return 'bg-blue-100 text-blue-700';
-      case 'paused': return 'bg-gray-100 text-gray-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'paused': return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200';
+      default: return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200';
     }
   };
 
@@ -86,13 +86,13 @@ export default function GoalCard({ goal, onEdit, onDelete, onToggleAutoSave }: G
   const daysRemaining = getDaysRemaining();
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <span className="text-4xl">{getGoalIcon(goal.type)}</span>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{goal.name}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{goal.name}</h3>
             <span className={`inline-block text-xs px-2 py-1 rounded-full ${getStatusColor(goal.status)}`}>
               {goal.status}
             </span>
@@ -101,31 +101,29 @@ export default function GoalCard({ goal, onEdit, onDelete, onToggleAutoSave }: G
         <div className="flex items-center gap-2">
           <button
             onClick={() => onEdit(goal)}
-            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="p-2 text-gray-600 dark:text-slate-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             aria-label="Edit goal"
           >
-            ✏️
-          </button>
+                      </button>
           <button
             onClick={() => onDelete(goal.id)}
-            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="p-2 text-gray-600 dark:text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             aria-label="Delete goal"
           >
-            🗑️
-          </button>
+                      </button>
         </div>
       </div>
 
       {/* Progress */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Progress</span>
-          <span className="text-sm font-semibold text-gray-900">
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Progress</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">
             {formatCurrency(goal.currentAmount)} / {formatCurrency(goal.targetAmount)}
           </span>
         </div>
         <GoalProgressBar progress={progress} />
-        <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+        <div className="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-slate-400">
           <span>{progress.toFixed(1)}% complete</span>
           <span>{daysRemaining > 0 ? `${daysRemaining} days left` : 'Overdue'}</span>
         </div>
@@ -133,11 +131,11 @@ export default function GoalCard({ goal, onEdit, onDelete, onToggleAutoSave }: G
 
       {/* Auto-Save Toggle */}
       {goal.status === 'active' && (
-        <div className="mb-4 p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
+        <div className="mb-4 p-3 bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <div className="text-sm font-medium text-gray-900">Auto-Save</div>
-              <div className="text-xs text-gray-600">
+              <div className="text-sm font-medium text-gray-900 dark:text-white">Auto-Save</div>
+              <div className="text-xs text-gray-600 dark:text-slate-300">
                 {goal.autoSaveEnabled 
                   ? `${formatCurrency(goal.autoSaveAmount || 0)}/month` 
                   : 'Not enabled'}
@@ -150,7 +148,7 @@ export default function GoalCard({ goal, onEdit, onDelete, onToggleAutoSave }: G
               }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${
                   goal.autoSaveEnabled ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
@@ -164,12 +162,12 @@ export default function GoalCard({ goal, onEdit, onDelete, onToggleAutoSave }: G
         <div>
           <button
             onClick={() => setShowMilestones(!showMilestones)}
-            className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 rounded-lg transition-colors"
           >
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
               Milestones ({goal.milestones.filter(m => m.achieved).length}/{goal.milestones.length})
             </span>
-            <span className="text-gray-500">{showMilestones ? '▲' : '▼'}</span>
+            <span className="text-gray-500 dark:text-slate-400">{showMilestones ? '▲' : '▼'}</span>
           </button>
 
           {showMilestones && (

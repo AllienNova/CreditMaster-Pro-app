@@ -31,7 +31,7 @@
         "gradleCommand": ":app:assembleRelease"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://staging.CPFI.pro",
+        "EXPO_PUBLIC_API_URL": "https://staging.Fynvita.pro",
         "EXPO_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
       },
@@ -49,7 +49,7 @@
         "autoIncrement": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.CPFI.pro",
+        "EXPO_PUBLIC_API_URL": "https://api.fynvita.com",
         "EXPO_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key"
       },
@@ -59,7 +59,7 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "developer@CPFI.pro",
+        "appleId": "developer@fynvita.com",
         "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
         "appleTeamId": "YOUR_APPLE_TEAM_ID"
       },

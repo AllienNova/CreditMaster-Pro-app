@@ -1,5 +1,5 @@
 /**
- * CPFI Bills & Payments Screen
+ * Fynvita Bills & Payments Screen
  * Upcoming bills calendar, reminders, auto-pay status
  */
 
@@ -89,7 +89,7 @@ export default function BillsScreen() {
         setBills(MOCK_BILLS);
       }
     } catch (err) {
-      console.warn('Using mock bills:', err);
+      // Fallback to mock data silently in production
       setBills(MOCK_BILLS);
     } finally {
       setLoading(false);

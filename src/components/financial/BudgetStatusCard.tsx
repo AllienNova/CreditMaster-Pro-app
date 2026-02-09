@@ -71,7 +71,7 @@ export default function BudgetStatusCard() {
       case 'on_track': return 'bg-blue-100 text-blue-700';
       case 'near_limit': return 'bg-yellow-100 text-yellow-700';
       case 'over_budget': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
+      default: return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200';
     }
   };
 
@@ -84,12 +84,12 @@ export default function BudgetStatusCard() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-        <div className="h-20 bg-gray-200 rounded mb-4"></div>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 animate-pulse">
+        <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/3 mb-4"></div>
+        <div className="h-20 bg-gray-200 dark:bg-slate-700 rounded mb-4"></div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded"></div>
+            <div key={i} className="h-16 bg-gray-200 dark:bg-slate-700 rounded"></div>
           ))}
         </div>
       </div>
@@ -98,11 +98,11 @@ export default function BudgetStatusCard() {
 
   if (!budgetStatus) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Budget Status</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Budget Status</h3>
         <div className="text-center py-8">
-          <div className="text-4xl mb-3">📊</div>
-          <p className="text-gray-600 mb-4">No budget set for this month</p>
+          <div className="text-4xl mb-3"></div>
+          <p className="text-gray-600 dark:text-slate-300 mb-4">No budget set for this month</p>
           <Link
             href="/financial/smart-budget"
             className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -115,29 +115,29 @@ export default function BudgetStatusCard() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Budget Status</h3>
-        <span className="text-sm text-gray-500">{budgetStatus.daysRemaining} days left</span>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Budget Status</h3>
+        <span className="text-sm text-gray-500 dark:text-slate-400">{budgetStatus.daysRemaining} days left</span>
       </div>
 
       {/* Overall Progress */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Overall Budget</span>
-          <span className="text-sm font-semibold text-gray-900">
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Overall Budget</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">
             {formatCurrency(budgetStatus.totalSpent)} / {formatCurrency(budgetStatus.totalBudgeted)}
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${getProgressColor(budgetStatus.percentUsed)}`}
             style={{ width: `${Math.min(100, budgetStatus.percentUsed)}%` }}
           ></div>
         </div>
         <div className="flex items-center justify-between mt-2">
-          <span className="text-xs text-gray-500">{budgetStatus.percentUsed.toFixed(1)}% used</span>
-          <span className="text-xs font-medium text-gray-700">
+          <span className="text-xs text-gray-500 dark:text-slate-400">{budgetStatus.percentUsed.toFixed(1)}% used</span>
+          <span className="text-xs font-medium text-gray-700 dark:text-slate-200">
             {formatCurrency(budgetStatus.totalRemaining)} remaining
           </span>
         </div>
@@ -147,7 +147,7 @@ export default function BudgetStatusCard() {
       {(budgetStatus.categoriesOverBudget > 0 || budgetStatus.categoriesNearLimit > 0) && (
         <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div className="flex items-start gap-2">
-            <span className="text-lg">⚠️</span>
+            <span className="text-lg"></span>
             <div className="flex-1 text-sm">
               {budgetStatus.categoriesOverBudget > 0 && (
                 <div className="text-red-700 font-medium">
@@ -166,15 +166,15 @@ export default function BudgetStatusCard() {
 
       {/* Top Categories */}
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Top Categories</h4>
+        <h4 className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Top Categories</h4>
         {budgetStatus.topCategories.slice(0, 3).map((category) => (
           <div key={category.category} className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700 capitalize">
+              <span className="text-sm font-medium text-gray-700 dark:text-slate-200 capitalize">
                 {category.category.replace(/_/g, ' ')}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-slate-300">
                   {formatCurrency(category.spent)} / {formatCurrency(category.budgeted)}
                 </span>
                 <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(category.status)}`}>
@@ -182,7 +182,7 @@ export default function BudgetStatusCard() {
                 </span>
               </div>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${getProgressColor(category.percentUsed)}`}
                 style={{ width: `${Math.min(100, category.percentUsed)}%` }}
@@ -193,7 +193,7 @@ export default function BudgetStatusCard() {
       </div>
 
       {/* View All Link */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
+      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
         <Link
           href="/financial/smart-budget"
           className="block text-center text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"

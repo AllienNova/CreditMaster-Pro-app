@@ -116,7 +116,7 @@ export function AlertsPanel({
                 className={`flex-1 px-4 py-3 text-sm font-medium capitalize transition-colors ${
                   activeTab === tab
                     ? 'text-blue-400 border-b-2 border-blue-400'
-                    : 'text-gray-400 hover:text-white'
+                    : 'text-gray-400 dark:text-slate-500 hover:text-white'
                 }`}
               >
                 {tab}
@@ -143,7 +143,7 @@ export function AlertsPanel({
             />
           )}
           {activeTab === 'create' && !symbol && (
-            <div className="p-4 text-center text-gray-500">
+            <div className="p-4 text-center text-gray-500 dark:text-slate-400">
               Please select a symbol to create an alert.
             </div>
           )}
@@ -170,17 +170,16 @@ export function AlertsPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
         <h2 className="text-lg font-semibold text-white">
-          🔔 Price Alerts
+          Price Alerts
           {symbol && (
-            <span className="text-gray-400 ml-2 text-sm">({symbol})</span>
+            <span className="text-gray-400 dark:text-slate-500 ml-2 text-sm">({symbol})</span>
           )}
         </h2>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors"
+          className="text-gray-400 dark:text-slate-500 hover:text-white transition-colors"
         >
-          ✕
-        </button>
+                  </button>
       </div>
 
       {/* Stats Bar */}
@@ -188,9 +187,9 @@ export function AlertsPanel({
         <div className="flex items-center gap-4 px-4 py-2 bg-gray-800/50 border-b border-gray-700 text-sm">
           <span className="text-green-400">● {stats.activeAlerts} Active</span>
           <span className="text-yellow-400">
-            ⚡ {stats.triggeredToday} Today
+            {stats.triggeredToday} Today
           </span>
-          <span className="text-gray-400">📊 {stats.totalAlerts} Total</span>
+          <span className="text-gray-400 dark:text-slate-500">{stats.totalAlerts} Total</span>
         </div>
       )}
 
@@ -204,14 +203,14 @@ export function AlertsPanel({
               className={`flex-1 py-2 text-sm font-medium transition-colors ${
                 activeTab === tab
                   ? 'text-blue-400 border-b-2 border-blue-400'
-                  : 'text-gray-400 hover:text-white'
+                  : 'text-gray-400 dark:text-slate-500 hover:text-white'
               }`}
             >
-              {tab === 'active' && '📋'}
-              {tab === 'create' && '➕'}
+              {tab === 'active' && ''}
+              {tab === 'create' && ''}
               {tab === 'notifications' &&
-                `🔔 (${notifications.filter((n) => !n.read).length})`}
-              {tab === 'history' && '📜'}
+                `(${notifications.filter((n) => !n.read).length})`}
+              {tab === 'history' && ''}
               <span className="ml-1 capitalize">{tab}</span>
             </button>
           )
@@ -274,8 +273,8 @@ function ActiveAlertsList({
 }: ActiveAlertsListProps) {
   if (alerts.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-400">
-        <div className="text-4xl mb-2">🔕</div>
+      <div className="text-center py-8 text-gray-400 dark:text-slate-500">
+        <div className="text-4xl mb-2"></div>
         <p>No active alerts</p>
         <p className="text-sm mt-1">Create an alert to get notified</p>
       </div>
@@ -311,17 +310,17 @@ function AlertCard({ alert, onDelete, onToggle }: AlertCardProps) {
     const icons: Record<AlertType, string> = {
       price_above: '⬆️',
       price_below: '⬇️',
-      percent_change: '📊',
-      volume_spike: '📈',
-      indicator_crossover: '🎯',
-      pattern_detected: '🔍',
+      percent_change: '',
+      volume_spike: '',
+      indicator_crossover: '',
+      pattern_detected: '',
     };
     return icons[type];
   };
 
   const getPriorityColor = (priority: AlertPriority) => {
     const colors: Record<AlertPriority, string> = {
-      low: 'text-gray-400',
+      low: 'text-gray-400 dark:text-slate-500',
       medium: 'text-blue-400',
       high: 'text-yellow-400',
       critical: 'text-red-400',
@@ -336,7 +335,7 @@ function AlertCard({ alert, onDelete, onToggle }: AlertCardProps) {
           <span className="text-lg">{getAlertIcon(alert.type)}</span>
           <div>
             <div className="font-medium text-white">{alert.symbol}</div>
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-gray-400 dark:text-slate-500">
               {alert.type === 'price_above' &&
                 `Above $${alert.condition.targetPrice?.toFixed(2)}`}
               {alert.type === 'price_below' &&
@@ -357,30 +356,29 @@ function AlertCard({ alert, onDelete, onToggle }: AlertCardProps) {
           </span>
           <button
             onClick={onToggle}
-            className="text-gray-400 hover:text-yellow-400 transition-colors"
+            className="text-gray-400 dark:text-slate-500 hover:text-yellow-400 transition-colors"
             title="Pause alert"
           >
             ⏸️
           </button>
           <button
             onClick={onDelete}
-            className="text-gray-400 hover:text-red-400 transition-colors"
+            className="text-gray-400 dark:text-slate-500 hover:text-red-400 transition-colors"
             title="Delete alert"
           >
-            🗑️
-          </button>
+                      </button>
         </div>
       </div>
 
       {alert.message && (
-        <div className="mt-2 text-sm text-gray-500 italic">
+        <div className="mt-2 text-sm text-gray-500 dark:text-slate-400 italic">
           "{alert.message}"
         </div>
       )}
 
-      <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
+      <div className="mt-2 flex items-center gap-3 text-xs text-gray-500 dark:text-slate-400">
         <span>Created: {new Date(alert.createdAt).toLocaleDateString()}</span>
-        {alert.repeatEnabled && <span>🔁 Repeating</span>}
+        {alert.repeatEnabled && <span>Repeating</span>}
         {alert.expiresAt && (
           <span>Expires: {new Date(alert.expiresAt).toLocaleDateString()}</span>
         )}
@@ -458,7 +456,7 @@ function CreateAlertForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Symbol */}
       <div>
-        <label className="block text-sm text-gray-400 mb-1">Symbol</label>
+        <label className="block text-sm text-gray-400 dark:text-slate-500 mb-1">Symbol</label>
         <input
           type="text"
           value={symbolInput}
@@ -471,7 +469,7 @@ function CreateAlertForm({
 
       {/* Alert Type */}
       <div>
-        <label className="block text-sm text-gray-400 mb-1">Alert Type</label>
+        <label className="block text-sm text-gray-400 dark:text-slate-500 mb-1">Alert Type</label>
         <select
           value={alertType}
           onChange={(e) => setAlertType(e.target.value as AlertType)}
@@ -488,11 +486,11 @@ function CreateAlertForm({
       {/* Price Target (for price alerts) */}
       {(alertType === 'price_above' || alertType === 'price_below') && (
         <div>
-          <label className="block text-sm text-gray-400 mb-1">
+          <label className="block text-sm text-gray-400 dark:text-slate-500 mb-1">
             Target Price
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-2 text-gray-400">$</span>
+            <span className="absolute left-3 top-2 text-gray-400 dark:text-slate-500">$</span>
             <input
               type="number"
               step="0.01"
@@ -504,7 +502,7 @@ function CreateAlertForm({
             />
           </div>
           {currentPrice && (
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
               Current: ${currentPrice.toFixed(2)}
             </p>
           )}
@@ -514,7 +512,7 @@ function CreateAlertForm({
       {/* Percent Change */}
       {alertType === 'percent_change' && (
         <div>
-          <label className="block text-sm text-gray-400 mb-1">
+          <label className="block text-sm text-gray-400 dark:text-slate-500 mb-1">
             Percent Change
           </label>
           <div className="relative">
@@ -527,14 +525,14 @@ function CreateAlertForm({
               placeholder="5"
               required
             />
-            <span className="absolute right-3 top-2 text-gray-400">%</span>
+            <span className="absolute right-3 top-2 text-gray-400 dark:text-slate-500">%</span>
           </div>
         </div>
       )}
 
       {/* Priority */}
       <div>
-        <label className="block text-sm text-gray-400 mb-1">Priority</label>
+        <label className="block text-sm text-gray-400 dark:text-slate-500 mb-1">Priority</label>
         <div className="flex gap-2">
           {(['low', 'medium', 'high', 'critical'] as AlertPriority[]).map(
             (p) => (
@@ -551,7 +549,7 @@ function CreateAlertForm({
                         : p === 'medium'
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-600 text-white'
-                    : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                    : 'bg-gray-700 text-gray-400 dark:text-slate-500 hover:bg-gray-600'
                 }`}
               >
                 {p}
@@ -563,7 +561,7 @@ function CreateAlertForm({
 
       {/* Message */}
       <div>
-        <label className="block text-sm text-gray-400 mb-1">
+        <label className="block text-sm text-gray-400 dark:text-slate-500 mb-1">
           Note (optional)
         </label>
         <input
@@ -584,7 +582,7 @@ function CreateAlertForm({
           onChange={(e) => setRepeatEnabled(e.target.checked)}
           className="w-4 h-4"
         />
-        <label htmlFor="repeat" className="text-sm text-gray-400">
+        <label htmlFor="repeat" className="text-sm text-gray-400 dark:text-slate-500">
           Repeat alert (with 1 hour cooldown)
         </label>
       </div>
@@ -615,8 +613,8 @@ function NotificationsList({
 }: NotificationsListProps) {
   if (notifications.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-400">
-        <div className="text-4xl mb-2">📭</div>
+      <div className="text-center py-8 text-gray-400 dark:text-slate-500">
+        <div className="text-4xl mb-2"></div>
         <p>No notifications</p>
       </div>
     );
@@ -641,11 +639,11 @@ function NotificationsList({
               )}
               <span className="font-medium text-white">{notif.title}</span>
             </div>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 dark:text-slate-400">
               {formatTimeAgo(notif.timestamp)}
             </span>
           </div>
-          <p className="text-sm text-gray-400 mt-1">{notif.message}</p>
+          <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">{notif.message}</p>
         </div>
       ))}
     </div>
@@ -663,8 +661,8 @@ interface AlertHistoryProps {
 function AlertHistory({ alerts }: AlertHistoryProps) {
   if (alerts.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-400">
-        <div className="text-4xl mb-2">📜</div>
+      <div className="text-center py-8 text-gray-400 dark:text-slate-500">
+        <div className="text-4xl mb-2"></div>
         <p>No alert history</p>
       </div>
     );
@@ -691,7 +689,7 @@ function AlertHistory({ alerts }: AlertHistoryProps) {
             <div className="flex items-start justify-between">
               <div>
                 <span className="font-medium text-white">{alert.symbol}</span>
-                <span className="text-sm text-gray-400 ml-2">
+                <span className="text-sm text-gray-400 dark:text-slate-500 ml-2">
                   {alert.type === 'price_above' &&
                     `Above $${alert.condition.targetPrice?.toFixed(2)}`}
                   {alert.type === 'price_below' &&
@@ -705,7 +703,7 @@ function AlertHistory({ alerts }: AlertHistoryProps) {
               </span>
             </div>
             {alert.triggeredAt && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                 Triggered: {new Date(alert.triggeredAt).toLocaleString()}
               </p>
             )}

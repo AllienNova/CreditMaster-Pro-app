@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Image } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { lightTheme } from '../../constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
+import { withOpacity } from '../../src/constants/theme';
 
 export default function EditProfileScreen() {
+  const { colors, spacing, borderRadius, fontSize, fontWeight } = useTheme();
+
   const [profile, setProfile] = useState({
     firstName: 'John',
     lastName: 'Doe',
@@ -27,50 +30,77 @@ export default function EditProfileScreen() {
   };
 
   const InputField = ({ label, value, field, keyboardType = 'default', autoCapitalize = 'words' }: any) => (
-    <View style={styles.inputGroup}>
-      <Text style={styles.label}>{label}</Text>
+    <View style={{ marginBottom: spacing.md }}>
+      <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary, marginBottom: 6, fontWeight: fontWeight.medium }}>{label}</Text>
       <TextInput
-        style={styles.input}
+        style={{
+          backgroundColor: colors.backgroundSecondary,
+          borderRadius: borderRadius.md,
+          padding: spacing.md - 4,
+          fontSize: fontSize.md,
+          borderWidth: 1,
+          borderColor: colors.borderLight,
+          color: colors.text,
+        }}
         value={value}
         onChangeText={(text) => setProfile({ ...profile, [field]: text })}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
-        placeholderTextColor="#999"
+        placeholderTextColor={colors.textMuted}
       />
     </View>
   );
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+    <ScrollView style={{ flex: 1, backgroundColor: colors.backgroundSecondary }}>
+      <View style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: spacing.md,
+        paddingTop: 50,
+        backgroundColor: colors.surface,
+      }}>
+        <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <Text style={{ fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.text }}>Edit Profile</Text>
         <TouchableOpacity onPress={handleSave} disabled={loading}>
-          <Text style={[styles.saveButton, loading && styles.saveButtonDisabled]}>
+          <Text style={[
+            { color: colors.primary, fontSize: fontSize.md, fontWeight: fontWeight.semibold },
+            loading && { opacity: 0.5 },
+          ]}>
             {loading ? 'Saving...' : 'Save'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.avatarSection}>
-        <View style={styles.avatarContainer}>
-          <Image source={{ uri: 'https://via.placeholder.com/100' }} style={styles.avatar} />
-          <TouchableOpacity style={styles.cameraButton}>
-            <Ionicons name="camera" size={16} color="#fff" />
+      <View style={{ alignItems: 'center', padding: spacing.lg, backgroundColor: colors.surface, marginBottom: spacing.md }}>
+        <View style={{ position: 'relative' as const }}>
+          <Image source={{ uri: 'https://via.placeholder.com/100' }} style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: colors.border }} />
+          <TouchableOpacity style={{
+            position: 'absolute' as const,
+            bottom: 0,
+            right: 0,
+            backgroundColor: colors.primary,
+            padding: spacing.sm,
+            borderRadius: borderRadius.xl,
+            borderWidth: 2,
+            borderColor: colors.white,
+          }}>
+            <Ionicons name="camera" size={16} color={colors.white} />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity><Text style={styles.changePhotoText}>Change Photo</Text></TouchableOpacity>
+        <TouchableOpacity><Text style={{ color: colors.primary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, marginTop: spacing.md - 4 }}>Change Photo</Text></TouchableOpacity>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Personal Information</Text>
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
+      <View style={{ backgroundColor: colors.surface, padding: spacing.md, marginBottom: spacing.md }}>
+        <Text style={{ fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: spacing.md, color: colors.text }}>Personal Information</Text>
+        <View style={{ flexDirection: 'row', gap: spacing.md - 4 }}>
+          <View style={{ flex: 1 }}>
             <InputField label="First Name" value={profile.firstName} field="firstName" />
           </View>
-          <View style={styles.halfInput}>
+          <View style={{ flex: 1 }}>
             <InputField label="Last Name" value={profile.lastName} field="lastName" />
           </View>
         </View>
@@ -79,66 +109,43 @@ export default function EditProfileScreen() {
         <InputField label="Date of Birth" value={profile.dateOfBirth} field="dateOfBirth" />
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Address</Text>
+      <View style={{ backgroundColor: colors.surface, padding: spacing.md, marginBottom: spacing.md }}>
+        <Text style={{ fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: spacing.md, color: colors.text }}>Address</Text>
         <InputField label="Street Address" value={profile.address} field="address" />
         <InputField label="City" value={profile.city} field="city" />
-        <View style={styles.row}>
-          <View style={styles.halfInput}>
+        <View style={{ flexDirection: 'row', gap: spacing.md - 4 }}>
+          <View style={{ flex: 1 }}>
             <InputField label="State" value={profile.state} field="state" />
           </View>
-          <View style={styles.halfInput}>
+          <View style={{ flex: 1 }}>
             <InputField label="ZIP Code" value={profile.zip} field="zip" keyboardType="numeric" />
           </View>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Identity Verification</Text>
-        <View style={styles.verificationCard}>
-          <View style={styles.verificationIcon}>
-            <Ionicons name="shield-checkmark" size={24} color="#00AA00" />
+      <View style={{ backgroundColor: colors.surface, padding: spacing.md, marginBottom: spacing.md }}>
+        <Text style={{ fontSize: fontSize.md, fontWeight: fontWeight.semibold, marginBottom: spacing.md, color: colors.text }}>Identity Verification</Text>
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: withOpacity(colors.success, 0.1),
+          padding: spacing.md,
+          borderRadius: borderRadius.lg,
+        }}>
+          <View style={{ marginRight: spacing.md - 4 }}>
+            <Ionicons name="shield-checkmark" size={24} color={colors.success} />
           </View>
-          <View style={styles.verificationContent}>
-            <Text style={styles.verificationTitle}>Identity Verified</Text>
-            <Text style={styles.verificationText}>Your identity was verified on Jan 10, 2024</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.success }}>Identity Verified</Text>
+            <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 }}>Your identity was verified on Jan 10, 2024</Text>
           </View>
         </View>
       </View>
 
-      <TouchableOpacity style={styles.deleteButton}>
-        <Ionicons name="trash-outline" size={20} color="#CC0000" />
-        <Text style={styles.deleteButtonText}>Delete Account</Text>
+      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: spacing.md, marginVertical: spacing.lg, gap: spacing.sm }}>
+        <Ionicons name="trash-outline" size={20} color={colors.error} />
+        <Text style={{ color: colors.error, fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>Delete Account</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, paddingTop: 50, backgroundColor: '#fff' },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '600' },
-  saveButton: { color: lightTheme.colors.primary, fontSize: 16, fontWeight: '600' },
-  saveButtonDisabled: { opacity: 0.5 },
-  avatarSection: { alignItems: 'center', padding: 24, backgroundColor: '#fff', marginBottom: 16 },
-  avatarContainer: { position: 'relative' },
-  avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#ddd' },
-  cameraButton: { position: 'absolute', bottom: 0, right: 0, backgroundColor: lightTheme.colors.primary, padding: 8, borderRadius: 16, borderWidth: 2, borderColor: '#fff' },
-  changePhotoText: { color: lightTheme.colors.primary, fontSize: 14, fontWeight: '600', marginTop: 12 },
-  section: { backgroundColor: '#fff', padding: 16, marginBottom: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 16, color: '#333' },
-  row: { flexDirection: 'row', gap: 12 },
-  halfInput: { flex: 1 },
-  inputGroup: { marginBottom: 16 },
-  label: { fontSize: 12, color: '#666', marginBottom: 6, fontWeight: '500' },
-  input: { backgroundColor: '#f5f5f5', borderRadius: 8, padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#eee' },
-  verificationCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', padding: 16, borderRadius: 12 },
-  verificationIcon: { marginRight: 12 },
-  verificationContent: { flex: 1 },
-  verificationTitle: { fontSize: 14, fontWeight: '600', color: '#2E7D32' },
-  verificationText: { fontSize: 12, color: '#666', marginTop: 2 },
-  deleteButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, marginVertical: 24, gap: 8 },
-  deleteButtonText: { color: '#CC0000', fontSize: 16, fontWeight: '600' },
-});
-

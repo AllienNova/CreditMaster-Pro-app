@@ -337,17 +337,24 @@ export const handlers = [
   // 6. Credit Monitoring - AI Credit Insights
   rest.get(`${BASE_URL}/api/financial/credit/ai-insights`, (req, res, ctx) => {
     return res(ctx.json({
+      success: true,
       data: {
-        creditHealthScore: 78,
-        scorePredictions: [
+        overallHealthScore: 78,
+        predictions: [
           {
             timeframe: '30_days',
             predictedScore: 665,
             confidence: 85,
             factors: ['Reduced credit utilization', 'On-time payments', 'Account age'],
           },
+          {
+            timeframe: '90_days',
+            predictedScore: 680,
+            confidence: 78,
+            factors: ['Continued on-time payments', 'Lower utilization', 'Account age growth'],
+          },
         ],
-        factorImpacts: [
+        factorAnalysis: [
           {
             factor: 'Payment History',
             currentImpact: 'positive',
@@ -355,6 +362,14 @@ export const handlers = [
             description: 'Your payment history is excellent with 100% on-time payments',
             recommendation: 'Continue making all payments on time',
             potentialImprovement: 0,
+          },
+          {
+            factor: 'Credit Utilization',
+            currentImpact: 'neutral',
+            impactScore: 0,
+            description: 'Your credit utilization is at 32%, slightly above the recommended 30%',
+            recommendation: 'Pay down balances to below 30% utilization',
+            potentialImprovement: 15,
           },
         ],
         improvementOpportunities: [
@@ -372,6 +387,20 @@ export const handlers = [
             ],
             priority: 'high',
           },
+          {
+            id: '2',
+            title: 'Become an authorized user',
+            description: 'Ask a family member with excellent credit to add you as an authorized user',
+            difficulty: 'easy',
+            timeframe: '30-45 days',
+            potentialIncrease: 15,
+            steps: [
+              'Find someone with excellent credit history',
+              'Request to be added as authorized user',
+              'Ensure they have low utilization',
+            ],
+            priority: 'medium',
+          },
         ],
         alerts: [
           {
@@ -383,6 +412,15 @@ export const handlers = [
             date: '2025-12-25',
             actionable: true,
           },
+          {
+            id: '2',
+            type: 'new_account',
+            severity: 'low',
+            title: 'New Account Opened',
+            description: 'A new credit card account was opened',
+            date: '2025-12-20',
+            actionable: false,
+          },
         ],
         recommendedActions: [
           'Pay down credit card balances',
@@ -390,6 +428,70 @@ export const handlers = [
           'Monitor credit reports monthly',
         ],
       },
+    }));
+  }),
+
+  // 6b. Credit Factors
+  rest.get(`${BASE_URL}/api/credit/factors`, (req, res, ctx) => {
+    return res(ctx.json({
+      success: true,
+      data: [
+        {
+          id: 'payment_history',
+          name: 'Payment History',
+          impact: 'positive',
+          category: 'payment_history',
+          status: 'good',
+          value: '98% on-time payments',
+          description: 'You have a strong payment history.',
+          recommendation: 'Continue making payments on time.',
+          percentImpact: 35,
+        },
+        {
+          id: 'credit_utilization',
+          name: 'Credit Utilization',
+          impact: 'neutral',
+          category: 'credit_utilization',
+          status: 'fair',
+          value: '32% utilization',
+          description: 'Your utilization is slightly above 30%.',
+          recommendation: 'Pay down balances to below 30%.',
+          percentImpact: 30,
+        },
+        {
+          id: 'credit_age',
+          name: 'Credit Age',
+          impact: 'positive',
+          category: 'credit_age',
+          status: 'good',
+          value: '7 years average',
+          description: 'Your credit history length is good.',
+          recommendation: 'Keep old accounts open to maintain average age.',
+          percentImpact: 15,
+        },
+        {
+          id: 'credit_mix',
+          name: 'Credit Mix',
+          impact: 'positive',
+          category: 'credit_mix',
+          status: 'good',
+          value: '4 account types',
+          description: 'You have a diverse mix of credit accounts.',
+          recommendation: 'Maintain your current mix of credit types.',
+          percentImpact: 10,
+        },
+        {
+          id: 'new_credit',
+          name: 'New Credit',
+          impact: 'neutral',
+          category: 'new_credit',
+          status: 'fair',
+          value: '2 inquiries (6 months)',
+          description: 'You have a moderate number of recent inquiries.',
+          recommendation: 'Avoid applying for new credit in the next 6 months.',
+          percentImpact: 10,
+        },
+      ],
     }));
   }),
 
@@ -553,6 +655,57 @@ export const handlers = [
           'Consider rebalancing to maintain target allocations',
           'Market conditions favor defensive stocks',
         ],
+      },
+    }));
+  }),
+
+  // 8b. Investments - Comprehensive Analysis
+  rest.post(`${BASE_URL}/api/investments/comprehensive-analysis`, async (req, res, ctx) => {
+    const body = await req.json();
+    const { symbol = 'AAPL', timeframe = '1d' } = body;
+
+    return res(ctx.json({
+      success: true,
+      data: {
+        symbol: symbol.toUpperCase(),
+        analyzedAt: new Date().toISOString(),
+        currentPrice: 150.25,
+        overallSignal: 'buy',
+        overallConfidence: 0.85,
+        riskLevel: 'moderate',
+        compositeScore: {
+          overall: 75,
+          technical: 80,
+          fundamental: 70,
+          sentiment: 75,
+          pattern: 72,
+          confidence: 0.85,
+          signal: 'buy',
+        },
+        correlationAnalysis: {
+          overallAlignment: 0.78,
+          alignmentLevel: 'strong',
+          technicalFundamentalCorrelation: 0.82,
+          sentimentTechnicalCorrelation: 0.75,
+          patternSentimentCorrelation: 0.77,
+        },
+        keyInsights: [
+          'Strong technical momentum with RSI at 65',
+          'Positive earnings trend over last 4 quarters',
+          'Sentiment analysis shows bullish market sentiment',
+          'Pattern recognition identifies bullish flag formation',
+        ],
+        risks: [
+          'Market volatility may increase in short term',
+          'Sector rotation risk from tech to value stocks',
+          'Potential resistance at $155 price level',
+        ],
+        opportunities: [
+          'Growth potential in AI and services segments',
+          'Market expansion in emerging markets',
+          'Strong cash flow supports dividend growth',
+        ],
+        summary: 'Strong buy signal with high confidence based on alignment across technical, fundamental, sentiment, and pattern analysis. Consider entry near current levels with stop loss at $145.',
       },
     }));
   }),

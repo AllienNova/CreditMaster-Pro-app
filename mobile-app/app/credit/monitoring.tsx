@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Monitoring Dashboard Screen
+ * Fynvita Credit Monitoring Dashboard Screen
  * Main dashboard for credit monitoring features
  */
 

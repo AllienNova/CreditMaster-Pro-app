@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Attorneys Marketplace Screen
+ * Fynvita Credit Attorneys Marketplace Screen
  * Find credit repair attorneys
  */
 

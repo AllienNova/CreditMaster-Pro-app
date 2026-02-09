@@ -1,11 +1,11 @@
 /**
- * CPFI Progress Bar Component
+ * Fynvita Progress Bar Component
  * Linear progress indicator for goals, budgets, debt payoff, etc.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { lightTheme as theme } from '../constants/theme';
+import React, { useMemo } from 'react';
+import { View, Text, ViewStyle } from 'react-native';
+import { useTheme } from '../hooks/useTheme';
 
 interface ProgressBarProps {
   progress: number; // 0-1 (0% to 100%)
@@ -21,30 +21,56 @@ interface ProgressBarProps {
 export function ProgressBar({
   progress,
   height = 8,
-  color = theme.colors.primary,
-  backgroundColor = '#E5E7EB',
+  color,
+  backgroundColor,
   showPercentage = false,
   label,
-  animated = true,
   style,
 }: ProgressBarProps) {
+  const { colors, fontSize, fontWeight } = useTheme();
+
+  const fillColor = color ?? colors.primary;
+  const trackColor = backgroundColor ?? colors.gray200;
+
   const normalizedProgress = Math.min(1, Math.max(0, progress));
   const percentage = Math.round(normalizedProgress * 100);
+
+  const styles = useMemo(() => ({
+    container: {
+      width: '100%' as const,
+    },
+    label: {
+      fontSize: fontSize.sm,
+      fontWeight: fontWeight.semibold,
+      color: colors.text,
+      marginBottom: 4,
+    },
+    track: {
+      width: '100%' as const,
+      height,
+      backgroundColor: trackColor,
+      borderRadius: 999,
+      overflow: 'hidden' as const,
+    },
+    fill: {
+      width: `${percentage}%` as const,
+      backgroundColor: fillColor,
+      height,
+      borderRadius: 999,
+    },
+    percentage: {
+      fontSize: fontSize.xs,
+      color: colors.textSecondary,
+      marginTop: 4,
+      textAlign: 'right' as const,
+    },
+  }), [colors, fontSize, fontWeight, height, trackColor, fillColor, percentage]);
 
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <View style={[styles.track, { height, backgroundColor }]}>
-        <View
-          style={[
-            styles.fill,
-            {
-              width: `${percentage}%`,
-              backgroundColor: color,
-              height,
-            },
-          ]}
-        />
+      <View style={styles.track}>
+        <View style={styles.fill} />
       </View>
       {showPercentage && (
         <Text style={styles.percentage}>{percentage}%</Text>
@@ -53,31 +79,4 @@ export function ProgressBar({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: 4,
-  },
-  track: {
-    width: '100%',
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  fill: {
-    borderRadius: 999,
-  },
-  percentage: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginTop: 4,
-    textAlign: 'right',
-  },
-});
-
 export default ProgressBar;
-

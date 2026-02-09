@@ -437,6 +437,430 @@ export interface Database {
           updated_at?: string
         }
       }
+      portfolios: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          description: string | null
+          benchmark: string | null
+          is_default: boolean
+          total_value: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          description?: string | null
+          benchmark?: string | null
+          is_default?: boolean
+          total_value?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          description?: string | null
+          benchmark?: string | null
+          is_default?: boolean
+          total_value?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      portfolio_holdings: {
+        Row: {
+          id: string
+          portfolio_id: string
+          symbol: string
+          shares: number
+          cost_basis: number
+          current_price: number
+          current_value: number
+          sector: string | null
+          asset_class: string | null
+          purchase_date: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          portfolio_id: string
+          symbol: string
+          shares: number
+          cost_basis: number
+          current_price?: number
+          current_value?: number
+          sector?: string | null
+          asset_class?: string | null
+          purchase_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          portfolio_id?: string
+          symbol?: string
+          shares?: number
+          cost_basis?: number
+          current_price?: number
+          current_value?: number
+          sector?: string | null
+          asset_class?: string | null
+          purchase_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      // Financial Vitality Score Tables
+      income_sources: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          amount: number
+          frequency: 'weekly' | 'biweekly' | 'semimonthly' | 'monthly'
+          next_pay_date: string
+          last_pay_date: string | null
+          account_id: string | null
+          is_auto_detected: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          amount: number
+          frequency: 'weekly' | 'biweekly' | 'semimonthly' | 'monthly'
+          next_pay_date: string
+          last_pay_date?: string | null
+          account_id?: string | null
+          is_auto_detected?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          amount?: number
+          frequency?: 'weekly' | 'biweekly' | 'semimonthly' | 'monthly'
+          next_pay_date?: string
+          last_pay_date?: string | null
+          account_id?: string | null
+          is_auto_detected?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      user_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          merchant_name: string
+          amount: number
+          frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+          category: string
+          status: 'active' | 'pending_cancellation' | 'cancelled' | 'paused'
+          next_billing_date: string | null
+          detected_from_bill_id: string | null
+          cancellation_status: string | null
+          cancelled_at: string | null
+          annual_cost: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          merchant_name: string
+          amount: number
+          frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+          category: string
+          status?: 'active' | 'pending_cancellation' | 'cancelled' | 'paused'
+          next_billing_date?: string | null
+          detected_from_bill_id?: string | null
+          cancellation_status?: string | null
+          cancelled_at?: string | null
+          annual_cost: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          merchant_name?: string
+          amount?: number
+          frequency?: 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+          category?: string
+          status?: 'active' | 'pending_cancellation' | 'cancelled' | 'paused'
+          next_billing_date?: string | null
+          detected_from_bill_id?: string | null
+          cancellation_status?: string | null
+          cancelled_at?: string | null
+          annual_cost?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      cancellation_requests: {
+        Row: {
+          id: string
+          subscription_id: string
+          user_id: string
+          status: 'initiated' | 'in_progress' | 'completed' | 'failed'
+          method: 'ai_assist' | 'self_service' | 'contact_info'
+          ai_script: string | null
+          instructions: Json | null
+          contact_info: Json | null
+          outcome: 'cancelled' | 'retained' | 'pending' | null
+          notes: string | null
+          savings_amount: number
+          created_at: string
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          subscription_id: string
+          user_id: string
+          status?: 'initiated' | 'in_progress' | 'completed' | 'failed'
+          method: 'ai_assist' | 'self_service' | 'contact_info'
+          ai_script?: string | null
+          instructions?: Json | null
+          contact_info?: Json | null
+          outcome?: 'cancelled' | 'retained' | 'pending' | null
+          notes?: string | null
+          savings_amount: number
+          created_at?: string
+          completed_at?: string | null
+        }
+        Update: {
+          id?: string
+          subscription_id?: string
+          user_id?: string
+          status?: 'initiated' | 'in_progress' | 'completed' | 'failed'
+          method?: 'ai_assist' | 'self_service' | 'contact_info'
+          ai_script?: string | null
+          instructions?: Json | null
+          contact_info?: Json | null
+          outcome?: 'cancelled' | 'retained' | 'pending' | null
+          notes?: string | null
+          savings_amount?: number
+          created_at?: string
+          completed_at?: string | null
+        }
+      }
+      transaction_rules: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          description: string | null
+          conditions: Json
+          condition_logic: 'AND' | 'OR'
+          actions: Json
+          is_active: boolean
+          priority: number
+          match_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          description?: string | null
+          conditions: Json
+          condition_logic?: 'AND' | 'OR'
+          actions: Json
+          is_active?: boolean
+          priority?: number
+          match_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          description?: string | null
+          conditions?: Json
+          condition_logic?: 'AND' | 'OR'
+          actions?: Json
+          is_active?: boolean
+          priority?: number
+          match_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      vitality_scores: {
+        Row: {
+          id: string
+          user_id: string
+          overall: number
+          grade: string
+          percentile: number
+          components: Json
+          trend: string
+          trend_percentage: number
+          quick_wins: Json | null
+          next_milestone: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          overall: number
+          grade: string
+          percentile: number
+          components: Json
+          trend?: string
+          trend_percentage?: number
+          quick_wins?: Json | null
+          next_milestone?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          overall?: number
+          grade?: string
+          percentile?: number
+          components?: Json
+          trend?: string
+          trend_percentage?: number
+          quick_wins?: Json | null
+          next_milestone?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      vitality_score_history: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          overall: number
+          credit: number
+          spending: number
+          savings: number
+          debt: number
+          investments: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          overall: number
+          credit: number
+          spending: number
+          savings: number
+          debt: number
+          investments: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          overall?: number
+          credit?: number
+          spending?: number
+          savings?: number
+          debt?: number
+          investments?: number
+          created_at?: string
+        }
+      }
+      transactions: {
+        Row: {
+          id: string
+          user_id: string
+          account_id: string | null
+          date: string
+          amount: number
+          merchant_name: string | null
+          category: string | null
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          account_id?: string | null
+          date: string
+          amount: number
+          merchant_name?: string | null
+          category?: string | null
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          account_id?: string | null
+          date?: string
+          amount?: number
+          merchant_name?: string | null
+          category?: string | null
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      // Web Push Subscriptions
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          keys_p256dh: string
+          keys_auth: string
+          user_agent: string | null
+          is_active: boolean
+          last_used: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          keys_p256dh: string
+          keys_auth: string
+          user_agent?: string | null
+          is_active?: boolean
+          last_used?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          endpoint?: string
+          keys_p256dh?: string
+          keys_auth?: string
+          user_agent?: string | null
+          is_active?: boolean
+          last_used?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

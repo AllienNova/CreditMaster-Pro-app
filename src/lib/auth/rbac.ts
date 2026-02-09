@@ -329,12 +329,13 @@ function getUserRole(user: User): Role {
 class RBAC {
   /**
    * Check if a user has a specific permission
+   * Accepts both typed Permission or string for flexibility with API guards
    */
-  hasPermission(user: User, permission: Permission): boolean {
+  hasPermission(user: User, permission: Permission | string): boolean {
     if (!user) return false;
     const role = getUserRole(user);
     const permissions = rolePermissions[role] || [];
-    return permissions.includes(permission);
+    return permissions.includes(permission as Permission);
   }
 
   /**

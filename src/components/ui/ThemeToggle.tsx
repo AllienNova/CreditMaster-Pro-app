@@ -56,11 +56,7 @@ export function ThemeToggle({ className = '', showLabel = false, variant = 'icon
     return (
       <button
         onClick={toggleTheme}
-        className={`p-2 rounded-lg transition-colors duration-200
-          text-gray-600 hover:text-gray-900 hover:bg-gray-100
-          dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-800
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-          dark:focus:ring-offset-gray-900 ${className}`}
+        className={`p-2 rounded-lg transition-colors duration-200 text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-gray-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${className}`}
         aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
       >
         <div className="relative w-5 h-5">
@@ -79,10 +75,7 @@ export function ThemeToggle({ className = '', showLabel = false, variant = 'icon
     return (
       <button
         onClick={toggleTheme}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors duration-200
-          bg-gray-100 hover:bg-gray-200 text-gray-700
-          dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300
-          focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors duration-200 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
         aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
       >
         {getIcon()}
@@ -102,10 +95,7 @@ export function ThemeToggle({ className = '', showLabel = false, variant = 'icon
     <div className={`relative ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors duration-200
-          bg-gray-100 hover:bg-gray-200 text-gray-700
-          dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300
-          focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors duration-200 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
@@ -119,15 +109,12 @@ export function ThemeToggle({ className = '', showLabel = false, variant = 'icon
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-2 w-40 py-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20">
+          <div className="absolute right-0 mt-2 w-40 py-1 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-20">
             {themes.map(({ value, label, icon }) => (
               <button
                 key={value}
                 onClick={() => { setTheme(value); setIsOpen(false); }}
-                className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors
-                  ${theme === value 
-                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' 
-                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${theme === value ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
               >
                 {icon}
                 <span>{label}</span>

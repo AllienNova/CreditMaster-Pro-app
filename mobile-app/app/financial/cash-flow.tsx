@@ -1,5 +1,5 @@
 /**
- * CPFI Cash Flow Analysis Screen
+ * Fynvita Cash Flow Analysis Screen
  * Analyze income vs expenses and cash flow trends with real charts
  */
 
@@ -47,7 +47,7 @@ export default function CashFlowScreen() {
         setData(MOCK_DATA);
       }
     } catch (err) {
-      console.warn('Using mock cash flow data:', err);
+      // Fallback to mock data silently in production
       setData(MOCK_DATA);
     } finally {
       setLoading(false);

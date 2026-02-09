@@ -133,7 +133,7 @@ export async function createDispute(
 
     return mapDisputeFromDb(data as DisputeRow);
   } catch (error) {
-    console.error('Error creating dispute:', error);
+    // DisputesDB error: Error creating dispute
     throw new Error(`Failed to create dispute: ${(error as Error).message}`);
   }
 }
@@ -162,7 +162,7 @@ export async function getDispute(
 
     return data ? mapDisputeFromDb(data as DisputeRow) : null;
   } catch (error) {
-    console.error('Error getting dispute:', error);
+    // DisputesDB error: Error getting dispute
     throw new Error(`Failed to get dispute: ${(error as Error).message}`);
   }
 }
@@ -210,7 +210,7 @@ export async function getDisputesByUser(
       total: count || 0,
     };
   } catch (error) {
-    console.error('Error getting disputes by user:', error);
+    // DisputesDB error: Error getting disputes by user
     throw new Error(`Failed to get disputes: ${(error as Error).message}`);
   }
 }
@@ -242,7 +242,7 @@ export async function getDisputesByStatus(
     const rows = (data ?? []) as DisputeRow[];
     return rows.map(mapDisputeFromDb);
   } catch (error) {
-    console.error('Error getting disputes by status:', error);
+    // DisputesDB error: Error getting disputes by status
     throw new Error(`Failed to get disputes by status: ${(error as Error).message}`);
   }
 }
@@ -274,7 +274,7 @@ export async function getDisputesByBureau(
     const rows = (data ?? []) as DisputeRow[];
     return rows.map(mapDisputeFromDb);
   } catch (error) {
-    console.error('Error getting disputes by bureau:', error);
+    // DisputesDB error: Error getting disputes by bureau
     throw new Error(`Failed to get disputes by bureau: ${(error as Error).message}`);
   }
 }
@@ -335,7 +335,7 @@ export async function updateDispute(
 
     return mapDisputeFromDb(data as DisputeRow);
   } catch (error) {
-    console.error('Error updating dispute:', error);
+    // DisputesDB error: Error updating dispute
     throw new Error(`Failed to update dispute: ${(error as Error).message}`);
   }
 }
@@ -358,7 +358,7 @@ export async function deleteDispute(
 
     return true;
   } catch (error) {
-    console.error('Error deleting dispute:', error);
+    // DisputesDB error: Error deleting dispute
     throw new Error(`Failed to delete dispute: ${(error as Error).message}`);
   }
 }
@@ -422,7 +422,7 @@ export async function getDisputeStats(
       successRate,
     };
   } catch (error) {
-    console.error('Error getting dispute stats:', error);
+    // DisputesDB error: Error getting dispute stats
     throw new Error(`Failed to get dispute stats: ${(error as Error).message}`);
   }
 }
@@ -446,7 +446,7 @@ export async function bulkUpdateDisputeStatus(
 
     return count || 0;
   } catch (error) {
-    console.error('Error bulk updating dispute status:', error);
+    // DisputesDB error: Error bulk updating dispute status
     throw new Error(`Failed to bulk update dispute status: ${(error as Error).message}`);
   }
 }

@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching subscriptions:', error);
+      // AdminSubscriptionsRoute error: Failed to fetch subscriptions
       return NextResponse.json({ error: 'Failed to fetch subscriptions' }, { status: 500 });
     }
 
@@ -69,8 +69,9 @@ export async function GET(request: NextRequest) {
       subscriptions: enrichedSubscriptions || [],
       total: subscriptions?.length || 0,
     });
-  } catch (error) {
-    console.error('Admin subscriptions error:', error);
+  } catch (_error) {
+    // AdminSubscriptionsRoute error: Admin subscriptions operation failed
+    void _error;
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -105,8 +106,9 @@ export async function DELETE(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Admin subscription cancel error:', error);
+  } catch (_error) {
+    // AdminSubscriptionsRoute error: Subscription cancel failed
+    void _error;
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

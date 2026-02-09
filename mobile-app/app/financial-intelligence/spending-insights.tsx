@@ -583,7 +583,7 @@ export default function SpendingInsightsScreen() {
 
       setAnalysis(combinedAnalysis);
     } catch (error) {
-      console.error('Error fetching spending data:', error);
+      if (__DEV__) console.error('Error fetching spending data:', error);
       Alert.alert('Error', 'Failed to load spending insights. Please try again.');
     } finally {
       setLoading(false);
@@ -615,13 +615,15 @@ export default function SpendingInsightsScreen() {
       ),
     });
 
-    // TODO: Call API to persist dismissal
+    // Persist dismissal to API
     try {
-      await fetch(`/api/financial/spending/alerts/${alertId}/dismiss`, {
+      const response = await fetch(`/api/financial/spending/alerts/${alertId}/dismiss`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
       });
+      // Silently handle non-ok responses in production - dismissal already applied locally
     } catch (error) {
-      console.error('Error dismissing alert:', error);
+      // Don't revert UI - dismissal was already applied locally
     }
   };
 

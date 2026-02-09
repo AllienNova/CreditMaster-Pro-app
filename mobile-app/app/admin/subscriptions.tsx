@@ -1,5 +1,5 @@
 /**
- * CPFI Admin Subscriptions Management Screen
+ * Fynvita Admin Subscriptions Management Screen
  * Manage user subscriptions and billing
  */
 

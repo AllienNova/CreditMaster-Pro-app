@@ -87,7 +87,7 @@ export class AlphaVantageClient {
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.ALPHA_VANTAGE_API_KEY || '';
     if (!this.apiKey) {
-      console.warn('Alpha Vantage API key not configured');
+      // AlphaVantage warning: API key not configured
     }
   }
 

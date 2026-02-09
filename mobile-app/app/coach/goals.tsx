@@ -57,7 +57,7 @@ export default function GoalsScreen() {
       setShowCreateModal(false);
       setNewGoal({ type: 'savings', name: '', targetAmount: '', targetDate: '' });
     } catch (error) {
-      console.error('Failed to create goal:', error);
+      if (__DEV__) console.error('Failed to create goal:', error);
     }
   };
 

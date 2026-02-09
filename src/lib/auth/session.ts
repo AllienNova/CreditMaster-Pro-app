@@ -56,8 +56,9 @@ export async function getUser(): Promise<User | null> {
       role: user.user_metadata?.role,
       user_metadata: user.user_metadata,
     };
-  } catch (error) {
-    console.error('Error getting user session:', error);
+  } catch (_error) {
+    // Session error: Error getting user session
+    void _error;
     return null;
   }
 }

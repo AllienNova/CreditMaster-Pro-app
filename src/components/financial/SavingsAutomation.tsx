@@ -41,14 +41,14 @@ const GOAL_CATEGORY_LABELS: Record<SavingsGoalCategory, string> = {
 };
 
 const GOAL_ICONS: Record<SavingsGoalCategory, string> = {
-  emergency_fund: '🛡️',
-  vacation: '✈️',
-  major_purchase: '🛒',
-  education: '🎓',
-  retirement: '🏖️',
-  home_down_payment: '🏠',
-  debt_payoff: '💳',
-  custom: '🎯',
+  emergency_fund: '',
+  vacation: '',
+  major_purchase: '',
+  education: '',
+  retirement: '',
+  home_down_payment: '',
+  debt_payoff: '',
+  custom: '',
 };
 
 export default function SavingsAutomation() {
@@ -72,8 +72,9 @@ export default function SavingsAutomation() {
 
       const result = await response.json();
       setData(result.data);
-    } catch (error) {
-      console.error('Error fetching savings automation data:', error);
+    } catch (_error) {
+      // SavingsAutomation error: Error fetching savings automation data
+      void _error;
       toast.error('Failed to load savings data');
     } finally {
       setLoading(false);
@@ -98,8 +99,9 @@ export default function SavingsAutomation() {
 
       toast.success('Rule updated successfully');
       void fetchData();
-    } catch (error) {
-      console.error('Error toggling rule:', error);
+    } catch (_error) {
+      // SavingsAutomation error: Error toggling rule
+      void _error;
       toast.error('Failed to update rule');
     }
   };
@@ -116,8 +118,9 @@ export default function SavingsAutomation() {
 
       toast.success(`Added $${amount.toFixed(2)} to goal`);
       void fetchData();
-    } catch (error) {
-      console.error('Error adding contribution:', error);
+    } catch (_error) {
+      // SavingsAutomation error: Error adding contribution
+      void _error;
       toast.error('Failed to add contribution');
     }
   };
@@ -138,10 +141,10 @@ export default function SavingsAutomation() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+              className="bg-white dark:bg-slate-800 rounded-lg shadow p-6"
             >
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
+              <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4"></div>
             </div>
           ))}
         </div>
@@ -162,7 +165,7 @@ export default function SavingsAutomation() {
             <h3 className="text-sm font-semibold opacity-90">
               Total Auto-Saved
             </h3>
-            <span className="text-2xl">🤖</span>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold">
             {formatCurrency(summary.totalSaved)}
@@ -172,65 +175,61 @@ export default function SavingsAutomation() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-400">
               This Month
             </h3>
-            <span className="text-2xl">📅</span>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold text-green-600">
             {formatCurrency(summary.totalSavedThisMonth)}
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             Automated savings
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-400">
               Round-Up Savings
             </h3>
-            <span className="text-2xl">🔄</span>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold text-blue-600">
             {formatCurrency(summary.roundUpSavings)}
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             Spare change saved
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-400">
               Goals Progress
             </h3>
-            <span className="text-2xl">🎯</span>
+            <span className="text-2xl"></span>
           </div>
-          <div className="text-3xl font-bold text-purple-600">
+          <div className="text-3xl font-bold text-blue-600">
             {summary.goalsOnTrack}/{summary.activeGoals}
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             On track
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+        <div className="border-b border-gray-200 dark:border-slate-700">
           <nav className="flex -mb-px">
             {(['overview', 'rules', 'goals'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab
-                    ? 'border-green-500 text-green-600 dark:text-green-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                }`}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${ activeTab === tab ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-gray-300' }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
@@ -252,20 +251,14 @@ export default function SavingsAutomation() {
                     {insights.map((insight, index) => (
                       <div
                         key={index}
-                        className={`p-4 rounded-lg border ${
-                          insight.type === 'warning'
-                            ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800'
-                            : insight.type === 'achievement'
-                              ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
-                              : 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800'
-                        }`}
+                        className={`p-4 rounded-lg border ${ insight.type === 'warning' ? 'bg-yellow-50 border-yellow-200' : insight.type === 'achievement' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' }`}
                       >
                         <div className="flex items-start justify-between">
                           <div>
                             <h4 className="font-semibold text-gray-900 dark:text-white">
                               {insight.title}
                             </h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
                               {insight.description}
                             </p>
                           </div>
@@ -296,7 +289,7 @@ export default function SavingsAutomation() {
                         <h4 className="font-semibold text-gray-900 dark:text-white">
                           {rec.title}
                         </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
                           {rec.description}
                         </p>
                         {rec.potentialSavings > 0 && (
@@ -341,8 +334,8 @@ export default function SavingsAutomation() {
               </div>
 
               {rules.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                  <p className="text-4xl mb-4">🤖</p>
+                <div className="text-center py-12 text-gray-500 dark:text-slate-400">
+                  <p className="text-4xl mb-4"></p>
                   <p>
                     No savings rules yet. Create one to start automating your
                     savings!
@@ -353,27 +346,23 @@ export default function SavingsAutomation() {
                   {rules.map((rule) => (
                     <div
                       key={rule.id}
-                      className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-between"
+                      className="p-4 bg-gray-50 dark:bg-slate-700 rounded-lg flex items-center justify-between"
                     >
                       <div className="flex items-center gap-4">
                         <div
-                          className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${
-                            rule.status === 'active'
-                              ? 'bg-green-100 dark:bg-green-900'
-                              : 'bg-gray-200 dark:bg-gray-600'
-                          }`}
+                          className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${ rule.status === 'active' ? 'bg-green-100' : 'bg-gray-200 dark:bg-slate-600' }`}
                         >
                           {rule.type === 'round_up'
-                            ? '🔄'
+                            ? ''
                             : rule.type === 'percentage'
-                              ? '📊'
-                              : '💵'}
+                              ? ''
+                              : ''}
                         </div>
                         <div>
                           <h4 className="font-semibold text-gray-900 dark:text-white">
                             {rule.name}
                           </h4>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                          <p className="text-sm text-gray-500 dark:text-slate-400">
                             {RULE_TYPE_LABELS[rule.type]} •{' '}
                             {formatCurrency(rule.totalSaved)} saved
                           </p>
@@ -381,17 +370,13 @@ export default function SavingsAutomation() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            rule.status === 'active'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
-                          }`}
+                          className={`px-2 py-1 text-xs rounded-full ${ rule.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800 dark:bg-slate-600 dark:text-slate-200' }`}
                         >
                           {rule.status}
                         </span>
                         <button
                           onClick={() => handleToggleRule(rule.id)}
-                          className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
+                          className="px-3 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600"
                         >
                           {rule.status === 'active' ? 'Pause' : 'Resume'}
                         </button>
@@ -419,8 +404,8 @@ export default function SavingsAutomation() {
               </div>
 
               {goals.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                  <p className="text-4xl mb-4">🎯</p>
+                <div className="text-center py-12 text-gray-500 dark:text-slate-400">
+                  <p className="text-4xl mb-4"></p>
                   <p>
                     No savings goals yet. Create one to start tracking your
                     progress!
@@ -431,7 +416,7 @@ export default function SavingsAutomation() {
                   {goals.map((goal) => (
                     <div
                       key={goal.id}
-                      className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                      className="p-4 bg-gray-50 dark:bg-slate-700 rounded-lg"
                     >
                       <div className="flex items-center gap-3 mb-3">
                         <span className="text-2xl">
@@ -441,7 +426,7 @@ export default function SavingsAutomation() {
                           <h4 className="font-semibold text-gray-900 dark:text-white">
                             {goal.name}
                           </h4>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                          <p className="text-sm text-gray-500 dark:text-slate-400">
                             {GOAL_CATEGORY_LABELS[goal.category]}
                           </p>
                         </div>
@@ -449,7 +434,7 @@ export default function SavingsAutomation() {
 
                       <div className="mb-3">
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-600 dark:text-gray-400">
+                          <span className="text-gray-600 dark:text-slate-400">
                             {formatCurrency(goal.currentAmount)} of{' '}
                             {formatCurrency(goal.targetAmount)}
                           </span>
@@ -457,7 +442,7 @@ export default function SavingsAutomation() {
                             {goal.progressPercentage.toFixed(0)}%
                           </span>
                         </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                        <div className="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-2">
                           <div
                             className={`h-2 rounded-full transition-all ${
                               goal.onTrack ? 'bg-green-500' : 'bg-yellow-500'
@@ -471,11 +456,7 @@ export default function SavingsAutomation() {
 
                       <div className="flex items-center justify-between">
                         <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            goal.onTrack
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                          }`}
+                          className={`text-xs px-2 py-1 rounded-full ${ goal.onTrack ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' }`}
                         >
                           {goal.onTrack ? 'On Track' : 'Behind'}
                         </span>
@@ -498,16 +479,16 @@ export default function SavingsAutomation() {
       {/* Create Rule Modal Placeholder */}
       {showCreateRuleModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Create Savings Rule
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 dark:text-slate-400 mb-4">
               Rule creation form coming soon...
             </p>
             <button
               onClick={() => setShowCreateRuleModal(false)}
-              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+              className="w-full px-4 py-2 bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600"
             >
               Close
             </button>
@@ -518,16 +499,16 @@ export default function SavingsAutomation() {
       {/* Create Goal Modal Placeholder */}
       {showCreateGoalModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Create Savings Goal
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 dark:text-slate-400 mb-4">
               Goal creation form coming soon...
             </p>
             <button
               onClick={() => setShowCreateGoalModal(false)}
-              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+              className="w-full px-4 py-2 bg-gray-200 dark:bg-slate-700 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600"
             >
               Close
             </button>

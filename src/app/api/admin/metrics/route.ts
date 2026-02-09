@@ -111,8 +111,8 @@ export async function GET(request: NextRequest) {
         ),
       },
     });
-  } catch (error) {
-    console.error('Admin metrics error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to fetch metrics' },
       { status: 500 }

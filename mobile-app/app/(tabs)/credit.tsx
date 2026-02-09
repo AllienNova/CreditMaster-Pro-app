@@ -1,9 +1,9 @@
 /**
- * CPFI Credit Tab Screen
+ * Fynvita Credit Tab Screen
  * Main credit score overview with navigation to detailed screens
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -15,12 +15,14 @@ import {
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
 import { ScoreGauge } from '../../src/components/ScoreGauge';
 import { Card, LastUpdated } from '../../src/components';
 import { useCreditStore, selectLastScoreFetch, selectIsBackgroundSyncEnabled } from '../../src/store/creditStore';
 
 export default function CreditScreen() {
+  const { colors, spacing, borderRadius, fontSize, fontWeight, withOpacity } = useTheme();
+
   const [refreshing, setRefreshing] = useState(false);
   const {
     scores,
@@ -94,6 +96,141 @@ export default function CreditScreen() {
     },
   ];
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        scrollView: { flex: 1 },
+        header: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: spacing.lg,
+        },
+        title: { fontSize: 28, fontWeight: '700', color: colors.text },
+        scoreCard: {
+          marginHorizontal: spacing.lg,
+          marginBottom: spacing.lg,
+        },
+        scoreContainer: { alignItems: 'center', paddingVertical: spacing.lg },
+        lastUpdatedContainer: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.md,
+          gap: 12,
+        },
+        syncBadge: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: withOpacity(colors.primary, 0.08),
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: 12,
+          gap: 4,
+        },
+        syncBadgeText: {
+          fontSize: 10,
+          color: colors.primary,
+          fontWeight: '600',
+        },
+        lastUpdated: {
+          textAlign: 'center',
+          fontSize: 12,
+          color: colors.textSecondary,
+          marginBottom: spacing.md,
+        },
+        bureauScores: {
+          flexDirection: 'row',
+          justifyContent: 'space-around',
+          paddingTop: spacing.md,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        },
+        bureauItem: { alignItems: 'center' },
+        bureauName: {
+          fontSize: 12,
+          color: colors.textSecondary,
+          textTransform: 'capitalize',
+          marginBottom: 4,
+        },
+        bureauScore: { fontSize: 20, fontWeight: '700', color: colors.text },
+        changeBadge: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 6,
+          paddingVertical: 2,
+          borderRadius: 10,
+          marginTop: 4,
+        },
+        changeText: { fontSize: 11, fontWeight: '600', marginLeft: 2 },
+        loadingContainer: {
+          alignItems: 'center',
+          paddingVertical: spacing.xl * 2,
+        },
+        loadingText: {
+          fontSize: 16,
+          color: colors.textSecondary,
+          marginTop: spacing.md,
+        },
+        emptyContainer: {
+          alignItems: 'center',
+          paddingVertical: spacing.xl * 2,
+        },
+        emptyTitle: {
+          fontSize: 18,
+          fontWeight: '600',
+          color: colors.text,
+          marginTop: spacing.md,
+        },
+        emptyText: {
+          fontSize: 14,
+          color: colors.textSecondary,
+          marginTop: spacing.sm,
+          textAlign: 'center',
+          paddingHorizontal: spacing.xl,
+        },
+        connectButton: {
+          backgroundColor: colors.primary,
+          paddingHorizontal: spacing.xl,
+          paddingVertical: spacing.md,
+          borderRadius: borderRadius.lg,
+          marginTop: spacing.lg,
+        },
+        connectButtonText: {
+          color: colors.textInverse,
+          fontSize: 16,
+          fontWeight: '600',
+        },
+        menuSection: { paddingHorizontal: spacing.lg },
+        menuItem: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.surface,
+          borderRadius: borderRadius.lg,
+          padding: spacing.md,
+          marginBottom: spacing.sm,
+        },
+        menuIcon: {
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          backgroundColor: withOpacity(colors.primary, 0.08),
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginRight: spacing.md,
+        },
+        menuContent: { flex: 1 },
+        menuTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+        menuSubtitle: {
+          fontSize: 13,
+          color: colors.textSecondary,
+          marginTop: 2,
+        },
+      }),
+    [colors, spacing, borderRadius, withOpacity],
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
@@ -102,7 +239,7 @@ export default function CreditScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={theme.colors.primary}
+            tintColor={colors.primary}
           />
         }
       >
@@ -113,7 +250,7 @@ export default function CreditScreen() {
             <Ionicons
               name="notifications-outline"
               size={24}
-              color={theme.colors.text}
+              color={colors.text}
             />
           </TouchableOpacity>
         </View>
@@ -122,7 +259,7 @@ export default function CreditScreen() {
         <Card style={styles.scoreCard}>
           {isLoadingScores && scores.length === 0 ? (
             <View style={styles.loadingContainer}>
-              <Ionicons name="sync" size={48} color={theme.colors.primary} />
+              <Ionicons name="sync" size={48} color={colors.primary} />
               <Text style={styles.loadingText}>
                 Loading your credit score...
               </Text>
@@ -132,7 +269,7 @@ export default function CreditScreen() {
               <Ionicons
                 name="speedometer-outline"
                 size={64}
-                color={theme.colors.textSecondary}
+                color={colors.textSecondary}
               />
               <Text style={styles.emptyTitle}>No Credit Score Data</Text>
               <Text style={styles.emptyText}>
@@ -163,7 +300,7 @@ export default function CreditScreen() {
                 />
                 {isBackgroundSyncEnabled && (
                   <View style={styles.syncBadge}>
-                    <Ionicons name="sync" size={10} color={theme.colors.primary} />
+                    <Ionicons name="sync" size={10} color={colors.primary} />
                     <Text style={styles.syncBadgeText}>Auto-sync</Text>
                   </View>
                 )}
@@ -187,19 +324,21 @@ export default function CreditScreen() {
                           styles.changeBadge,
                           {
                             backgroundColor:
-                              score.change > 0 ? '#D1FAE5' : '#FEE2E2',
+                              score.change > 0
+                                ? withOpacity(colors.success, 0.15)
+                                : withOpacity(colors.error, 0.15),
                           },
                         ]}
                       >
                         <Ionicons
                           name={score.change > 0 ? 'arrow-up' : 'arrow-down'}
                           size={12}
-                          color={score.change > 0 ? '#10B981' : '#EF4444'}
+                          color={score.change > 0 ? colors.secondary : colors.error}
                         />
                         <Text
                           style={[
                             styles.changeText,
-                            { color: score.change > 0 ? '#10B981' : '#EF4444' },
+                            { color: score.change > 0 ? colors.secondary : colors.error },
                           ]}
                         >
                           {Math.abs(score.change)}
@@ -225,7 +364,7 @@ export default function CreditScreen() {
                 <Ionicons
                   name={item.icon as keyof typeof Ionicons.glyphMap}
                   size={24}
-                  color={theme.colors.primary}
+                  color={colors.primary}
                 />
               </View>
               <View style={styles.menuContent}>
@@ -235,7 +374,7 @@ export default function CreditScreen() {
               <Ionicons
                 name="chevron-forward"
                 size={20}
-                color={theme.colors.textSecondary}
+                color={colors.textSecondary}
               />
             </TouchableOpacity>
           ))}
@@ -244,134 +383,3 @@ export default function CreditScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
-  scrollView: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: theme.spacing.lg,
-  },
-  title: { fontSize: 28, fontWeight: '700', color: theme.colors.text },
-  scoreCard: {
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
-  },
-  scoreContainer: { alignItems: 'center', paddingVertical: theme.spacing.lg },
-  lastUpdatedContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.md,
-    gap: 12,
-  },
-  syncBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: `${theme.colors.primary}15`,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  syncBadgeText: {
-    fontSize: 10,
-    color: theme.colors.primary,
-    fontWeight: '600',
-  },
-  lastUpdated: {
-    textAlign: 'center',
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.md,
-  },
-  bureauScores: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-  bureauItem: { alignItems: 'center' },
-  bureauName: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    textTransform: 'capitalize',
-    marginBottom: 4,
-  },
-  bureauScore: { fontSize: 20, fontWeight: '700', color: theme.colors.text },
-  changeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginTop: 4,
-  },
-  changeText: { fontSize: 11, fontWeight: '600', marginLeft: 2 },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: theme.spacing.xl * 2,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.md,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: theme.spacing.xl * 2,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginTop: theme.spacing.md,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm,
-    textAlign: 'center',
-    paddingHorizontal: theme.spacing.xl,
-  },
-  connectButton: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.lg,
-    marginTop: theme.spacing.lg,
-  },
-  connectButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  menuSection: { paddingHorizontal: theme.spacing.lg },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
-  },
-  menuIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: `${theme.colors.primary}15`,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: theme.spacing.md,
-  },
-  menuContent: { flex: 1 },
-  menuTitle: { fontSize: 16, fontWeight: '600', color: theme.colors.text },
-  menuSubtitle: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
-  },
-});

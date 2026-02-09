@@ -1,5 +1,5 @@
 /**
- * CPFI Accounts Screen
+ * Fynvita Accounts Screen
  * All linked financial accounts with balances
  */
 

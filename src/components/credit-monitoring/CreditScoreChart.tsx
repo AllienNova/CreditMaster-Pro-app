@@ -98,9 +98,9 @@ export default function CreditScoreChart({ history }: CreditScoreChartProps) {
   if (history.length === 0 || allDates.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-400 text-6xl mb-4">📈</div>
-        <p className="text-gray-600">No score history available</p>
-        <p className="text-sm text-gray-500 mt-2">
+        <div className="text-gray-400 dark:text-slate-500 text-6xl mb-4"></div>
+        <p className="text-gray-600 dark:text-slate-300">No score history available</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
           Scores will appear here once you start tracking
         </p>
       </div>
@@ -118,11 +118,7 @@ export default function CreditScoreChart({ history }: CreditScoreChartProps) {
               key={bureauHistory.bureau}
               type="button"
               onClick={() => toggleBureau(bureauHistory.bureau)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                selectedBureaus.includes(bureauHistory.bureau)
-                  ? 'text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${ selectedBureaus.includes(bureauHistory.bureau) ? 'text-white' : 'bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700' }`}
               style={{
                 backgroundColor: selectedBureaus.includes(bureauHistory.bureau)
                   ? getBureauColor(bureauHistory.bureau)
@@ -141,11 +137,7 @@ export default function CreditScoreChart({ history }: CreditScoreChartProps) {
               key={range}
               type="button"
               onClick={() => setTimeRange(range)}
-              className={`px-3 py-1 rounded text-sm ${
-                timeRange === range
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`px-3 py-1 rounded text-sm ${ timeRange === range ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700' }`}
             >
               {range}d
             </button>

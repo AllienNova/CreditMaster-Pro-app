@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile Investment API Service
+ * Fynvita Mobile Investment API Service
  * Handles all investment-related API calls using the core API client
  */
 

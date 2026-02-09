@@ -89,11 +89,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid analytics type' }, { status: 400 });
     }
     
-    console.log(`📊 Retrieved ${type} analytics for user ${userId}`);
-    
     return NextResponse.json({ data });
-  } catch (error) {
-    console.error('Error fetching analytics:', error);
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
       { error: 'Failed to fetch analytics' },
       { status: 500 }

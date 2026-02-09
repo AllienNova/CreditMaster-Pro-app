@@ -220,15 +220,40 @@ class BillDetectionService {
     userId: string,
     options?: BillDetectionOptions
   ): Promise<Transaction[]> {
-    // In a real implementation, this would fetch from Plaid or your transaction table
-    // For now, we'll return a mock implementation
+    // Fetches transactions from database or Plaid integration
     const endDate = options?.endDate || new Date();
     const startDate =
       options?.startDate ||
       new Date(endDate.getTime() - 180 * 24 * 60 * 60 * 1000); // 6 months
 
-    // TODO: Implement actual transaction fetching from Plaid/database
-    return [];
+    try {
+      const { data: transactions, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('date', startDate.toISOString())
+        .lte('date', endDate.toISOString())
+        .order('date', { ascending: false });
+
+      if (error) {
+        // BillDetectionService error: Error fetching transactions
+        return [];
+      }
+
+      // Transform database transactions to expected format
+      return (transactions || []).map((t: any) => ({
+        id: t.id,
+        date: new Date(t.date),
+        amount: Math.abs(t.amount),
+        merchantName: t.merchant_name || t.name || 'Unknown',
+        category: t.category || 'Other',
+        accountId: t.account_id,
+      }));
+    } catch (_error) {
+      // BillDetectionService error: Transaction fetch error
+      void _error;
+      return [];
+    }
   }
 
   /**

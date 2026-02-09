@@ -186,10 +186,10 @@ export async function GET(request: NextRequest) {
         hasMore: offset + paginatedInsights.length < total,
       },
     });
-  } catch (error) {
-    console.error('Error fetching financial insights:', error);
+  } catch (_error) {
+    // FinancialInsightsRoute error: Failed to fetch insights
 
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch financial insights';
+    const errorMessage = _error instanceof Error ? _error.message : 'Failed to fetch financial insights';
 
     return NextResponse.json(
       {
@@ -256,10 +256,10 @@ export async function POST(request: NextRequest) {
       { error: 'action is required' },
       { status: 400 }
     );
-  } catch (error) {
-    console.error('Error processing insight action:', error);
+  } catch (_error) {
+    // FinancialInsightsRoute error: Failed to process action
 
-    const errorMessage = error instanceof Error ? error.message : 'Failed to process insight action';
+    const errorMessage = _error instanceof Error ? _error.message : 'Failed to process insight action';
 
     return NextResponse.json(
       {
@@ -355,10 +355,10 @@ export async function PATCH(request: NextRequest) {
       },
       message: `Bulk operation completed: ${successCount} successful, ${failureCount} failed`,
     });
-  } catch (error) {
-    console.error('Error processing bulk operation:', error);
+  } catch (_error) {
+    // FinancialInsightsRoute error: Bulk operation failed
 
-    const errorMessage = error instanceof Error ? error.message : 'Failed to process bulk operation';
+    const errorMessage = _error instanceof Error ? _error.message : 'Failed to process bulk operation';
 
     return NextResponse.json(
       {

@@ -51,13 +51,13 @@ function TradelineCard({ tradeline }: { tradeline: Tradeline }) {
   const ageRemaining = tradeline.ageMonths % 12;
 
   return (
-    <div className={`bg-white rounded-xl p-6 shadow-sm border ${tradeline.available ? 'border-gray-200' : 'border-gray-300 opacity-60'}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border ${tradeline.available ? 'border-gray-200' : 'border-gray-300 dark:border-slate-600 opacity-60'}`}>
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="font-semibold text-gray-900">
+          <h3 className="font-semibold text-gray-900 dark:text-white">
             {tradeline.provider?.name || `Provider ${tradeline.providerId.slice(0, 8)}`}
           </h3>
-          <p className="text-sm text-gray-500">{tradeline.bureausReporting.join(', ')}</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">{tradeline.bureausReporting.join(', ')}</p>
         </div>
         <div className="flex items-center gap-2">
           {tradeline.provider?.verified && (
@@ -65,7 +65,7 @@ function TradelineCard({ tradeline }: { tradeline: Tradeline }) {
               Verified
             </span>
           )}
-          <span className={`px-2 py-1 text-xs rounded-full ${tradeline.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+          <span className={`px-2 py-1 text-xs rounded-full ${tradeline.available ? 'bg-green-100 text-green-800' : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300'}`}>
             {tradeline.available ? 'Available' : 'Sold Out'}
           </span>
         </div>
@@ -73,35 +73,35 @@ function TradelineCard({ tradeline }: { tradeline: Tradeline }) {
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <p className="text-xs text-gray-500">Credit Limit</p>
-          <p className="font-semibold text-gray-900">${tradeline.creditLimit.toLocaleString()}</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">Credit Limit</p>
+          <p className="font-semibold text-gray-900 dark:text-white">${tradeline.creditLimit.toLocaleString()}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">Age</p>
-          <p className="font-semibold text-gray-900">{ageYears}y {ageRemaining}m</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">Age</p>
+          <p className="font-semibold text-gray-900 dark:text-white">{ageYears}y {ageRemaining}m</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">Utilization</p>
-          <p className="font-semibold text-gray-900">{tradeline.utilization}%</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">Utilization</p>
+          <p className="font-semibold text-gray-900 dark:text-white">{tradeline.utilization}%</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">Est. Impact</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">Est. Impact</p>
           <p className="font-semibold text-green-600">+{tradeline.estimatedScoreImpact} pts</p>
         </div>
       </div>
 
       {tradeline.valueScore !== undefined && (
-        <div className="mb-4 p-2 bg-indigo-50 rounded-lg">
-          <p className="text-xs text-indigo-600 font-medium">
+        <div className="mb-4 p-2 bg-blue-50 rounded-lg">
+          <p className="text-xs text-blue-600 font-medium">
             Value Score: {tradeline.valueScore.toFixed(1)} (higher is better)
           </p>
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-        <span className="text-xl font-bold text-indigo-600">${tradeline.price}</span>
+      <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-slate-700">
+        <span className="text-xl font-bold text-blue-600">${tradeline.price}</span>
         <button disabled={!tradeline.available}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${tradeline.available ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}>
+          className={`px-4 py-2 rounded-lg text-sm font-medium ${tradeline.available ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400 cursor-not-allowed'}`}>
           {tradeline.available ? 'View Details' : 'Unavailable'}
         </button>
       </div>
@@ -124,39 +124,39 @@ function ScoreImpactCalculator({ tradelines }: { tradelines: Tradeline[] }) {
   };
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100">
-      <h3 className="font-semibold text-gray-900 mb-4">Score Impact Calculator</h3>
+    <div className="bg-gradient-to-br from-blue-50 to-blue-50 rounded-xl p-6 border border-blue-100">
+      <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Score Impact Calculator</h3>
       <div className="space-y-4">
         <div>
-          <label className="text-sm text-gray-600">Current Score</label>
+          <label className="text-sm text-gray-600 dark:text-slate-300">Current Score</label>
           <input type="number" value={currentScore} onChange={(e) => setCurrentScore(Number(e.target.value))}
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg" min={300} max={850} />
+            className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg" min={300} max={850} />
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm text-gray-600">Select Tradelines</label>
+          <label className="text-sm text-gray-600 dark:text-slate-300">Select Tradelines</label>
           {tradelines.filter(t => t.available).slice(0, 5).map(t => (
             <label key={t.id} className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={selectedTradelines.includes(t.id)}
                 onChange={() => toggleTradeline(t.id)}
-                className="rounded border-gray-300"
+                className="rounded border-gray-300 dark:border-slate-600"
               />
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-gray-700 dark:text-slate-200">
                 ${t.creditLimit.toLocaleString()} ({Math.floor(t.ageMonths / 12)}y) - +{t.estimatedScoreImpact} pts
               </span>
             </label>
           ))}
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-white rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg">
           <div>
-            <p className="text-sm text-gray-500">Estimated New Score</p>
-            <p className="text-3xl font-bold text-indigo-600">{Math.min(850, currentScore + totalImpact)}</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Estimated New Score</p>
+            <p className="text-3xl font-bold text-blue-600">{Math.min(850, currentScore + totalImpact)}</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-gray-500">Potential Increase</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Potential Increase</p>
             <p className="text-2xl font-bold text-green-600">+{totalImpact}</p>
           </div>
         </div>
@@ -170,25 +170,25 @@ function LoadingSkeleton() {
     <div className="animate-pulse">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700">
             <div className="flex justify-between items-start mb-4">
               <div className="space-y-2">
-                <div className="h-4 w-32 bg-gray-200 rounded" />
-                <div className="h-3 w-24 bg-gray-200 rounded" />
+                <div className="h-4 w-32 bg-gray-200 dark:bg-slate-700 rounded" />
+                <div className="h-3 w-24 bg-gray-200 dark:bg-slate-700 rounded" />
               </div>
-              <div className="h-6 w-16 bg-gray-200 rounded-full" />
+              <div className="h-6 w-16 bg-gray-200 dark:bg-slate-700 rounded-full" />
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               {[1, 2, 3, 4].map((j) => (
                 <div key={j} className="space-y-1">
-                  <div className="h-3 w-16 bg-gray-200 rounded" />
-                  <div className="h-4 w-20 bg-gray-200 rounded" />
+                  <div className="h-3 w-16 bg-gray-200 dark:bg-slate-700 rounded" />
+                  <div className="h-4 w-20 bg-gray-200 dark:bg-slate-700 rounded" />
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div className="h-6 w-16 bg-gray-200 rounded" />
-              <div className="h-10 w-24 bg-gray-200 rounded-lg" />
+            <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-slate-700">
+              <div className="h-6 w-16 bg-gray-200 dark:bg-slate-700 rounded" />
+              <div className="h-10 w-24 bg-gray-200 dark:bg-slate-700 rounded-lg" />
             </div>
           </div>
         ))}
@@ -271,8 +271,8 @@ export default function TradelinesPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Tradeline Marketplace</h1>
-        <p className="text-gray-600">Authorized user tradelines to boost your credit score</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tradeline Marketplace</h1>
+        <p className="text-gray-600 dark:text-slate-300">Authorized user tradelines to boost your credit score</p>
       </div>
 
       {error && (
@@ -290,13 +290,13 @@ export default function TradelinesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Filters */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <h3 className="font-semibold text-gray-900 mb-4">Filters</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Filters</h3>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-600">Min Credit Limit</label>
+                <label className="text-sm text-gray-600 dark:text-slate-300">Min Credit Limit</label>
                 <select value={filters.minCreditLimit || 0} onChange={(e) => setFilters({...filters, minCreditLimit: Number(e.target.value)})}
-                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg">
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg">
                   <option value={0}>Any</option>
                   <option value={5000}>$5,000+</option>
                   <option value={10000}>$10,000+</option>
@@ -305,15 +305,15 @@ export default function TradelinesPage() {
                 </select>
               </div>
               <div>
-                <label className="text-sm text-gray-600">Max Price: ${filters.maxPrice}</label>
+                <label className="text-sm text-gray-600 dark:text-slate-300">Max Price: ${filters.maxPrice}</label>
                 <input type="range" min={100} max={2000} step={50} value={filters.maxPrice}
                   onChange={(e) => setFilters({...filters, maxPrice: Number(e.target.value)})}
                   className="w-full mt-1" />
               </div>
               <div>
-                <label className="text-sm text-gray-600">Min Age (months)</label>
+                <label className="text-sm text-gray-600 dark:text-slate-300">Min Age (months)</label>
                 <select value={filters.minAge || 0} onChange={(e) => setFilters({...filters, minAge: Number(e.target.value)})}
-                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg">
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg">
                   <option value={0}>Any</option>
                   <option value={24}>2+ years</option>
                   <option value={36}>3+ years</option>
@@ -322,9 +322,9 @@ export default function TradelinesPage() {
                 </select>
               </div>
               <div>
-                <label className="text-sm text-gray-600">Sort By</label>
+                <label className="text-sm text-gray-600 dark:text-slate-300">Sort By</label>
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg">
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg">
                   <option value="impact">Highest Impact</option>
                   <option value="value">Best Value</option>
                   <option value="price">Lowest Price</option>
@@ -341,21 +341,21 @@ export default function TradelinesPage() {
           {loading ? (
             <LoadingSkeleton />
           ) : sortedTradelines.length === 0 ? (
-            <div className="bg-white rounded-xl p-12 text-center border border-gray-200">
-              <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-12 text-center border border-gray-200 dark:border-slate-700">
+              <svg className="w-12 h-12 mx-auto text-gray-400 dark:text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-gray-600 mb-4">No tradelines match your filters</p>
+              <p className="text-gray-600 dark:text-slate-300 mb-4">No tradelines match your filters</p>
               <button
                 onClick={() => setFilters({ minCreditLimit: 0, maxPrice: 2000, minAge: 0 })}
-                className="text-indigo-600 hover:text-indigo-800 font-medium"
+                className="text-blue-600 hover:text-blue-800 font-medium"
               >
                 Clear Filters
               </button>
             </div>
           ) : (
             <>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
                 Showing {sortedTradelines.length} tradeline{sortedTradelines.length !== 1 ? 's' : ''}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

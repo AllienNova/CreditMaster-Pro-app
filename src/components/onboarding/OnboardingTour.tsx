@@ -131,7 +131,7 @@ export default function OnboardingTour({
         {/* Highlight target element */}
         {targetElement && (
           <div
-            className="absolute border-4 border-blue-500 rounded-lg shadow-2xl pointer-events-none animate-pulse"
+            className="absolute border-4 border-blue-500 rounded-lg shadow-xl pointer-events-none animate-pulse"
             style={{
               top: targetElement.getBoundingClientRect().top + window.pageYOffset - 8,
               left: targetElement.getBoundingClientRect().left + window.pageXOffset - 8,
@@ -145,7 +145,7 @@ export default function OnboardingTour({
 
       {/* Tooltip */}
       <div
-        className="fixed z-[9999] bg-white rounded-lg shadow-2xl p-6 max-w-md animate-in fade-in zoom-in duration-300"
+        className="fixed z-[9999] bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 max-w-md animate-in fade-in zoom-in duration-300"
         style={{
           top: tooltipPosition.top,
           left: tooltipPosition.left,
@@ -158,14 +158,14 @@ export default function OnboardingTour({
         {showProgress && (
           <div className="mb-4">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-medium text-gray-600">
+              <span className="text-xs font-medium text-gray-600 dark:text-slate-300">
                 Step {currentStep + 1} of {steps.length}
               </span>
-              <span className="text-xs text-gray-500">{Math.round(progress)}%</span>
+              <span className="text-xs text-gray-500 dark:text-slate-400">{Math.round(progress)}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
               <div
-                className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-blue-500 to-blue-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -174,8 +174,8 @@ export default function OnboardingTour({
 
         {/* Content */}
         <div className="mb-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-2">{step.title}</h3>
-          <p className="text-gray-600 leading-relaxed">{step.content}</p>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{step.title}</h3>
+          <p className="text-gray-600 dark:text-slate-300 leading-relaxed">{step.content}</p>
         </div>
 
         {/* Actions */}
@@ -184,7 +184,7 @@ export default function OnboardingTour({
             {currentStep > 0 && (
               <button
                 onClick={handlePrevious}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-slate-700 transition-colors"
               >
                 Previous
               </button>
@@ -195,14 +195,14 @@ export default function OnboardingTour({
             {showSkipButton && (
               <button
                 onClick={handleSkip}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 dark:text-slate-100 transition-colors"
               >
                 Skip Tour
               </button>
             )}
             <button
               onClick={handleNext}
-              className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+              className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg hover:from-blue-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl"
             >
               {currentStep < steps.length - 1 ? 'Next' : 'Finish'}
             </button>
@@ -211,7 +211,7 @@ export default function OnboardingTour({
 
         {/* Arrow indicator */}
         <div
-          className={`absolute w-4 h-4 bg-white transform rotate-45 ${
+          className={`absolute w-4 h-4 bg-white dark:bg-slate-800 transform rotate-45 ${
             step.placement === 'top' ? 'bottom-[-8px] left-1/2 -translate-x-1/2' :
             step.placement === 'bottom' ? 'top-[-8px] left-1/2 -translate-x-1/2' :
             step.placement === 'left' ? 'right-[-8px] top-1/2 -translate-y-1/2' :

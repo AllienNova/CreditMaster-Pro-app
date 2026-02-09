@@ -6,17 +6,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import { debtStrategyEngine } from '@/lib/financial/debt-strategy-engine';
 
 async function getUser() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll() } }
-  );
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -49,8 +43,9 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(result);
-  } catch (error) {
-    console.error('Error fetching debt strategy:', error);
+  } catch (_error) {
+    // FinancialCoachDebtRoute error: Failed to fetch strategy
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch debt strategy' },
       { status: 500 }
@@ -83,8 +78,9 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(result);
-  } catch (error) {
-    console.error('Error analyzing debt strategy:', error);
+  } catch (_error) {
+    // FinancialCoachDebtRoute error: Analysis failed
+    void _error;
     return NextResponse.json(
       { error: 'Failed to analyze debt strategy' },
       { status: 500 }

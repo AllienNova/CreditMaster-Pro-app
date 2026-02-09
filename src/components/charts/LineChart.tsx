@@ -2,9 +2,11 @@
 
 /**
  * Line Chart Component
- * 
+ *
  * Displays data as a line chart with support for multiple lines.
  * Used for trends, time series, and comparisons over time.
+ *
+ * Accessibility: Supports keyboard navigation and screen reader descriptions.
  */
 
 import {
@@ -18,7 +20,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { ChartTooltip } from './ChartHelpers';
-import { CHART_COLOR_ARRAY, formatCurrency, formatNumber } from './chartUtils';
+import { CHART_COLOR_ARRAY, formatCurrency, formatNumber, generateChartDescription } from './chartUtils';
 
 export interface LineChartDataPoint {
   label: string;
@@ -47,6 +49,8 @@ export interface LineChartProps {
   yAxisLabel?: string;
   animationDuration?: number;
   className?: string;
+  /** Accessible label for the chart */
+  ariaLabel?: string;
 }
 
 export default function LineChartComponent({
@@ -62,15 +66,24 @@ export default function LineChartComponent({
   yAxisLabel,
   animationDuration = 1000,
   className = '',
+  ariaLabel,
 }: LineChartProps) {
   const formatYAxis = (value: number): string => {
     if (currency) return formatCurrency(value);
     return formatNumber(value);
   };
 
+  // Generate accessible description
+  const accessibleDescription = ariaLabel || generateChartDescription(
+    'Line chart',
+    data.length,
+    undefined,
+    currency
+  );
+
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
     if (!active || !payload || payload.length === 0) return null;
-    
+
     return (
       <ChartTooltip
         active={active}
@@ -82,25 +95,40 @@ export default function LineChartComponent({
   };
 
   return (
-    <div className={`w-full ${className}`} style={{ height }}>
+    <div
+      className={`w-full ${className}`}
+      style={{ height }}
+      role="img"
+      aria-label={accessibleDescription}
+    >
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <LineChart
+          data={data}
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          aria-hidden="true"
+        >
           {showGrid && (
-            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#E5E7EB"
+              className="dark:stroke-gray-600"
+            />
           )}
           <XAxis
             dataKey={xAxisKey}
-            tick={{ fontSize: 12, fill: '#6B7280' }}
-            tickLine={{ stroke: '#E5E7EB' }}
-            axisLine={{ stroke: '#E5E7EB' }}
-            label={xAxisLabel ? { value: xAxisLabel, position: 'bottom', offset: -5 } : undefined}
+            tick={{ fontSize: 11, fill: 'currentColor' }}
+            tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
+            axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+            className="text-gray-500 dark:text-slate-400"
+            label={xAxisLabel ? { value: xAxisLabel, position: 'bottom', offset: -5, className: 'text-xs sm:text-sm fill-gray-600 dark:fill-gray-400' } : undefined}
           />
           <YAxis
-            tick={{ fontSize: 12, fill: '#6B7280' }}
-            tickLine={{ stroke: '#E5E7EB' }}
-            axisLine={{ stroke: '#E5E7EB' }}
+            tick={{ fontSize: 11, fill: 'currentColor' }}
+            tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
+            axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+            className="text-gray-500 dark:text-slate-400"
             tickFormatter={formatYAxis}
-            label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined}
+            label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft', className: 'text-xs sm:text-sm fill-gray-600 dark:fill-gray-400' } : undefined}
           />
           {showTooltip && <Tooltip content={<CustomTooltip />} />}
           {showLegend && (

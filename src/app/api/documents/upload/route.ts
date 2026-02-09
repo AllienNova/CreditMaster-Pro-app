@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
     );
     
     return NextResponse.json({ document });
-  } catch (error) {
-    console.error('Upload document error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to upload document' },
       { status: 500 }
@@ -82,8 +82,8 @@ export async function GET(request: NextRequest) {
     );
     
     return NextResponse.json({ uploadUrl, documentId, s3Key });
-  } catch (error) {
-    console.error('Generate upload URL error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to generate upload URL' },
       { status: 500 }

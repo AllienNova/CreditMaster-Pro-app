@@ -72,10 +72,10 @@ export default function UserDocumentsPage() {
 
   const getTypeIcon = (type: string) => {
     const icons: Record<string, string> = {
-      credit_report: '📊',
-      dispute_response: '📝',
-      identity: '🪪',
-      other: '📄',
+      credit_report: '',
+      dispute_response: '',
+      identity: '',
+      other: '',
     };
     return icons[type] || icons.other;
   };
@@ -85,31 +85,31 @@ export default function UserDocumentsPage() {
       processing: 'bg-yellow-100 text-yellow-800',
       analyzed: 'bg-green-100 text-green-800',
       processed: 'bg-blue-100 text-blue-800',
-      verified: 'bg-purple-100 text-purple-800',
+      verified: 'bg-blue-100 text-blue-800',
       error: 'bg-red-100 text-red-800',
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100';
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50 p-8">
         <div className="animate-pulse space-y-4 max-w-4xl mx-auto">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/4"></div>
+          <div className="h-64 bg-gray-200 dark:bg-slate-700 rounded"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50">
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-white/20 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
+      <header className="bg-white dark:bg-slate-800/80 backdrop-blur-sm shadow-sm border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">← Back</Link>
-              <h1 className="text-xl font-bold text-gray-900">My Documents</h1>
+              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-white">← Back</Link>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">My Documents</h1>
             </div>
             <label className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
               {uploading ? 'Uploading...' : '+ Upload Document'}
@@ -121,25 +121,25 @@ export default function UserDocumentsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Upload Area */}
-        <div className="bg-white rounded-xl shadow-sm border-2 border-dashed border-gray-300 p-8 mb-6 text-center">
-          <div className="text-4xl mb-2">📤</div>
-          <p className="text-gray-600 mb-2">Drag and drop your credit reports here</p>
-          <p className="text-sm text-gray-400">Supports PDF, JPG, PNG (max 10MB)</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border-2 border-dashed border-gray-300 dark:border-slate-600 p-8 mb-6 text-center">
+          <div className="text-4xl mb-2"></div>
+          <p className="text-gray-600 dark:text-slate-300 mb-2">Drag and drop your credit reports here</p>
+          <p className="text-sm text-gray-400 dark:text-slate-500">Supports PDF, JPG, PNG (max 10MB)</p>
         </div>
 
         {/* Documents List */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="font-semibold text-gray-900">Uploaded Documents ({documents.length})</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+            <h2 className="font-semibold text-gray-900 dark:text-white">Uploaded Documents ({documents.length})</h2>
           </div>
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-gray-200 dark:divide-slate-700">
             {documents.map((doc) => (
-              <div key={doc.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+              <div key={doc.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900">
                 <div className="flex items-center space-x-4">
                   <span className="text-2xl">{getTypeIcon(doc.type)}</span>
                   <div>
-                    <p className="font-medium text-gray-900">{doc.name}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium text-gray-900 dark:text-white">{doc.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">
                       {formatSize(doc.size)} • {new Date(doc.uploaded_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -155,7 +155,7 @@ export default function UserDocumentsPage() {
             ))}
           </div>
           {documents.length === 0 && (
-            <div className="text-center py-12 text-gray-500">No documents uploaded yet</div>
+            <div className="text-center py-12 text-gray-500 dark:text-slate-400">No documents uploaded yet</div>
           )}
         </div>
       </main>

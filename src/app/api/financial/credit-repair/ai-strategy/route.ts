@@ -25,14 +25,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // TODO: Replace with actual AI-powered credit repair strategy
-    // This should integrate with:
-    // - Credit repair service
-    // - Dispute service
-    // - Credit report analysis
-    // - AI prediction engine for impact forecasts
-    // - Success probability algorithms
-    // - Timeline estimation models
+    // Note: Currently returns mock data. Future integration points:
+    // - Credit repair service for real user data
+    // - Dispute service for active disputes
+    // - Credit report analysis from bureau APIs
+    // - AI prediction engine for personalized impact forecasts
+    // - Success probability algorithms based on historical outcomes
+    // - Timeline estimation models trained on similar profiles
 
     const mockData = {
       prioritizedActions: [

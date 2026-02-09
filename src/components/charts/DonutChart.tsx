@@ -14,6 +14,7 @@ import {
   formatCurrency,
   formatPercentage,
   getCategoryColor,
+  generateChartDescription,
 } from './chartUtils';
 import { useState } from 'react';
 
@@ -37,6 +38,8 @@ export interface DonutChartProps {
   useCategyColors?: boolean;
   onSliceClick?: (data: DonutDataPoint) => void;
   className?: string;
+  /** Accessible label for the chart */
+  ariaLabel?: string;
 }
 
 export default function DonutChartComponent({
@@ -52,9 +55,18 @@ export default function DonutChartComponent({
   useCategyColors = false,
   onSliceClick,
   className = '',
+  ariaLabel,
 }: DonutChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const total = data.reduce((sum, item) => sum + item.value, 0);
+
+  // Generate accessible description
+  const accessibleDescription = ariaLabel || generateChartDescription(
+    'Donut chart',
+    data.length,
+    undefined,
+    currency
+  );
 
   const getColor = (item: DonutDataPoint, index: number): string => {
     if (item.color) return item.color;
@@ -74,7 +86,7 @@ export default function DonutChartComponent({
     const percent = (item.value / total) * 100;
 
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-3">
         <div className="flex items-center gap-2 mb-1">
           <span
             className="w-3 h-3 rounded-full"
@@ -84,7 +96,7 @@ export default function DonutChartComponent({
             {item.name}
           </span>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="text-sm text-gray-600 dark:text-slate-400">
           {currency ? formatCurrency(item.value) : item.value.toLocaleString()}
           <span className="ml-2 text-gray-400">
             ({formatPercentage(percent)})
@@ -108,9 +120,14 @@ export default function DonutChartComponent({
         : total.toLocaleString();
 
   return (
-    <div className={`w-full ${className}`} style={{ height }}>
+    <div
+      className={`w-full ${className}`}
+      style={{ height }}
+      role="img"
+      aria-label={accessibleDescription}
+    >
       <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
+        <PieChart aria-hidden="true">
           <Pie
             data={data}
             cx="50%"

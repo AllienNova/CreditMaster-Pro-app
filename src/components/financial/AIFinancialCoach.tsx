@@ -88,8 +88,9 @@ export default function AIFinancialCoach() {
 
       const data = await response.json();
       setDashboardData(data);
-    } catch (error) {
-      console.error('Error fetching coach dashboard:', error);
+    } catch (_error) {
+      // AIFinancialCoach error: Error fetching coach dashboard
+      void _error;
       toast.error('Failed to load coach dashboard', 'Please try again later');
     } finally {
       setLoading(false);
@@ -117,8 +118,9 @@ export default function AIFinancialCoach() {
 
       const data = await response.json();
       setCoachResponse(data.advice);
-    } catch (error) {
-      console.error('Error asking coach:', error);
+    } catch (_error) {
+      // AIFinancialCoach error: Error asking coach
+      void _error;
       toast.error('Failed to get coach response', 'Please try again later');
     } finally {
       setAskingCoach(false);
@@ -139,8 +141,9 @@ export default function AIFinancialCoach() {
 
       toast.success('Step completed!', 'Great progress!');
       fetchDashboardData();
-    } catch (error) {
-      console.error('Error completing step:', error);
+    } catch (_error) {
+      // AIFinancialCoach error: Error completing step
+      void _error;
       toast.error('Failed to complete step', 'Please try again');
     }
   };
@@ -150,10 +153,10 @@ export default function AIFinancialCoach() {
       <div className="space-y-6 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-gray-200 rounded-lg h-32" />
+            <div key={i} className="bg-gray-200 dark:bg-slate-700 rounded-lg h-32" />
           ))}
         </div>
-        <div className="bg-gray-200 rounded-lg h-64" />
+        <div className="bg-gray-200 dark:bg-slate-700 rounded-lg h-64" />
       </div>
     );
   }
@@ -161,7 +164,7 @@ export default function AIFinancialCoach() {
   if (!dashboardData) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">No data available</p>
+        <p className="text-gray-500 dark:text-slate-400">No data available</p>
       </div>
     );
   }
@@ -174,7 +177,7 @@ export default function AIFinancialCoach() {
       case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'low': return 'bg-blue-100 text-blue-800 border-blue-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 border-gray-200 dark:border-slate-700';
     }
   };
 
@@ -187,7 +190,7 @@ export default function AIFinancialCoach() {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-8 text-white">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-8 text-white">
         <h2 className="text-3xl font-bold mb-2">Welcome to Your AI Financial Coach</h2>
         <p className="text-blue-100 text-lg">
           Let's work together to achieve your financial goals using proven strategies
@@ -196,15 +199,15 @@ export default function AIFinancialCoach() {
 
       {/* Financial Snapshot */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-600 text-sm font-medium">Health Score</span>
+            <span className="text-gray-600 dark:text-slate-300 text-sm font-medium">Health Score</span>
             <span className={`text-2xl font-bold ${getHealthScoreColor(snapshot.healthScore)}`}>
               {snapshot.healthScore}
             </span>
           </div>
-          <div className="text-sm text-gray-500">Grade: {snapshot.healthGrade}</div>
-          <div className="mt-4 bg-gray-200 rounded-full h-2">
+          <div className="text-sm text-gray-500 dark:text-slate-400">Grade: {snapshot.healthGrade}</div>
+          <div className="mt-4 bg-gray-200 dark:bg-slate-700 rounded-full h-2">
             <div
               className={`h-2 rounded-full ${snapshot.healthScore >= 80 ? 'bg-green-500' : snapshot.healthScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
               style={{ width: `${snapshot.healthScore}%` }}
@@ -212,32 +215,32 @@ export default function AIFinancialCoach() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-gray-600 text-sm font-medium mb-2">Net Worth</div>
-          <div className="text-2xl font-bold text-gray-900">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <div className="text-gray-600 dark:text-slate-300 text-sm font-medium mb-2">Net Worth</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">
             ${snapshot.netWorth.toLocaleString()}
           </div>
-          <div className="text-sm text-gray-500 mt-1">
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             {snapshot.netWorth >= 0 ? 'Positive' : 'Negative'} net worth
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-gray-600 text-sm font-medium mb-2">Total Debt</div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <div className="text-gray-600 dark:text-slate-300 text-sm font-medium mb-2">Total Debt</div>
           <div className="text-2xl font-bold text-red-600">
             ${snapshot.totalDebt.toLocaleString()}
           </div>
-          <div className="text-sm text-gray-500 mt-1">
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             {snapshot.totalDebt > 0 ? 'Focus on payoff' : 'Debt free!'}
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-gray-600 text-sm font-medium mb-2">Emergency Fund</div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <div className="text-gray-600 dark:text-slate-300 text-sm font-medium mb-2">Emergency Fund</div>
           <div className="text-2xl font-bold text-blue-600">
             {snapshot.emergencyFundMonths.toFixed(1)} mo
           </div>
-          <div className="text-sm text-gray-500 mt-1">
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             {snapshot.emergencyFundMonths >= 6 ? 'Fully funded' : 'Keep building'}
           </div>
         </div>
@@ -288,27 +291,27 @@ export default function AIFinancialCoach() {
       )}
 
       {/* Dave Ramsey Baby Steps */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-6">Your Baby Steps Progress</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Your Baby Steps Progress</h3>
         <div className="space-y-4">
           {babySteps.map((step) => (
-            <div key={step.step} className={`border rounded-lg p-4 ${step.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
+            <div key={step.step} className={`border rounded-lg p-4 ${step.completed ? 'bg-green-50 border-green-200' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'}`}>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mr-3 ${step.completed ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mr-3 ${step.completed ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300'}`}>
                       {step.step}
                     </div>
-                    <h4 className="font-semibold text-gray-900">{step.title}</h4>
+                    <h4 className="font-semibold text-gray-900 dark:text-white">{step.title}</h4>
                   </div>
-                  <p className="text-sm text-gray-600 ml-11">{step.description}</p>
+                  <p className="text-sm text-gray-600 dark:text-slate-300 ml-11">{step.description}</p>
                   {!step.completed && step.progress > 0 && (
                     <div className="ml-11 mt-3">
-                      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                      <div className="flex items-center justify-between text-xs text-gray-600 dark:text-slate-300 mb-1">
                         <span>Progress</span>
                         <span>{step.progress}%</span>
                       </div>
-                      <div className="bg-gray-200 rounded-full h-2">
+                      <div className="bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                         <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${step.progress}%` }} />
                       </div>
                     </div>
@@ -326,9 +329,9 @@ export default function AIFinancialCoach() {
       </div>
 
       {/* Action Plans */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-gray-900">Your Action Plan</h3>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Your Action Plan</h3>
           <button
             onClick={() => setAskCoachOpen(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -346,7 +349,7 @@ export default function AIFinancialCoach() {
             >
               <div className="flex items-start justify-between mb-2">
                 <h4 className="font-semibold text-sm flex-1">{plan.title}</h4>
-                <span className="text-xs font-medium px-2 py-1 rounded bg-white bg-opacity-50">
+                <span className="text-xs font-medium px-2 py-1 rounded bg-white dark:bg-slate-800 bg-opacity-50">
                   {plan.priority.toUpperCase()}
                 </span>
               </div>
@@ -369,11 +372,11 @@ export default function AIFinancialCoach() {
       </div>
 
       {/* AI Recommendations */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-6">AI Recommendations</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">AI Recommendations</h3>
         <div className="space-y-4">
           {recommendations.slice(0, 5).map((rec) => (
-            <div key={rec.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+            <div key={rec.id} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 hover:border-blue-300 transition-colors">
               <div className="flex items-start">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mr-4 ${
                   rec.type === 'opportunity' ? 'bg-green-100' :
@@ -396,10 +399,10 @@ export default function AIFinancialCoach() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 mb-1">{rec.title}</h4>
-                  <p className="text-sm text-gray-600 mb-2">{rec.description}</p>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-1">{rec.title}</h4>
+                  <p className="text-sm text-gray-600 dark:text-slate-300 mb-2">{rec.description}</p>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Impact: {rec.impact}</span>
+                    <span className="text-xs text-gray-500 dark:text-slate-400">Impact: {rec.impact}</span>
                     <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
                       {rec.action}
                     </button>
@@ -420,22 +423,22 @@ export default function AIFinancialCoach() {
                 {selectedPlan.priority.toUpperCase()} Priority
               </span>
             </div>
-            <p className="text-gray-700">{selectedPlan.description}</p>
-            <div className="grid grid-cols-2 gap-4 py-4 border-y border-gray-200">
+            <p className="text-gray-700 dark:text-slate-200">{selectedPlan.description}</p>
+            <div className="grid grid-cols-2 gap-4 py-4 border-y border-gray-200 dark:border-slate-700">
               <div>
-                <div className="text-sm text-gray-500">Estimated Impact</div>
-                <div className="font-semibold text-gray-900">{selectedPlan.estimatedImpact}</div>
+                <div className="text-sm text-gray-500 dark:text-slate-400">Estimated Impact</div>
+                <div className="font-semibold text-gray-900 dark:text-white">{selectedPlan.estimatedImpact}</div>
               </div>
               <div>
-                <div className="text-sm text-gray-500">Timeframe</div>
-                <div className="font-semibold text-gray-900">{selectedPlan.timeframe}</div>
+                <div className="text-sm text-gray-500 dark:text-slate-400">Timeframe</div>
+                <div className="font-semibold text-gray-900 dark:text-white">{selectedPlan.timeframe}</div>
               </div>
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Steps to Complete</h4>
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Steps to Complete</h4>
               <ol className="space-y-2">
                 {selectedPlan.steps.map((step, idx) => (
-                  <li key={idx} className="flex items-start text-sm text-gray-700">
+                  <li key={idx} className="flex items-start text-sm text-gray-700 dark:text-slate-200">
                     <span className="font-semibold mr-2">{idx + 1}.</span>
                     <span>{step}</span>
                   </li>
@@ -459,13 +462,13 @@ export default function AIFinancialCoach() {
         <Modal isOpen={askCoachOpen} onClose={() => { setAskCoachOpen(false); setCoachQuestion(''); setCoachResponse(''); }} title="Ask Your Financial Coach">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 What would you like to know?
               </label>
               <textarea
                 value={coachQuestion}
                 onChange={(e) => setCoachQuestion(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 rows={4}
                 placeholder="e.g., Should I pay off debt or invest? How can I save more money?"
               />

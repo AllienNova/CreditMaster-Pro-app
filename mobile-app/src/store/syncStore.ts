@@ -1,5 +1,5 @@
 /**
- * CPFI Sync Store
+ * Fynvita Sync Store
  * Manages offline sync queue, connectivity status, and data synchronization
  */
 
@@ -244,7 +244,9 @@ async function processAction(action: PendingAction): Promise<boolean> {
       }
       break;
     default:
-      console.warn(`Unknown entity type: ${action.entity}`);
+      if (__DEV__) {
+        console.warn(`Unknown entity type: ${action.entity}`);
+      }
   }
   
   return false;

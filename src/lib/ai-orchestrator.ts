@@ -15,8 +15,33 @@
 import { AIMLService, ChatMessage, ChatOptions } from './aiml-service';
 import { ModelRouter, TaskType } from './model-router';
 
+export interface CreditReportItem {
+  accountNumber?: string;
+  creditorName?: string;
+  accountType?: string;
+  balance?: number;
+  status?: string;
+  dateOpened?: string;
+  lastUpdated?: string;
+  remarks?: string;
+}
+
+export interface CreditReport {
+  accounts?: CreditReportItem[];
+  inquiries?: Array<{
+    creditor?: string;
+    date?: string;
+    type?: string;
+  }>;
+  publicRecords?: Array<{
+    type?: string;
+    date?: string;
+    amount?: number;
+  }>;
+}
+
 export interface DisputeGenerationInput {
-  creditReport: any;
+  creditReport: CreditReport;
   disputeReason: string;
   userInfo: {
     name: string;
@@ -28,7 +53,7 @@ export interface DisputeGenerationInput {
 }
 
 export interface CreditAnalysisInput {
-  creditReport: any;
+  creditReport: CreditReport;
   creditScore?: number;
   goals?: string[];
 }
@@ -95,9 +120,14 @@ export interface LoanStrategyOutput {
   recommendations: string[];
 }
 
-export interface ConsensusResult<T = any> {
+export interface IndividualResponse {
+  model: string;
+  content: string | null;
+}
+
+export interface ConsensusResult<T = string> {
   consensus: T;
-  individual_responses: any[];
+  individual_responses: IndividualResponse[];
   models_used: string[];
   confidence_score: number;
 }
@@ -255,7 +285,7 @@ Provide only the JSON output, no additional text.`;
     try {
       return JSON.parse(jsonStr);
     } catch (error) {
-      console.error('Failed to parse credit analysis response:', error);
+      // AIOrchestrator error: Failed to parse credit analysis response
       throw new Error('Failed to parse credit analysis response');
     }
   }
@@ -350,7 +380,7 @@ Provide detailed calculations and reasoning. Output only the JSON, no additional
     try {
       return JSON.parse(jsonStr);
     } catch (error) {
-      console.error('Failed to parse loan strategy response:', error);
+      // AIOrchestrator error: Failed to parse loan strategy response
       throw new Error('Failed to parse loan strategy response');
     }
   }
@@ -415,7 +445,7 @@ Provide only the JSON output.`;
     try {
       return JSON.parse(jsonStr);
     } catch (error) {
-      console.error('Failed to parse compliance review response:', error);
+      // AIOrchestrator error: Failed to parse compliance review response
       throw new Error('Failed to parse compliance review response');
     }
   }
@@ -431,7 +461,7 @@ Provide only the JSON output.`;
    * @param options - Optional chat parameters
    * @returns Consensus result with individual responses
    */
-  async getConsensus<T = any>(
+  async getConsensus<T = string>(
     taskType: TaskType,
     prompt: string,
     options?: ChatOptions
@@ -457,7 +487,7 @@ Provide only the JSON output.`;
             success: true,
           };
         } catch (error) {
-          console.error(`Model ${model} failed:`, error);
+          // AIOrchestrator error: Model failed
           return {
             model,
             content: null,

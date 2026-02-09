@@ -32,7 +32,13 @@ jest.mock('../EfficientFrontierChart', () => ({
 }));
 
 // Mock useOnline hook
-let mockUseOnlineReturn = {
+let mockUseOnlineReturn: {
+  isOnline: boolean;
+  wasOffline: boolean;
+  lastOnlineAt: Date | null;
+  lastOfflineAt: Date | null;
+  checkConnection: jest.Mock;
+} = {
   isOnline: true,
   wasOffline: false,
   lastOnlineAt: new Date(),
@@ -57,11 +63,16 @@ const mockPortfolio: Portfolio = {
   id: 'test-portfolio',
   userId: 'user1',
   name: 'Test Portfolio',
-  description: 'Test portfolio for mobile responsive tests',
   totalValue: 100000,
+  totalCost: 90000,
+  totalGain: 10000,
+  totalGainPercent: 11.11,
+  dayChange: 500,
+  dayChangePercent: 0.5,
+  cashBalance: 5000,
   holdings: [],
-  assetAllocations: [],
-  sectorAllocations: [],
+  assetAllocation: [],
+  sectorAllocation: [],
   performanceHistory: [],
   createdAt: new Date('2023-01-01'),
   updatedAt: new Date('2023-12-01'),

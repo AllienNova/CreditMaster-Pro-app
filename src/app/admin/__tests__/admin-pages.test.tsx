@@ -15,13 +15,13 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/admin'
 }));
 
-// Mock fetch
-global.fetch = jest.fn();
+// Mock fetch - ensure it's a jest mock function
+const mockFetch = global.fetch as jest.Mock;
 
 describe('Admin Dashboard Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockResolvedValue({
+    mockFetch.mockClear();
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         metrics: {
@@ -67,8 +67,8 @@ describe('Admin Dashboard Page', () => {
 
 describe('Admin Users Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockResolvedValue({
+    mockFetch.mockClear();
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         users: [
@@ -118,8 +118,8 @@ describe('Admin Health Page', () => {
 
 describe('Admin Logs Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockResolvedValue({
+    mockFetch.mockClear();
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ logs: [], total: 0 })
     });

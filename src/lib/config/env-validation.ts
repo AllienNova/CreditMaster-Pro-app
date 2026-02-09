@@ -165,11 +165,11 @@ export function validateEnv(): EnvConfig {
     
     // Warn about missing optional variables
     if (!supabaseServiceRoleKey) {
-      console.warn('⚠️  SUPABASE_SERVICE_ROLE_KEY not set - admin operations will not work');
+      // EnvValidation: SUPABASE_SERVICE_ROLE_KEY not set - admin operations will not work
     }
-    
+
     if (!encryptionKey) {
-      console.warn('⚠️  ENCRYPTION_KEY not set - PII encryption will not work');
+      // EnvValidation: ENCRYPTION_KEY not set - PII encryption will not work
     }
     
     // Production-specific validations
@@ -232,7 +232,7 @@ let cachedConfig: EnvConfig | null = null;
 export function getEnvConfig(): EnvConfig {
   if (!cachedConfig) {
     cachedConfig = validateEnv();
-    console.log('✅ Environment variables validated successfully');
+    // EnvValidation: Environment variables validated successfully
   }
   return cachedConfig;
 }
@@ -264,8 +264,7 @@ if (typeof window === 'undefined') {
     getEnvConfig();
   } catch (error) {
     if (error instanceof EnvValidationError) {
-      console.error('❌ Environment validation failed:');
-      error.errors.forEach(err => console.error(`   - ${err}`));
+      // EnvValidation error: Environment validation failed
       process.exit(1);
     }
     throw error;

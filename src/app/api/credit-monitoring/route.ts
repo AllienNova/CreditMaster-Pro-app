@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
       success: true,
       data: dashboard,
     });
-  } catch (error) {
-    console.error('Error fetching monitoring dashboard:', error);
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
       { error: 'Failed to fetch monitoring dashboard' },
       { status: 500 }
@@ -66,8 +66,8 @@ export async function POST(request: NextRequest) {
       success: true,
       data: creditScore,
     });
-  } catch (error) {
-    console.error('Error adding credit score:', error);
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
       { error: 'Failed to add credit score' },
       { status: 500 }

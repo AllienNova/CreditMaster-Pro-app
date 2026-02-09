@@ -1,5 +1,5 @@
 /**
- * CPFI Debt Payoff Calculator
+ * Fynvita Debt Payoff Calculator
  * Snowball vs Avalanche comparison, payoff timeline visualization
  */
 
@@ -60,7 +60,7 @@ export default function DebtScreen() {
         setDebts(MOCK_DEBTS);
       }
     } catch (err) {
-      console.warn('Using mock debts:', err);
+      // Fallback to mock data silently in production
       setDebts(MOCK_DEBTS);
     } finally {
       setLoading(false);

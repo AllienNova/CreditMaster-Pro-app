@@ -12,13 +12,13 @@ module.exports = {
   apps: {
     'ios.debug': {
       type: 'ios.app',
-      binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/CreditMasterPro.app',
-      build: 'xcodebuild -workspace ios/CreditMasterPro.xcworkspace -scheme CreditMasterPro -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build',
+      binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/FynvitaPro.app',
+      build: 'xcodebuild -workspace ios/FynvitaPro.xcworkspace -scheme FynvitaPro -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build',
     },
     'ios.release': {
       type: 'ios.app',
-      binaryPath: 'ios/build/Build/Products/Release-iphonesimulator/CreditMasterPro.app',
-      build: 'xcodebuild -workspace ios/CreditMasterPro.xcworkspace -scheme CreditMasterPro -configuration Release -sdk iphonesimulator -derivedDataPath ios/build',
+      binaryPath: 'ios/build/Build/Products/Release-iphonesimulator/FynvitaPro.app',
+      build: 'xcodebuild -workspace ios/FynvitaPro.xcworkspace -scheme FynvitaPro -configuration Release -sdk iphonesimulator -derivedDataPath ios/build',
     },
     'android.debug': {
       type: 'android.apk',

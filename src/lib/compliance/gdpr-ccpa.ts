@@ -1,6 +1,6 @@
 /**
  * GDPR and CCPA Compliance Service
- * 
+ *
  * Implements:
  * - Right to access (GDPR Art. 15, CCPA §1798.110)
  * - Right to rectification (GDPR Art. 16)
@@ -11,15 +11,55 @@
  * - Data breach notification
  */
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  name?: string;
+  phone?: string;
+  address?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreditReportRecord {
+  id: string;
+  bureau: string;
+  reportDate: Date;
+  score?: number;
+  items?: unknown[];
+}
+
+export interface DisputeRecord {
+  id: string;
+  status: string;
+  createdAt: Date;
+  description?: string;
+}
+
+export interface AIInteractionRecord {
+  id: string;
+  type: string;
+  timestamp: Date;
+  prompt?: string;
+  response?: string;
+}
+
+export interface LogRecord {
+  id: string;
+  action: string;
+  timestamp: Date;
+  details?: Record<string, unknown>;
+}
+
 export interface UserDataExport {
   userId: string;
   exportDate: Date;
   data: {
-    profile: any;
-    creditReports: any[];
-    disputes: any[];
-    aiInteractions: any[];
-    logs: any[];
+    profile: UserProfile | null;
+    creditReports: CreditReportRecord[];
+    disputes: DisputeRecord[];
+    aiInteractions: AIInteractionRecord[];
+    logs: LogRecord[];
   };
   format: 'json' | 'csv' | 'xml';
 }
@@ -59,7 +99,10 @@ class GDPRComplianceService {
    * Right to Access (GDPR Art. 15)
    * User can request all their personal data
    */
-  async exportUserData(userId: string, format: 'json' | 'csv' | 'xml' = 'json'): Promise<UserDataExport> {
+  async exportUserData(
+    userId: string,
+    format: 'json' | 'csv' | 'xml' = 'json'
+  ): Promise<UserDataExport> {
     // In production, fetch from database
     const userData: UserDataExport = {
       userId,
@@ -73,32 +116,38 @@ class GDPRComplianceService {
         logs: await this.getUserLogs(userId),
       },
     };
-    
+
     return userData;
   }
-  
+
   /**
    * Right to Rectification (GDPR Art. 16)
    * User can request correction of inaccurate data
    */
-  async rectifyUserData(userId: string, corrections: Record<string, any>): Promise<boolean> {
+  async rectifyUserData(
+    userId: string,
+    corrections: Record<string, string | number | boolean>
+  ): Promise<boolean> {
     // In production, update database
-    console.log(`Rectifying data for user ${userId}:`, corrections);
+    // Data rectification in progress
     return true;
   }
-  
+
   /**
    * Right to Erasure (GDPR Art. 17)
    * User can request deletion of their data
    */
-  async deleteUserData(userId: string, reason?: string): Promise<DataDeletionRequest> {
+  async deleteUserData(
+    userId: string,
+    reason?: string
+  ): Promise<DataDeletionRequest> {
     const request: DataDeletionRequest = {
       userId,
       requestDate: new Date(),
       reason,
       status: 'pending',
     };
-    
+
     // In production:
     // 1. Create deletion request
     // 2. Verify user identity
@@ -106,112 +155,132 @@ class GDPRComplianceService {
     // 4. Schedule deletion job
     // 5. Anonymize or delete data
     // 6. Notify user of completion
-    
-    console.log(`Data deletion request created for user ${userId}`);
+
+    // Data deletion request created
     return request;
   }
-  
+
   /**
    * Right to Data Portability (GDPR Art. 20)
    * User can receive their data in a structured, machine-readable format
    */
-  async portUserData(userId: string, targetFormat: 'json' | 'csv' | 'xml'): Promise<string> {
+  async portUserData(
+    userId: string,
+    targetFormat: 'json' | 'csv' | 'xml'
+  ): Promise<string> {
     const userData = await this.exportUserData(userId, targetFormat);
-    
+
     switch (targetFormat) {
       case 'json':
         return JSON.stringify(userData, null, 2);
       case 'csv':
-        return this.convertToCSV(userData);
+        return this.convertToCSV(userData.data);
       case 'xml':
-        return this.convertToXML(userData);
+        return this.convertToXML(userData.data);
       default:
         return JSON.stringify(userData, null, 2);
     }
   }
-  
+
   /**
    * Right to Restrict Processing (GDPR Art. 18)
    */
-  async restrictProcessing(userId: string, restrictions: string[]): Promise<boolean> {
+  async restrictProcessing(
+    userId: string,
+    restrictions: string[]
+  ): Promise<boolean> {
     // In production, update user preferences
-    console.log(`Restricting processing for user ${userId}:`, restrictions);
+    // Processing restriction applied
     return true;
   }
-  
+
   /**
    * Right to Object (GDPR Art. 21)
    */
-  async objectToProcessing(userId: string, processingType: string): Promise<boolean> {
+  async objectToProcessing(
+    userId: string,
+    processingType: string
+  ): Promise<boolean> {
     // In production, update user preferences
-    console.log(`User ${userId} objects to ${processingType}`);
+    // User objection recorded
     return true;
   }
-  
+
   /**
    * Data Breach Notification (GDPR Art. 33-34)
    * Must notify within 72 hours
    */
-  async notifyDataBreach(breach: Omit<DataBreachNotification, 'notifiedDate'>): Promise<void> {
+  async notifyDataBreach(
+    breach: Omit<DataBreachNotification, 'notifiedDate'>
+  ): Promise<void> {
     const notification: DataBreachNotification = {
       ...breach,
       notifiedDate: new Date(),
     };
-    
+
     // In production:
     // 1. Notify supervisory authority within 72 hours
     // 2. Notify affected users if high risk
     // 3. Document the breach
     // 4. Implement mitigation steps
-    
-    console.log('Data breach notification:', notification);
-    
+
+    // Data breach notification created
+
     // Send emails to affected users
     for (const userId of breach.affectedUsers) {
       await this.sendBreachNotification(userId, notification);
     }
   }
-  
+
   // Helper methods
-  
-  private async getUserProfile(userId: string): Promise<any> {
+
+  private async getUserProfile(userId: string): Promise<UserProfile | null> {
     // In production, fetch from database
-    return { userId, name: '[User Name]', email: '[User Email]' };
+    return {
+      id: userId,
+      email: '[User Email]',
+      name: '[User Name]',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
   }
-  
-  private async getUserCreditReports(userId: string): Promise<any[]> {
-    // In production, fetch from database
-    return [];
-  }
-  
-  private async getUserDisputes(userId: string): Promise<any[]> {
-    // In production, fetch from database
-    return [];
-  }
-  
-  private async getUserAIInteractions(userId: string): Promise<any[]> {
+
+  private async getUserCreditReports(_userId: string): Promise<CreditReportRecord[]> {
     // In production, fetch from database
     return [];
   }
-  
-  private async getUserLogs(userId: string): Promise<any[]> {
+
+  private async getUserDisputes(_userId: string): Promise<DisputeRecord[]> {
     // In production, fetch from database
     return [];
   }
-  
-  private convertToCSV(data: any): string {
+
+  private async getUserAIInteractions(_userId: string): Promise<AIInteractionRecord[]> {
+    // In production, fetch from database
+    return [];
+  }
+
+  private async getUserLogs(_userId: string): Promise<LogRecord[]> {
+    // In production, fetch from database
+    return [];
+  }
+
+  private convertToCSV(data: UserDataExport['data']): string {
     // Simple CSV conversion
     return JSON.stringify(data);
   }
-  
-  private convertToXML(data: any): string {
+
+  private convertToXML(data: UserDataExport['data']): string {
     // Simple XML conversion
     return `<?xml version="1.0"?><data>${JSON.stringify(data)}</data>`;
   }
-  
-  private async sendBreachNotification(userId: string, notification: DataBreachNotification): Promise<void> {
+
+  private async sendBreachNotification(
+    userId: string,
+    notification: DataBreachNotification
+  ): Promise<void> {
     // In production, send email
-    console.log(`Sending breach notification to user ${userId}`);
+    // Breach notification being sent
   }
 }
 
@@ -257,7 +326,7 @@ class CCPAComplianceService {
       ],
     };
   }
-  
+
   /**
    * Right to Delete (CCPA §1798.105)
    */
@@ -269,17 +338,17 @@ class CCPAComplianceService {
       status: 'pending',
     };
   }
-  
+
   /**
    * Right to Opt-Out (CCPA §1798.120)
    * User can opt-out of sale of personal information
    */
   async optOutOfSale(userId: string): Promise<boolean> {
     // In production, update user preferences
-    console.log(`User ${userId} opted out of sale of personal information`);
+    // User opt-out recorded
     return true;
   }
-  
+
   /**
    * Right to Non-Discrimination (CCPA §1798.125)
    * Cannot discriminate against users who exercise their rights
@@ -288,7 +357,7 @@ class CCPAComplianceService {
     // In production, verify no discriminatory practices
     return true;
   }
-  
+
   /**
    * Do Not Sell My Personal Information
    */
@@ -302,7 +371,7 @@ class CCPAComplianceService {
  */
 class ConsentManagementService {
   private consents: Map<string, ConsentRecord[]> = new Map();
-  
+
   /**
    * Record user consent
    */
@@ -311,23 +380,29 @@ class ConsentManagementService {
     userConsents.push(consent);
     this.consents.set(consent.userId, userConsents);
   }
-  
+
   /**
    * Check if user has given consent
    */
-  hasConsent(userId: string, consentType: ConsentRecord['consentType']): boolean {
+  hasConsent(
+    userId: string,
+    consentType: ConsentRecord['consentType']
+  ): boolean {
     const userConsents = this.consents.get(userId) || [];
     const latestConsent = userConsents
-      .filter(c => c.consentType === consentType)
+      .filter((c) => c.consentType === consentType)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
-    
+
     return latestConsent?.granted || false;
   }
-  
+
   /**
    * Withdraw consent
    */
-  withdrawConsent(userId: string, consentType: ConsentRecord['consentType']): void {
+  withdrawConsent(
+    userId: string,
+    consentType: ConsentRecord['consentType']
+  ): void {
     this.recordConsent({
       userId,
       consentType,
@@ -335,14 +410,14 @@ class ConsentManagementService {
       timestamp: new Date(),
     });
   }
-  
+
   /**
    * Get all consents for user
    */
   getUserConsents(userId: string): ConsentRecord[] {
     return this.consents.get(userId) || [];
   }
-  
+
   /**
    * Export consent history
    */
@@ -365,23 +440,28 @@ export const PRIVACY_POLICY_TEMPLATE = {
   sections: [
     {
       title: 'Information We Collect',
-      content: 'We collect personal identifiers, financial information, and usage data.',
+      content:
+        'We collect personal identifiers, financial information, and usage data.',
     },
     {
       title: 'How We Use Your Information',
-      content: 'We use your information to provide credit repair services and improve our platform.',
+      content:
+        'We use your information to provide credit repair services and improve our platform.',
     },
     {
       title: 'Data Sharing',
-      content: 'We share data with AI service providers, credit bureaus, and payment processors.',
+      content:
+        'We share data with AI service providers, credit bureaus, and payment processors.',
     },
     {
       title: 'Your Rights',
-      content: 'You have the right to access, rectify, delete, and port your data.',
+      content:
+        'You have the right to access, rectify, delete, and port your data.',
     },
     {
       title: 'Data Security',
-      content: 'We implement industry-standard security measures to protect your data.',
+      content:
+        'We implement industry-standard security measures to protect your data.',
     },
     {
       title: 'Cookies',
@@ -389,7 +469,7 @@ export const PRIVACY_POLICY_TEMPLATE = {
     },
     {
       title: 'Contact Us',
-      content: 'For privacy inquiries, contact privacy@CPFI-pro.com',
+      content: 'For privacy inquiries, contact privacy@fynvita.com',
     },
   ],
 };
@@ -419,4 +499,3 @@ export const COOKIE_CONSENT_CONFIG = {
     },
   ],
 };
-

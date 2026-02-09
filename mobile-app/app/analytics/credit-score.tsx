@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Score Analytics Screen
+ * Fynvita Credit Score Analytics Screen
  * Detailed credit score analysis and predictions
  */
 

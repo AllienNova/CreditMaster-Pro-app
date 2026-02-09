@@ -57,6 +57,8 @@ type RealtimeCallback = (data: {
   price: number;
   volume: number;
   timestamp: number;
+  change: number;
+  changePercent: number;
 }) => void;
 
 // ============================================================================
@@ -104,7 +106,7 @@ export class PolygonClient {
     this.apiKey = apiKey || process.env.POLYGON_API_KEY || '';
     this.tier = tier || 'free';
     if (!this.apiKey) {
-      console.warn('Polygon.io API key not configured');
+      // Polygon: API key not configured
     }
   }
 
@@ -362,7 +364,7 @@ export class PolygonClient {
       this.ws = new WebSocket(`${WEBSOCKET_CONFIG.url}/stocks`);
 
       this.ws.onopen = () => {
-        console.log('Polygon WebSocket connected');
+        // Polygon: WebSocket connected
         this.isConnecting = false;
         this.reconnectAttempts = 0;
 
@@ -382,37 +384,50 @@ export class PolygonClient {
             messages.forEach((msg) => this.handleWebSocketMessage(msg));
           }
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
+          // Polygon error: Failed to parse WebSocket message
         }
       };
 
-      this.ws.onerror = (error) => {
-        console.error('Polygon WebSocket error:', error);
+      this.ws.onerror = (_error) => {
+        // Polygon error: WebSocket error
       };
 
       this.ws.onclose = () => {
-        console.log('Polygon WebSocket closed');
+        // Polygon: WebSocket closed
         this.isConnecting = false;
         this.ws = null;
         this.scheduleReconnect();
       };
     } catch (error) {
-      console.error('Failed to create WebSocket:', error);
+      // Polygon error: Failed to create WebSocket
       this.isConnecting = false;
       this.scheduleReconnect();
     }
   }
+
+  // Track last known prices for change calculation
+  private lastPrices: Map<string, number> = new Map();
 
   private handleWebSocketMessage(msg: WebSocketMessage): void {
     if (msg.ev === 'T' && msg.sym && msg.p) {
       // Trade message
       const callbacks = this.wsSubscriptions.get(msg.sym);
       if (callbacks) {
+        // Calculate change from last known price
+        const lastPrice = this.lastPrices.get(msg.sym) || msg.p;
+        const change = msg.p - lastPrice;
+        const changePercent = lastPrice > 0 ? (change / lastPrice) * 100 : 0;
+
+        // Update last known price
+        this.lastPrices.set(msg.sym, msg.p);
+
         const update = {
           symbol: msg.sym,
           price: msg.p,
           volume: msg.s || 0,
           timestamp: msg.t || Date.now(),
+          change: Math.round(change * 100) / 100,
+          changePercent: Math.round(changePercent * 100) / 100,
         };
         callbacks.forEach((callback) => callback(update));
       }
@@ -421,7 +436,7 @@ export class PolygonClient {
 
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= WEBSOCKET_CONFIG.maxReconnectAttempts) {
-      console.error('Max WebSocket reconnect attempts reached');
+      // Polygon error: Max WebSocket reconnect attempts reached
       return;
     }
 
@@ -431,7 +446,7 @@ export class PolygonClient {
     );
 
     this.reconnectAttempts++;
-    console.log(`Reconnecting WebSocket in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    // Polygon: Reconnecting WebSocket
 
     this.reconnectTimeout = setTimeout(() => {
       this.connectWebSocket();

@@ -30,7 +30,7 @@ const createMockResponse = (data: any) => ({
 
 describe('CreditFactorsPage', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    mockFetch.mockClear();
   });
 
   it('renders loading state initially', () => {
@@ -144,8 +144,14 @@ describe('CreditFactorsPage', () => {
   });
 
   it('handles error state', async () => {
-    mockFetch.mockRejectedValueOnce(
-      new Error('Failed to fetch')
+    // Override MSW handler to return error for this test
+    const { server } = require('@/__tests__/mocks/server');
+    const { rest } = require('msw');
+
+    server.use(
+      rest.get('http://localhost/api/credit/factors', (req: any, res: any, ctx: any) => {
+        return res(ctx.status(500), ctx.json({ success: false, error: 'Failed to fetch' }));
+      })
     );
 
     render(<CreditFactorsPage />);
@@ -156,7 +162,15 @@ describe('CreditFactorsPage', () => {
   });
 
   it('displays empty state when no factors', async () => {
-    mockFetch.mockResolvedValueOnce(createMockResponse({ success: true, data: [] }));
+    // Override MSW handler to return empty data for this test
+    const { server } = require('@/__tests__/mocks/server');
+    const { rest } = require('msw');
+
+    server.use(
+      rest.get('http://localhost/api/credit/factors', (req: any, res: any, ctx: any) => {
+        return res(ctx.json({ success: true, data: [] }));
+      })
+    );
 
     render(<CreditFactorsPage />);
 

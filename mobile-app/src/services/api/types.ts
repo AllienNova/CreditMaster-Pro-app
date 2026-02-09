@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile API Types
+ * Fynvita Mobile API Types
  * Comprehensive type definitions for all API interactions
  */
 

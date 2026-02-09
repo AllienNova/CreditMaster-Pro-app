@@ -1,16 +1,17 @@
 /**
- * CPFI Settings Dashboard
+ * Fynvita Settings Dashboard
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ViewStyle, TextStyle } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/authStore';
 
 export default function SettingsScreen() {
+  const { colors, spacing, borderRadius, fontSize, fontWeight } = useTheme();
   const { logout } = useAuthStore();
 
   const handleLogout = () => {
@@ -57,60 +58,55 @@ export default function SettingsScreen() {
     },
   ];
 
+  const s = useMemo(() => ({
+    container: { flex: 1, backgroundColor: colors.background } as ViewStyle,
+    scrollView: { flex: 1 } as ViewStyle,
+    header: { padding: spacing.lg } as ViewStyle,
+    title: { fontSize: fontSize.xxl + 4, fontWeight: fontWeight.bold, color: colors.text } as TextStyle,
+    settingsGroup: { marginBottom: spacing.lg } as ViewStyle,
+    groupTitle: { fontSize: 13, fontWeight: fontWeight.semibold, color: colors.textSecondary, textTransform: 'uppercase', paddingHorizontal: spacing.lg, marginBottom: spacing.sm } as TextStyle,
+    groupItems: { backgroundColor: colors.surface, marginHorizontal: spacing.lg, borderRadius: borderRadius.lg } as ViewStyle,
+    settingItem: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border } as ViewStyle,
+    lastItem: { borderBottomWidth: 0 } as ViewStyle,
+    settingTitle: { flex: 1, fontSize: fontSize.md, color: colors.text, marginLeft: spacing.md } as TextStyle,
+    signOutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, marginHorizontal: spacing.lg, borderRadius: borderRadius.lg, padding: spacing.md, marginTop: spacing.lg } as ViewStyle,
+    signOutText: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.error, marginLeft: spacing.sm } as TextStyle,
+    version: { textAlign: 'center', fontSize: fontSize.xs, color: colors.textSecondary, marginTop: spacing.lg, marginBottom: spacing.xl } as TextStyle,
+  }), [colors, spacing, borderRadius, fontSize, fontWeight]);
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView style={styles.scrollView}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
+    <SafeAreaView style={s.container} edges={['top']}>
+      <ScrollView style={s.scrollView}>
+        <View style={s.header}>
+          <Text style={s.title}>Settings</Text>
         </View>
 
-        {/* Settings Groups */}
         {settingsGroups.map((group, groupIndex) => (
-          <View key={groupIndex} style={styles.settingsGroup}>
-            <Text style={styles.groupTitle}>{group.title}</Text>
-            <View style={styles.groupItems}>
+          <View key={groupIndex} style={s.settingsGroup}>
+            <Text style={s.groupTitle}>{group.title}</Text>
+            <View style={s.groupItems}>
               {group.items.map((item, itemIndex) => (
                 <TouchableOpacity
                   key={itemIndex}
-                  style={[styles.settingItem, itemIndex === group.items.length - 1 && styles.lastItem]}
+                  style={[s.settingItem, itemIndex === group.items.length - 1 && s.lastItem]}
                   onPress={() => router.push(item.route as never)}
                 >
-                  <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={22} color={theme.colors.textSecondary} />
-                  <Text style={styles.settingTitle}>{item.title}</Text>
-                  <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+                  <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={22} color={colors.textSecondary} />
+                  <Text style={s.settingTitle}>{item.title}</Text>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         ))}
 
-        {/* Sign Out Button */}
-        <TouchableOpacity style={styles.signOutButton} onPress={handleLogout}>
-          <Ionicons name="log-out" size={22} color="#EF4444" />
-          <Text style={styles.signOutText}>Sign Out</Text>
+        <TouchableOpacity style={s.signOutButton} onPress={handleLogout}>
+          <Ionicons name="log-out" size={22} color={colors.error} />
+          <Text style={s.signOutText}>Sign Out</Text>
         </TouchableOpacity>
 
-        {/* Version */}
-        <Text style={styles.version}>Version 1.0.0</Text>
+        <Text style={s.version}>Version 1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
-  scrollView: { flex: 1 },
-  header: { padding: theme.spacing.lg },
-  title: { fontSize: 28, fontWeight: '700', color: theme.colors.text },
-  settingsGroup: { marginBottom: theme.spacing.lg },
-  groupTitle: { fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary, textTransform: 'uppercase', paddingHorizontal: theme.spacing.lg, marginBottom: theme.spacing.sm },
-  groupItems: { backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.lg, borderRadius: theme.borderRadius.lg },
-  settingItem: { flexDirection: 'row', alignItems: 'center', padding: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
-  lastItem: { borderBottomWidth: 0 },
-  settingTitle: { flex: 1, fontSize: 16, color: theme.colors.text, marginLeft: theme.spacing.md },
-  signOutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.lg, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginTop: theme.spacing.lg },
-  signOutText: { fontSize: 16, fontWeight: '600', color: '#EF4444', marginLeft: theme.spacing.sm },
-  version: { textAlign: 'center', fontSize: 12, color: theme.colors.textSecondary, marginTop: theme.spacing.lg, marginBottom: theme.spacing.xl },
-});
-

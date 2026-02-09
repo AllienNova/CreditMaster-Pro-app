@@ -161,7 +161,7 @@ export async function getCreditRepairScore(
 
     return mapScoreFromDb(data as CreditRepairScoreRow);
   } catch (error) {
-    console.error('Error getting credit repair score:', error);
+    // Credit repair DB error: getting credit repair score
     throw new Error(`Failed to get credit repair score: ${(error as Error).message}`);
   }
 }
@@ -190,7 +190,7 @@ export async function saveCreditRepairScore(
 
     return mapScoreFromDb(data as CreditRepairScoreRow);
   } catch (error) {
-    console.error('Error saving credit repair score:', error);
+    // Credit repair DB error: saving credit repair score
     throw new Error(`Failed to save credit repair score: ${(error as Error).message}`);
   }
 }
@@ -215,7 +215,7 @@ export async function getCreditRepairHistory(
     const rows = (data ?? []) as CreditRepairScoreRow[];
     return rows.map(mapScoreFromDb);
   } catch (error) {
-    console.error('Error getting credit repair history:', error);
+    // Credit repair DB error: getting credit repair history
     throw new Error(`Failed to get credit repair history: ${(error as Error).message}`);
   }
 }
@@ -255,7 +255,7 @@ export async function cleanupOldScores(
 
     return count || 0;
   } catch (error) {
-    console.error('Error cleaning up old scores:', error);
+    // Credit repair DB error: cleaning up old scores
     throw new Error(`Failed to cleanup old scores: ${(error as Error).message}`);
   }
 }
@@ -301,7 +301,7 @@ export async function getActions(
     const rows = (data ?? []) as CreditRepairActionRow[];
     return rows.map(mapActionFromDb);
   } catch (error) {
-    console.error('Error getting actions:', error);
+    // Credit repair DB error: getting actions
     throw new Error(`Failed to get actions: ${(error as Error).message}`);
   }
 }
@@ -330,7 +330,7 @@ export async function getAction(
 
     return mapActionFromDb(data as CreditRepairActionRow);
   } catch (error) {
-    console.error('Error getting action:', error);
+    // Credit repair DB error: getting action
     throw new Error(`Failed to get action: ${(error as Error).message}`);
   }
 }
@@ -360,7 +360,7 @@ export async function createAction(
 
     return mapActionFromDb(data as CreditRepairActionRow);
   } catch (error) {
-    console.error('Error creating action:', error);
+    // Credit repair DB error: creating action
     throw new Error(`Failed to create action: ${(error as Error).message}`);
   }
 }
@@ -394,7 +394,7 @@ export async function updateAction(
 
     return mapActionFromDb(data as CreditRepairActionRow);
   } catch (error) {
-    console.error('Error updating action:', error);
+    // Credit repair DB error: updating action
     throw new Error(`Failed to update action: ${(error as Error).message}`);
   }
 }
@@ -417,7 +417,7 @@ export async function deleteAction(
 
     return true;
   } catch (error) {
-    console.error('Error deleting action:', error);
+    // Credit repair DB error: deleting action
     throw new Error(`Failed to delete action: ${(error as Error).message}`);
   }
 }
@@ -468,7 +468,7 @@ export async function getProgress(
     const rows = (data ?? []) as CreditRepairProgressRow[];
     return rows.map(mapProgressFromDb);
   } catch (error) {
-    console.error('Error getting progress:', error);
+    // Credit repair DB error: getting progress
     throw new Error(`Failed to get progress: ${(error as Error).message}`);
   }
 }
@@ -497,7 +497,7 @@ export async function createProgress(
 
     return mapProgressFromDb(data as CreditRepairProgressRow);
   } catch (error) {
-    console.error('Error creating progress:', error);
+    // Credit repair DB error: creating progress
     throw new Error(`Failed to create progress: ${(error as Error).message}`);
   }
 }
@@ -520,7 +520,7 @@ export async function deleteProgress(
 
     return true;
   } catch (error) {
-    console.error('Error deleting progress:', error);
+    // Credit repair DB error: deleting progress
     throw new Error(`Failed to delete progress: ${(error as Error).message}`);
   }
 }
@@ -583,7 +583,7 @@ export async function getProgressStats(
       milestonesByType,
     };
   } catch (error) {
-    console.error('Error getting progress stats:', error);
+    // Credit repair DB error: getting progress stats
     throw new Error(`Failed to get progress stats: ${(error as Error).message}`);
   }
 }

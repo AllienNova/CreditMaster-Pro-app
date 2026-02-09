@@ -1,5 +1,5 @@
 /**
- * CPFI Financial Intelligence Dashboard
+ * Fynvita Financial Intelligence Dashboard
  * Central hub for AI-powered financial features
  * Enhanced with Phase 2.1-2.4 integration
  */
@@ -449,7 +449,7 @@ export default function FinancialIntelligenceDashboard() {
         setAccountsList(dashboardData.data?.accounts || []);
       }
     } catch (error) {
-      console.error('Error fetching snapshot:', error);
+      if (__DEV__) console.error('Error fetching snapshot:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
     margin: theme.spacing.xs,
-    ...theme.shadows.sm,
+    ...theme.shadow.sm,
   },
   actionIcon: {
     width: 56,

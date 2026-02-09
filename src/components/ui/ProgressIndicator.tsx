@@ -30,14 +30,14 @@ export default function ProgressIndicator({
     return (
       <div className="w-full">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
             Step {currentStep + 1} of {steps.length}
           </span>
-          <span className="text-sm text-gray-500">{Math.round(progress)}%</span>
+          <span className="text-sm text-gray-500 dark:text-slate-400">{Math.round(progress)}%</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
           <div
-            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500 ease-out"
+            className="bg-gradient-to-r from-blue-500 to-blue-500 h-2 rounded-full transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -58,7 +58,7 @@ export default function ProgressIndicator({
                       ? 'bg-green-500 text-white'
                       : index === currentStep
                       ? 'bg-blue-600 text-white ring-4 ring-blue-100'
-                      : 'bg-gray-200 text-gray-500'
+                      : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'
                   }`}
                 >
                   {index < currentStep ? (
@@ -69,9 +69,7 @@ export default function ProgressIndicator({
                 </div>
                 {showLabels && (
                   <span
-                    className={`mt-2 text-xs font-medium text-center ${
-                      index <= currentStep ? 'text-gray-900' : 'text-gray-500'
-                    }`}
+                    className={`mt-2 text-xs font-medium text-center ${ index <= currentStep ? 'text-gray-900' : 'text-gray-500 dark:text-slate-400' }`}
                   >
                     {step.name}
                   </span>
@@ -81,7 +79,7 @@ export default function ProgressIndicator({
                 <div className="flex-1 h-1 mx-2">
                   <div
                     className={`h-full rounded transition-all duration-500 ${
-                      index < currentStep ? 'bg-green-500' : 'bg-gray-200'
+                      index < currentStep ? 'bg-green-500' : 'bg-gray-200 dark:bg-slate-700'
                     }`}
                   />
                 </div>
@@ -106,7 +104,7 @@ export default function ProgressIndicator({
                 </span>
                 <span className="text-sm font-semibold">{step.name}</span>
                 {showDescription && step.description && (
-                  <span className="text-xs text-gray-500 mt-1">
+                  <span className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                     {step.description}
                   </span>
                 )}
@@ -121,21 +119,21 @@ export default function ProgressIndicator({
                 </span>
                 <span className="text-sm font-semibold">{step.name}</span>
                 {showDescription && step.description && (
-                  <span className="text-xs text-gray-500 mt-1">
+                  <span className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                     {step.description}
                   </span>
                 )}
               </div>
             ) : (
-              <div className="group flex flex-col border-l-4 border-gray-200 py-2 pl-4 md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4">
-                <span className="text-sm font-medium text-gray-500 transition-colors">
+              <div className="group flex flex-col border-l-4 border-gray-200 dark:border-slate-700 py-2 pl-4 md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4">
+                <span className="text-sm font-medium text-gray-500 dark:text-slate-400 transition-colors">
                   Step {index + 1}
                 </span>
-                <span className="text-sm font-semibold text-gray-500">
+                <span className="text-sm font-semibold text-gray-500 dark:text-slate-400">
                   {step.name}
                 </span>
                 {showDescription && step.description && (
-                  <span className="text-xs text-gray-400 mt-1">
+                  <span className="text-xs text-gray-400 dark:text-slate-500 mt-1">
                     {step.description}
                   </span>
                 )}
@@ -198,10 +196,10 @@ export function CircularProgress({
         </defs>
       </svg>
       <div className="absolute flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-gray-900">
+        <span className="text-2xl font-bold text-gray-900 dark:text-white">
           {Math.round(progress)}%
         </span>
-        {label && <span className="text-xs text-gray-500 mt-1">{label}</span>}
+        {label && <span className="text-xs text-gray-500 dark:text-slate-400 mt-1">{label}</span>}
       </div>
     </div>
   );
@@ -230,7 +228,7 @@ export function WizardProgress({
                 ? 'bg-green-500 text-white hover:bg-green-600 cursor-pointer'
                 : index === currentStep
                 ? 'bg-blue-600 text-white ring-4 ring-blue-100'
-                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400 cursor-not-allowed'
             }`}
             title={step}
           >
@@ -239,7 +237,7 @@ export function WizardProgress({
           {index < steps.length - 1 && (
             <div
               className={`w-12 h-1 mx-1 rounded transition-all duration-500 ${
-                index < currentStep ? 'bg-green-500' : 'bg-gray-200'
+                index < currentStep ? 'bg-green-500' : 'bg-gray-200 dark:bg-slate-700'
               }`}
             />
           )}

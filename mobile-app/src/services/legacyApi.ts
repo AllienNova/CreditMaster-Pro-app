@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import type { Dispute, Document, Notification, CreditScore, StudentLoan, ApiResponse } from '../types';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://CPFI.pro/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://Fynvita.pro/api';
 
 // Generic fetch wrapper with auth
 async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {

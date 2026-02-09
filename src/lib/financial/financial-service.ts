@@ -185,7 +185,7 @@ class FinancialService {
         monthlyTrend,
       };
     } catch (error) {
-      console.error('Error getting financial dashboard:', error);
+      // FinancialService error: Error getting financial dashboard
       throw error;
     }
   }
@@ -347,7 +347,7 @@ class FinancialService {
         insights,
       };
     } catch (error) {
-      console.error('Error getting spending analysis:', error);
+      // FinancialService error: Error getting spending analysis
       throw error;
     }
   }

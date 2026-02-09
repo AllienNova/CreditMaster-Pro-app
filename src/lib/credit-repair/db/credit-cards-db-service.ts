@@ -121,7 +121,7 @@ export async function createCreditCard(
 
     return mapCreditCardFromDb(data);
   } catch (error) {
-    console.error('Error creating credit card:', error);
+    // CreditCardsDB error: Error creating credit card
     throw new Error(`Failed to create credit card: ${(error as Error).message}`);
   }
 }
@@ -150,7 +150,7 @@ export async function getCreditCard(
 
     return mapCreditCardFromDb(data);
   } catch (error) {
-    console.error('Error getting credit card:', error);
+    // CreditCardsDB error: Error getting credit card
     throw new Error(`Failed to get credit card: ${(error as Error).message}`);
   }
 }
@@ -196,7 +196,7 @@ export async function getCreditCardsByUser(
 
     return (data || []).map(mapCreditCardFromDb);
   } catch (error) {
-    console.error('Error getting credit cards by user:', error);
+    // CreditCardsDB error: Error getting credit cards by user
     throw new Error(`Failed to get credit cards: ${(error as Error).message}`);
   }
 }
@@ -234,7 +234,7 @@ export async function updateCreditCard(
 
     return mapCreditCardFromDb(data);
   } catch (error) {
-    console.error('Error updating credit card:', error);
+    // CreditCardsDB error: Error updating credit card
     throw new Error(`Failed to update credit card: ${(error as Error).message}`);
   }
 }
@@ -257,7 +257,7 @@ export async function deleteCreditCard(
 
     return true;
   } catch (error) {
-    console.error('Error deleting credit card:', error);
+    // CreditCardsDB error: Error deleting credit card
     throw new Error(`Failed to delete credit card: ${(error as Error).message}`);
   }
 }
@@ -288,7 +288,7 @@ export async function recordPayment(
       lastPaymentAmount: paymentAmount,
     });
   } catch (error) {
-    console.error('Error recording payment:', error);
+    // CreditCardsDB error: Error recording payment
     throw new Error(`Failed to record payment: ${(error as Error).message}`);
   }
 }
@@ -327,7 +327,7 @@ export async function getCreditCardStats(
       highUtilizationCards,
     };
   } catch (error) {
-    console.error('Error getting credit card stats:', error);
+    // CreditCardsDB error: Error getting credit card stats
     throw new Error(`Failed to get credit card stats: ${(error as Error).message}`);
   }
 }
@@ -348,7 +348,7 @@ export async function calculateTotalUtilization(userId: string): Promise<number>
     const utilization = (totalBalance / totalCreditLimit) * 100;
     return Number(utilization.toFixed(2));
   } catch (error) {
-    console.error('Error calculating total utilization:', error);
+    // CreditCardsDB error: Error calculating total utilization
     throw new Error(`Failed to calculate total utilization: ${(error as Error).message}`);
   }
 }
@@ -376,7 +376,7 @@ export async function getCardsNeedingPayment(
       return daysUntilStatement <= daysAhead && card.utilization > 10;
     });
   } catch (error) {
-    console.error('Error getting cards needing payment:', error);
+    // CreditCardsDB error: Error getting cards needing payment
     throw new Error(`Failed to get cards needing payment: ${(error as Error).message}`);
   }
 }

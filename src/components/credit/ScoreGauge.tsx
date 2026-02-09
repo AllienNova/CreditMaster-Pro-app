@@ -120,7 +120,7 @@ export default function ScoreGauge({
         
         {showLabel && (
           <span
-            className="text-gray-600 font-medium mt-1"
+            className="text-gray-600 dark:text-slate-300 font-medium mt-1"
             style={{ fontSize: labelFontSize }}
             data-testid="score-label"
           >

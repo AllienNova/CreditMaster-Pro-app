@@ -14,7 +14,7 @@ interface GoalProgressBarProps {
 export default function GoalProgressBar({ progress, showAnimation = true }: GoalProgressBarProps) {
   const getProgressColor = (progress: number): string => {
     if (progress >= 100) return 'from-green-500 to-emerald-600';
-    if (progress >= 75) return 'from-blue-500 to-cyan-600';
+    if (progress >= 75) return 'from-blue-500 to-blue-600';
     if (progress >= 50) return 'from-yellow-500 to-orange-500';
     if (progress >= 25) return 'from-orange-500 to-red-500';
     return 'from-red-600 to-red-700';
@@ -30,7 +30,7 @@ export default function GoalProgressBar({ progress, showAnimation = true }: Goal
   return (
     <div className="relative w-full">
       {/* Background Track */}
-      <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+      <div className="w-full h-4 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
         {/* Progress Fill */}
         <div
           className={`h-full bg-gradient-to-r ${getProgressColor(progress)} ${
@@ -49,10 +49,10 @@ export default function GoalProgressBar({ progress, showAnimation = true }: Goal
       {[25, 50, 75].map((milestone) => (
         <div
           key={milestone}
-          className="absolute top-0 h-4 w-0.5 bg-white/50"
+          className="absolute top-0 h-4 w-0.5 bg-white dark:bg-slate-800/50"
           style={{ left: `${milestone}%` }}
         >
-          <div className="absolute -top-1 left-1/2 -translate-x-1/2 text-xs text-gray-400">
+          <div className="absolute -top-1 left-1/2 -translate-x-1/2 text-xs text-gray-400 dark:text-slate-500">
             {milestone === 25 && progress < 25 && '¼'}
             {milestone === 50 && progress < 50 && '½'}
             {milestone === 75 && progress < 75 && '¾'}
@@ -63,7 +63,7 @@ export default function GoalProgressBar({ progress, showAnimation = true }: Goal
       {/* Completion Celebration */}
       {progress >= 100 && showAnimation && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-2xl animate-bounce">🎉</span>
+          <span className="text-2xl animate-bounce"></span>
         </div>
       )}
     </div>

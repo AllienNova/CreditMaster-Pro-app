@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { Icon } from '@/components/ui/Icon';
 import {
   DetectedPattern,
   PatternType,
@@ -74,8 +75,8 @@ export function PatternOverlay({
 
   if (!scanResult) {
     return (
-      <div className={`p-4 text-center text-gray-400 ${className}`}>
-        <div className="text-4xl mb-2">🔍</div>
+      <div className={`p-4 text-center text-gray-400 dark:text-slate-500 ${className}`}>
+        <div className="text-4xl mb-2"></div>
         <p>No pattern data available</p>
         <p className="text-sm mt-1">Load chart data to scan for patterns</p>
       </div>
@@ -88,9 +89,9 @@ export function PatternOverlay({
       <div className="px-4 py-3 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-white">
-            🔍 Pattern Recognition
+            Pattern Recognition
           </h3>
-          <span className="text-sm text-gray-400">
+          <span className="text-sm text-gray-400 dark:text-slate-500">
             {filteredPatterns.length} patterns found
           </span>
         </div>
@@ -108,7 +109,7 @@ export function PatternOverlay({
       {/* Pattern List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {filteredPatterns.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8 text-gray-400 dark:text-slate-500">
             <p>No patterns match your filters</p>
           </div>
         ) : (
@@ -127,7 +128,7 @@ export function PatternOverlay({
       {/* Support/Resistance Levels */}
       <div className="px-4 py-3 bg-gray-800 border-t border-gray-700">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-gray-400">Key Levels</span>
+          <span className="text-sm text-gray-400 dark:text-slate-500">Key Levels</span>
         </div>
         <div className="flex gap-4">
           <div className="flex-1">
@@ -180,7 +181,7 @@ function PatternFilters({ filters, onChange, availablePatterns }: PatternFilters
     <div className="px-4 py-2 bg-gray-800/50 border-b border-gray-700 space-y-2">
       {/* Direction Filters */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-400">Direction:</span>
+        <span className="text-xs text-gray-400 dark:text-slate-500">Direction:</span>
         {directions.map(dir => (
           <button
             key={dir}
@@ -190,12 +191,12 @@ function PatternFilters({ filters, onChange, availablePatterns }: PatternFilters
                 ? dir === 'bullish' ? 'bg-green-600 text-white' :
                   dir === 'bearish' ? 'bg-red-600 text-white' :
                   'bg-gray-600 text-white'
-                : 'bg-gray-700 text-gray-400'
+                : 'bg-gray-700 text-gray-400 dark:text-slate-500'
             }`}
           >
-            {dir === 'bullish' && '📈'}
-            {dir === 'bearish' && '📉'}
-            {dir === 'neutral' && '➖'}
+            {dir === 'bullish' && ''}
+            {dir === 'bearish' && ''}
+            {dir === 'neutral' && ''}
             <span className="ml-1 capitalize">{dir}</span>
           </button>
         ))}
@@ -203,7 +204,7 @@ function PatternFilters({ filters, onChange, availablePatterns }: PatternFilters
 
       {/* Reliability Filter */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-400">Min Reliability:</span>
+        <span className="text-xs text-gray-400 dark:text-slate-500">Min Reliability:</span>
         <input
           type="range"
           min="0"
@@ -240,13 +241,13 @@ function PatternCard({ pattern, isSelected, onClick, onCreateAlert }: PatternCar
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { color: string; icon: string }> = {
-      forming: { color: 'bg-yellow-500', icon: '⏳' },
-      complete: { color: 'bg-blue-500', icon: '✓' },
-      confirmed: { color: 'bg-green-500', icon: '✅' },
-      failed: { color: 'bg-red-500', icon: '❌' },
-      invalidated: { color: 'bg-gray-500', icon: '⊘' },
+      forming: { color: 'bg-yellow-500', icon: 'clock' },
+      complete: { color: 'bg-blue-500', icon: 'check' },
+      confirmed: { color: 'bg-green-500', icon: 'shield' },
+      failed: { color: 'bg-red-500', icon: 'x-circle' },
+      invalidated: { color: 'bg-gray-500', icon: 'x-circle' },
     };
-    return badges[status] || { color: 'bg-gray-500', icon: '?' };
+    return badges[status] || { color: 'bg-gray-500', icon: 'search' };
   };
 
   const badge = getStatusBadge(pattern.status);
@@ -265,24 +266,24 @@ function PatternCard({ pattern, isSelected, onClick, onCreateAlert }: PatternCar
             <span className="font-medium text-white">{info?.name || pattern.type}</span>
             <span className={`w-2 h-2 rounded-full ${badge.color}`} title={pattern.status} />
           </div>
-          <div className="text-xs text-gray-400 mt-0.5">
+          <div className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
             Reliability: {pattern.reliability}%
           </div>
         </div>
         <span className={`text-lg ${
           pattern.direction === 'bullish' ? 'text-green-400' :
-          pattern.direction === 'bearish' ? 'text-red-400' : 'text-gray-400'
+          pattern.direction === 'bearish' ? 'text-red-400' : 'text-gray-400 dark:text-slate-500'
         }`}>
-          {pattern.direction === 'bullish' && '📈'}
-          {pattern.direction === 'bearish' && '📉'}
-          {pattern.direction === 'neutral' && '➖'}
+          {pattern.direction === 'bullish' && ''}
+          {pattern.direction === 'bearish' && ''}
+          {pattern.direction === 'neutral' && ''}
         </span>
       </div>
 
       {/* Price Targets */}
       {pattern.priceTarget && (
         <div className="flex items-center gap-3 text-sm mb-2">
-          <span className="text-gray-400">Target:</span>
+          <span className="text-gray-400 dark:text-slate-500">Target:</span>
           <span className={pattern.direction === 'bullish' ? 'text-green-400' : 'text-red-400'}>
             ${pattern.priceTarget.toFixed(2)}
             {pattern.targetPercent && (
@@ -291,7 +292,7 @@ function PatternCard({ pattern, isSelected, onClick, onCreateAlert }: PatternCar
           </span>
           {pattern.stopLoss && (
             <>
-              <span className="text-gray-400">SL:</span>
+              <span className="text-gray-400 dark:text-slate-500">SL:</span>
               <span className="text-red-400">${pattern.stopLoss.toFixed(2)}</span>
             </>
           )}
@@ -299,7 +300,7 @@ function PatternCard({ pattern, isSelected, onClick, onCreateAlert }: PatternCar
       )}
 
       {/* Description */}
-      <p className="text-xs text-gray-400 mb-2">{pattern.tradingImplication}</p>
+      <p className="text-xs text-gray-400 dark:text-slate-500 mb-2">{pattern.tradingImplication}</p>
 
       {/* Actions */}
       <div className="flex items-center gap-2">
@@ -311,10 +312,10 @@ function PatternCard({ pattern, isSelected, onClick, onCreateAlert }: PatternCar
             }}
             className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
           >
-            🔔 Create Alert
+            Create Alert
           </button>
         )}
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-gray-500 dark:text-slate-400">
           {info?.reliability || 'Medium reliability'}
         </span>
       </div>

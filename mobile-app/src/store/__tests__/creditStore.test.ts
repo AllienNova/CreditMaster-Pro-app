@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Store Unit Tests
+ * Fynvita Credit Store Unit Tests
  */
 
 import { act, renderHook } from '@testing-library/react-native';

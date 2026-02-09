@@ -107,7 +107,7 @@ export class SavingsOptimizer {
         this.aiService = new AIMLService();
       }
     } catch (error) {
-      console.warn('AI service not available, using fallback logic:', error);
+      // Savings optimizer warning: AI service not available, using fallback logic
     }
   }
 
@@ -193,7 +193,7 @@ export class SavingsOptimizer {
       .order('date', { ascending: false });
 
     if (error || !transactions) {
-      console.error('Error fetching transactions:', error);
+      // Savings optimizer error: fetching transactions
       return [];
     }
 
@@ -261,7 +261,7 @@ export class SavingsOptimizer {
       try {
         await this.classifyRecurringChargeImportance(userId, recurringCharges);
       } catch (error) {
-        console.warn('AI classification failed, using fallback:', error);
+        // Savings optimizer warning: AI classification failed, using fallback
       }
     }
 
@@ -294,7 +294,7 @@ export class SavingsOptimizer {
       try {
         await this.enhanceSubscriptionRecommendationsWithAI(userId, recommendations, subscriptions);
       } catch (error) {
-        console.warn('AI enhancement failed, using rule-based recommendations:', error);
+        // Savings optimizer warning: AI enhancement failed, using rule-based recommendations
       }
     }
 
@@ -442,7 +442,7 @@ export class SavingsOptimizer {
         );
         recommendations.push(...aiRecommendations);
       } catch (error) {
-        console.warn('AI goal recommendations failed:', error);
+        // Savings optimizer warning: AI goal recommendations failed
       }
     }
 
@@ -496,7 +496,7 @@ export class SavingsOptimizer {
       .order('date', { ascending: false });
 
     if (error || !transactions) {
-      console.error('Error fetching transactions:', error);
+      // Savings optimizer error: fetching transactions
       return [];
     }
 
@@ -804,7 +804,7 @@ Return JSON array with format: [{"merchant": "name", "importance": "essential|us
 
       this.aiCache.set(cacheKey, { data: importanceMap, timestamp: Date.now() });
     } catch (error) {
-      console.warn('AI classification failed:', error);
+      // Savings optimizer warning: AI classification failed
     }
   }
 
@@ -913,7 +913,7 @@ Return JSON array with format: [{"merchant": "name", "action": "cancel|downgrade
         }
       }
     } catch (error) {
-      console.warn('AI enhancement failed:', error);
+      // Savings optimizer warning: AI enhancement failed
     }
   }
 
@@ -1143,7 +1143,7 @@ Provide brief, actionable insights (1-2 sentences each).`;
       this.aiCache.set(cacheKey, { data: insights, timestamp: Date.now() });
       return insights;
     } catch (error) {
-      console.warn('AI insights failed:', error);
+      // Savings optimizer warning: AI insights failed
       return this.generateFallbackInsights(summary, opportunities);
     }
   }
@@ -1184,7 +1184,7 @@ Provide brief, actionable insights (1-2 sentences each).`;
       .in('status', ['active', 'paused']);
 
     if (error || !goals) {
-      console.error('Error fetching savings goals:', error);
+      // Savings optimizer error: fetching savings goals
       return [];
     }
 
@@ -1283,7 +1283,7 @@ Return JSON array with format: [{"type": "vacation|major_purchase|education|cust
         aiGenerated: true,
       }));
     } catch (error) {
-      console.warn('AI goal recommendations failed:', error);
+      // Savings optimizer warning: AI goal recommendations failed
       return [];
     }
   }

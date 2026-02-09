@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       data: score,
     });
   } catch (error) {
-    console.error('Error getting credit repair score:', error);
+    // CreditRepairScoreAPI error: Error getting credit repair score
 
     // Audit log error
     try {
@@ -82,8 +82,8 @@ export async function GET(request: NextRequest) {
         message: `Failed to get credit repair score: ${(error as Error).message}`,
         severity: 'medium',
       });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
+    } catch {
+      // CreditRepairScoreAPI error: Failed to log audit event
     }
 
     return NextResponse.json(
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
       data: score,
     });
   } catch (error) {
-    console.error('Error calculating credit repair score:', error);
+    // CreditRepairScoreAPI error: Error calculating credit repair score
 
     // Audit log error
     try {
@@ -144,8 +144,8 @@ export async function POST(request: NextRequest) {
         message: `Failed to calculate credit repair score: ${(error as Error).message}`,
         severity: 'medium',
       });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
+    } catch {
+      // CreditRepairScoreAPI error: Failed to log audit event
     }
 
     return NextResponse.json(

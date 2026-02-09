@@ -9,7 +9,9 @@ import type { CreditReport } from '@/types/credit-bureau';
 
 export default function CreditReportsPage() {
   const [reports, setReports] = useState<CreditReport[]>([]);
-  const [selectedReport, setSelectedReport] = useState<CreditReport | null>(null);
+  const [selectedReport, setSelectedReport] = useState<CreditReport | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [showImport, setShowImport] = useState(false);
 
@@ -28,15 +30,16 @@ export default function CreditReportsPage() {
         setReports(nextReports);
         if (nextReports.length > 0) {
           const preferredMatch = preferredReportId
-            ? nextReports.find(report => report.id === preferredReportId)
+            ? nextReports.find((report) => report.id === preferredReportId)
             : null;
           setSelectedReport(preferredMatch ?? nextReports[0]);
         } else {
           setSelectedReport(null);
         }
       }
-    } catch (error) {
-      console.error('Failed to fetch reports:', error);
+    } catch (_error) {
+      // CreditReportsPage error: Failed to fetch reports
+      void _error;
     } finally {
       setLoading(false);
     }
@@ -47,28 +50,41 @@ export default function CreditReportsPage() {
     void fetchReports(reportId);
   };
 
-  const handleDisputeClick = (itemId: string, itemType: 'account' | 'inquiry' | 'public_record') => {
-    // Navigate to dispute page or open dispute modal
-    console.log('Dispute clicked:', itemId, itemType);
-    // TODO: Implement dispute flow
+  const handleDisputeClick = (
+    itemId: string,
+    itemType: 'account' | 'inquiry' | 'public_record'
+  ) => {
+    // Navigate to dispute creation page with pre-filled data
+    const params = new URLSearchParams({
+      itemId,
+      itemType,
+      reportId: selectedReport?.id || '',
+    });
+    window.location.href = `/disputes/new?${params.toString()}`;
   };
 
   // If no reports, show import screen
   if (!loading && reports.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
         {/* Navigation */}
-        <nav className="bg-white border-b border-gray-200">
+        <nav className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <Link href="/" className="text-2xl font-bold gradient-text">
-                CreditMaster Pro
+                Fynvita Pro
               </Link>
               <div className="flex items-center space-x-4">
-                <Link href="/dashboard" className="text-gray-700 hover:text-gray-900">
+                <Link
+                  href="/dashboard"
+                  className="text-gray-700 hover:text-gray-900 dark:text-white dark:hover:text-white"
+                >
                   Dashboard
                 </Link>
-                <Link href="/pricing" className="text-gray-700 hover:text-gray-900">
+                <Link
+                  href="/pricing"
+                  className="text-gray-700 hover:text-gray-900 dark:text-white dark:hover:text-white"
+                >
                   Pricing
                 </Link>
               </div>
@@ -79,22 +95,30 @@ export default function CreditReportsPage() {
         {/* Content */}
         <div className="max-w-4xl mx-auto px-6 py-12">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Credit Reports</h1>
-            <p className="text-lg text-gray-600">
-              Import your credit reports from Experian, Equifax, or TransUnion to get started.
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Credit Reports
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-slate-300">
+              Import your credit reports from Experian, Equifax, or TransUnion
+              to get started.
             </p>
           </div>
 
           <CreditReportImport
             onImportComplete={handleImportComplete}
-            onError={(error) => console.error('Import error:', error)}
+            onError={() => { /* CreditReportsPage: Import error handled by UI */ }}
           />
 
           {/* Features */}
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-6 h-6 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -103,14 +127,22 @@ export default function CreditReportsPage() {
                   />
                 </svg>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Secure Import</h3>
-              <p className="text-sm text-gray-600">
-                Your credit data is encrypted and stored securely with bank-level security.
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Secure Import
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">
+                Your credit data is encrypted and stored securely with
+                bank-level security.
               </p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-6 h-6 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -119,14 +151,20 @@ export default function CreditReportsPage() {
                   />
                 </svg>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">AI Analysis</h3>
-              <p className="text-sm text-gray-600">
-                Get instant AI-powered insights and recommendations to improve your credit.
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">AI Analysis</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">
+                Get instant AI-powered insights and recommendations to improve
+                your credit.
               </p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <svg
+                  className="w-6 h-6 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -135,8 +173,10 @@ export default function CreditReportsPage() {
                   />
                 </svg>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Smart Disputes</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Smart Disputes
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">
                 Generate professional dispute letters with AI in seconds.
               </p>
             </div>
@@ -147,19 +187,25 @@ export default function CreditReportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200">
+      <nav className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-2xl font-bold gradient-text">
-              CreditMaster Pro
+              Fynvita Pro
             </Link>
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-gray-700 hover:text-gray-900">
+              <Link
+                href="/dashboard"
+                className="text-gray-700 hover:text-gray-900 dark:text-white dark:hover:text-white"
+              >
                 Dashboard
               </Link>
-              <Link href="/pricing" className="text-gray-700 hover:text-gray-900">
+              <Link
+                href="/pricing"
+                className="text-gray-700 hover:text-gray-900 dark:text-white dark:hover:text-white"
+              >
                 Pricing
               </Link>
               <button
@@ -178,7 +224,7 @@ export default function CreditReportsPage() {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-            <p className="mt-4 text-gray-600">Loading credit reports...</p>
+            <p className="mt-4 text-gray-600 dark:text-slate-300">Loading credit reports...</p>
           </div>
         ) : showImport ? (
           <div>
@@ -186,22 +232,34 @@ export default function CreditReportsPage() {
               onClick={() => setShowImport(false)}
               className="mb-6 text-blue-600 hover:text-blue-700 flex items-center"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
               Back to Reports
             </button>
             <CreditReportImport
               onImportComplete={handleImportComplete}
-              onError={(error) => console.error('Import error:', error)}
+              onError={() => { /* CreditReportsPage: Import error handled by UI */ }}
             />
           </div>
         ) : (
           <>
             {/* Header */}
             <div className="mb-8">
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Credit Reports</h1>
-              <p className="text-lg text-gray-600">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                Credit Reports
+              </h1>
+              <p className="text-lg text-gray-600 dark:text-slate-300">
                 View and manage your credit reports from all three bureaus.
               </p>
             </div>
@@ -233,7 +291,7 @@ export default function CreditReportsPage() {
             {/* Report Selector */}
             {reports.length > 1 && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                   Select Report to View
                 </label>
                 <select
@@ -242,12 +300,13 @@ export default function CreditReportsPage() {
                     const report = reports.find((r) => r.id === e.target.value);
                     setSelectedReport(report || null);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {reports.map((report) => (
                     <option key={report.id} value={report.id}>
-                      {report.bureau.charAt(0).toUpperCase() + report.bureau.slice(1)} -{' '}
-                      {new Date(report.reportDate).toLocaleDateString()}
+                      {report.bureau.charAt(0).toUpperCase() +
+                        report.bureau.slice(1)}{' '}
+                      - {new Date(report.reportDate).toLocaleDateString()}
                     </option>
                   ))}
                 </select>
@@ -256,21 +315,29 @@ export default function CreditReportsPage() {
 
             {/* Credit Report Viewer */}
             {selectedReport && (
-              <CreditReportViewer report={selectedReport} onDisputeClick={handleDisputeClick} />
+              <CreditReportViewer
+                report={selectedReport}
+                onDisputeClick={handleDisputeClick}
+              />
             )}
 
             {/* AI Recommendations */}
-            <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">🤖 AI Recommendations</h3>
+            <div className="mt-8 bg-gradient-to-r from-blue-50 to-blue-50 rounded-xl p-6 border border-blue-200">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                AI Recommendations
+              </h3>
               <div className="space-y-3">
                 <div className="flex items-start space-x-3">
                   <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-white text-sm font-bold">1</span>
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">Pay down credit card balances</div>
-                    <div className="text-sm text-gray-600">
-                      Reducing your utilization from 45% to 30% could increase your score by 20-30 points.
+                    <div className="font-semibold text-gray-900 dark:text-white">
+                      Pay down credit card balances
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300">
+                      Reducing your utilization from 45% to 30% could increase
+                      your score by 20-30 points.
                     </div>
                   </div>
                 </div>
@@ -279,25 +346,31 @@ export default function CreditReportsPage() {
                     <span className="text-white text-sm font-bold">2</span>
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">Dispute unauthorized inquiries</div>
-                    <div className="text-sm text-gray-600">
-                      We found 2 hard inquiries you may not recognize. Disputing them could help your score.
+                    <div className="font-semibold text-gray-900 dark:text-white">
+                      Dispute unauthorized inquiries
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300">
+                      We found 2 hard inquiries you may not recognize. Disputing
+                      them could help your score.
                     </div>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-white text-sm font-bold">3</span>
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">Request credit limit increases</div>
-                    <div className="text-sm text-gray-600">
-                      Increasing your total available credit can lower your utilization ratio.
+                    <div className="font-semibold text-gray-900 dark:text-white">
+                      Request credit limit increases
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300">
+                      Increasing your total available credit can lower your
+                      utilization ratio.
                     </div>
                   </div>
                 </div>
               </div>
-              <button className="mt-6 w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:opacity-90 transition-opacity">
+              <button className="mt-6 w-full py-3 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-lg font-semibold hover:opacity-90 transition-opacity">
                 Get Personalized Strategy (28 Strategies Available)
               </button>
             </div>

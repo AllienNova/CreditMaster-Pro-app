@@ -146,21 +146,21 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
   const getDocumentIcon = (type: DocumentType): string => {
     switch (type) {
       case 'credit_report':
-        return '📊';
+        return '';
       case 'dispute_letter':
-        return '✉️';
+        return '';
       case 'evidence':
-        return '📎';
+        return '';
       case 'identity_document':
-        return '🪪';
+        return '';
       case 'proof_of_address':
-        return '🏠';
+        return '';
       case 'income_verification':
-        return '💰';
+        return '';
       case 'other':
-        return '📄';
+        return '';
       default:
-        return '📄';
+        return '';
     }
   };
 
@@ -175,9 +175,9 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
   if (loading) {
     return (
       <div className="animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="h-96 bg-gray-200 rounded"></div>
+        <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/4 mb-6"></div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <div className="h-96 bg-gray-200 dark:bg-slate-700 rounded"></div>
         </div>
       </div>
     );
@@ -185,11 +185,11 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
 
   if (error || !document) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">❌</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Document</h3>
-          <p className="text-gray-600 mb-4">{error || 'Document not found'}</p>
+          <div className="text-red-600 text-xl mb-4"></div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Document</h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-4">{error || 'Document not found'}</p>
           <button
             type="button"
             onClick={() => router.push('/documents')}
@@ -210,13 +210,13 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
           <button
             type="button"
             onClick={() => router.push('/documents')}
-            className="text-gray-600 hover:text-gray-900"
+            className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-white"
           >
             ← Back to documents
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{document.originalName}</h1>
-            <p className="text-sm text-gray-600 mt-1">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{document.originalName}</h1>
+            <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
               {formatTypeName(document.type)} · {formatFileSize(document.size)}
             </p>
           </div>
@@ -226,28 +226,28 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
           <button
             type="button"
             onClick={handleDownload}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
           >
             Download
           </button>
           <button
             type="button"
             onClick={handlePrint}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
           >
             Print
           </button>
           <button
             type="button"
             onClick={handleShare}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
           >
             Share
           </button>
           <button
             type="button"
             onClick={() => setShowMetadataModal(true)}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
           >
             Metadata
           </button>
@@ -264,27 +264,27 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Preview */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Preview</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
+            <div className="p-4 bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Preview</h2>
             </div>
             <div className="p-6">
               {isPDF(document.mimeType) ? (
                 <iframe
                   src={document.url}
-                  className="w-full h-[600px] border border-gray-300 rounded"
+                  className="w-full h-[600px] border border-gray-300 dark:border-slate-600 rounded"
                   title={document.originalName}
                 />
               ) : isImage(document.mimeType) ? (
                 <img
                   src={document.url}
                   alt={document.originalName}
-                  className="w-full h-auto rounded border border-gray-300"
+                  className="w-full h-auto rounded border border-gray-300 dark:border-slate-600"
                 />
               ) : (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">{getDocumentIcon(document.type)}</div>
-                  <p className="text-gray-600 mb-4">Preview not available for this file type</p>
+                  <p className="text-gray-600 dark:text-slate-300 mb-4">Preview not available for this file type</p>
                   <button
                     type="button"
                     onClick={handleDownload}
@@ -301,35 +301,35 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
         {/* Metadata */}
         <div className="space-y-6">
           {/* Document Info */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Document Information</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Document Information</h2>
             <dl className="space-y-3">
               <div>
-                <dt className="text-sm font-medium text-gray-600">Type</dt>
-                <dd className="text-sm text-gray-900 mt-1">{formatTypeName(document.type)}</dd>
+                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">Type</dt>
+                <dd className="text-sm text-gray-900 dark:text-white mt-1">{formatTypeName(document.type)}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-600">File Name</dt>
-                <dd className="text-sm text-gray-900 mt-1 break-all">{document.originalName}</dd>
+                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">File Name</dt>
+                <dd className="text-sm text-gray-900 dark:text-white mt-1 break-all">{document.originalName}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-600">Size</dt>
-                <dd className="text-sm text-gray-900 mt-1">{formatFileSize(document.size)}</dd>
+                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">Size</dt>
+                <dd className="text-sm text-gray-900 dark:text-white mt-1">{formatFileSize(document.size)}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-600">Format</dt>
-                <dd className="text-sm text-gray-900 mt-1">{document.mimeType}</dd>
+                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">Format</dt>
+                <dd className="text-sm text-gray-900 dark:text-white mt-1">{document.mimeType}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-600">Uploaded</dt>
-                <dd className="text-sm text-gray-900 mt-1">{formatDate(document.uploadedAt)}</dd>
+                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">Uploaded</dt>
+                <dd className="text-sm text-gray-900 dark:text-white mt-1">{formatDate(document.uploadedAt)}</dd>
               </div>
             </dl>
           </div>
           
           {/* Tags */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Tags</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tags</h2>
             {document.tags && document.tags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {document.tags.map((tag, index) => (
@@ -342,7 +342,7 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-600">No tags yet</p>
+              <p className="text-sm text-gray-600 dark:text-slate-300">No tags yet</p>
             )}
           </div>
         </div>
@@ -357,19 +357,19 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
       {/* Metadata Modal */}
       {showMetadataModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">Add Tags</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Add Tags</h2>
               <button
                 type="button"
                 onClick={() => setShowMetadataModal(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                className="text-gray-400 hover:text-gray-600 dark:text-slate-300 text-2xl"
               >
                 ×
               </button>
             </div>
             <div className="px-6 py-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Tags (comma-separated)
               </label>
               <input
@@ -377,14 +377,14 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
                 value={newTags}
                 onChange={(e) => setNewTags(e.target.value)}
                 placeholder="e.g., important, 2024, experian"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowMetadataModal(false)}
-                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                className="px-6 py-2 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 transition-colors"
               >
                 Cancel
               </button>

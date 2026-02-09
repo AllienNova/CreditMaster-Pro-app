@@ -66,7 +66,7 @@ async function loadExperiments(): Promise<void> {
     .eq('status', 'running');
 
   if (error) {
-    console.error('Failed to load experiments:', error);
+    // ABTesting error: Failed to load experiments
     return;
   }
 

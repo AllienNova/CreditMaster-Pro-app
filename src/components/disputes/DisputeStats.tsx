@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DisputeStats as DisputeStatsType } from '@/lib/disputes/dispute-service';
 import { useAuth } from '@/hooks/useAuth';
+import { Icon } from '@/components/ui/Icon';
 
 export default function DisputeStats() {
   const { user, loading: authLoading } = useAuth();
@@ -21,8 +22,8 @@ export default function DisputeStats() {
 
       const data = await response.json();
       setStats(data.stats);
-    } catch (error) {
-      console.error('Error fetching stats:', error);
+    } catch (_error) {
+      // Error logged
     } finally {
       setLoading(false);
     }
@@ -42,26 +43,26 @@ export default function DisputeStats() {
     {
       label: 'Total Disputes',
       value: stats.total,
-      icon: '📄',
+      icon: "document-text",
       color: 'bg-blue-50 text-blue-700',
     },
     {
       label: 'Active Disputes',
       value: stats.active,
-      icon: '⏳',
+      icon: 'clock',
       color: 'bg-yellow-50 text-yellow-700',
     },
     {
       label: 'Resolved',
       value: stats.resolved,
-      icon: '✅',
+      icon: "check",
       color: 'bg-green-50 text-green-700',
     },
     {
       label: 'Success Rate',
       value: `${Math.round(stats.successRate)}%`,
-      icon: '📈',
-      color: 'bg-purple-50 text-purple-700',
+      icon: "chart-bar",
+      color: 'bg-blue-50 text-blue-700',
     },
   ];
 
@@ -70,7 +71,7 @@ export default function DisputeStats() {
       {statCards.map((stat, index) => (
         <div key={index} className={`rounded-lg shadow p-6 ${stat.color}`}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl">{stat.icon}</span>
+            <Icon name={stat.icon} className="text-2xl inline-block" />
             <span className="text-3xl font-bold">{stat.value}</span>
           </div>
           <p className="text-sm font-medium opacity-80">{stat.label}</p>

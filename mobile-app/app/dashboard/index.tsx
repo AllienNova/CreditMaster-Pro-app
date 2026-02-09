@@ -1,5 +1,5 @@
 /**
- * CPFI Dashboard Index - Redirects to main tabs dashboard
+ * Fynvita Dashboard Index - Redirects to main tabs dashboard
  */
 
 import { Redirect } from 'expo-router';

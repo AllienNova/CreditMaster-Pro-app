@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 
-export const StudentLoanOnboarding = ({ onOnboardingComplete }: { onOnboardingComplete: (analysis: any) => void }) => {
+export interface LoanAnalysisResult {
+  defaultStatus: boolean;
+  uploadedFiles: string[];
+}
+
+export const StudentLoanOnboarding = ({ onOnboardingComplete }: { onOnboardingComplete: (analysis: LoanAnalysisResult) => void }) => {
   const [step, setStep] = useState(1);
   const [files, setFiles] = useState<File[]>([]);
 

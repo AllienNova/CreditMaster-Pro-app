@@ -7,8 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import { goalPlanner } from '@/lib/financial/goal-planner';
 
 interface RouteParams {
@@ -16,12 +15,7 @@ interface RouteParams {
 }
 
 async function getUser() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll() } }
-  );
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -51,8 +45,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     );
 
     return NextResponse.json({ goal, adjustments });
-  } catch (error) {
-    console.error('Error fetching goal:', error);
+  } catch (_error) {
+    // GoalDetailRoute error: Failed to fetch goal
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch goal' },
       { status: 500 }
@@ -90,8 +85,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json(updatedGoal);
-  } catch (error) {
-    console.error('Error updating goal:', error);
+  } catch (_error) {
+    // GoalDetailRoute error: Failed to update goal
+    void _error;
     return NextResponse.json(
       { error: 'Failed to update goal' },
       { status: 500 }

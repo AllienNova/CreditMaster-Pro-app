@@ -38,6 +38,11 @@ const nextConfig = {
   // Enable React strict mode
   reactStrictMode: true,
 
+  // Skip ESLint during builds (run separately via `npm run lint`)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   // Enable standalone output for Docker
   output: 'standalone',
 
@@ -106,15 +111,15 @@ const nextConfig = {
       // Redirect www to non-www
       {
         source: '/:path*',
-        has: [{ type: 'host', value: 'www.CPFI.pro' }],
-        destination: 'https://CPFI.pro/:path*',
+        has: [{ type: 'host', value: 'www.fynvita.com' }],
+        destination: 'https://fynvita.com/:path*',
         permanent: true,
       },
     ];
   },
 
   // Webpack configuration
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
     // Optimize bundle size
     if (!isServer) {
       config.resolve.fallback = {
@@ -123,7 +128,58 @@ const nextConfig = {
         net: false,
         tls: false,
       };
+
+      // Split chunks for better caching
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            // Vendor chunk for node_modules
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              priority: 10,
+              reuseExistingChunk: true,
+            },
+            // React and React DOM in separate chunk
+            react: {
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+              name: 'react',
+              priority: 20,
+              reuseExistingChunk: true,
+            },
+            // Chart libraries in separate chunk
+            charts: {
+              test: /[\\/]node_modules[\\/](chart\.js|react-chartjs-2|recharts)[\\/]/,
+              name: 'charts',
+              priority: 15,
+              reuseExistingChunk: true,
+            },
+            // AI/ML libraries in separate chunk
+            aiml: {
+              test: /[\\/]node_modules[\\/](@anthropic-ai|openai)[\\/]/,
+              name: 'aiml',
+              priority: 15,
+              reuseExistingChunk: true,
+            },
+            // Common shared code
+            common: {
+              minChunks: 2,
+              priority: 5,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      };
     }
+
+    // Minimize bundle size with compression
+    config.plugins.push(
+      new webpack.DefinePlugin({
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+      })
+    );
 
     return config;
   },

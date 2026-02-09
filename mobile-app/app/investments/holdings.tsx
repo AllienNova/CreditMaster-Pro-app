@@ -109,9 +109,24 @@ export default function HoldingsScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            // TODO: Implement delete via API
-            Alert.alert('Success', 'Holding deleted successfully');
+          onPress: async () => {
+            try {
+              const response = await fetch(`/api/investments/holdings/${holding.id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+              });
+              if (response.ok) {
+                Alert.alert('Success', 'Holding deleted successfully');
+                // Refresh portfolio to reflect deletion
+                await fetchPortfolio();
+              } else {
+                const errorData = await response.json().catch(() => ({}));
+                Alert.alert('Error', errorData.message || 'Failed to delete holding');
+              }
+            } catch (error) {
+              console.error('Delete holding error:', error);
+              Alert.alert('Error', 'Network error. Please try again.');
+            }
           },
         },
       ]

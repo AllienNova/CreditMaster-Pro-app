@@ -1,16 +1,35 @@
 /**
  * Individual Trading Signal API
- * 
+ *
+ * Phase 5.1.3: Enhanced with Zod validation and rate limiting
  * Endpoints for managing individual trading signals
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { signalGenerator } from '@/lib/investments/signal-generator';
+import { SignalGenerator } from '@/lib/investments/signal-generator';
 import { getUser } from '@/lib/auth/session';
+import { rateLimit } from '@/lib/rate-limit';
+import { z } from 'zod';
+
+// Initialize signal generator
+const signalGenerator = new SignalGenerator();
+
+// Rate limiter: 100 requests per hour per user
+const limiter = rateLimit({
+  interval: 60 * 60 * 1000, // 1 hour
+  uniqueTokenPerInterval: 500,
+});
+
+// Validation schema for outcome tracking
+const TrackOutcomeSchema = z.object({
+  entryPrice: z.number().positive(),
+  exitPrice: z.number().positive().optional(),
+  status: z.enum(['executed', 'expired', 'cancelled']),
+});
 
 /**
  * GET /api/investments/signals/[id]
- * Get a specific signal by ID
+ * Get a specific signal by ID with current strength evaluation
  */
 export async function GET(
   request: NextRequest,
@@ -22,7 +41,24 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Rate limiting
+    try {
+      await limiter.check(100, user.id); // 100 requests per hour
+    } catch {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Maximum 100 requests per hour.' },
+        { status: 429 }
+      );
+    }
+
     const { id } = await params;
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      return NextResponse.json({ error: 'Invalid signal ID format' }, { status: 400 });
+    }
+
     const signals = await signalGenerator.getSignalHistory(user.id);
     const signal = signals.find((s) => s.id === id);
 
@@ -52,6 +88,13 @@ export async function GET(
 /**
  * PATCH /api/investments/signals/[id]
  * Update signal outcome (track execution)
+ *
+ * Request Body:
+ * {
+ *   entryPrice: number (required) - Entry price
+ *   exitPrice: number (optional) - Exit price if closed
+ *   status: 'executed' | 'expired' | 'cancelled' (required)
+ * }
  */
 export async function PATCH(
   request: NextRequest,
@@ -63,37 +106,46 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Rate limiting
+    try {
+      await limiter.check(100, user.id); // 100 requests per hour
+    } catch {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Maximum 100 requests per hour.' },
+        { status: 429 }
+      );
+    }
+
     const { id } = await params;
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      return NextResponse.json({ error: 'Invalid signal ID format' }, { status: 400 });
+    }
+
     const body = await request.json();
-    const { entryPrice, exitPrice, status } = body;
 
-    if (!entryPrice || !status) {
-      return NextResponse.json(
-        { error: 'entryPrice and status are required' },
-        { status: 400 }
-      );
-    }
+    // Validate request body with Zod
+    const validatedData = TrackOutcomeSchema.parse(body);
 
-    if (!['executed', 'expired', 'cancelled'].includes(status)) {
-      return NextResponse.json(
-        { error: 'Invalid status. Must be: executed, expired, or cancelled' },
-        { status: 400 }
-      );
-    }
-
-    const outcome = await signalGenerator.trackSignalOutcome(id, {
-      entryPrice: parseFloat(entryPrice),
-      exitPrice: exitPrice ? parseFloat(exitPrice) : undefined,
-      status,
-    });
+    const outcome = await signalGenerator.trackSignalOutcome(id, validatedData);
 
     return NextResponse.json({
       success: true,
       data: outcome,
-      message: `Signal ${status}`,
+      message: `Signal ${validatedData.status}`,
     });
   } catch (error) {
     console.error('Error updating signal:', error);
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid request body', details: error.errors },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       {
         error: 'Failed to update signal',

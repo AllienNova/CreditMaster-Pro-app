@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { Icon } from '@/components/ui/Icon';
 
 interface CreditFactor {
   id: string;
@@ -42,7 +43,7 @@ const FACTOR_INFO: Record<string, FactorInfo> = {
   payment_history: {
     name: 'Payment History',
     weight: 35,
-    icon: '📅',
+    icon: "clock",
     description:
       'Your track record of paying bills on time. This is the most important factor in your credit score.',
     tips: [
@@ -71,7 +72,7 @@ const FACTOR_INFO: Record<string, FactorInfo> = {
   credit_utilization: {
     name: 'Credit Utilization',
     weight: 30,
-    icon: '💳',
+    icon: "credit-card",
     description:
       "How much of your available credit you're using. Lower is better - aim for under 30%.",
     tips: [
@@ -100,7 +101,7 @@ const FACTOR_INFO: Record<string, FactorInfo> = {
   credit_age: {
     name: 'Credit Age',
     weight: 15,
-    icon: '⏰',
+    icon: "calendar",
     description:
       'The average age of your credit accounts. Longer history shows stability.',
     tips: [
@@ -129,7 +130,7 @@ const FACTOR_INFO: Record<string, FactorInfo> = {
   credit_mix: {
     name: 'Credit Mix',
     weight: 10,
-    icon: '📊',
+    icon: "puzzle-piece",
     description:
       'The variety of credit types you have. A healthy mix shows you can manage different types.',
     tips: [
@@ -158,7 +159,7 @@ const FACTOR_INFO: Record<string, FactorInfo> = {
   new_credit: {
     name: 'New Credit',
     weight: 10,
-    icon: '➕',
+    icon: "document",
     description:
       'Recent credit inquiries and new accounts. Too many can signal risk.',
     tips: [
@@ -296,15 +297,15 @@ export default function CreditFactorsPage() {
   const scorePosition = ((currentScore - 300) / (850 - 300)) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-4xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Link
                 href="/credit"
-                className="text-gray-600 hover:text-gray-900 transition-colors"
+                className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-white transition-colors"
               >
                 <svg
                   className="w-6 h-6"
@@ -320,7 +321,7 @@ export default function CreditFactorsPage() {
                   />
                 </svg>
               </Link>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Credit Factors
               </h1>
             </div>
@@ -349,7 +350,7 @@ export default function CreditFactorsPage() {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {/* Score Range Visualization */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 p-6 mb-6">
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-3 mb-2">
               <h2
@@ -397,7 +398,7 @@ export default function CreditFactorsPage() {
             >
               {scoreRange.label}
             </div>
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600 dark:text-slate-300 text-sm">
               {scoreRange.label === 'Poor' &&
                 'Well below average - Significant improvement needed'}
               {scoreRange.label === 'Fair' &&
@@ -447,20 +448,20 @@ export default function CreditFactorsPage() {
             </div>
 
             {/* Range Labels */}
-            <div className="flex justify-between text-xs text-gray-500 mt-2">
+            <div className="flex justify-between text-xs text-gray-500 dark:text-slate-400 mt-2">
               <span className="font-medium">300</span>
               <span className="font-medium">850</span>
             </div>
           </div>
 
           {/* Range Legend */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-6 pt-6 border-t border-gray-200">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-6 pt-6 border-t border-gray-200 dark:border-slate-700">
             {SCORE_RANGES.map((range, index) => (
               <div
                 key={index}
                 className={`text-center p-2 rounded-lg transition-all ${
                   currentScore >= range.min && currentScore <= range.max
-                    ? 'bg-gray-50 ring-2 ring-offset-2'
+                    ? 'bg-gray-50 dark:bg-slate-900 ring-2 ring-offset-2'
                     : 'opacity-50'
                 }`}
                 style={
@@ -474,10 +475,10 @@ export default function CreditFactorsPage() {
                 <div
                   className={`w-3 h-3 ${range.bgColor} rounded-full mx-auto mb-1`}
                 />
-                <div className="text-xs font-semibold text-gray-900">
+                <div className="text-xs font-semibold text-gray-900 dark:text-white">
                   {range.label}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-slate-400">
                   {range.min}-{range.max}
                 </div>
               </div>
@@ -508,13 +509,13 @@ export default function CreditFactorsPage() {
         {!loading && !error && factors.length > 0 && (
           <>
             {/* Score Impact Summary */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 mb-6">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-50 rounded-xl p-6 mb-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Factor Score
                   </h2>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
                     Based on your credit profile
                   </p>
                 </div>
@@ -522,7 +523,7 @@ export default function CreditFactorsPage() {
                   <span className="text-4xl font-bold text-blue-600">
                     {totalImpactScore}
                   </span>
-                  <span className="text-lg text-gray-500 ml-1">/100</span>
+                  <span className="text-lg text-gray-500 dark:text-slate-400 ml-1">/100</span>
                 </div>
               </div>
               {factorsNeedingImprovement.length > 0 && (
@@ -549,11 +550,11 @@ export default function CreditFactorsPage() {
             </div>
 
             {/* Overview Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 What Affects Your Score
               </h2>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
                 Your credit score is calculated based on 5 key factors.
                 Understanding these can help you improve your score.
               </p>
@@ -575,7 +576,7 @@ export default function CreditFactorsPage() {
               </div>
 
               {/* Weight Labels */}
-              <div className="flex text-xs text-gray-500 mb-4">
+              <div className="flex text-xs text-gray-500 dark:text-slate-400 mb-4">
                 <span className="flex-[35]">35%</span>
                 <span className="flex-[30]">30%</span>
                 <span className="flex-[15]">15%</span>
@@ -596,7 +597,7 @@ export default function CreditFactorsPage() {
                       className="w-2 h-2 rounded-full mr-1.5"
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-xs text-gray-600">{item.label}</span>
+                    <span className="text-xs text-gray-600 dark:text-slate-300">{item.label}</span>
                   </div>
                 ))}
               </div>
@@ -608,7 +609,7 @@ export default function CreditFactorsPage() {
                 const info = FACTOR_INFO[factor.id] || {
                   name: factor.name,
                   weight: factor.percentImpact || 0,
-                  icon: '❓',
+                  icon: "sparkles",
                   description: factor.description || '',
                   tips: [],
                   improvementActions: [],
@@ -630,33 +631,33 @@ export default function CreditFactorsPage() {
                 return (
                   <div
                     key={factor.id}
-                    className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+                    className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden"
                   >
                     <button
                       onClick={() =>
                         setExpandedFactor(isExpanded ? null : factor.id)
                       }
-                      className="w-full p-6 text-left hover:bg-gray-50 transition-colors"
+                      className="w-full p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
                     >
                       <div className="flex items-center">
                         {/* Icon */}
                         <div
-                          className="w-12 h-12 rounded-full flex items-center justify-center text-2xl mr-4"
-                          style={{ backgroundColor: `${statusColor}20` }}
+                          className="w-12 h-12 rounded-full flex items-center justify-center mr-4"
+                          style={{ backgroundColor: `${statusColor}20`, color: statusColor }}
                         >
-                          {info.icon}
+                          <Icon name={info.icon} className="w-6 h-6" />
                         </div>
 
                         {/* Info */}
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                             {info.name}
                           </h3>
                           <div className="flex items-center mt-1 space-x-3">
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-gray-600 dark:text-slate-300">
                               {info.weight}% weight
                             </span>
-                            <div className="flex items-center px-2 py-0.5 bg-gray-100 rounded">
+                            <div className="flex items-center px-2 py-0.5 bg-gray-100 dark:bg-slate-800 rounded">
                               <span className="text-xs mr-1">
                                 {getImpactIcon(factor.impact)}
                               </span>
@@ -681,11 +682,11 @@ export default function CreditFactorsPage() {
                           >
                             {getStatusLabel(factor.status)}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 dark:text-slate-400">
                             {impactPoints} pts
                           </div>
                           <svg
-                            className={`w-5 h-5 text-gray-400 mt-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            className={`w-5 h-5 text-gray-400 dark:text-slate-500 mt-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -703,9 +704,9 @@ export default function CreditFactorsPage() {
 
                     {/* Expanded Content */}
                     {isExpanded && (
-                      <div className="px-6 pb-6 border-t border-gray-200 pt-4">
+                      <div className="px-6 pb-6 border-t border-gray-200 dark:border-slate-700 pt-4">
                         {/* Description */}
-                        <p className="text-sm text-gray-600 mb-4">
+                        <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
                           {factor.description || info.description}
                         </p>
 
@@ -725,7 +726,7 @@ export default function CreditFactorsPage() {
                                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                               />
                             </svg>
-                            <span className="text-sm font-medium text-gray-900">
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
                               Current: {factor.value}
                             </span>
                           </div>
@@ -758,7 +759,7 @@ export default function CreditFactorsPage() {
                         {info.improvementActions &&
                           info.improvementActions.length > 0 && (
                             <div className="mb-4">
-                              <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                                 Action Plan
                               </h4>
                               <div className="space-y-3">
@@ -780,11 +781,11 @@ export default function CreditFactorsPage() {
                                         }}
                                       />
                                       <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-900">
+                                        <p className="text-sm font-medium text-gray-900 dark:text-white">
                                           {action.action}
                                         </p>
                                         <div className="flex items-center mt-1 space-x-2">
-                                          <span className="text-xs text-gray-500">
+                                          <span className="text-xs text-gray-500 dark:text-slate-400">
                                             {action.timeframe}
                                           </span>
                                           <span
@@ -818,7 +819,7 @@ export default function CreditFactorsPage() {
                         {/* Quick Tips */}
                         {info.tips && info.tips.length > 0 && (
                           <div className="mb-4">
-                            <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
                               Quick Tips
                             </h4>
                             <div className="space-y-2">
@@ -835,7 +836,7 @@ export default function CreditFactorsPage() {
                                       clipRule="evenodd"
                                     />
                                   </svg>
-                                  <span className="text-sm text-gray-600">
+                                  <span className="text-sm text-gray-600 dark:text-slate-300">
                                     {tip}
                                   </span>
                                 </div>
@@ -875,9 +876,9 @@ export default function CreditFactorsPage() {
 
         {/* Empty State */}
         {!loading && !error && factors.length === 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-12 text-center">
             <svg
-              className="w-16 h-16 text-gray-400 mx-auto mb-4"
+              className="w-16 h-16 text-gray-400 dark:text-slate-500 mx-auto mb-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -889,10 +890,10 @@ export default function CreditFactorsPage() {
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
               />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               No factor data available
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
               Refresh to load your credit factors
             </p>
             <button
@@ -982,11 +983,11 @@ function getImpactIcon(impact: string): string {
     case 'positive':
       return '↗️';
     case 'neutral':
-      return '➖';
+      return '';
     case 'negative':
     case 'high_negative':
       return '↘️';
     default:
-      return '❓';
+      return '';
   }
 }

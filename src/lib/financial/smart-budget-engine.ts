@@ -35,8 +35,10 @@ import {
 } from './types/budget.types';
 
 // AI Model Configuration
-const AI_MODEL = process.env.AIML_DEFAULT_CHAT_MODEL || 'anthropic/claude-4.5-sonnet';
-const AI_REASONING_MODEL = process.env.AIML_REASONING_MODEL || 'deepseek/deepseek-r1';
+const AI_MODEL =
+  process.env.AIML_DEFAULT_CHAT_MODEL || 'anthropic/claude-4.5-sonnet';
+const AI_REASONING_MODEL =
+  process.env.AIML_REASONING_MODEL || 'deepseek/deepseek-r1';
 
 // Cache configuration
 const AI_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
@@ -76,11 +78,11 @@ const CATEGORY_TYPE_MAP: Record<BudgetCategoryValue, CategoryType> = {
  * 50% Essentials, 30% Discretionary, 20% Savings/Debt
  */
 const DEFAULT_ALLOCATION = {
-  ESSENTIAL: 0.50,
-  DISCRETIONARY: 0.30,
+  ESSENTIAL: 0.5,
+  DISCRETIONARY: 0.3,
   SAVINGS: 0.15,
   DEBT: 0.05,
-  INVESTMENT: 0.00,
+  INVESTMENT: 0.0,
 };
 
 /**
@@ -98,8 +100,8 @@ export class SmartBudgetEngine {
       if (process.env.AIML_API_KEY) {
         this.aiService = new AIMLService();
       }
-    } catch (error) {
-      console.warn('AI service not available, using fallback logic:', error);
+    } catch (_error) {
+      // SmartBudgetEngine: AI service not available, using fallback logic
     }
   }
 
@@ -142,8 +144,8 @@ export class SmartBudgetEngine {
         this.applyAIRecommendations(categories, aiRecommendations);
         aiGenerated = true;
         confidence = aiRecommendations.confidence || 85;
-      } catch (error) {
-        console.warn('AI recommendations failed, using rule-based approach:', error);
+      } catch (_error) {
+        // SmartBudgetEngine: AI recommendations failed, using rule-based approach
       }
     }
 
@@ -224,9 +226,15 @@ export class SmartBudgetEngine {
 
     // 7. Calculate summary
     const summary = {
-      totalBudgeted: categoryAnalysis.reduce((sum, cat) => sum + cat.budgeted, 0),
+      totalBudgeted: categoryAnalysis.reduce(
+        (sum, cat) => sum + cat.budgeted,
+        0
+      ),
       totalSpent: categoryAnalysis.reduce((sum, cat) => sum + cat.spent, 0),
-      totalRemaining: categoryAnalysis.reduce((sum, cat) => sum + cat.remaining, 0),
+      totalRemaining: categoryAnalysis.reduce(
+        (sum, cat) => sum + cat.remaining,
+        0
+      ),
       percentUsed: 0,
       variance: 0,
       variancePercent: 0,
@@ -237,7 +245,10 @@ export class SmartBudgetEngine {
     summary.variancePercent = (summary.variance / summary.totalBudgeted) * 100;
 
     // 8. Determine spending trend
-    const spendingTrend = await this.determineSpendingTrend(userId, transactions);
+    const spendingTrend = await this.determineSpendingTrend(
+      userId,
+      transactions
+    );
 
     return {
       userId,
@@ -249,11 +260,11 @@ export class SmartBudgetEngine {
       trends: {
         spendingTrend,
         topOverspentCategories: categoryAnalysis
-          .filter(cat => cat.variance < 0)
+          .filter((cat) => cat.variance < 0)
           .sort((a, b) => a.variance - b.variance)
           .slice(0, 5),
         topUnderspentCategories: categoryAnalysis
-          .filter(cat => cat.variance > 0)
+          .filter((cat) => cat.variance > 0)
           .sort((a, b) => b.variance - a.variance)
           .slice(0, 5),
         anomalies,
@@ -332,12 +343,14 @@ export class SmartBudgetEngine {
 
         // Merge AI recommendations
         recommendations.push(...aiRecommendations);
-      } catch (error) {
-        console.warn('AI adjustment recommendations failed:', error);
+      } catch (_error) {
+        // SmartBudgetEngine: AI adjustment recommendations failed
       }
     }
 
-    return recommendations.sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0));
+    return recommendations.sort(
+      (a, b) => (b.confidence ?? 0) - (a.confidence ?? 0)
+    );
   }
 
   /**
@@ -349,7 +362,9 @@ export class SmartBudgetEngine {
   async predictMonthEnd(userId: string): Promise<MonthEndPrediction> {
     const now = new Date();
     const monthEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    const daysRemaining = Math.ceil((monthEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.ceil(
+      (monthEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    );
     const daysElapsed = now.getDate();
     const totalDaysInMonth = monthEndDate.getDate();
 
@@ -369,7 +384,8 @@ export class SmartBudgetEngine {
       const projectedRemaining = category.budgeted - projectedSpent;
 
       // Determine likelihood
-      let likelihood: 'very_likely' | 'likely' | 'possible' | 'unlikely' = 'likely';
+      let likelihood: 'very_likely' | 'likely' | 'possible' | 'unlikely' =
+        'likely';
       if (category.percentUsed > 80) likelihood = 'very_likely';
       else if (category.percentUsed < 50) likelihood = 'possible';
 
@@ -389,7 +405,8 @@ export class SmartBudgetEngine {
         warnings.push({
           category: category.category,
           type: 'overspend_risk',
-          severity: overspendAmount > category.budgeted * 0.2 ? 'high' : 'medium',
+          severity:
+            overspendAmount > category.budgeted * 0.2 ? 'high' : 'medium',
           message: `You're on track to overspend ${category.category} by $${overspendAmount.toFixed(2)} this month`,
           suggestedAction: `Reduce ${category.category} spending by $${(overspendAmount / daysRemaining).toFixed(2)}/day`,
           potentialImpact: overspendAmount,
@@ -398,8 +415,14 @@ export class SmartBudgetEngine {
     }
 
     // 3. Calculate overall predictions
-    const totalBudgeted = categoryPredictions.reduce((sum, cat) => sum + cat.budgeted, 0);
-    const projectedSpending = categoryPredictions.reduce((sum, cat) => sum + cat.projectedSpent, 0);
+    const totalBudgeted = categoryPredictions.reduce(
+      (sum, cat) => sum + cat.budgeted,
+      0
+    );
+    const projectedSpending = categoryPredictions.reduce(
+      (sum, cat) => sum + cat.projectedSpent,
+      0
+    );
     const projectedRemaining = totalBudgeted - projectedSpending;
     const projectedOverspend = Math.max(0, projectedSpending - totalBudgeted);
 
@@ -431,8 +454,6 @@ export class SmartBudgetEngine {
     };
   }
 
-
-
   // ============================================================================
   // PRIVATE HELPER METHODS
   // ============================================================================
@@ -440,7 +461,10 @@ export class SmartBudgetEngine {
   /**
    * Fetch transaction history for a user
    */
-  private async fetchTransactionHistory(userId: string, months: number): Promise<any[]> {
+  private async fetchTransactionHistory(
+    userId: string,
+    months: number
+  ): Promise<any[]> {
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
 
@@ -476,7 +500,9 @@ export class SmartBudgetEngine {
   /**
    * Analyze spending patterns from transaction history
    */
-  private async analyzeSpendingPatterns(transactions: any[]): Promise<Record<string, any>> {
+  private async analyzeSpendingPatterns(
+    transactions: any[]
+  ): Promise<Record<string, any>> {
     const patterns: Record<string, any> = {};
 
     // Group transactions by category
@@ -523,8 +549,29 @@ export class SmartBudgetEngine {
     // Calculate type allocations
     const typeAllocations = this.calculateTypeAllocations(preferences);
 
+    // Count categories per type (excluding excluded categories)
+    const categoriesPerType: Record<CategoryType, number> = {
+      ESSENTIAL: 0,
+      DISCRETIONARY: 0,
+      SAVINGS: 0,
+      DEBT: 0,
+      INVESTMENT: 0,
+    };
+
+    for (const [categoryKey, categoryValue] of Object.entries(
+      BUDGET_CATEGORIES
+    )) {
+      const category = categoryValue as BudgetCategoryValue;
+      if (!preferences.excludeCategories?.includes(category)) {
+        const categoryType = CATEGORY_TYPE_MAP[category];
+        categoriesPerType[categoryType]++;
+      }
+    }
+
     // Distribute budget across categories
-    for (const [categoryKey, categoryValue] of Object.entries(BUDGET_CATEGORIES)) {
+    for (const [categoryKey, categoryValue] of Object.entries(
+      BUDGET_CATEGORIES
+    )) {
       const category = categoryValue as BudgetCategoryValue;
 
       // Skip excluded categories
@@ -534,26 +581,41 @@ export class SmartBudgetEngine {
 
       const categoryType = CATEGORY_TYPE_MAP[category];
       const typeAllocation = typeAllocations[categoryType] || 0;
+      const categoryCount = categoriesPerType[categoryType] || 1;
 
       // Calculate allocated amount based on spending patterns or defaults
       let allocatedAmount = 0;
 
       if (spendingPatterns[category]) {
         // Use historical average with 10% buffer
-        allocatedAmount = Math.ceil(spendingPatterns[category].monthlyAverage * 1.1);
+        allocatedAmount = Math.ceil(
+          spendingPatterns[category].monthlyAverage * 1.1
+        );
       } else {
-        // Use default allocation
-        allocatedAmount = Math.ceil((monthlyIncome * typeAllocation) / 10); // Divide by ~10 categories per type
+        // Use default allocation - divide type allocation by number of categories in that type
+        allocatedAmount = Math.ceil(
+          (monthlyIncome * typeAllocation) / categoryCount
+        );
       }
 
       // Apply custom rules
-      const customRule = preferences.customRules?.find(r => r.category === category);
+      const customRule = preferences.customRules?.find(
+        (r) => r.category === category
+      );
       if (customRule) {
         if (customRule.percentage) {
-          allocatedAmount = Math.ceil(monthlyIncome * (customRule.percentage / 100));
-        } else if (customRule.minAmount && allocatedAmount < customRule.minAmount) {
+          allocatedAmount = Math.ceil(
+            monthlyIncome * (customRule.percentage / 100)
+          );
+        } else if (
+          customRule.minAmount &&
+          allocatedAmount < customRule.minAmount
+        ) {
           allocatedAmount = customRule.minAmount;
-        } else if (customRule.maxAmount && allocatedAmount > customRule.maxAmount) {
+        } else if (
+          customRule.maxAmount &&
+          allocatedAmount > customRule.maxAmount
+        ) {
           allocatedAmount = customRule.maxAmount;
         }
       }
@@ -573,13 +635,34 @@ export class SmartBudgetEngine {
     }
 
     // Normalize to match total income
-    const totalAllocated = categories.reduce((sum, cat) => sum + cat.allocatedAmount, 0);
+    const totalAllocated = categories.reduce(
+      (sum, cat) => sum + cat.allocatedAmount,
+      0
+    );
     if (totalAllocated !== monthlyIncome) {
       const ratio = monthlyIncome / totalAllocated;
-      categories.forEach(cat => {
-        cat.allocatedAmount = Math.ceil(cat.allocatedAmount * ratio);
+
+      // Use Math.round() for better distribution
+      categories.forEach((cat) => {
+        cat.allocatedAmount = Math.round(cat.allocatedAmount * ratio);
         cat.remainingAmount = cat.allocatedAmount;
       });
+
+      // Adjust the largest category to make the total exact
+      const newTotal = categories.reduce(
+        (sum, cat) => sum + cat.allocatedAmount,
+        0
+      );
+      const difference = monthlyIncome - newTotal;
+
+      if (difference !== 0) {
+        // Find the largest category and adjust it
+        const largestCategory = categories.reduce((max, cat) =>
+          cat.allocatedAmount > max.allocatedAmount ? cat : max
+        );
+        largestCategory.allocatedAmount += difference;
+        largestCategory.remainingAmount = largestCategory.allocatedAmount;
+      }
     }
 
     return categories;
@@ -588,25 +671,27 @@ export class SmartBudgetEngine {
   /**
    * Calculate type allocations based on preferences
    */
-  private calculateTypeAllocations(preferences: BudgetPreferences): Record<CategoryType, number> {
+  private calculateTypeAllocations(
+    preferences: BudgetPreferences
+  ): Record<CategoryType, number> {
     const allocations = { ...DEFAULT_ALLOCATION };
 
     // Adjust based on lifestyle preference
     if (preferences.lifestylePreference === 'frugal') {
       allocations.ESSENTIAL = 0.45;
-      allocations.DISCRETIONARY = 0.20;
+      allocations.DISCRETIONARY = 0.2;
       allocations.SAVINGS = 0.25;
-      allocations.DEBT = 0.10;
+      allocations.DEBT = 0.1;
     } else if (preferences.lifestylePreference === 'comfortable') {
       allocations.ESSENTIAL = 0.55;
       allocations.DISCRETIONARY = 0.35;
-      allocations.SAVINGS = 0.10;
+      allocations.SAVINGS = 0.1;
     }
 
     // Adjust based on debt payment priority
     if (preferences.debtPaymentPriority === 'aggressive') {
-      allocations.DEBT = 0.20;
-      allocations.DISCRETIONARY -= 0.10;
+      allocations.DEBT = 0.2;
+      allocations.DISCRETIONARY -= 0.1;
       allocations.SAVINGS -= 0.05;
     } else if (preferences.debtPaymentPriority === 'minimum') {
       allocations.DEBT = 0.05;
@@ -625,7 +710,6 @@ export class SmartBudgetEngine {
 
     return allocations;
   }
-
 
   /**
    * Get AI recommendations for budget generation
@@ -647,19 +731,28 @@ export class SmartBudgetEngine {
     }
 
     // Build AI prompt
-    const prompt = this.buildBudgetGenerationPrompt(preferences, spendingPatterns, categories);
+    const prompt = this.buildBudgetGenerationPrompt(
+      preferences,
+      spendingPatterns,
+      categories
+    );
 
     try {
-      const response = await this.aiService.chat(AI_REASONING_MODEL, [
+      const response = await this.aiService.chat(
+        AI_REASONING_MODEL,
+        [
+          {
+            role: 'system',
+            content:
+              'You are an expert financial advisor specializing in budget planning. Analyze spending patterns and provide actionable budget recommendations in JSON format.',
+          },
+          { role: 'user', content: prompt },
+        ],
         {
-          role: 'system',
-          content: 'You are an expert financial advisor specializing in budget planning. Analyze spending patterns and provide actionable budget recommendations in JSON format.',
-        },
-        { role: 'user', content: prompt },
-      ], {
-        temperature: 0.3,
-        max_tokens: 1500,
-      });
+          temperature: 0.3,
+          max_tokens: 1500,
+        }
+      );
 
       const content = response.choices[0]?.message?.content || '{}';
       const result = this.parseAIBudgetResponse(content);
@@ -669,7 +762,7 @@ export class SmartBudgetEngine {
 
       return result;
     } catch (error) {
-      console.error('AI budget generation failed:', error);
+      // SmartBudgetEngine error: AI budget generation failed
       throw error;
     }
   }
@@ -683,7 +776,10 @@ export class SmartBudgetEngine {
     categories: SmartBudgetCategory[]
   ): string {
     const patternSummary = Object.entries(spendingPatterns)
-      .map(([cat, data]) => `${cat}: $${data.monthlyAverage.toFixed(2)}/mo (${data.count} transactions)`)
+      .map(
+        ([cat, data]) =>
+          `${cat}: $${data.monthlyAverage.toFixed(2)}/mo (${data.count} transactions)`
+      )
       .join(', ');
 
     return `
@@ -698,7 +794,7 @@ Generate a smart budget recommendation for a user with the following profile:
 ${patternSummary}
 
 **Current Budget Allocation:**
-${categories.map(cat => `${cat.name}: $${cat.allocatedAmount}`).join(', ')}
+${categories.map((cat) => `${cat.name}: $${cat.allocatedAmount}`).join(', ')}
 
 Provide recommendations in JSON format:
 {
@@ -719,19 +815,24 @@ Provide recommendations in JSON format:
   /**
    * Parse AI budget response
    */
-  private parseAIBudgetResponse(content: string): { confidence: number; recommendations: any[] } {
+  private parseAIBudgetResponse(content: string): {
+    confidence: number;
+    recommendations: any[];
+  } {
     try {
       // Extract JSON from markdown code blocks if present
-      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
+      const jsonMatch =
+        content.match(/```json\n([\s\S]*?)\n```/) ||
+        content.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
 
       const parsed = JSON.parse(jsonStr);
       return {
         confidence: parsed.confidence || 75,
         recommendations: parsed.recommendations || [],
       };
-    } catch (error) {
-      console.warn('Failed to parse AI response:', error);
+    } catch (_error) {
+      // SmartBudgetEngine: Failed to parse AI response
       return { confidence: 75, recommendations: [] };
     }
   }
@@ -744,7 +845,7 @@ Provide recommendations in JSON format:
     aiRecommendations: { confidence: number; recommendations: any[] }
   ): void {
     for (const rec of aiRecommendations.recommendations) {
-      const category = categories.find(cat => cat.name === rec.category);
+      const category = categories.find((cat) => cat.name === rec.category);
       if (category && rec.priority === 'high') {
         category.aiRecommendation = {
           suggestedAmount: rec.suggestedAmount,
@@ -764,14 +865,21 @@ Provide recommendations in JSON format:
   /**
    * Calculate period dates
    */
-  private calculatePeriodDates(period: BudgetPeriod): { periodStart: Date; periodEnd: Date } {
+  private calculatePeriodDates(period: BudgetPeriod): {
+    periodStart: Date;
+    periodEnd: Date;
+  } {
     const now = new Date();
     let periodStart: Date;
     let periodEnd: Date;
 
     switch (period) {
       case 'weekly':
-        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+        periodStart = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - now.getDay()
+        );
         periodEnd = new Date(periodStart);
         periodEnd.setDate(periodEnd.getDate() + 6);
         break;
@@ -939,8 +1047,12 @@ Provide recommendations in JSON format:
 
     // Simple trend analysis based on recent vs older transactions
     const midpoint = Math.floor(transactions.length / 2);
-    const recentSpending = transactions.slice(0, midpoint).reduce((sum, t) => sum + Math.abs(t.amount), 0);
-    const olderSpending = transactions.slice(midpoint).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    const recentSpending = transactions
+      .slice(0, midpoint)
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    const olderSpending = transactions
+      .slice(midpoint)
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
     const change = ((recentSpending - olderSpending) / olderSpending) * 100;
 
@@ -969,9 +1081,12 @@ Analyze this budget and suggest optimizations:
 - Variance: $${analysis.summary.variance} (${analysis.summary.variancePercent.toFixed(1)}%)
 
 **Category Analysis:**
-${analysis.categoryAnalysis.map(cat =>
-  `${cat.category}: Budgeted $${cat.budgeted}, Spent $${cat.spent} (${cat.percentUsed.toFixed(1)}%)`
-).join('\n')}
+${analysis.categoryAnalysis
+  .map(
+    (cat) =>
+      `${cat.category}: Budgeted $${cat.budgeted}, Spent $${cat.spent} (${cat.percentUsed.toFixed(1)}%)`
+  )
+  .join('\n')}
 
 Provide 2-3 high-impact recommendations in JSON format:
 {
@@ -988,21 +1103,26 @@ Provide 2-3 high-impact recommendations in JSON format:
 }
 `.trim();
 
-      const response = await this.aiService.chat(AI_MODEL, [
+      const response = await this.aiService.chat(
+        AI_MODEL,
+        [
+          {
+            role: 'system',
+            content:
+              'You are a financial advisor. Provide budget optimization recommendations in JSON format.',
+          },
+          { role: 'user', content: prompt },
+        ],
         {
-          role: 'system',
-          content: 'You are a financial advisor. Provide budget optimization recommendations in JSON format.',
-        },
-        { role: 'user', content: prompt },
-      ], {
-        temperature: 0.3,
-        max_tokens: 1000,
-      });
+          temperature: 0.3,
+          max_tokens: 1000,
+        }
+      );
 
       const content = response.choices[0]?.message?.content || '{}';
       const parsed = this.parseAIBudgetResponse(content);
 
-      return parsed.recommendations.map(rec => ({
+      return parsed.recommendations.map((rec) => ({
         id: crypto.randomUUID(),
         userId,
         type: rec.type || 'reallocate',
@@ -1014,8 +1134,8 @@ Provide 2-3 high-impact recommendations in JSON format:
         impact: {},
         createdAt: new Date(),
       }));
-    } catch (error) {
-      console.warn('AI adjustment recommendations failed:', error);
+    } catch (_error) {
+      // SmartBudgetEngine: AI adjustment recommendations failed
       return [];
     }
   }
@@ -1031,7 +1151,9 @@ Provide 2-3 high-impact recommendations in JSON format:
     const suggestions: string[] = [];
 
     if (projectedOverspend > 0) {
-      suggestions.push(`You're projected to overspend by $${projectedOverspend.toFixed(2)} this month. Consider reducing discretionary spending.`);
+      suggestions.push(
+        `You're projected to overspend by $${projectedOverspend.toFixed(2)} this month. Consider reducing discretionary spending.`
+      );
     }
 
     // Add category-specific suggestions
@@ -1040,12 +1162,360 @@ Provide 2-3 high-impact recommendations in JSON format:
     }
 
     // Add positive suggestions
-    const underBudgetCategories = categoryPredictions.filter(cat => cat.projectedRemaining > 50);
+    const underBudgetCategories = categoryPredictions.filter(
+      (cat) => cat.projectedRemaining > 50
+    );
     if (underBudgetCategories.length > 0) {
-      suggestions.push(`You have extra budget in ${underBudgetCategories[0].category}. Consider reallocating to savings or debt payment.`);
+      suggestions.push(
+        `You have extra budget in ${underBudgetCategories[0].category}. Consider reallocating to savings or debt payment.`
+      );
     }
 
     return suggestions;
+  }
+
+  // ============================================================================
+  // ZERO-BASED BUDGETING
+  // ============================================================================
+
+  /**
+   * Generate a zero-based budget where every dollar is assigned a job
+   * Following the YNAB methodology: Income - Expenses = $0
+   */
+  async generateZeroBasedBudget(
+    userId: string,
+    monthlyIncome: number,
+    priorities: {
+      essentials: number; // % for needs (housing, food, utilities)
+      debtPayoff: number; // % for debt payments
+      savings: number; // % for savings/investments
+      lifestyle: number; // % for wants
+    }
+  ): Promise<{
+    budget: SmartBudget;
+    unallocated: number;
+    allocationBreakdown: {
+      category: string;
+      amount: number;
+      percentOfIncome: number;
+      priority: 'essential' | 'debt' | 'savings' | 'lifestyle';
+    }[];
+  }> {
+    // Validate priorities sum to 100%
+    const totalPercent =
+      priorities.essentials +
+      priorities.debtPayoff +
+      priorities.savings +
+      priorities.lifestyle;
+    if (Math.abs(totalPercent - 100) > 0.1) {
+      throw new Error(
+        `Budget priorities must sum to 100%, got ${totalPercent}%`
+      );
+    }
+
+    // Calculate allocation pools
+    const pools = {
+      essentials: monthlyIncome * (priorities.essentials / 100),
+      debtPayoff: monthlyIncome * (priorities.debtPayoff / 100),
+      savings: monthlyIncome * (priorities.savings / 100),
+      lifestyle: monthlyIncome * (priorities.lifestyle / 100),
+    };
+
+    // Fetch historical spending to inform allocations
+    const transactions = await this.fetchTransactionHistory(userId, 3);
+    const patterns = await this.analyzeSpendingPatterns(transactions);
+
+    // Allocate within each pool
+    const categories: SmartBudgetCategory[] = [];
+    const allocationBreakdown: {
+      category: string;
+      amount: number;
+      percentOfIncome: number;
+      priority: 'essential' | 'debt' | 'savings' | 'lifestyle';
+    }[] = [];
+
+    // Essential categories
+    const essentialCategories: BudgetCategoryValue[] = [
+      'housing',
+      'utilities',
+      'groceries',
+      'transportation',
+      'insurance',
+      'healthcare',
+      'childcare',
+    ];
+    const essentialAllocations = this.allocatePoolToCategories(
+      pools.essentials,
+      essentialCategories,
+      patterns
+    );
+
+    for (const [cat, amount] of Object.entries(essentialAllocations)) {
+      categories.push(
+        this.createZeroBudgetCategory(
+          cat as BudgetCategoryValue,
+          amount,
+          'ESSENTIAL'
+        )
+      );
+      allocationBreakdown.push({
+        category: cat,
+        amount,
+        percentOfIncome: (amount / monthlyIncome) * 100,
+        priority: 'essential',
+      });
+    }
+
+    // Debt categories
+    if (pools.debtPayoff > 0) {
+      categories.push(
+        this.createZeroBudgetCategory('debt_payments', pools.debtPayoff, 'DEBT')
+      );
+      allocationBreakdown.push({
+        category: 'debt_payments',
+        amount: pools.debtPayoff,
+        percentOfIncome: (pools.debtPayoff / monthlyIncome) * 100,
+        priority: 'debt',
+      });
+    }
+
+    // Savings categories
+    const savingsCategories: BudgetCategoryValue[] = [
+      'savings',
+      'emergency_fund',
+      'investments',
+    ];
+    const savingsAllocations = this.allocatePoolToCategories(
+      pools.savings,
+      savingsCategories,
+      patterns,
+      {
+        emergency_fund: 0.4, // 40% of savings to emergency fund
+        savings: 0.35, // 35% to general savings
+        investments: 0.25, // 25% to investments
+      }
+    );
+
+    for (const [cat, amount] of Object.entries(savingsAllocations)) {
+      if (amount > 0) {
+        categories.push(
+          this.createZeroBudgetCategory(
+            cat as BudgetCategoryValue,
+            amount,
+            'SAVINGS'
+          )
+        );
+        allocationBreakdown.push({
+          category: cat,
+          amount,
+          percentOfIncome: (amount / monthlyIncome) * 100,
+          priority: 'savings',
+        });
+      }
+    }
+
+    // Lifestyle categories
+    const lifestyleCategories: BudgetCategoryValue[] = [
+      'dining_out',
+      'entertainment',
+      'shopping',
+      'personal_care',
+      'fitness',
+      'subscriptions',
+      'travel',
+      'gifts',
+      'education',
+    ];
+    const lifestyleAllocations = this.allocatePoolToCategories(
+      pools.lifestyle,
+      lifestyleCategories,
+      patterns
+    );
+
+    for (const [cat, amount] of Object.entries(lifestyleAllocations)) {
+      if (amount > 0) {
+        categories.push(
+          this.createZeroBudgetCategory(
+            cat as BudgetCategoryValue,
+            amount,
+            'DISCRETIONARY'
+          )
+        );
+        allocationBreakdown.push({
+          category: cat,
+          amount,
+          percentOfIncome: (amount / monthlyIncome) * 100,
+          priority: 'lifestyle',
+        });
+      }
+    }
+
+    // Calculate unallocated (should be close to 0 for true zero-based)
+    const totalAllocated = categories.reduce(
+      (sum, cat) => sum + cat.allocatedAmount,
+      0
+    );
+    const unallocated =
+      Math.round((monthlyIncome - totalAllocated) * 100) / 100;
+
+    // If there's unallocated money, add to savings
+    if (unallocated > 0) {
+      const savingsCat = categories.find((c) => c.name === 'savings');
+      if (savingsCat) {
+        savingsCat.allocatedAmount += unallocated;
+        savingsCat.remainingAmount = savingsCat.allocatedAmount;
+      }
+    }
+
+    const budget: SmartBudget = {
+      id: crypto.randomUUID(),
+      userId,
+      name: `Zero-Based Budget - ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
+      period: 'monthly',
+      totalAmount: monthlyIncome,
+      categories,
+      rules: [
+        {
+          id: crypto.randomUUID(),
+          userId,
+          name: 'Zero-Based Rule',
+          type: 'auto_adjust' as const,
+          condition: {
+            threshold: 100,
+          },
+          action: 'auto_adjust' as const,
+          priority: 10,
+          isActive: true,
+          triggerCount: 0,
+          createdAt: new Date(),
+        },
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      aiGenerated: false,
+      confidence: 90,
+      metadata: {
+        monthlyIncome,
+        budgetType: 'zero-based',
+        priorities,
+      },
+    };
+
+    return { budget, unallocated, allocationBreakdown };
+  }
+
+  /**
+   * Allocate a pool amount to categories based on historical patterns
+   */
+  private allocatePoolToCategories(
+    poolAmount: number,
+    categories: BudgetCategoryValue[],
+    patterns: Record<string, any>,
+    defaultWeights?: Record<string, number>
+  ): Record<string, number> {
+    const allocations: Record<string, number> = {};
+    let totalWeight = 0;
+    const weights: Record<string, number> = {};
+
+    // Calculate weights based on historical spending or defaults
+    for (const cat of categories) {
+      if (defaultWeights && defaultWeights[cat]) {
+        weights[cat] = defaultWeights[cat];
+      } else if (patterns[cat]?.monthlyAverage) {
+        weights[cat] = patterns[cat].monthlyAverage;
+      } else {
+        weights[cat] = 1; // Equal weight if no data
+      }
+      totalWeight += weights[cat];
+    }
+
+    // Allocate based on weights
+    let allocated = 0;
+    for (let i = 0; i < categories.length; i++) {
+      const cat = categories[i];
+      const weight = weights[cat] / totalWeight;
+
+      if (i === categories.length - 1) {
+        // Last category gets remainder to avoid rounding issues
+        allocations[cat] = Math.round((poolAmount - allocated) * 100) / 100;
+      } else {
+        const amount = Math.round(poolAmount * weight * 100) / 100;
+        allocations[cat] = amount;
+        allocated += amount;
+      }
+    }
+
+    return allocations;
+  }
+
+  /**
+   * Create a zero-based budget category
+   */
+  private createZeroBudgetCategory(
+    name: BudgetCategoryValue,
+    amount: number,
+    type: CategoryType
+  ): SmartBudgetCategory {
+    return {
+      id: crypto.randomUUID(),
+      budgetId: '',
+      name,
+      type,
+      allocatedAmount: amount,
+      spentAmount: 0,
+      remainingAmount: amount,
+      percentUsed: 0,
+      alerts: [],
+      rules: [],
+    };
+  }
+
+  /**
+   * Rebalance zero-based budget when income changes
+   */
+  async rebalanceZeroBasedBudget(
+    userId: string,
+    currentBudget: SmartBudget,
+    newIncome: number
+  ): Promise<SmartBudget> {
+    const oldIncome = currentBudget.totalAmount;
+    const ratio = newIncome / oldIncome;
+
+    // Scale all categories proportionally
+    const newCategories = currentBudget.categories.map((cat) => ({
+      ...cat,
+      allocatedAmount: Math.round(cat.allocatedAmount * ratio * 100) / 100,
+      remainingAmount:
+        Math.round((cat.allocatedAmount * ratio - cat.spentAmount) * 100) / 100,
+    }));
+
+    // Ensure total equals new income
+    const totalAllocated = newCategories.reduce(
+      (sum, cat) => sum + cat.allocatedAmount,
+      0
+    );
+    const difference = newIncome - totalAllocated;
+
+    if (Math.abs(difference) > 0.01) {
+      // Add/subtract difference to savings
+      const savingsCat = newCategories.find((c) => c.name === 'savings');
+      if (savingsCat) {
+        savingsCat.allocatedAmount += difference;
+        savingsCat.remainingAmount += difference;
+      }
+    }
+
+    return {
+      ...currentBudget,
+      totalAmount: newIncome,
+      categories: newCategories,
+      updatedAt: new Date(),
+      metadata: {
+        ...currentBudget.metadata,
+        monthlyIncome: newIncome,
+        lastRebalanced: new Date().toISOString(),
+      },
+    };
   }
 }
 
@@ -1072,5 +1542,3 @@ export function resetSmartBudgetEngine(): void {
   smartBudgetEngineInstance = null;
   aiResponseCache.clear();
 }
-
-

@@ -76,27 +76,27 @@ const fetchCashFlowData = useCallback(async () => {
       if (savingsRate >= 20) {
         score = 90 + Math.min(savingsRate - 20, 10);
         status = 'excellent';
-        insights.push('🎉 Excellent savings rate! You\'re building wealth effectively.');
+        insights.push('Excellent savings rate! You\'re building wealth effectively.');
       } else if (savingsRate >= 10) {
         score = 70 + (savingsRate - 10);
         status = 'good';
-        insights.push('👍 Good savings rate. Consider increasing to 20% for optimal wealth building.');
+        insights.push('Good savings rate. Consider increasing to 20% for optimal wealth building.');
       } else if (savingsRate >= 5) {
         score = 50 + (savingsRate - 5) * 4;
         status = 'fair';
-        insights.push('⚠️ Fair savings rate. Try to increase your savings to at least 10%.');
+        insights.push('Fair savings rate. Try to increase your savings to at least 10%.');
       } else {
         score = Math.max(savingsRate * 10, 20);
         status = 'poor';
-        insights.push('🚨 Low savings rate. Focus on reducing expenses and increasing income.');
+        insights.push('Low savings rate. Focus on reducing expenses and increasing income.');
       }
       
       if (dashboard.cashFlow < 0) {
-        insights.push('⚠️ Negative cash flow detected. Review your expenses immediately.');
+        insights.push('Negative cash flow detected. Review your expenses immediately.');
       }
       
       if (dashboard.monthlyExpenses > dashboard.monthlyIncome * 0.9) {
-        insights.push('💡 Your expenses are high relative to income. Look for areas to cut back.');
+        insights.push('Your expenses are high relative to income. Look for areas to cut back.');
       }
       
       setData({
@@ -160,9 +160,9 @@ useEffect(() => {
       <div className="space-y-6 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow p-6">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-              <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
+              <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4"></div>
             </div>
           ))}
         </div>
@@ -172,11 +172,11 @@ useEffect(() => {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">❌</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Data</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="text-red-600 text-xl mb-4"></div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Data</h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-4">{error}</p>
           <button
             type="button"
             onClick={fetchCashFlowData}
@@ -195,44 +195,44 @@ useEffect(() => {
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600">Monthly Income</h3>
-            <span className="text-2xl">💰</span>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Monthly Income</h3>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold text-green-600">{formatCurrency(data.monthlyIncome)}</div>
-          <div className="text-sm text-gray-500 mt-1">Average per month</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Average per month</div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600">Monthly Expenses</h3>
-            <span className="text-2xl">💸</span>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Monthly Expenses</h3>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold text-red-600">{formatCurrency(data.monthlyExpenses)}</div>
-          <div className="text-sm text-gray-500 mt-1">Average per month</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Average per month</div>
         </div>
 
-        <div className={`bg-white rounded-lg shadow p-6`}>
+        <div className={`bg-white dark:bg-slate-800 rounded-lg shadow p-6`}>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600">Net Cash Flow</h3>
-            <span className="text-2xl">{data.netCashFlow >= 0 ? '📈' : '📉'}</span>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Net Cash Flow</h3>
+            <span className="text-2xl">{data.netCashFlow >= 0 ? '' : ''}</span>
           </div>
           <div className={`text-3xl font-bold ${data.netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {formatCurrency(data.netCashFlow)}
           </div>
-          <div className="text-sm text-gray-500 mt-1">Per month</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Per month</div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600">Savings Rate</h3>
-            <span className="text-2xl">🎯</span>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Savings Rate</h3>
+            <span className="text-2xl"></span>
           </div>
           <div className={`text-3xl font-bold ${data.savingsRate >= 20 ? 'text-green-600' : data.savingsRate >= 10 ? 'text-blue-600' : 'text-orange-600'}`}>
             {data.savingsRate.toFixed(1)}%
           </div>
-          <div className="text-sm text-gray-500 mt-1">Of income</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Of income</div>
         </div>
       </div>
 
@@ -245,22 +245,22 @@ useEffect(() => {
           </div>
           <div className="text-6xl font-bold">{data.financialHealth.score}</div>
         </div>
-        <div className="w-full bg-white bg-opacity-30 rounded-full h-4">
+        <div className="w-full bg-white dark:bg-slate-800 bg-opacity-30 rounded-full h-4">
           <div
-            className="bg-white h-4 rounded-full transition-all duration-500"
+            className="bg-white dark:bg-slate-800 h-4 rounded-full transition-all duration-500"
             style={{ width: `${data.financialHealth.score}%` }}
           ></div>
         </div>
       </div>
 
       {/* Monthly Trend */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">Monthly Cash Flow Trend</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Monthly Cash Flow Trend</h3>
         <div className="space-y-4">
           {data.monthlyTrend.map((month) => (
             <div key={month.month}>
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-gray-900">{month.month}</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{month.month}</span>
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-green-600">+{formatCurrency(month.income)}</span>
                   <span className="text-sm text-red-600">-{formatCurrency(month.expenses)}</span>
@@ -285,8 +285,8 @@ useEffect(() => {
       </div>
 
       {/* Projections */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">6-Month Cash Flow Projection</h3>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">6-Month Cash Flow Projection</h3>
         <div className="space-y-3">
           {data.projections.map((proj, index) => {
             const maxAmount = Math.max(...data.projections.map(p => Math.abs(p.projected)));
@@ -295,12 +295,12 @@ useEffect(() => {
             return (
               <div key={index}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-gray-900">{proj.month}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{proj.month}</span>
                   <span className={`font-bold ${proj.projected >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {formatCurrency(proj.projected)}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3">
                   <div
                     className={`${proj.projected >= 0 ? 'bg-green-500' : 'bg-red-500'} h-3 rounded-full transition-all duration-500`}
                     style={{ width: `${percentage}%` }}
@@ -313,18 +313,18 @@ useEffect(() => {
       </div>
 
       {/* Insights */}
-      <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg shadow p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <span>💡</span>
+      <div className="bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg shadow p-6">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <span></span>
           Financial Insights
         </h3>
         <div className="space-y-3">
           {data.financialHealth.insights.map((insight, index) => (
-            <div key={index} className="flex items-start gap-3 bg-white rounded-lg p-4">
+            <div key={index} className="flex items-start gap-3 bg-white dark:bg-slate-800 rounded-lg p-4">
               <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
                 {index + 1}
               </div>
-              <p className="text-gray-700 flex-1">{insight}</p>
+              <p className="text-gray-700 dark:text-slate-200 flex-1">{insight}</p>
             </div>
           ))}
         </div>

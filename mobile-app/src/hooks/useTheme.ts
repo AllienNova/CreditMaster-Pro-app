@@ -1,10 +1,12 @@
 /**
- * CPFI Theme Hook
- * Provides theme context and utilities for consistent styling
+ * Fynvita Theme Hook
+ * Provides theme context and utilities for consistent styling.
+ * Automatically switches between light/dark based on system preference.
  */
 
 import { useColorScheme } from 'react-native';
-import { lightTheme, darkTheme, type Theme } from '../../constants/theme';
+import { lightTheme, darkTheme, withOpacity } from '../constants/theme';
+import type { Theme } from '../types';
 
 export interface UseThemeReturn {
   theme: Theme;
@@ -14,6 +16,9 @@ export interface UseThemeReturn {
   borderRadius: Theme['borderRadius'];
   fontSize: Theme['fontSize'];
   fontWeight: Theme['fontWeight'];
+  shadow: Theme['shadow'];
+  iconSize: Theme['iconSize'];
+  withOpacity: (hex: string, opacity: number) => string;
 }
 
 export function useTheme(): UseThemeReturn {
@@ -29,8 +34,10 @@ export function useTheme(): UseThemeReturn {
     borderRadius: theme.borderRadius,
     fontSize: theme.fontSize,
     fontWeight: theme.fontWeight,
+    shadow: theme.shadow,
+    iconSize: theme.iconSize,
+    withOpacity,
   };
 }
 
 export default useTheme;
-

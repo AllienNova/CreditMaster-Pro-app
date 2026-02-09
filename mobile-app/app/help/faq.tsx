@@ -1,5 +1,5 @@
 /**
- * CPFI FAQ Screen
+ * Fynvita FAQ Screen
  * Frequently asked questions with expandable answers
  */
 

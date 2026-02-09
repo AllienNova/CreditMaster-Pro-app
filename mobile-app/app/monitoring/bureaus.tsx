@@ -1,5 +1,5 @@
 /**
- * CPFI Bureau Connections Screen
+ * Fynvita Bureau Connections Screen
  * Manage credit bureau connections and monitoring status
  */
 

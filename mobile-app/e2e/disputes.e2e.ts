@@ -1,5 +1,5 @@
 /**
- * CPFI Disputes E2E Tests
+ * Fynvita Disputes E2E Tests
  * Tests complete dispute creation and management flows
  */
 

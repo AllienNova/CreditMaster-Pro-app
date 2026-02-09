@@ -409,7 +409,7 @@ export class ModelRouter {
     });
 
     if (filtered.length === 0) {
-      console.warn(`No models match requirements for ${taskType}, using primary model`);
+      // ModelRouter warning: No models match requirements, using primary model
       return models[0];
     }
 

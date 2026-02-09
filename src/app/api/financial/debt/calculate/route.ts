@@ -60,6 +60,12 @@ export async function POST(request: NextRequest) {
     if (compareAll) {
       const comparison = debtPayoffService.compareStrategies(processedDebts, extraPayment);
       const currentPlan = comparison[strategy];
+      if (!currentPlan) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid strategy selected' },
+          { status: 400 }
+        );
+      }
       const milestones = debtPayoffService.generateMilestones(currentPlan, processedDebts);
       const insights = debtPayoffService.generateInsights(overview, currentPlan);
       

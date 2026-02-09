@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile Store Layer
+ * Fynvita Mobile Store Layer
  *
  * Comprehensive state management with:
  * - Zustand stores with persistence
@@ -166,6 +166,34 @@ export {
   selectError as selectStudentLoanError,
 } from './studentLoanStore';
 
+// Gamification Store
+export { useGamificationStore } from './gamificationStore';
+
+// Tax Store
+export {
+  useTaxStore,
+  selectAnalysis as selectTaxAnalysis,
+  selectBrackets as selectTaxBrackets,
+  selectRecommendations as selectTaxRecommendations,
+  selectPendingRecommendations as selectPendingTaxRecommendations,
+  selectCriticalRecommendations as selectCriticalTaxRecommendations,
+  selectTotalPotentialSavings,
+  selectEffectiveRate as selectTaxEffectiveRate,
+  selectMonthlyTakeHome as selectTaxMonthlyTakeHome,
+  selectEvents as selectTaxEvents,
+  selectUpcomingEvents as selectUpcomingTaxEvents,
+  selectCriticalEvents as selectCriticalTaxEvents,
+  selectDeductionCategories,
+  selectDeductionSummary,
+  selectTotalDeductions,
+  selectDocuments as selectTaxDocuments,
+  selectUnverifiedDocuments as selectUnverifiedTaxDocuments,
+  selectTips as selectTaxTips,
+  selectYearComparisons,
+  selectIsLoading as selectTaxIsLoading,
+  selectError as selectTaxError,
+} from './taxStore';
+
 // Re-export student loan types
 export type {
   StudentLoan,
@@ -216,6 +244,8 @@ export async function resetAllStores(): Promise<void> {
   const { useSyncStore } = await import('./syncStore');
   const { useInvestmentStore } = await import('./investmentStore');
   const { useStudentLoanStore } = await import('./studentLoanStore');
+  const { useGamificationStore } = await import('./gamificationStore');
+  const { useTaxStore } = await import('./taxStore');
 
   // Reset all stores
   useCreditStore.getState().resetStore();
@@ -230,6 +260,8 @@ export async function resetAllStores(): Promise<void> {
   useSyncStore.getState().resetStore();
   useInvestmentStore.getState().reset();
   useStudentLoanStore.getState().resetStore();
+  useGamificationStore.getState().resetStore();
+  useTaxStore.getState().resetStore();
 }
 
 /**
@@ -248,6 +280,8 @@ export async function fetchInitialData(): Promise<void> {
   const { useNotificationStore } = await import('./notificationStore');
   const { useInvestmentStore } = await import('./investmentStore');
   const { useStudentLoanStore } = await import('./studentLoanStore');
+  const { useGamificationStore } = await import('./gamificationStore');
+  const { useTaxStore } = await import('./taxStore');
 
   // Fetch data in parallel
   await Promise.all([
@@ -272,6 +306,17 @@ export async function fetchInitialData(): Promise<void> {
 
     // Student loan data
     useStudentLoanStore.getState().fetchLoans(),
+
+    // Gamification data
+    useGamificationStore.getState().fetchProgress(),
+    useGamificationStore.getState().fetchBadges(),
+    useGamificationStore.getState().fetchQuests(),
+
+    // Tax data
+    useTaxStore.getState().fetchAnalysis(),
+    useTaxStore.getState().fetchEvents(),
+    useTaxStore.getState().fetchDeductions(),
+    useTaxStore.getState().fetchTips(),
 
     // Notifications
     useNotificationStore.getState().fetchNotifications(),

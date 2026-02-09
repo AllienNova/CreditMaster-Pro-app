@@ -1,5 +1,5 @@
 /**
- * CPFI Admin System Health Screen
+ * Fynvita Admin System Health Screen
  * Monitor system health and status
  */
 

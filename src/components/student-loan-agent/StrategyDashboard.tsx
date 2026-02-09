@@ -1,6 +1,17 @@
 import React from 'react';
 
-export const StrategyDashboard = ({ strategies }: { strategies: any[] }) => {
+export interface StrategyRegulation {
+  name: string;
+  link: string;
+}
+
+export interface Strategy {
+  name: string;
+  description: string;
+  regulation: StrategyRegulation;
+}
+
+export const StrategyDashboard = ({ strategies }: { strategies: Strategy[] }) => {
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">Strategy Dashboard</h2>

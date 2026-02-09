@@ -1,6 +1,6 @@
 /**
- * Analytics Module for CPFI
- * 
+ * Analytics Module for Fynvita
+ *
  * Tracks user interactions, conversions, and feature usage.
  * Supports Google Analytics 4 and custom event tracking.
  */
@@ -140,4 +140,3 @@ export const analytics = {
 };
 
 export default analytics;
-

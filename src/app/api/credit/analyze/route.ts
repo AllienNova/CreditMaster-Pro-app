@@ -43,13 +43,12 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error) {
-    console.error('Credit analysis error:', error);
-    
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to analyze credit report',
+        error: _error instanceof Error ? _error.message : 'Failed to analyze credit report',
       },
       { status: 500 }
     );

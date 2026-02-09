@@ -53,29 +53,29 @@ export async function GET(request: NextRequest) {
           try {
             const data = `data: ${JSON.stringify(event)}\n\n`;
             controller.enqueue(encoder.encode(data));
-          } catch (error) {
-            console.error('Error sending SSE event:', error);
+          } catch {
+            // MonitoringEventsAPI error: Error sending SSE event
           }
         }
       );
-      
-      console.log(`📡 SSE connection established for user ${userId}`);
+
+      // MonitoringEventsAPI: SSE connection established for user
       
       // Send heartbeat every 30 seconds to keep connection alive
       const heartbeatInterval = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(`: heartbeat\n\n`));
-        } catch (error) {
-          console.error('Error sending heartbeat:', error);
+        } catch {
+          // MonitoringEventsAPI error: Error sending heartbeat
           clearInterval(heartbeatInterval);
         }
       }, 30000);
-      
+
       // Cleanup on connection close
       request.signal.addEventListener('abort', () => {
         clearInterval(heartbeatInterval);
         RealtimeMonitoringService.unsubscribe(subscriptionId);
-        console.log(`📡 SSE connection closed for user ${userId}`);
+        // MonitoringEventsAPI: SSE connection closed for user
         try {
           controller.close();
         } catch {

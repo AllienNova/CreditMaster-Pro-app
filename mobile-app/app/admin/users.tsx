@@ -1,5 +1,5 @@
 /**
- * CPFI Admin User Management Screen
+ * Fynvita Admin User Management Screen
  * View and manage users
  */
 

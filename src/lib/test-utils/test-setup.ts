@@ -1,12 +1,15 @@
 /**
  * Test Setup Utilities
- * 
+ *
  * Provides utilities for setting up real API tests with actual database connections
  */
 
 import { createClient } from '@supabase/supabase-js';
 import type { JsonRecord } from '@/types/student-loan';
-import type { Bureau as CreditBureau, DisputeStatus as CreditDisputeStatus } from '@/lib/credit-repair/db/types';
+import type {
+  Bureau as CreditBureau,
+  DisputeStatus as CreditDisputeStatus,
+} from '@/lib/credit-repair/db/types';
 
 // Test database configuration
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -74,7 +77,7 @@ interface CreditReportInsertPayload extends JsonRecord {
  * Test user credentials
  */
 export const TEST_USER = {
-  email: 'test@creditmaster.com',
+  email: 'test@fynvita.com',
   password: 'TestPassword123!',
   name: 'Test User',
 };
@@ -82,14 +85,17 @@ export const TEST_USER = {
 /**
  * Create a test user and return JWT token
  */
-export async function createTestUser(): Promise<{ userId: string; token: string }> {
+export async function createTestUser(): Promise<{
+  userId: string;
+  token: string;
+}> {
   if (!supabaseAdmin) {
     throw new Error('Supabase admin client not initialized');
   }
 
   // Check if user already exists
   const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
-  const testUser = existingUser?.users.find(u => u.email === TEST_USER.email);
+  const testUser = existingUser?.users.find((u) => u.email === TEST_USER.email);
 
   let userId: string;
 
@@ -118,10 +124,11 @@ export async function createTestUser(): Promise<{ userId: string; token: string 
     throw new Error('Supabase admin client not initialized');
   }
 
-  const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
-    email: TEST_USER.email,
-    password: TEST_USER.password,
-  });
+  const { data: signInData, error: signInError } =
+    await supabaseAdmin.auth.signInWithPassword({
+      email: TEST_USER.email,
+      password: TEST_USER.password,
+    });
 
   if (signInError || !signInData.session) {
     throw new Error(`Failed to sign in test user: ${signInError?.message}`);
@@ -142,7 +149,10 @@ export async function cleanupTestData(userId: string): Promise<void> {
   }
 
   // Delete in reverse order of dependencies
-  await supabaseAdmin.from('credit_card_utilization_history').delete().eq('user_id', userId);
+  await supabaseAdmin
+    .from('credit_card_utilization_history')
+    .delete()
+    .eq('user_id', userId);
   await supabaseAdmin.from('credit_cards').delete().eq('user_id', userId);
   await supabaseAdmin.from('goodwill_letters').delete().eq('user_id', userId);
   await supabaseAdmin.from('negotiations').delete().eq('user_id', userId);
@@ -172,17 +182,18 @@ export async function makeAuthenticatedRequest(
 ): Promise<Response> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const url = `${baseUrl}${path}`;
-  const serializedBody = typeof options.body === 'string'
-    ? options.body
-    : options.body
-      ? JSON.stringify(options.body)
-      : undefined;
+  const serializedBody =
+    typeof options.body === 'string'
+      ? options.body
+      : options.body
+        ? JSON.stringify(options.body)
+        : undefined;
 
   const response = await fetch(url, {
     method: options.method || 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${options.token}`,
+      Authorization: `Bearer ${options.token}`,
     },
     body: serializedBody,
   });
@@ -208,7 +219,7 @@ export async function waitFor(
     if (await condition()) {
       return;
     }
-    await new Promise(resolve => setTimeout(resolve, interval));
+    await new Promise((resolve) => setTimeout(resolve, interval));
   }
 
   throw new Error('Timeout waiting for condition');
@@ -246,10 +257,14 @@ export async function createTestDispute(
     status: 'draft',
   };
 
-  const { data, error } = await supabaseAdmin.from('disputes').insert({
-    ...payload,
-    ...overrides,
-  }).select().single();
+  const { data, error } = await supabaseAdmin
+    .from('disputes')
+    .insert({
+      ...payload,
+      ...overrides,
+    })
+    .select()
+    .single();
 
   if (error) {
     throw new Error(`Failed to create test dispute: ${error.message}`);
@@ -277,10 +292,14 @@ export async function createTestCreditCard(
     utilization: 20,
   };
 
-  const { data, error } = await supabaseAdmin.from('credit_cards').insert({
-    ...payload,
-    ...overrides,
-  }).select().single();
+  const { data, error } = await supabaseAdmin
+    .from('credit_cards')
+    .insert({
+      ...payload,
+      ...overrides,
+    })
+    .select()
+    .single();
 
   if (error) {
     throw new Error(`Failed to create test credit card: ${error.message}`);
@@ -308,10 +327,14 @@ export async function createTestGoodwillLetter(
     status: 'draft',
   };
 
-  const { data, error } = await supabaseAdmin.from('goodwill_letters').insert({
-    ...payload,
-    ...overrides,
-  }).select().single();
+  const { data, error } = await supabaseAdmin
+    .from('goodwill_letters')
+    .insert({
+      ...payload,
+      ...overrides,
+    })
+    .select()
+    .single();
 
   if (error) {
     throw new Error(`Failed to create test goodwill letter: ${error.message}`);
@@ -340,10 +363,14 @@ export async function createTestNegotiation(
     status: 'draft',
   };
 
-  const { data, error } = await supabaseAdmin.from('negotiations').insert({
-    ...payload,
-    ...overrides,
-  }).select().single();
+  const { data, error } = await supabaseAdmin
+    .from('negotiations')
+    .insert({
+      ...payload,
+      ...overrides,
+    })
+    .select()
+    .single();
 
   if (error) {
     throw new Error(`Failed to create test negotiation: ${error.message}`);
@@ -370,10 +397,14 @@ export async function createTestCreditReport(
     file_url: 'https://example.com/report.pdf',
   };
 
-  const { data, error } = await supabaseAdmin.from('credit_reports').insert({
-    ...payload,
-    ...overrides,
-  }).select().single();
+  const { data, error } = await supabaseAdmin
+    .from('credit_reports')
+    .insert({
+      ...payload,
+      ...overrides,
+    })
+    .select()
+    .single();
 
   if (error) {
     throw new Error(`Failed to create test credit report: ${error.message}`);

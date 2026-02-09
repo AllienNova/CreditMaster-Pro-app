@@ -317,10 +317,10 @@ export class PriceAlertService {
     const titles: Record<AlertType, string> = {
       price_above: `${alert.symbol} Price Alert ⬆️`,
       price_below: `${alert.symbol} Price Alert ⬇️`,
-      percent_change: `${alert.symbol} Price Change 📊`,
-      volume_spike: `${alert.symbol} Volume Spike 📈`,
-      indicator_crossover: `${alert.symbol} Signal Alert 🎯`,
-      pattern_detected: `${alert.symbol} Pattern Detected 🔍`,
+      percent_change: `${alert.symbol} Price Change `,
+      volume_spike: `${alert.symbol} Volume Spike `,
+      indicator_crossover: `${alert.symbol} Signal Alert `,
+      pattern_detected: `${alert.symbol} Pattern Detected `,
     };
     return titles[alert.type];
   }
@@ -361,8 +361,9 @@ export class PriceAlertService {
         tag: notification.id,
         requireInteraction: notification.priority === 'critical',
       });
-    } catch (error) {
-      console.error('Failed to send browser notification:', error);
+    } catch (_error) {
+      // PriceAlertService error: Failed to send browser notification
+      void _error;
     }
   }
 
@@ -386,8 +387,9 @@ export class PriceAlertService {
     callbacks?.forEach(cb => {
       try {
         cb(alert);
-      } catch (error) {
-        console.error('Alert subscriber callback error:', error);
+      } catch (_error) {
+        // PriceAlertService error: Alert subscriber callback error
+        void _error;
       }
     });
   }
@@ -453,8 +455,9 @@ export class PriceAlertService {
     try {
       const data = Array.from(this.alerts.values());
       localStorage.setItem('investment_alerts', JSON.stringify(data));
-    } catch (error) {
-      console.error('Failed to persist alerts:', error);
+    } catch (_error) {
+      // PriceAlertService error: Failed to persist alerts
+      void _error;
     }
   }
 
@@ -472,8 +475,9 @@ export class PriceAlertService {
           this.alerts.set(alert.id, alert);
         });
       }
-    } catch (error) {
-      console.error('Failed to load alerts:', error);
+    } catch (_error) {
+      // PriceAlertService error: Failed to load alerts
+      void _error;
     }
   }
 

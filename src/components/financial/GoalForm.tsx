@@ -42,12 +42,12 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const goalTypes = [
-    { value: 'emergency_fund', label: '🚨 Emergency Fund', description: 'Build a safety net for unexpected expenses' },
-    { value: 'debt_payoff', label: '💳 Debt Payoff', description: 'Pay off credit cards or loans' },
-    { value: 'savings', label: '💰 Savings', description: 'General savings goal' },
-    { value: 'investment', label: '📈 Investment', description: 'Grow wealth through investments' },
-    { value: 'retirement', label: '🏖️ Retirement', description: 'Save for retirement' },
-    { value: 'custom', label: '🎯 Custom', description: 'Create your own goal' },
+    { value: 'emergency_fund', label: 'Emergency Fund', description: 'Build a safety net for unexpected expenses' },
+    { value: 'debt_payoff', label: 'Debt Payoff', description: 'Pay off credit cards or loans' },
+    { value: 'savings', label: 'Savings', description: 'General savings goal' },
+    { value: 'investment', label: 'Investment', description: 'Grow wealth through investments' },
+    { value: 'retirement', label: 'Retirement', description: 'Save for retirement' },
+    { value: 'custom', label: 'Custom', description: 'Create your own goal' },
   ];
 
   const validate = (): boolean => {
@@ -98,7 +98,7 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
     }
   };
 
-  const handleChange = (field: keyof FinancialGoal, value: any) => {
+  const handleChange = (field: keyof FinancialGoal, value: FinancialGoal[keyof FinancialGoal]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error for this field
     if (errors[field]) {
@@ -114,7 +114,7 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Goal Type */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
           Goal Type
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -123,14 +123,10 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
               key={type.value}
               type="button"
               onClick={() => handleChange('type', type.value)}
-              className={`p-4 text-left rounded-lg border-2 transition-all ${
-                formData.type === type.value
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
+              className={`p-4 text-left rounded-lg border-2 transition-all ${ formData.type === type.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 dark:border-slate-600' }`}
             >
-              <div className="font-medium text-gray-900 mb-1">{type.label}</div>
-              <div className="text-xs text-gray-600">{type.description}</div>
+              <div className="font-medium text-gray-900 dark:text-white mb-1">{type.label}</div>
+              <div className="text-xs text-gray-600 dark:text-slate-300">{type.description}</div>
             </button>
           ))}
         </div>
@@ -138,7 +134,7 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
 
       {/* Goal Name */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
           Goal Name *
         </label>
         <input
@@ -147,7 +143,7 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
           value={formData.name}
           onChange={(e) => handleChange('name', e.target.value)}
           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            errors.name ? 'border-red-500' : 'border-gray-300'
+            errors.name ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
           }`}
           placeholder="e.g., Emergency Fund, Vacation, New Car"
         />
@@ -157,18 +153,18 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
       {/* Amount Fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="targetAmount" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="targetAmount" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Target Amount *
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400">$</span>
             <input
               id="targetAmount"
               type="number"
               value={formData.targetAmount || ''}
               onChange={(e) => handleChange('targetAmount', parseFloat(e.target.value) || 0)}
               className={`w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.targetAmount ? 'border-red-500' : 'border-gray-300'
+                errors.targetAmount ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
               }`}
               placeholder="10000"
               min="0"
@@ -179,18 +175,18 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
         </div>
 
         <div>
-          <label htmlFor="currentAmount" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="currentAmount" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Current Amount
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400">$</span>
             <input
               id="currentAmount"
               type="number"
               value={formData.currentAmount || ''}
               onChange={(e) => handleChange('currentAmount', parseFloat(e.target.value) || 0)}
               className={`w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.currentAmount ? 'border-red-500' : 'border-gray-300'
+                errors.currentAmount ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
               }`}
               placeholder="0"
               min="0"
@@ -203,7 +199,7 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
 
       {/* Target Date */}
       <div>
-        <label htmlFor="targetDate" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="targetDate" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
           Target Date *
         </label>
         <input
@@ -212,18 +208,18 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
           value={formData.targetDate}
           onChange={(e) => handleChange('targetDate', e.target.value)}
           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            errors.targetDate ? 'border-red-500' : 'border-gray-300'
+            errors.targetDate ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
           }`}
         />
         {errors.targetDate && <p className="mt-1 text-sm text-red-600">{errors.targetDate}</p>}
       </div>
 
       {/* Auto-Save Settings */}
-      <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+      <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg border border-blue-100">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="font-medium text-gray-900">Enable Auto-Save</div>
-            <div className="text-sm text-gray-600">Automatically save towards this goal each month</div>
+            <div className="font-medium text-gray-900 dark:text-white">Enable Auto-Save</div>
+            <div className="text-sm text-gray-600 dark:text-slate-300">Automatically save towards this goal each month</div>
           </div>
           <button
             type="button"
@@ -233,7 +229,7 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
             }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${
                 formData.autoSaveEnabled ? 'translate-x-6' : 'translate-x-1'
               }`}
             />
@@ -242,18 +238,18 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
 
         {formData.autoSaveEnabled && (
           <div>
-            <label htmlFor="autoSaveAmount" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="autoSaveAmount" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
               Monthly Auto-Save Amount *
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400">$</span>
               <input
                 id="autoSaveAmount"
                 type="number"
                 value={formData.autoSaveAmount || ''}
                 onChange={(e) => handleChange('autoSaveAmount', parseFloat(e.target.value) || 0)}
                 className={`w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.autoSaveAmount ? 'border-red-500' : 'border-gray-300'
+                  errors.autoSaveAmount ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
                 }`}
                 placeholder="100"
                 min="0"
@@ -270,14 +266,14 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
         <button
           type="button"
           onClick={onCancel}
-          className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          className="px-6 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={saving}
-          className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-lg hover:from-blue-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? 'Saving...' : goal ? 'Update Goal' : 'Create Goal'}
         </button>

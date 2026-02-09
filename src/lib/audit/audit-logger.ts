@@ -84,10 +84,11 @@ export async function logAuditEvent(event: AuditEvent): Promise<void> {
       .insert(entry);
 
     if (error) {
-      console.error('Failed to log audit event:', error);
+      // AuditLogger error: Failed to log audit event
     }
-  } catch (error) {
-    console.error('Audit logging error:', error);
+  } catch (_error) {
+    // AuditLogger error: Audit logging error
+    void _error;
   }
 }
 

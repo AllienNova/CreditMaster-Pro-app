@@ -70,17 +70,17 @@ export default function AnomalyAlerts({ timeRange = '30d' }: AnomalyAlertsProps)
       case 'high': return 'bg-orange-100 border-orange-300 text-orange-800';
       case 'medium': return 'bg-yellow-100 border-yellow-300 text-yellow-800';
       case 'low': return 'bg-blue-100 border-blue-300 text-blue-800';
-      default: return 'bg-gray-100 border-gray-300 text-gray-800';
+      default: return 'bg-gray-100 dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-800 dark:text-slate-100';
     }
   };
 
   const getSeverityIcon = (severity: string): string => {
     switch (severity) {
-      case 'critical': return '🚨';
-      case 'high': return '⚠️';
-      case 'medium': return '⚡';
+      case 'critical': return '';
+      case 'high': return '';
+      case 'medium': return '';
       case 'low': return 'ℹ️';
-      default: return '📊';
+      default: return '';
     }
   };
 
@@ -102,11 +102,11 @@ export default function AnomalyAlerts({ timeRange = '30d' }: AnomalyAlertsProps)
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6 animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 animate-pulse">
+        <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/3 mb-4"></div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            <div key={i} className="h-24 bg-gray-200 dark:bg-slate-700 rounded"></div>
           ))}
         </div>
       </div>
@@ -114,12 +114,12 @@ export default function AnomalyAlerts({ timeRange = '30d' }: AnomalyAlertsProps)
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🔍</span>
-          <h3 className="text-lg font-semibold text-gray-900">Anomaly Detection</h3>
+          <span className="text-2xl"></span>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Anomaly Detection</h3>
           {filteredAnomalies.length > 0 && (
             <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
               {filteredAnomalies.length}
@@ -133,11 +133,7 @@ export default function AnomalyAlerts({ timeRange = '30d' }: AnomalyAlertsProps)
             <button
               key={f}
               onClick={() => setFilter(f as any)}
-              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                filter === f
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ filter === f ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:bg-slate-700' }`}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
@@ -158,28 +154,28 @@ export default function AnomalyAlerts({ timeRange = '30d' }: AnomalyAlertsProps)
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <div className="font-semibold text-gray-900 mb-1">
+                      <div className="font-semibold text-gray-900 dark:text-white mb-1">
                         {getTypeLabel(anomaly.type)}
                       </div>
-                      <div className="text-sm text-gray-700">
+                      <div className="text-sm text-gray-700 dark:text-slate-200">
                         {anomaly.merchant} • {anomaly.category.replace(/_/g, ' ')}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-gray-900">
+                      <div className="font-bold text-gray-900 dark:text-white">
                         {formatCurrency(anomaly.amount)}
                       </div>
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-gray-600 dark:text-slate-300">
                         Expected: {formatCurrency(anomaly.expectedAmount)}
                       </div>
                     </div>
                   </div>
 
-                  <div className="mb-3 p-3 bg-white/50 rounded-lg">
-                    <div className="text-sm text-gray-700 mb-2">
+                  <div className="mb-3 p-3 bg-white dark:bg-slate-800/50 rounded-lg">
+                    <div className="text-sm text-gray-700 dark:text-slate-200 mb-2">
                       <span className="font-medium">Explanation:</span> {anomaly.explanation}
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-gray-600">
+                    <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-slate-300">
                       <span>Deviation: {(anomaly.deviation * 100).toFixed(1)}%</span>
                       <span>Confidence: {(anomaly.confidence * 100).toFixed(0)}%</span>
                     </div>
@@ -187,9 +183,9 @@ export default function AnomalyAlerts({ timeRange = '30d' }: AnomalyAlertsProps)
 
                   {anomaly.suggestions && anomaly.suggestions.length > 0 && (
                     <div className="space-y-1">
-                      <div className="text-xs font-medium text-gray-700">Suggestions:</div>
+                      <div className="text-xs font-medium text-gray-700 dark:text-slate-200">Suggestions:</div>
                       {anomaly.suggestions.map((suggestion, idx) => (
-                        <div key={idx} className="text-xs text-gray-600 flex items-start gap-2">
+                        <div key={idx} className="text-xs text-gray-600 dark:text-slate-300 flex items-start gap-2">
                           <span>•</span>
                           <span>{suggestion}</span>
                         </div>
@@ -203,9 +199,9 @@ export default function AnomalyAlerts({ timeRange = '30d' }: AnomalyAlertsProps)
         </div>
       ) : (
         <div className="text-center py-12">
-          <div className="text-4xl mb-3">✅</div>
-          <h4 className="text-lg font-semibold text-gray-900 mb-2">No Anomalies Detected</h4>
-          <p className="text-gray-600">Your spending patterns look normal</p>
+          <div className="text-4xl mb-3"></div>
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Anomalies Detected</h4>
+          <p className="text-gray-600 dark:text-slate-300">Your spending patterns look normal</p>
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 /**
- * CPFI Dashboard Store
+ * Fynvita Dashboard Store
  * Manages financial dashboard overview and aggregated metrics
  * Refactored from financialStore - now focuses only on dashboard data
  */

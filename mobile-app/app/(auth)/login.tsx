@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Link, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/store/authStore';
-import { lightTheme as theme } from '../../src/constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
 
 export default function LoginScreen() {
+  const { colors, spacing, borderRadius, fontSize, fontWeight, withOpacity } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, isLoading, error, clearError } = useAuthStore();
@@ -19,26 +21,58 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.header}>
-        <Text style={styles.logo}>💳</Text>
-        <Text style={styles.title}>CPFI</Text>
-        <Text style={styles.subtitle}>Sign in to your account</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background, padding: spacing.lg }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={{ alignItems: 'center', marginTop: 60, marginBottom: 40 }}>
+        <View style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: withOpacity(colors.primary, 0.1),
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.md,
+        }}>
+          <Ionicons name="card-outline" size={40} color={colors.primary} />
+        </View>
+        <Text style={{ fontSize: fontSize.xxl + 4, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.xs }}>
+          Fynvita
+        </Text>
+        <Text style={{ fontSize: fontSize.md, color: colors.textSecondary }}>
+          Sign in to your account
+        </Text>
       </View>
 
-      <View style={styles.form}>
+      <View style={{ flex: 1 }}>
         {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={{
+            backgroundColor: withOpacity(colors.error, 0.1),
+            padding: spacing.md,
+            borderRadius: borderRadius.md,
+            marginBottom: spacing.md,
+          }}>
+            <Text style={{ color: colors.error, textAlign: 'center' }}>{error}</Text>
           </View>
         )}
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email</Text>
+        <View style={{ marginBottom: spacing.md }}>
+          <Text style={{ fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text, marginBottom: spacing.xs }}>
+            Email
+          </Text>
           <TextInput
-            style={styles.input}
+            style={{
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: borderRadius.md,
+              padding: spacing.md,
+              fontSize: fontSize.md,
+              color: colors.text,
+            }}
             placeholder="you@example.com"
-            placeholderTextColor={theme.colors.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -47,12 +81,22 @@ export default function LoginScreen() {
           />
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Password</Text>
+        <View style={{ marginBottom: spacing.md }}>
+          <Text style={{ fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text, marginBottom: spacing.xs }}>
+            Password
+          </Text>
           <TextInput
-            style={styles.input}
+            style={{
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: borderRadius.md,
+              padding: spacing.md,
+              fontSize: fontSize.md,
+              color: colors.text,
+            }}
             placeholder="Enter your password"
-            placeholderTextColor={theme.colors.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -60,49 +104,38 @@ export default function LoginScreen() {
           />
         </View>
 
-        <TouchableOpacity style={styles.forgotPassword}>
+        <TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: spacing.lg }}>
           <Link href="/(auth)/forgot-password">
-            <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+            <Text style={{ color: colors.primary, fontSize: fontSize.sm }}>Forgot password?</Text>
           </Link>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={isLoading}>
+        <TouchableOpacity
+          style={{
+            backgroundColor: colors.primary,
+            padding: spacing.md,
+            borderRadius: borderRadius.md,
+            alignItems: 'center',
+          }}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
           {isLoading ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
+            <Text style={{ color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>
+              Sign In
+            </Text>
           )}
         </TouchableOpacity>
       </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Don&apos;t have an account? </Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', paddingBottom: 40 }}>
+        <Text style={{ color: colors.textSecondary }}>Don&apos;t have an account? </Text>
         <Link href="/(auth)/register">
-          <Text style={styles.linkText}>Sign up</Text>
+          <Text style={{ color: colors.primary, fontWeight: fontWeight.semibold }}>Sign up</Text>
         </Link>
       </View>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background, padding: theme.spacing.lg },
-  header: { alignItems: 'center', marginTop: 60, marginBottom: 40 },
-  logo: { fontSize: 64, marginBottom: theme.spacing.md },
-  title: { fontSize: 28, fontWeight: '700', color: theme.colors.text, marginBottom: theme.spacing.xs },
-  subtitle: { fontSize: 16, color: theme.colors.textSecondary },
-  form: { flex: 1 },
-  errorContainer: { backgroundColor: '#FEE2E2', padding: theme.spacing.md, borderRadius: theme.borderRadius.md, marginBottom: theme.spacing.md },
-  errorText: { color: theme.colors.error, textAlign: 'center' },
-  inputContainer: { marginBottom: theme.spacing.md },
-  label: { fontSize: 14, fontWeight: '500', color: theme.colors.text, marginBottom: theme.spacing.xs },
-  input: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, fontSize: 16, color: theme.colors.text },
-  forgotPassword: { alignSelf: 'flex-end', marginBottom: theme.spacing.lg },
-  forgotPasswordText: { color: theme.colors.primary, fontSize: 14 },
-  button: { backgroundColor: theme.colors.primary, padding: theme.spacing.md, borderRadius: theme.borderRadius.md, alignItems: 'center' },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  footer: { flexDirection: 'row', justifyContent: 'center', paddingBottom: 40 },
-  footerText: { color: theme.colors.textSecondary },
-  linkText: { color: theme.colors.primary, fontWeight: '600' },
-});
-

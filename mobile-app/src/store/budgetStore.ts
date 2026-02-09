@@ -1,5 +1,5 @@
 /**
- * CPFI Budget Store
+ * Fynvita Budget Store
  * Manages budgets, spending limits, and alerts
  * Split from financialStore for better modularity
  */

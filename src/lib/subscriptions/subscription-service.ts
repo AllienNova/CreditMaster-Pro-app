@@ -126,7 +126,7 @@ class SubscriptionService {
       .single();
 
     if (error) {
-      console.error('Failed to save subscription to database:', error);
+      // Subscription error:('Failed to save subscription to database:', error);
       throw new Error(`Failed to save subscription: ${error.message}`);
     }
 
@@ -161,7 +161,7 @@ class SubscriptionService {
         // Not found
         return null;
       }
-      console.error('Failed to fetch subscription:', error);
+      // Subscription error:('Failed to fetch subscription:', error);
       throw new Error(`Failed to fetch subscription: ${error.message}`);
     }
 
@@ -183,7 +183,7 @@ class SubscriptionService {
       if (error.code === 'PGRST116') {
         return null;
       }
-      console.error('Failed to fetch subscription:', error);
+      // Subscription error:('Failed to fetch subscription:', error);
       throw new Error(`Failed to fetch subscription: ${error.message}`);
     }
 
@@ -225,7 +225,7 @@ class SubscriptionService {
       .single();
 
     if (error) {
-      console.error('Failed to update subscription:', error);
+      // Subscription error:('Failed to update subscription:', error);
       throw new Error(`Failed to update subscription: ${error.message}`);
     }
 
@@ -269,7 +269,7 @@ class SubscriptionService {
       .single();
 
     if (error) {
-      console.error('Failed to update canceled subscription:', error);
+      // Subscription error:('Failed to update canceled subscription:', error);
       throw new Error(`Failed to update subscription: ${error.message}`);
     }
 
@@ -315,7 +315,7 @@ class SubscriptionService {
       .single();
 
     if (error) {
-      console.error('Failed to update reactivated subscription:', error);
+      // Subscription error:('Failed to update reactivated subscription:', error);
       throw new Error(`Failed to update subscription: ${error.message}`);
     }
 
@@ -361,7 +361,7 @@ class SubscriptionService {
       .single();
 
     if (error) {
-      console.error('Failed to update subscription plan:', error);
+      // Subscription error:('Failed to update subscription plan:', error);
       throw new Error(`Failed to update subscription: ${error.message}`);
     }
 
@@ -389,7 +389,7 @@ class SubscriptionService {
       if (error.code === 'PGRST116') {
         return null;
       }
-      console.error('Failed to fetch profile:', error);
+      // Subscription error:('Failed to fetch profile:', error);
       throw new Error(`Failed to fetch profile: ${error.message}`);
     }
 
@@ -409,7 +409,7 @@ class SubscriptionService {
     const { error } = await (query5 as any).update(updateData).eq('id', userId);
 
     if (error) {
-      console.error('Failed to update profile Stripe customer:', error);
+      // Subscription error:('Failed to update profile Stripe customer:', error);
       throw new Error(`Failed to update profile: ${error.message}`);
     }
   }
@@ -431,7 +431,7 @@ class SubscriptionService {
     const { error } = await (query6 as any).update(updateData).eq('id', userId);
 
     if (error) {
-      console.error('Failed to update profile subscription tier:', error);
+      // Subscription error:('Failed to update profile subscription tier:', error);
       throw new Error(`Failed to update profile: ${error.message}`);
     }
   }
@@ -451,7 +451,7 @@ class SubscriptionService {
     const { error } = await (query7 as any).update(updateData).eq('id', userId);
 
     if (error) {
-      console.error('Failed to update profile subscription status:', error);
+      // Subscription error:('Failed to update profile subscription status:', error);
       throw new Error(`Failed to update profile: ${error.message}`);
     }
   }
@@ -498,7 +498,7 @@ class SubscriptionService {
   ): Promise<void> {
     const userId = stripeSubscription.metadata?.userId;
     if (!userId) {
-      console.error('No userId in subscription metadata');
+      // Subscription error:('No userId in subscription metadata');
       return;
     }
 
@@ -507,7 +507,7 @@ class SubscriptionService {
       stripeSubscription.id
     );
     if (existing) {
-      console.log('Subscription already exists, skipping');
+      // Subscription:('Subscription already exists, skipping');
       return;
     }
 
@@ -530,7 +530,7 @@ class SubscriptionService {
     const { error } = await subscriptions().insert(insertData as any);
 
     if (error) {
-      console.error('Failed to save subscription from webhook:', error);
+      // Subscription error:('Failed to save subscription from webhook:', error);
       return;
     }
 
@@ -569,7 +569,7 @@ class SubscriptionService {
       stripeSubscription.id
     );
     if (!subscription) {
-      console.error('Subscription not found for deletion');
+      // Subscription error:('Subscription not found for deletion');
       return;
     }
 

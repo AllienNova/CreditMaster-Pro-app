@@ -35,7 +35,7 @@ const s3Client = new S3Client({
   },
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'CPFI-pro-documents';
+const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'fynvita-documents';
 
 export type DocumentType =
   | 'credit_report'
@@ -116,7 +116,7 @@ class DocumentServiceDB {
       .single();
 
     if (error) {
-      console.error('Failed to save document metadata:', error);
+      // DocumentServiceDB error: Failed to save document metadata
       throw new Error(`Failed to save document metadata: ${error.message}`);
     }
 
@@ -136,7 +136,7 @@ class DocumentServiceDB {
       if (error.code === 'PGRST116') {
         return null;
       }
-      console.error('Failed to fetch document:', error);
+      // DocumentServiceDB error: Failed to fetch document
       throw new Error(`Failed to fetch document: ${error.message}`);
     }
 
@@ -190,7 +190,7 @@ class DocumentServiceDB {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Failed to fetch user documents:', error);
+      // DocumentServiceDB error: Failed to fetch user documents
       throw new Error(`Failed to fetch user documents: ${error.message}`);
     }
 
@@ -208,7 +208,7 @@ class DocumentServiceDB {
       .single();
 
     if (fetchError || !doc) {
-      console.error('Document not found:', fetchError);
+      // DocumentServiceDB error: Document not found
       return false;
     }
 
@@ -223,7 +223,7 @@ class DocumentServiceDB {
     try {
       await s3Client.send(deleteCommand);
     } catch (error) {
-      console.error('Failed to delete from S3:', error);
+      // DocumentServiceDB error: Failed to delete from S3
       // Continue with database deletion even if S3 fails
     }
 
@@ -231,7 +231,7 @@ class DocumentServiceDB {
     const { error: dbError } = await documents().delete().eq('id', documentId);
 
     if (dbError) {
-      console.error('Failed to delete document from database:', dbError);
+      // DocumentServiceDB error: Failed to delete document from database
       return false;
     }
 
@@ -304,7 +304,7 @@ class DocumentServiceDB {
       .single();
 
     if (error) {
-      console.error('Failed to create document record:', error);
+      // DocumentServiceDB error: Failed to create document record
       throw new Error(`Failed to create document record: ${error.message}`);
     }
 
@@ -357,7 +357,7 @@ class DocumentServiceDB {
     const { data, error } = updateResult;
 
     if (error) {
-      console.error('Failed to confirm upload:', error);
+      // DocumentServiceDB error: Failed to confirm upload
       throw new Error(`Failed to confirm upload: ${error.message}`);
     }
 

@@ -1,5 +1,5 @@
 /**
- * CPFI Trends Analytics Screen
+ * Fynvita Trends Analytics Screen
  * Historical data analysis and trend visualization
  */
 

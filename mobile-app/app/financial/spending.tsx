@@ -1,5 +1,5 @@
 /**
- * CPFI Spending Analysis Screen
+ * Fynvita Spending Analysis Screen
  * Analyze spending patterns and get insights with real charts
  */
 
@@ -101,7 +101,7 @@ export default function SpendingScreen() {
         setTrends(MOCK_TRENDS);
       }
     } catch (err) {
-      console.warn('Using mock data:', err);
+      // Fallback to mock data silently in production
       setCategories(MOCK_CATEGORIES);
       setTrends(MOCK_TRENDS);
     } finally {

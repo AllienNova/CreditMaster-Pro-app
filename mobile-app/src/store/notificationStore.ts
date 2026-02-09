@@ -1,5 +1,5 @@
 /**
- * CPFI Notification Store
+ * Fynvita Notification Store
  * Manages push notifications, in-app notifications, and preferences
  */
 
@@ -101,7 +101,7 @@ export const useNotificationStore = create<NotificationState>()(
             }));
           }
         } catch (error) {
-          console.error('Failed to mark notification as read:', error);
+          if (__DEV__) console.error('Failed to mark notification as read:', error);
         }
       },
 
@@ -115,7 +115,7 @@ export const useNotificationStore = create<NotificationState>()(
             }));
           }
         } catch (error) {
-          console.error('Failed to mark all notifications as read:', error);
+          if (__DEV__) console.error('Failed to mark all notifications as read:', error);
         }
       },
 
@@ -135,7 +135,7 @@ export const useNotificationStore = create<NotificationState>()(
             });
           }
         } catch (error) {
-          console.error('Failed to delete notification:', error);
+          if (__DEV__) console.error('Failed to delete notification:', error);
         }
       },
 

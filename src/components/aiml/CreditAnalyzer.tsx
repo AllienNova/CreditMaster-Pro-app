@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 interface CreditAnalyzerProps {
-  onAnalyze?: (analysis: any) => void;
+  onAnalyze?: (analysis: CreditAnalysisOutput) => void;
 }
 
 interface CreditAnalysisOutput {
@@ -80,7 +80,7 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
       case 'low':
         return 'text-green-600 bg-green-50';
       default:
-        return 'text-gray-600 bg-gray-50';
+        return 'text-gray-600 dark:text-slate-300 bg-gray-50 dark:bg-slate-900';
     }
   };
 
@@ -93,7 +93,7 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
       case 'low':
         return 'text-green-600';
       default:
-        return 'text-gray-600';
+        return 'text-gray-600 dark:text-slate-300';
     }
   };
 
@@ -101,13 +101,13 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
     <div className="credit-analyzer">
       <div className="max-w-4xl mx-auto p-6">
         <h2 className="text-3xl font-bold mb-6">AI-Powered Credit Report Analyzer</h2>
-        <p className="text-gray-600 mb-8">
+        <p className="text-gray-600 dark:text-slate-300 mb-8">
           Get comprehensive credit analysis using DeepSeek R1's advanced reasoning
         </p>
 
         <div className="space-y-6">
           {/* Input Section */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
             <h3 className="text-xl font-semibold mb-4">Credit Information</h3>
             <div className="space-y-4">
               <div>
@@ -155,14 +155,14 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
           {analysis && (
             <div className="space-y-6">
               {/* Score Improvement Estimate */}
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg shadow-lg p-6">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg p-6">
                 <h3 className="text-2xl font-bold mb-2">Estimated Score Improvement</h3>
                 <p className="text-4xl font-bold">+{analysis.estimated_score_improvement} points</p>
                 <p className="text-sm mt-2">Timeline: {analysis.timeline_estimate}</p>
               </div>
 
               {/* Score Factors */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
                 <h3 className="text-xl font-semibold mb-4">Score Factors</h3>
                 <ul className="space-y-2">
                   {analysis.score_factors.map((factor, i) => (
@@ -176,7 +176,7 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
 
               {/* Negative Items */}
               {analysis.negative_items.length > 0 && (
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
                   <h3 className="text-xl font-semibold mb-4">Negative Items</h3>
                   <div className="space-y-4">
                     {analysis.negative_items.map((item, i) => (
@@ -187,10 +187,10 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
                             {item.impact.toUpperCase()} IMPACT
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{item.reason}</p>
+                        <p className="text-sm text-gray-600 dark:text-slate-300 mb-2">{item.reason}</p>
                         {item.disputable && (
                           <span className="inline-block text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                            ✓ Disputable
+                            Disputable
                           </span>
                         )}
                       </div>
@@ -201,12 +201,12 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
 
               {/* Positive Items */}
               {analysis.positive_items.length > 0 && (
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
                   <h3 className="text-xl font-semibold mb-4">Positive Items</h3>
                   <ul className="space-y-2">
                     {analysis.positive_items.map((item, i) => (
                       <li key={i} className="flex items-start">
-                        <span className="text-green-500 mr-2">✓</span>
+                        <span className="text-green-500 mr-2"></span>
                         <span>{item}</span>
                       </li>
                     ))}
@@ -215,7 +215,7 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
               )}
 
               {/* Action Plan */}
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
                 <h3 className="text-xl font-semibold mb-4">Action Plan</h3>
                 <div className="space-y-4">
                   {analysis.action_plan.map((step) => (
@@ -230,14 +230,14 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
                             {step.priority.toUpperCase()}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600">Timeline: {step.timeline}</p>
+                        <p className="text-sm text-gray-600 dark:text-slate-300">Timeline: {step.timeline}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <p className="text-xs text-gray-500 text-center">
+              <p className="text-xs text-gray-500 dark:text-slate-400 text-center">
                 Analysis powered by DeepSeek R1 • AIML API
               </p>
             </div>

@@ -85,7 +85,7 @@ const repository = {
 
       if (error) {
         if (error.code !== 'PGRST116') {
-          console.warn('Failed to load billing profile', error);
+          // BillingProfileStore warning: Failed to load billing profile
         }
         return null;
       }
@@ -101,8 +101,9 @@ const repository = {
         dueDate: invoice.dueDate ? new Date(invoice.dueDate) : undefined,
       }));
       return profile;
-    } catch (err) {
-      console.warn('Billing profile repository load failed', err);
+    } catch (_err) {
+      // BillingProfileStore warning: Repository load failed
+      void _err;
       return null;
     }
   },
@@ -115,10 +116,11 @@ const repository = {
       };
       const { error } = await supabase.from(TABLE).upsert(row, { onConflict: 'user_id' });
       if (error) {
-        console.warn('Billing profile repository save failed', error);
+        // BillingProfileStore warning: Repository save failed
       }
-    } catch (err) {
-      console.warn('Billing profile repository save error', err);
+    } catch (_err) {
+      // BillingProfileStore warning: Repository save error
+      void _err;
     }
   },
 };

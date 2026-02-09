@@ -37,7 +37,7 @@ export default function AuthorizedUserPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-slate-300">Loading...</p>
         </div>
       </div>
     );
@@ -185,14 +185,14 @@ export default function AuthorizedUserPage() {
       case 'high':
         return 'text-red-600 bg-red-100';
       default:
-        return 'text-gray-600 bg-gray-100';
+        return 'text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800';
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
             href="/credit-builder"
@@ -200,10 +200,10 @@ export default function AuthorizedUserPage() {
           >
             ← Back to Credit Builder
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Authorized User Strategy
           </h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
             Leverage others&apos; credit history to build your score faster
           </p>
         </div>
@@ -214,8 +214,8 @@ export default function AuthorizedUserPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">⚡</span>
+              <div className="w-10 h-10 bg-white dark:bg-slate-800/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl"></span>
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Fast Results</h3>
@@ -225,8 +225,8 @@ export default function AuthorizedUserPage() {
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">📈</span>
+              <div className="w-10 h-10 bg-white dark:bg-slate-800/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl"></span>
               </div>
               <div>
                 <h3 className="font-semibold mb-1">High Impact</h3>
@@ -236,8 +236,8 @@ export default function AuthorizedUserPage() {
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">🎯</span>
+              <div className="w-10 h-10 bg-white dark:bg-slate-800/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl"></span>
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Inherit History</h3>
@@ -253,7 +253,7 @@ export default function AuthorizedUserPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* How It Works */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-8 mb-8">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-50 border-2 border-blue-200 rounded-xl p-8 mb-8">
           <div className="flex items-start space-x-4 mb-6">
             <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
               <svg
@@ -271,21 +271,21 @@ export default function AuthorizedUserPage() {
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 How Authorized User Works
               </h2>
-              <p className="text-gray-700 mb-4">
+              <p className="text-gray-700 dark:text-slate-200 mb-4">
                 When you&apos;re added as an authorized user on someone&apos;s
                 credit card, the entire history of that account can appear on
                 your credit report - including the account age, payment history,
                 and credit limit.
               </p>
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <h3 className="font-semibold text-gray-900 mb-2">
-                    ✅ What You Get
+                <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-blue-200">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                    What You Get
                   </h3>
-                  <ul className="text-sm text-gray-700 space-y-1">
+                  <ul className="text-sm text-gray-700 dark:text-slate-200 space-y-1">
                     <li>• Full account history (even before you were added)</li>
                     <li>• Increased total credit limit</li>
                     <li>• Lower overall utilization</li>
@@ -293,11 +293,11 @@ export default function AuthorizedUserPage() {
                     <li>• Positive payment history</li>
                   </ul>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <h3 className="font-semibold text-gray-900 mb-2">
-                    ⚠️ Important Notes
+                <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-blue-200">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                    Important Notes
                   </h3>
-                  <ul className="text-sm text-gray-700 space-y-1">
+                  <ul className="text-sm text-gray-700 dark:text-slate-200 space-y-1">
                     <li>• You don&apos;t need physical card access</li>
                     <li>• You&apos;re not financially responsible</li>
                     <li>• Their behavior affects your credit</li>
@@ -315,8 +315,8 @@ export default function AuthorizedUserPage() {
           {strategies.map((strategy, index) => (
             <div
               key={strategy.id}
-              className={`bg-white rounded-xl shadow-sm border-2 transition-all ${
-                index === 0 ? 'border-green-500 shadow-lg' : 'border-gray-200'
+              className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border-2 transition-all ${
+                index === 0 ? 'border-green-500 shadow-lg' : 'border-gray-200 dark:border-slate-700'
               }`}
             >
               {index === 0 && (
@@ -337,42 +337,42 @@ export default function AuthorizedUserPage() {
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                       {strategy.title}
                     </h3>
-                    <p className="text-gray-600">{strategy.description}</p>
+                    <p className="text-gray-600 dark:text-slate-300">{strategy.description}</p>
                   </div>
                   <div className="text-right">
                     <div className="text-3xl font-bold text-green-600">
                       +{strategy.expectedImpact}
                     </div>
-                    <div className="text-sm text-gray-600">points</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300">points</div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-xs text-gray-600">Timeline</div>
-                    <div className="text-sm font-bold text-gray-900">
+                  <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3">
+                    <div className="text-xs text-gray-600 dark:text-slate-300">Timeline</div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-white">
                       {strategy.timeline}
                     </div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-xs text-gray-600">Cost</div>
-                    <div className="text-sm font-bold text-gray-900">
+                  <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3">
+                    <div className="text-xs text-gray-600 dark:text-slate-300">Cost</div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-white">
                       {strategy.cost}
                     </div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-xs text-gray-600">Risk Level</div>
+                  <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3">
+                    <div className="text-xs text-gray-600 dark:text-slate-300">Risk Level</div>
                     <div
                       className={`text-sm font-bold ${getRiskColor(strategy.riskLevel)} px-2 py-1 rounded capitalize inline-block`}
                     >
                       {strategy.riskLevel}
                     </div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-xs text-gray-600">Impact</div>
+                  <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3">
+                    <div className="text-xs text-gray-600 dark:text-slate-300">Impact</div>
                     <div className="text-sm font-bold text-green-600">
                       +{strategy.expectedImpact} pts
                     </div>
@@ -382,7 +382,7 @@ export default function AuthorizedUserPage() {
                 <div className="grid md:grid-cols-2 gap-6 mb-6">
                   {/* Pros */}
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                       <svg
                         className="w-5 h-5 text-green-500 mr-2"
                         fill="currentColor"
@@ -410,7 +410,7 @@ export default function AuthorizedUserPage() {
                               clipRule="evenodd"
                             />
                           </svg>
-                          <span className="text-sm text-gray-700">{pro}</span>
+                          <span className="text-sm text-gray-700 dark:text-slate-200">{pro}</span>
                         </li>
                       ))}
                     </ul>
@@ -418,7 +418,7 @@ export default function AuthorizedUserPage() {
 
                   {/* Cons */}
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                       <svg
                         className="w-5 h-5 text-red-500 mr-2"
                         fill="currentColor"
@@ -446,7 +446,7 @@ export default function AuthorizedUserPage() {
                               clipRule="evenodd"
                             />
                           </svg>
-                          <span className="text-sm text-gray-700">{con}</span>
+                          <span className="text-sm text-gray-700 dark:text-slate-200">{con}</span>
                         </li>
                       ))}
                     </ul>
@@ -494,11 +494,11 @@ export default function AuthorizedUserPage() {
         </div>
 
         {/* Verification Checklist */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Account Verification Checklist
           </h2>
-          <p className="text-gray-700 mb-6">
+          <p className="text-gray-700 dark:text-slate-200 mb-6">
             Before being added as an authorized user, verify the account meets
             these criteria:
           </p>
@@ -510,7 +510,7 @@ export default function AuthorizedUserPage() {
                   type="checkbox"
                   className="mt-1 w-5 h-5 text-green-600"
                 />
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-gray-700 dark:text-slate-200">
                   <span className="font-semibold">Account Age:</span> At least 2
                   years old (older is better)
                 </label>
@@ -520,7 +520,7 @@ export default function AuthorizedUserPage() {
                   type="checkbox"
                   className="mt-1 w-5 h-5 text-green-600"
                 />
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-gray-700 dark:text-slate-200">
                   <span className="font-semibold">Payment History:</span> Zero
                   late payments ever
                 </label>
@@ -530,7 +530,7 @@ export default function AuthorizedUserPage() {
                   type="checkbox"
                   className="mt-1 w-5 h-5 text-green-600"
                 />
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-gray-700 dark:text-slate-200">
                   <span className="font-semibold">Credit Utilization:</span>{' '}
                   Below 30% (below 10% is ideal)
                 </label>
@@ -540,7 +540,7 @@ export default function AuthorizedUserPage() {
                   type="checkbox"
                   className="mt-1 w-5 h-5 text-green-600"
                 />
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-gray-700 dark:text-slate-200">
                   <span className="font-semibold">Credit Limit:</span> Higher is
                   better (impacts utilization)
                 </label>
@@ -553,7 +553,7 @@ export default function AuthorizedUserPage() {
                   type="checkbox"
                   className="mt-1 w-5 h-5 text-green-600"
                 />
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-gray-700 dark:text-slate-200">
                   <span className="font-semibold">Bureau Reporting:</span>{' '}
                   Reports to all 3 bureaus
                 </label>
@@ -563,7 +563,7 @@ export default function AuthorizedUserPage() {
                   type="checkbox"
                   className="mt-1 w-5 h-5 text-green-600"
                 />
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-gray-700 dark:text-slate-200">
                   <span className="font-semibold">Primary Score:</span> Primary
                   holder has 700+ score
                 </label>
@@ -573,7 +573,7 @@ export default function AuthorizedUserPage() {
                   type="checkbox"
                   className="mt-1 w-5 h-5 text-green-600"
                 />
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-gray-700 dark:text-slate-200">
                   <span className="font-semibold">Account Status:</span> Active
                   and in good standing
                 </label>
@@ -583,7 +583,7 @@ export default function AuthorizedUserPage() {
                   type="checkbox"
                   className="mt-1 w-5 h-5 text-green-600"
                 />
-                <label className="text-sm text-gray-700">
+                <label className="text-sm text-gray-700 dark:text-slate-200">
                   <span className="font-semibold">Trust Level:</span> Reliable
                   person who pays on time
                 </label>
@@ -633,14 +633,14 @@ export default function AuthorizedUserPage() {
       {/* Step-by-Step Modal */}
       {selectedStrategy && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+            <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {selectedStrategy.title}
               </h2>
               <button
                 onClick={() => setSelectedStrategy(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 dark:text-slate-300"
               >
                 <svg
                   className="w-6 h-6"

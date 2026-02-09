@@ -119,8 +119,8 @@ export default function DocumentLibrary() {
     try {
       // Open the presigned URL in a new tab
       window.open(document.url, '_blank');
-    } catch (err) {
-      console.error('Failed to download document', err);
+    } catch (_error) {
+      // Error logged
       alert('Failed to download document');
     }
   };
@@ -138,11 +138,11 @@ export default function DocumentLibrary() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6 animate-pulse">
-        <div className="h-10 bg-gray-200 rounded mb-6"></div>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 animate-pulse">
+        <div className="h-10 bg-gray-200 dark:bg-slate-700 rounded mb-6"></div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-48 bg-gray-200 rounded"></div>
+            <div key={i} className="h-48 bg-gray-200 dark:bg-slate-700 rounded"></div>
           ))}
         </div>
       </div>
@@ -151,11 +151,11 @@ export default function DocumentLibrary() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">❌</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Documents</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="text-red-600 text-xl mb-4"></div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Documents</h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-4">{error}</p>
           <button
             onClick={fetchDocuments}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -169,9 +169,9 @@ export default function DocumentLibrary() {
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
         {/* Toolbar */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             {/* Search */}
             <div className="flex-1 max-w-md">
@@ -180,7 +180,7 @@ export default function DocumentLibrary() {
                 placeholder="Search documents..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             
@@ -190,7 +190,7 @@ export default function DocumentLibrary() {
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value as DocumentType | 'all')}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {documentTypes.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -203,7 +203,7 @@ export default function DocumentLibrary() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortBy)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="date">Sort by Date</option>
                 <option value="name">Sort by Name</option>
@@ -211,15 +211,11 @@ export default function DocumentLibrary() {
               </select>
               
               {/* View Mode Toggle */}
-              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+              <div className="flex border border-gray-300 dark:border-slate-600 rounded-lg overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setViewMode('grid')}
-                  className={`px-3 py-2 ${
-                    viewMode === 'grid'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`px-3 py-2 ${ viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900' }`}
                   title="Grid View"
                 >
                   ⊞
@@ -227,15 +223,10 @@ export default function DocumentLibrary() {
                 <button
                   type="button"
                   onClick={() => setViewMode('list')}
-                  className={`px-3 py-2 ${
-                    viewMode === 'list'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`px-3 py-2 ${ viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900' }`}
                   title="List View"
                 >
-                  ☰
-                </button>
+                                  </button>
               </div>
               
               {/* Upload Button */}
@@ -254,11 +245,11 @@ export default function DocumentLibrary() {
         <div className="p-6">
           {filteredDocuments.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">📄</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <div className="text-gray-400 dark:text-slate-500 text-6xl mb-4"></div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 {searchTerm || typeFilter !== 'all' ? 'No documents found' : 'No documents yet'}
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-slate-300 mb-6">
                 {searchTerm || typeFilter !== 'all'
                   ? 'Try adjusting your filters'
                   : 'Upload your first document to get started'}

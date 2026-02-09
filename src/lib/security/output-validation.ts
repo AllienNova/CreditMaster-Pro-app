@@ -328,8 +328,8 @@ export async function moderateContent(content: string): Promise<{
     }
     
     return result;
-  } catch (error) {
-    console.error('Content moderation error:', error);
+  } catch {
+    // Content moderation failed - return safe defaults
     return {
       flagged: false,
       categories: [],

@@ -1,17 +1,16 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '../src/store/authStore';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { lightTheme as theme } from '../src/constants/theme';
+import { useTheme } from '../src/hooks/useTheme';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const { colors, fontWeight, isDark } = useTheme();
   const { initialize, isLoading } = useAuthStore();
 
   useEffect(() => {
@@ -27,14 +26,14 @@ export default function RootLayout() {
   }
 
   const headerOptions = {
-    headerStyle: { backgroundColor: theme.colors.surface },
-    headerTintColor: theme.colors.text,
-    headerTitleStyle: { fontWeight: '600' as const },
+    headerStyle: { backgroundColor: colors.surface },
+    headerTintColor: colors.text,
+    headerTitleStyle: { fontWeight: fontWeight.semibold },
   };
 
   return (
     <ErrorBoundary>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false }}>
         {/* Auth Screens */}
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -95,4 +94,3 @@ export default function RootLayout() {
     </ErrorBoundary>
   );
 }
-

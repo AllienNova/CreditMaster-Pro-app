@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Mix Screen
+ * Fynvita Credit Mix Screen
  * Diversify credit types for better score
  */
 

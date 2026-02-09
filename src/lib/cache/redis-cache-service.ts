@@ -34,7 +34,7 @@ export class RedisCacheService {
     this.redisAvailable = !!(REDIS_URL && REDIS_TOKEN);
     
     if (!this.redisAvailable) {
-      console.warn('Redis not configured. Using in-memory fallback cache.');
+      // RedisCacheService: Redis not configured, using in-memory fallback cache
     }
   }
 
@@ -58,7 +58,7 @@ export class RedisCacheService {
       const data = await response.json();
       return data.result;
     } catch (error) {
-      console.error('Redis error:', error);
+      // RedisCacheService error: Redis request failed
       return null;
     }
   }
@@ -98,7 +98,7 @@ export class RedisCacheService {
       const serialized = JSON.stringify(value);
       await this.redisRequest('setex', [fullKey, String(expiry), serialized]);
     } catch (error) {
-      console.error('Redis set error:', error);
+      // RedisCacheService error: Redis set failed
     }
   }
 
@@ -115,7 +115,7 @@ export class RedisCacheService {
     try {
       await this.redisRequest('del', [fullKey]);
     } catch (error) {
-      console.error('Redis delete error:', error);
+      // RedisCacheService error: Redis delete failed
     }
   }
 

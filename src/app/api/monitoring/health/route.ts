@@ -72,8 +72,9 @@ export async function GET(request: NextRequest) {
     
     // Regular users get basic metrics only
     return NextResponse.json(healthMetrics);
-  } catch (error) {
-    console.error('Error fetching health metrics:', error);
+  } catch (_error) {
+    // HealthRoute error: Failed to fetch health metrics
+    void _error;
     return NextResponse.json(
       { 
         status: 'unhealthy',
@@ -117,11 +118,12 @@ export async function POST(request: NextRequest) {
       error_rate: body.error_rate || 0
     });
     
-    console.log('📡 Published system health update');
-    
+    // HealthRoute: Published system health update
+
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error publishing health update:', error);
+  } catch (_error) {
+    // HealthRoute error: Failed to publish health update
+    void _error;
     return NextResponse.json(
       { error: 'Failed to publish health update' },
       { status: 500 }

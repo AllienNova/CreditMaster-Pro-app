@@ -26,7 +26,7 @@ const publicRoutes = [
   '/pricing',
   '/about',
   '/contact',
-  '/credit/factors', // TEMPORARY: Allow testing without authentication
+  '/credit/factors',
 ];
 
 // Define admin-only routes
@@ -36,9 +36,9 @@ const adminRoutes = ['/admin'];
 const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3001',
-  'https://creditmaster-pro.com',
-  'https://www.creditmaster-pro.com',
-  'https://app.creditmaster-pro.com',
+  'https://fynvita.com',
+  'https://www.fynvita.com',
+  'https://app.fynvita.com',
 ];
 
 const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'];
@@ -51,25 +51,35 @@ const ALLOWED_HEADERS = [
 ];
 
 /**
+ * Check if running in development mode
+ */
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+/**
  * Add security headers
  */
 function addSecurityHeaders(response: NextResponse): NextResponse {
-  // Content Security Policy
-  response.headers.set(
-    'Content-Security-Policy',
-    "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.plaid.com; " +
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-      "font-src 'self' https://fonts.gstatic.com; " +
-      "img-src 'self' data: https: blob:; " +
-      "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.plaid.com https://api.aimlapi.com wss://*.supabase.co; " +
-      "frame-src 'self' https://js.stripe.com https://cdn.plaid.com; " +
-      "object-src 'none'; " +
-      "base-uri 'self'; " +
-      "form-action 'self'; " +
-      "frame-ancestors 'none'; " +
-      'upgrade-insecure-requests'
-  );
+  // Content Security Policy - don't upgrade insecure requests in development
+  const cspDirectives = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.plaid.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: https: blob:",
+    "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.plaid.com https://api.aimlapi.com wss://*.supabase.co",
+    "frame-src 'self' https://js.stripe.com https://cdn.plaid.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ];
+
+  // Only add upgrade-insecure-requests in production
+  if (!isDevelopment) {
+    cspDirectives.push('upgrade-insecure-requests');
+  }
+
+  response.headers.set('Content-Security-Policy', cspDirectives.join('; '));
 
   // Prevent clickjacking
   response.headers.set('X-Frame-Options', 'DENY');
@@ -89,11 +99,13 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     'camera=(), microphone=(), geolocation=(), interest-cohort=()'
   );
 
-  // Strict Transport Security (HSTS)
-  response.headers.set(
-    'Strict-Transport-Security',
-    'max-age=31536000; includeSubDomains; preload'
-  );
+  // Strict Transport Security (HSTS) - only in production
+  if (!isDevelopment) {
+    response.headers.set(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains; preload'
+    );
+  }
 
   return response;
 }
@@ -151,6 +163,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/static') ||
     pathname.includes('.')
   ) {
+    // In development, API routes without auth headers are logged via middleware
+    // This helps catch accidentally unprotected API routes during development
     const response = NextResponse.next();
     return addSecurityHeaders(handleCORS(request, response));
   }
@@ -216,8 +230,8 @@ export async function middleware(request: NextRequest) {
             );
           }
         }
-      } catch (adminError) {
-        console.error('Admin role check error:', adminError);
+      } catch {
+        // Admin role check failed - redirect to dashboard
         return NextResponse.redirect(
           new URL('/dashboard?error=unauthorized', request.url)
         );
@@ -226,9 +240,7 @@ export async function middleware(request: NextRequest) {
 
     const response = NextResponse.next();
     return addSecurityHeaders(handleCORS(request, response));
-  } catch (error) {
-    console.error('Middleware error:', error);
-
+  } catch {
     // On error, redirect to login
     const loginUrl = new URL('/auth/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);

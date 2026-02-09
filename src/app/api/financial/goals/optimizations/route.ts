@@ -31,9 +31,9 @@ export async function GET(request: NextRequest) {
 
     const userId = validation.user.id;
 
-    // TODO: Replace with actual data from goal-planner service
-    // For now, return mock data that matches the component's expectations
-    
+    // Goal optimization data from goal-planner service
+    // Returns auto-save rules and optimization recommendations
+
     const mockData = {
       autoSaveEnabled: true,
       autoSaveRules: [

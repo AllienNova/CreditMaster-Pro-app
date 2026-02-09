@@ -616,7 +616,7 @@ export default function GoalsManagerScreen() {
         setGoals(data.goals || []);
       }
     } catch (error) {
-      console.error('Error fetching goals:', error);
+      if (__DEV__) console.error('Error fetching goals:', error);
       Alert.alert('Error', 'Failed to load goals. Please try again.');
     } finally {
       setLoading(false);
@@ -664,7 +664,7 @@ export default function GoalsManagerScreen() {
         Alert.alert('Error', 'Failed to save goal. Please try again.');
       }
     } catch (error) {
-      console.error('Error saving goal:', error);
+      if (__DEV__) console.error('Error saving goal:', error);
       Alert.alert('Error', 'Failed to save goal. Please try again.');
     }
   };
@@ -682,7 +682,7 @@ export default function GoalsManagerScreen() {
         Alert.alert('Error', 'Failed to delete goal. Please try again.');
       }
     } catch (error) {
-      console.error('Error deleting goal:', error);
+      if (__DEV__) console.error('Error deleting goal:', error);
       Alert.alert('Error', 'Failed to delete goal. Please try again.');
     }
   };
@@ -699,7 +699,7 @@ export default function GoalsManagerScreen() {
         fetchGoals();
       }
     } catch (error) {
-      console.error('Error toggling auto-save:', error);
+      if (__DEV__) console.error('Error toggling auto-save:', error);
     }
   };
 

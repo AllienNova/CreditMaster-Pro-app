@@ -123,11 +123,11 @@ export default function AIGoalsOptimizer() {
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg shadow-lg p-6 animate-pulse">
-        <div className="h-6 bg-white/20 rounded w-1/3 mb-4"></div>
+      <div className="bg-gradient-to-br from-blue-500 to-emerald-600 rounded-lg shadow-lg p-6 animate-pulse">
+        <div className="h-6 bg-white dark:bg-slate-800/20 rounded w-1/3 mb-4"></div>
         <div className="space-y-3">
-          <div className="h-4 bg-white/20 rounded w-full"></div>
-          <div className="h-4 bg-white/20 rounded w-5/6"></div>
+          <div className="h-4 bg-white dark:bg-slate-800/20 rounded w-full"></div>
+          <div className="h-4 bg-white dark:bg-slate-800/20 rounded w-5/6"></div>
         </div>
       </div>
     );
@@ -138,11 +138,11 @@ export default function AIGoalsOptimizer() {
   }
 
   return (
-    <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg shadow-lg p-6 text-white">
+    <div className="bg-gradient-to-br from-blue-500 to-emerald-600 rounded-lg shadow-lg p-6 text-white">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="text-3xl">🎯</div>
+          <div className="text-3xl"></div>
           <div>
             <h3 className="text-xl font-bold">AI Goals Optimizer</h3>
             <p className="text-sm opacity-90">Auto-save and smart goal recommendations</p>
@@ -150,7 +150,7 @@ export default function AIGoalsOptimizer() {
         </div>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm font-medium"
+          className="px-4 py-2 bg-white hover:bg-white dark:bg-slate-800/30 rounded-lg transition-colors text-sm font-medium"
         >
           {expanded ? 'Collapse' : 'Expand'}
         </button>
@@ -161,7 +161,7 @@ export default function AIGoalsOptimizer() {
           {/* Auto-Save Toggle & Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* Auto-Save Toggle */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <div className="text-sm font-medium opacity-90 mb-1">Auto-Save</div>
@@ -173,11 +173,11 @@ export default function AIGoalsOptimizer() {
                   onClick={handleToggleAutoSave}
                   disabled={enablingAutoSave}
                   className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                    data.autoSaveEnabled ? 'bg-green-500' : 'bg-white/30'
+                    data.autoSaveEnabled ? 'bg-green-500' : 'bg-white dark:bg-slate-800/30'
                   } ${enablingAutoSave ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${
                       data.autoSaveEnabled ? 'translate-x-7' : 'translate-x-1'
                     }`}
                   />
@@ -192,7 +192,7 @@ export default function AIGoalsOptimizer() {
             </div>
 
             {/* Monthly Auto-Savings */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
               <div className="text-sm font-medium opacity-90 mb-2">Estimated Monthly Auto-Savings</div>
               <div className="text-4xl font-bold">{formatCurrency(data.totalAutoSavings)}</div>
               <div className="text-xs opacity-75 mt-2">
@@ -204,10 +204,10 @@ export default function AIGoalsOptimizer() {
           {/* Auto-Save Rules */}
           {data.autoSaveEnabled && data.autoSaveRules.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-sm font-semibold mb-3 opacity-90">💰 Active Auto-Save Rules</h4>
+              <h4 className="text-sm font-semibold mb-3 opacity-90">Active Auto-Save Rules</h4>
               <div className="space-y-2">
                 {data.autoSaveRules.filter(r => r.isActive).slice(0, 3).map((rule) => (
-                  <div key={rule.id} className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <div key={rule.id} className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="font-medium text-sm">{rule.name}</div>
@@ -232,35 +232,35 @@ export default function AIGoalsOptimizer() {
           {/* Goal Optimizations */}
           {data.optimizations.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-sm font-semibold mb-3 opacity-90">🎯 Goal Optimization Recommendations</h4>
+              <h4 className="text-sm font-semibold mb-3 opacity-90">Goal Optimization Recommendations</h4>
               <div className="space-y-3">
                 {data.optimizations.slice(0, 3).map((optimization) => (
-                  <div key={optimization.goalId} className="bg-white rounded-lg p-4 text-gray-900">
+                  <div key={optimization.goalId} className="bg-white dark:bg-slate-800 rounded-lg p-4 text-gray-900 dark:text-white">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <h5 className="font-semibold mb-2">{optimization.goalName}</h5>
                         <div className="grid grid-cols-2 gap-4 text-sm mb-2">
                           <div>
-                            <span className="text-gray-500">Current:</span>{' '}
+                            <span className="text-gray-500 dark:text-slate-400">Current:</span>{' '}
                             <span className="font-semibold">{formatCurrency(optimization.currentContribution)}/mo</span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Recommended:</span>{' '}
-                            <span className="font-semibold text-purple-600">{formatCurrency(optimization.recommendedContribution)}/mo</span>
+                            <span className="text-gray-500 dark:text-slate-400">Recommended:</span>{' '}
+                            <span className="font-semibold text-blue-600">{formatCurrency(optimization.recommendedContribution)}/mo</span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Current completion:</span>{' '}
+                            <span className="text-gray-500 dark:text-slate-400">Current completion:</span>{' '}
                             <span className="font-semibold">{formatDate(optimization.projectedCompletion)}</span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Optimized:</span>{' '}
+                            <span className="text-gray-500 dark:text-slate-400">Optimized:</span>{' '}
                             <span className="font-semibold text-green-600">{formatDate(optimization.optimizedCompletion)}</span>
                           </div>
                         </div>
                         <div className="text-sm text-green-600 font-medium">
-                          ⚡ Achieve {optimization.monthsSaved} months faster!
+                          Achieve {optimization.monthsSaved} months faster!
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                           {optimization.confidence}% confidence
                         </div>
                       </div>
@@ -274,10 +274,10 @@ export default function AIGoalsOptimizer() {
           {/* Achievement Predictions */}
           {data.achievementPredictions.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold mb-3 opacity-90">📊 Achievement Predictions</h4>
+              <h4 className="text-sm font-semibold mb-3 opacity-90">Achievement Predictions</h4>
               <div className="space-y-2">
                 {data.achievementPredictions.slice(0, 3).map((prediction) => (
-                  <div key={prediction.goalId} className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <div key={prediction.goalId} className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="font-medium text-sm">{prediction.goalName}</div>
                       <div className="flex items-center gap-2">
@@ -296,7 +296,7 @@ export default function AIGoalsOptimizer() {
                     </div>
                     {prediction.riskFactors.length > 0 && (
                       <div className="mt-2 text-xs opacity-75">
-                        ⚠️ Risk: {prediction.riskFactors[0]}
+                        Risk: {prediction.riskFactors[0]}
                       </div>
                     )}
                   </div>
@@ -309,17 +309,17 @@ export default function AIGoalsOptimizer() {
           <div className="mt-6 flex gap-3 justify-center">
             <a
               href="/financial/savings"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
             >
               <span>Manage Auto-Save Rules</span>
               <span>→</span>
             </a>
             <button
               onClick={fetchOptimizations}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 text-white rounded-lg font-semibold hover:bg-white/30 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-white rounded-lg font-semibold hover:bg-white dark:bg-slate-800/30 transition-colors"
             >
               <span>Refresh</span>
-              <span>🔄</span>
+              <span></span>
             </button>
           </div>
         </>

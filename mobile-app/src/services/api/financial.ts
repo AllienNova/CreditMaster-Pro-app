@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile Financial API Service
+ * Fynvita Mobile Financial API Service
  * Handles banking, budgets, transactions, goals, and debt management
  */
 

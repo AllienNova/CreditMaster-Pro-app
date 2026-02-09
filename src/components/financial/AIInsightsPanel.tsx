@@ -68,11 +68,11 @@ export default function AIInsightsPanel() {
 
   const getInsightIcon = (type: AIInsight['type']) => {
     switch (type) {
-      case 'opportunity': return '💡';
-      case 'warning': return '⚠️';
-      case 'tip': return '💰';
-      case 'prediction': return '📊';
-      default: return '🤖';
+      case 'opportunity': return '';
+      case 'warning': return '';
+      case 'tip': return '';
+      case 'prediction': return '';
+      default: return '';
     }
   };
 
@@ -81,8 +81,8 @@ export default function AIInsightsPanel() {
       case 'opportunity': return 'bg-blue-50 border-blue-200 text-blue-800';
       case 'warning': return 'bg-red-50 border-red-200 text-red-800';
       case 'tip': return 'bg-green-50 border-green-200 text-green-800';
-      case 'prediction': return 'bg-purple-50 border-purple-200 text-purple-800';
-      default: return 'bg-gray-50 border-gray-200 text-gray-800';
+      case 'prediction': return 'bg-blue-50 border-blue-200 text-blue-800';
+      default: return 'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-800 dark:text-slate-100';
     }
   };
 
@@ -97,9 +97,9 @@ export default function AIInsightsPanel() {
 
   const getTrendIcon = (trend: PredictiveMetric['trend']) => {
     switch (trend) {
-      case 'up': return '📈';
-      case 'down': return '📉';
-      case 'stable': return '➡️';
+      case 'up': return '';
+      case 'down': return '';
+      case 'stable': return '';
     }
   };
 
@@ -114,12 +114,12 @@ export default function AIInsightsPanel() {
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-lg p-6 animate-pulse">
-        <div className="h-6 bg-white/20 rounded w-1/3 mb-4"></div>
+      <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 animate-pulse">
+        <div className="h-6 bg-white dark:bg-slate-800/20 rounded w-1/3 mb-4"></div>
         <div className="space-y-3">
-          <div className="h-4 bg-white/20 rounded w-full"></div>
-          <div className="h-4 bg-white/20 rounded w-5/6"></div>
-          <div className="h-4 bg-white/20 rounded w-4/6"></div>
+          <div className="h-4 bg-white dark:bg-slate-800/20 rounded w-full"></div>
+          <div className="h-4 bg-white dark:bg-slate-800/20 rounded w-5/6"></div>
+          <div className="h-4 bg-white dark:bg-slate-800/20 rounded w-4/6"></div>
         </div>
       </div>
     );
@@ -130,11 +130,11 @@ export default function AIInsightsPanel() {
   }
 
   return (
-    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="text-3xl">🤖</div>
+          <div className="text-3xl"></div>
           <div>
             <h3 className="text-xl font-bold">AI Financial Insights</h3>
             <p className="text-sm opacity-90">Powered by advanced AI analysis</p>
@@ -142,7 +142,7 @@ export default function AIInsightsPanel() {
         </div>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm font-medium"
+          className="px-4 py-2 bg-white hover:bg-white dark:bg-slate-800/30 rounded-lg transition-colors text-sm font-medium"
         >
           {expanded ? 'Collapse' : 'Expand'}
         </button>
@@ -153,7 +153,7 @@ export default function AIInsightsPanel() {
           {/* Health Score & Top Recommendation */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* Health Score */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium opacity-90">Financial Health Score</span>
                 <span className={`text-xs px-2 py-1 rounded-full ${
@@ -167,16 +167,16 @@ export default function AIInsightsPanel() {
                 </span>
               </div>
               <div className="text-4xl font-bold">{data.healthScore}/100</div>
-              <div className="mt-2 w-full bg-white/20 rounded-full h-2">
+              <div className="mt-2 w-full bg-white dark:bg-slate-800/20 rounded-full h-2">
                 <div
-                  className="bg-white h-2 rounded-full transition-all duration-500"
+                  className="bg-white dark:bg-slate-800 h-2 rounded-full transition-all duration-500"
                   style={{ width: `${data.healthScore}%` }}
                 ></div>
               </div>
             </div>
 
             {/* Top Recommendation */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
               <div className="text-sm font-medium opacity-90 mb-2">Top Recommendation</div>
               <div className="text-lg font-semibold leading-tight">
                 {data.topRecommendation}
@@ -193,10 +193,10 @@ export default function AIInsightsPanel() {
           {/* Predictive Metrics */}
           {data.predictions.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-sm font-semibold mb-3 opacity-90">📊 Predictive Analytics</h4>
+              <h4 className="text-sm font-semibold mb-3 opacity-90">Predictive Analytics</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {data.predictions.slice(0, 3).map((prediction, index) => (
-                  <div key={index} className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <div key={index} className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium opacity-75">{prediction.metric}</span>
                       <span className="text-lg">{getTrendIcon(prediction.trend)}</span>
@@ -219,12 +219,12 @@ export default function AIInsightsPanel() {
           {/* AI Insights */}
           {data.insights.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold mb-3 opacity-90">💡 Smart Insights</h4>
+              <h4 className="text-sm font-semibold mb-3 opacity-90">Smart Insights</h4>
               <div className="space-y-3">
                 {data.insights.slice(0, 4).map((insight) => (
                   <div
                     key={insight.id}
-                    className="bg-white rounded-lg p-4 text-gray-900"
+                    className="bg-white dark:bg-slate-800 rounded-lg p-4 text-gray-900 dark:text-white"
                   >
                     <div className="flex items-start gap-3">
                       <span className="text-2xl">{getInsightIcon(insight.type)}</span>
@@ -235,11 +235,11 @@ export default function AIInsightsPanel() {
                             {insight.impact} impact
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{insight.description}</p>
+                        <p className="text-sm text-gray-600 dark:text-slate-300 mb-2">{insight.description}</p>
                         {insight.actionable && insight.actionUrl && (
                           <a
                             href={insight.actionUrl}
-                            className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                            className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700"
                           >
                             {insight.actionLabel || 'Take Action'} →
                           </a>
@@ -256,7 +256,7 @@ export default function AIInsightsPanel() {
           <div className="mt-6 text-center">
             <a
               href="/financial/coach"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
             >
               <span>View Full AI Analysis</span>
               <span>→</span>

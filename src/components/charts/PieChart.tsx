@@ -7,13 +7,14 @@
  * Used for category breakdowns, budget allocations, etc.
  */
 
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, PieLabelRenderProps } from 'recharts';
 import { ChartLegend } from './ChartHelpers';
 import {
   CHART_COLOR_ARRAY,
   formatCurrency,
   formatPercentage,
   getCategoryColor,
+  generateChartDescription,
 } from './chartUtils';
 import { useState } from 'react';
 
@@ -38,6 +39,8 @@ export interface PieChartProps {
   onSliceClick?: (data: PieChartDataPoint) => void;
   activeSlice?: string;
   className?: string;
+  /** Accessible label for the chart */
+  ariaLabel?: string;
 }
 
 export default function PieChartComponent({
@@ -54,10 +57,19 @@ export default function PieChartComponent({
   onSliceClick,
   activeSlice,
   className = '',
+  ariaLabel,
 }: PieChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
+
+  // Generate accessible description
+  const accessibleDescription = ariaLabel || generateChartDescription(
+    'Pie chart',
+    data.length,
+    undefined,
+    currency
+  );
 
   const getColor = (item: PieChartDataPoint, index: number): string => {
     if (item.color) return item.color;
@@ -65,14 +77,16 @@ export default function PieChartComponent({
     return CHART_COLOR_ARRAY[index % CHART_COLOR_ARRAY.length];
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renderLabel = (props: any): string => {
+  const renderLabel = (props: PieLabelRenderProps): string => {
+    const name = props.name as string;
+    const value = props.value as number;
+    const percent = props.percent as number;
     const displayValue = percentage
-      ? formatPercentage(props.percent * 100)
+      ? formatPercentage(percent * 100)
       : currency
-        ? formatCurrency(props.value)
-        : props.value.toLocaleString();
-    return `${props.name}: ${displayValue}`;
+        ? formatCurrency(value)
+        : value.toLocaleString();
+    return `${name}: ${displayValue}`;
   };
 
   const CustomTooltip = ({
@@ -91,7 +105,7 @@ export default function PieChartComponent({
     const percent = (item.value / total) * 100;
 
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg p-3">
         <div className="flex items-center gap-2 mb-1">
           <span
             className="w-3 h-3 rounded-full"
@@ -101,7 +115,7 @@ export default function PieChartComponent({
             {item.name}
           </span>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="text-sm text-gray-600 dark:text-slate-400">
           {currency ? formatCurrency(item.value) : item.value.toLocaleString()}
           <span className="ml-2 text-gray-400">
             ({formatPercentage(percent)})
@@ -118,9 +132,14 @@ export default function PieChartComponent({
   }));
 
   return (
-    <div className={`w-full ${className}`} style={{ height }}>
+    <div
+      className={`w-full ${className}`}
+      style={{ height }}
+      role="img"
+      aria-label={accessibleDescription}
+    >
       <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
+        <PieChart aria-hidden="true">
           <Pie
             data={data}
             cx="50%"

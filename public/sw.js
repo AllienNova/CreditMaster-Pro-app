@@ -1,11 +1,11 @@
 /**
- * Service Worker for CreditMaster Pro PWA
- * Provides offline support and caching
+ * Service Worker for Fynvita PWA
+ * Provides offline support, caching, and push notifications
  */
 
-const CACHE_NAME = 'creditmaster-v1';
-const STATIC_CACHE = 'creditmaster-static-v1';
-const DYNAMIC_CACHE = 'creditmaster-dynamic-v1';
+const CACHE_NAME = 'fynvita-v2';
+const STATIC_CACHE = 'fynvita-static-v2';
+const DYNAMIC_CACHE = 'fynvita-dynamic-v2';
 
 // Static assets to cache on install
 const STATIC_ASSETS = [
@@ -165,22 +165,39 @@ function isStaticAsset(pathname) {
 
 // Push notification handling
 self.addEventListener('push', (event) => {
-  const data = event.data?.json() || {};
-  
+  let data = {};
+
+  try {
+    data = event.data?.json() || {};
+  } catch (e) {
+    // If not JSON, use text
+    data = { body: event.data?.text() || 'New notification from Fynvita' };
+  }
+
   const options = {
-    body: data.body || 'New notification from CreditMaster Pro',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/badge-72x72.png',
-    vibrate: [100, 50, 100],
-    data: { url: data.url || '/dashboard' },
-    actions: [
+    body: data.body || 'New notification from Fynvita',
+    icon: data.icon || '/icons/icon-192x192.png',
+    badge: data.badge || '/icons/badge-72x72.png',
+    image: data.image,
+    vibrate: data.silent ? [] : [100, 50, 100],
+    tag: data.tag || 'fynvita-notification',
+    renotify: !!data.tag, // Renotify if same tag
+    requireInteraction: data.requireInteraction || false,
+    silent: data.silent || false,
+    data: {
+      url: data.url || '/dashboard',
+      type: data.type,
+      timestamp: data.timestamp || Date.now(),
+      ...data.data
+    },
+    actions: data.actions || [
       { action: 'view', title: 'View' },
       { action: 'dismiss', title: 'Dismiss' }
     ]
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'CreditMaster Pro', options)
+    self.registration.showNotification(data.title || 'Fynvita', options)
   );
 });
 
@@ -188,21 +205,49 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  if (event.action === 'dismiss') return;
+  const action = event.action;
+  const data = event.notification.data || {};
+  let targetUrl = data.url || '/dashboard';
 
-  const url = event.notification.data?.url || '/dashboard';
-  
+  // Handle specific actions
+  if (action === 'dismiss') {
+    return; // Just close the notification
+  }
+
+  if (action === 'pay' && data.type === 'payment_reminder') {
+    targetUrl = '/financial/bills';
+  }
+
+  if (action === 'review' && data.type === 'security_alert') {
+    targetUrl = '/settings/security';
+  }
+
+  if (action === 'snooze') {
+    // Could implement snooze logic here
+    return;
+  }
+
   event.waitUntil(
-    clients.matchAll({ type: 'window' })
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
+        // Try to find an existing window and navigate to the URL
         for (const client of clientList) {
-          if (client.url === url && 'focus' in client) {
-            return client.focus();
+          if ('focus' in client && 'navigate' in client) {
+            client.focus();
+            return client.navigate(targetUrl);
           }
         }
-        return clients.openWindow(url);
+        // If no existing window, open a new one
+        return clients.openWindow(targetUrl);
       })
   );
+});
+
+// Handle notification close (for analytics)
+self.addEventListener('notificationclose', (event) => {
+  const data = event.notification.data || {};
+  // Could send analytics here
+  console.log('Notification closed:', data.type, data.timestamp);
 });
 
 // Background sync for offline actions

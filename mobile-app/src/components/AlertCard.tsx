@@ -1,5 +1,5 @@
 /**
- * CPFI Alert Card Component
+ * Fynvita Alert Card Component
  * Displays credit monitoring alerts and notifications
  */
 

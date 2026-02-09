@@ -54,18 +54,28 @@ const mockTransactions = [
 ];
 
 // Create mock query chain
-const createMockQueryChain = () => {
-  const chain = {
+const createMockQueryChain = (userId?: string): Record<string, any> => {
+  const chain: Record<string, any> = {
     select: jest.fn().mockReturnThis(),
     insert: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
+    eq: jest.fn((field: string, value: any) => {
+      // Store the user_id for filtering
+      if (field === 'user_id') {
+        chain._userId = value;
+      }
+      return chain;
+    }),
     gte: jest.fn().mockReturnThis(),
     order: jest.fn().mockReturnThis(),
+    returns: jest.fn().mockReturnThis(), // Add returns() method for TypeScript type assertions
   };
 
   // Make the chain thenable to work with await
-  (chain as any).then = (resolve: any) => {
-    return Promise.resolve({ data: mockTransactions, error: null }).then(resolve);
+  chain.then = (resolve: any) => {
+    // Filter transactions based on user_id if specified
+    const storedUserId = chain._userId;
+    const data = storedUserId && storedUserId !== mockUserId ? [] : mockTransactions;
+    return Promise.resolve({ data, error: null }).then(resolve);
   };
 
   return chain;
@@ -82,26 +92,28 @@ jest.mock('@/lib/supabase/client', () => ({
 }));
 
 // Mock AIML Service
+const mockChat = jest.fn().mockResolvedValue({
+  content: JSON.stringify({
+    opening: "Hi, I'm calling about my internet service...",
+    mainPoints: [
+      { point: "Market rate is lower", supportingData: "Competitors offer $49.99", priority: "high" },
+      { point: "Loyal customer", supportingData: "24 months tenure", priority: "high" },
+    ],
+    counterarguments: [
+      { objection: "Standard rate", response: "What retention offers are available?" },
+    ],
+    fallbackOptions: [
+      { option: "Promotional rate", description: "New customer rate", estimatedSavings: 20 },
+    ],
+    closing: "I value our relationship...",
+    strategy: "balanced",
+  }),
+});
+
 jest.mock('@/lib/aiml-service', () => ({
-  AIMLService: {
-    getInstance: jest.fn(() => ({
-      generateText: jest.fn().mockResolvedValue(JSON.stringify({
-        opening: "Hi, I'm calling about my internet service...",
-        mainPoints: [
-          { point: "Market rate is lower", supportingData: "Competitors offer $49.99", priority: "high" },
-          { point: "Loyal customer", supportingData: "24 months tenure", priority: "high" },
-        ],
-        counterarguments: [
-          { objection: "Standard rate", response: "What retention offers are available?" },
-        ],
-        fallbackOptions: [
-          { option: "Promotional rate", description: "New customer rate", estimatedSavings: 20 },
-        ],
-        closing: "I value our relationship...",
-        strategy: "balanced",
-      })),
-    })),
-  },
+  getAIMLService: jest.fn(() => ({
+    chat: mockChat,
+  })),
 }));
 
 describe('BillNegotiator', () => {
@@ -109,7 +121,13 @@ describe('BillNegotiator', () => {
 
   beforeEach(() => {
     negotiator = BillNegotiator.getInstance();
-    jest.clearAllMocks();
+    // Clear only specific mocks, not all mocks (to preserve Supabase mock)
+    mockChat.mockClear();
+    // Reset the Supabase mock to ensure it returns the query chain
+    mockSupabaseClient.from.mockReturnValue(createMockQueryChain());
+    // Clear the script cache to prevent cached results from affecting tests
+    (negotiator as any).scriptCache.clear();
+    (negotiator as any).marketDataCache.clear();
   });
 
   // ============================================================================

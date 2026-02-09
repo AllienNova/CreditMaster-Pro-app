@@ -136,14 +136,14 @@ export default function Calendar({
 
   return (
     <div
-      className={`bg-white dark:bg-gray-800 rounded-lg shadow p-4 ${className}`}
+      className={`bg-white dark:bg-slate-800 rounded-lg shadow p-4 ${className}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <button
           type="button"
           onClick={goToPreviousMonth}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-400"
           aria-label="Previous month"
         >
           <svg
@@ -177,7 +177,7 @@ export default function Calendar({
         <button
           type="button"
           onClick={goToNextMonth}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-400"
           aria-label="Next month"
         >
           <svg
@@ -201,7 +201,7 @@ export default function Calendar({
         {DAYS.map((day) => (
           <div
             key={day}
-            className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-2"
+            className="text-center text-xs font-medium text-gray-500 dark:text-slate-400 py-2"
           >
             {day}
           </div>
@@ -226,13 +226,7 @@ export default function Calendar({
               type="button"
               onClick={() => !disabled && onDateSelect?.(date)}
               disabled={disabled}
-              className={`
-                aspect-square p-1 rounded-lg text-sm font-medium relative
-                transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500
-                ${disabled ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}
-                ${todayDate && !selected ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : ''}
-                ${selected ? 'bg-blue-600 text-white hover:bg-blue-700' : 'text-gray-900 dark:text-white'}
-              `}
+              className={`aspect-square p-1 rounded-lg text-sm font-medium relative transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${disabled ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-slate-700'} ${todayDate && !selected ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : ''} ${selected ? 'bg-blue-600 text-white hover:bg-blue-700' : 'text-gray-900 dark:text-white'}`}
             >
               <span>{date.getDate()}</span>
               {/* Event dots */}
@@ -254,19 +248,19 @@ export default function Calendar({
 
       {/* Event legend */}
       {events.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
           <div className="flex flex-wrap gap-3 text-xs">
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-red-500" />
-              <span className="text-gray-600 dark:text-gray-400">Bills</span>
+              <span className="text-gray-600 dark:text-slate-400">Bills</span>
             </div>
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-green-500" />
-              <span className="text-gray-600 dark:text-gray-400">Income</span>
+              <span className="text-gray-600 dark:text-slate-400">Income</span>
             </div>
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-yellow-500" />
-              <span className="text-gray-600 dark:text-gray-400">
+              <span className="text-gray-600 dark:text-slate-400">
                 Reminders
               </span>
             </div>

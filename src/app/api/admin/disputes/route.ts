@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching disputes:', error);
+      // AdminDisputesRoute error: Failed to fetch disputes
       return NextResponse.json({ error: 'Failed to fetch disputes' }, { status: 500 });
     }
 
@@ -64,8 +64,9 @@ export async function GET(request: NextRequest) {
       disputes: enrichedDisputes || [],
       total: disputes?.length || 0,
     });
-  } catch (error) {
-    console.error('Admin disputes error:', error);
+  } catch (_error) {
+    // AdminDisputesRoute error: Admin disputes operation failed
+    void _error;
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -97,8 +98,9 @@ export async function PATCH(request: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Admin dispute update error:', error);
+  } catch (_error) {
+    // AdminDisputesRoute error: Dispute update failed
+    void _error;
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

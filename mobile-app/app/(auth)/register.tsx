@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { Link, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/store/authStore';
-import { lightTheme as theme } from '../../src/constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
 
 export default function RegisterScreen() {
+  const { colors, spacing, borderRadius, fontSize, fontWeight, withOpacity } = useTheme();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,7 +17,7 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     setLocalError(null);
     clearError();
-    
+
     if (!name || !email || !password) {
       setLocalError('Please fill in all fields');
       return;
@@ -37,40 +39,76 @@ export default function RegisterScreen() {
 
   const displayError = localError || error;
 
+  const inputStyle = {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    fontSize: fontSize.md,
+    color: colors.text,
+  };
+
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.logo}>💳</Text>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Start your credit repair journey</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+        <View style={{ alignItems: 'center', marginTop: 40, marginBottom: 30 }}>
+          <View style={{
+            width: 72,
+            height: 72,
+            borderRadius: 36,
+            backgroundColor: withOpacity(colors.primary, 0.1),
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: spacing.sm,
+          }}>
+            <Ionicons name="person-add-outline" size={36} color={colors.primary} />
+          </View>
+          <Text style={{ fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.xs }}>
+            Create Account
+          </Text>
+          <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary }}>
+            Start your credit repair journey
+          </Text>
         </View>
 
-        <View style={styles.form}>
+        <View style={{ flex: 1 }}>
           {displayError && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{displayError}</Text>
+            <View style={{
+              backgroundColor: withOpacity(colors.error, 0.1),
+              padding: spacing.md,
+              borderRadius: borderRadius.md,
+              marginBottom: spacing.md,
+            }}>
+              <Text style={{ color: colors.error, textAlign: 'center' }}>{displayError}</Text>
             </View>
           )}
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Full Name</Text>
+          <View style={{ marginBottom: spacing.md }}>
+            <Text style={{ fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text, marginBottom: spacing.xs }}>
+              Full Name
+            </Text>
             <TextInput
-              style={styles.input}
+              style={inputStyle}
               placeholder="John Doe"
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={name}
               onChangeText={setName}
               autoComplete="name"
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
+          <View style={{ marginBottom: spacing.md }}>
+            <Text style={{ fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text, marginBottom: spacing.xs }}>
+              Email
+            </Text>
             <TextInput
-              style={styles.input}
+              style={inputStyle}
               placeholder="you@example.com"
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -79,12 +117,14 @@ export default function RegisterScreen() {
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
+          <View style={{ marginBottom: spacing.md }}>
+            <Text style={{ fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text, marginBottom: spacing.xs }}>
+              Password
+            </Text>
             <TextInput
-              style={styles.input}
+              style={inputStyle}
               placeholder="At least 8 characters"
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -92,12 +132,14 @@ export default function RegisterScreen() {
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirm Password</Text>
+          <View style={{ marginBottom: spacing.md }}>
+            <Text style={{ fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text, marginBottom: spacing.xs }}>
+              Confirm Password
+            </Text>
             <TextInput
-              style={styles.input}
+              style={inputStyle}
               placeholder="Confirm your password"
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
@@ -105,50 +147,40 @@ export default function RegisterScreen() {
             />
           </View>
 
-          <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={isLoading}>
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.primary,
+              padding: spacing.md,
+              borderRadius: borderRadius.md,
+              alignItems: 'center',
+              marginTop: spacing.md,
+            }}
+            onPress={handleRegister}
+            disabled={isLoading}
+          >
             {isLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={colors.white} />
             ) : (
-              <Text style={styles.buttonText}>Create Account</Text>
+              <Text style={{ color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>
+                Create Account
+              </Text>
             )}
           </TouchableOpacity>
 
-          <Text style={styles.terms}>
+          <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md }}>
             By creating an account, you agree to our{' '}
-            <Text style={styles.linkText}>Terms of Service</Text> and{' '}
-            <Text style={styles.linkText}>Privacy Policy</Text>
+            <Text style={{ color: colors.primary, fontWeight: fontWeight.semibold }}>Terms of Service</Text> and{' '}
+            <Text style={{ color: colors.primary, fontWeight: fontWeight.semibold }}>Privacy Policy</Text>
           </Text>
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', paddingVertical: 20 }}>
+          <Text style={{ color: colors.textSecondary }}>Already have an account? </Text>
           <Link href="/(auth)/login">
-            <Text style={styles.linkText}>Sign in</Text>
+            <Text style={{ color: colors.primary, fontWeight: fontWeight.semibold }}>Sign in</Text>
           </Link>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
-  scrollContent: { flexGrow: 1, padding: theme.spacing.lg },
-  header: { alignItems: 'center', marginTop: 40, marginBottom: 30 },
-  logo: { fontSize: 48, marginBottom: theme.spacing.sm },
-  title: { fontSize: 24, fontWeight: '700', color: theme.colors.text, marginBottom: theme.spacing.xs },
-  subtitle: { fontSize: 14, color: theme.colors.textSecondary },
-  form: { flex: 1 },
-  errorContainer: { backgroundColor: '#FEE2E2', padding: theme.spacing.md, borderRadius: theme.borderRadius.md, marginBottom: theme.spacing.md },
-  errorText: { color: theme.colors.error, textAlign: 'center' },
-  inputContainer: { marginBottom: theme.spacing.md },
-  label: { fontSize: 14, fontWeight: '500', color: theme.colors.text, marginBottom: theme.spacing.xs },
-  input: { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, fontSize: 16, color: theme.colors.text },
-  button: { backgroundColor: theme.colors.primary, padding: theme.spacing.md, borderRadius: theme.borderRadius.md, alignItems: 'center', marginTop: theme.spacing.md },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  terms: { fontSize: 12, color: theme.colors.textSecondary, textAlign: 'center', marginTop: theme.spacing.md },
-  linkText: { color: theme.colors.primary, fontWeight: '600' },
-  footer: { flexDirection: 'row', justifyContent: 'center', paddingVertical: 20 },
-  footerText: { color: theme.colors.textSecondary },
-});
-

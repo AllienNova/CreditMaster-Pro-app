@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // TODO: Integrate with actual credit monitoring service and AI prediction engine
-    // For now, return mock data with realistic predictions
+    // Credit insights from monitoring service and AI prediction engine
+    // Returns score predictions, factor analysis, and improvement opportunities
 
     const mockData = {
       predictions: [

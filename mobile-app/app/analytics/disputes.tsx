@@ -1,5 +1,5 @@
 /**
- * CPFI Dispute Analytics Screen
+ * Fynvita Dispute Analytics Screen
  * Dispute success rates and patterns analysis
  */
 

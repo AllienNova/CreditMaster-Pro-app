@@ -1,5 +1,7 @@
 'use client';
 
+
+import { Icon } from '@/components/ui/Icon';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
@@ -47,7 +49,7 @@ export default function CreditFreezeManager() {
     {
       id: 'experian',
       name: 'Experian',
-      logo: '🔷',
+      logo: '',
       freezeStatus: 'unknown',
       website: 'https://www.experian.com/freeze/center.html',
       phone: '1-888-397-3742',
@@ -58,7 +60,7 @@ export default function CreditFreezeManager() {
     {
       id: 'equifax',
       name: 'Equifax',
-      logo: '🔶',
+      logo: '',
       freezeStatus: 'unknown',
       website: 'https://www.equifax.com/personal/credit-report-services/credit-freeze/',
       phone: '1-800-349-9960',
@@ -69,7 +71,7 @@ export default function CreditFreezeManager() {
     {
       id: 'transunion',
       name: 'TransUnion',
-      logo: '🔵',
+      logo: '',
       freezeStatus: 'unknown',
       website: 'https://www.transunion.com/credit-freeze',
       phone: '1-888-909-8872',
@@ -109,8 +111,9 @@ export default function CreditFreezeManager() {
           );
         }
       }
-    } catch (err) {
-      console.error('Failed to fetch freeze status:', err);
+    } catch (_err) {
+      // CreditFreezeManager error: Failed to fetch freeze status
+      void _err;
     }
   };
 
@@ -121,8 +124,9 @@ export default function CreditFreezeManager() {
         const data = await response.json();
         setFreezeHistory(data.history || []);
       }
-    } catch (err) {
-      console.error('Failed to fetch history:', err);
+    } catch (_err) {
+      // CreditFreezeManager error: Failed to fetch history
+      void _err;
     }
   };
 
@@ -133,8 +137,9 @@ export default function CreditFreezeManager() {
         const data = await response.json();
         setIdentityAlerts(data.alerts || []);
       }
-    } catch (err) {
-      console.error('Failed to fetch alerts:', err);
+    } catch (_err) {
+      // CreditFreezeManager error: Failed to fetch alerts
+      void _err;
     }
   };
 
@@ -203,17 +208,17 @@ export default function CreditFreezeManager() {
 
   const getOverallStatus = () => {
     const frozenCount = bureaus.filter(b => b.freezeStatus === 'frozen').length;
-    if (frozenCount === 3) return { status: 'Protected', color: 'green', icon: '🛡️' };
-    if (frozenCount > 0) return { status: 'Partially Protected', color: 'yellow', icon: '⚠️' };
-    return { status: 'Unprotected', color: 'red', icon: '🚨' };
+    if (frozenCount === 3) return { status: 'Protected', color: 'green', icon: "sparkles" };
+    if (frozenCount > 0) return { status: 'Partially Protected', color: 'yellow', icon: "sparkles" };
+    return { status: 'Unprotected', color: 'red', icon: "sparkles" };
   };
 
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-cyan-600 mx-auto"></div>
-          <p className="mt-6 text-lg text-gray-700 font-medium">Loading Credit Freeze Manager...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto"></div>
+          <p className="mt-6 text-lg text-gray-700 dark:text-slate-200 font-medium">Loading Credit Freeze Manager...</p>
         </div>
       </div>
     );
@@ -223,20 +228,20 @@ export default function CreditFreezeManager() {
   const unresolvedAlerts = identityAlerts.filter(a => !a.resolved);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <Link
             href="/credit-builder"
-            className="inline-flex items-center text-cyan-600 hover:text-cyan-700 mb-4"
+            className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4"
           >
             ← Back to Credit Builder
           </Link>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Credit Freeze Manager 🔒
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            Credit Freeze Manager 
           </h1>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-slate-300 max-w-3xl mx-auto">
             Centralized control of your credit freezes across all three bureaus. Protect your identity with one-click freeze management.
           </p>
         </div>
@@ -257,7 +262,7 @@ export default function CreditFreezeManager() {
             <div className="text-right">
               <button
                 onClick={() => setShowGuide(!showGuide)}
-                className="px-6 py-3 bg-white text-gray-800 font-semibold rounded-lg hover:bg-gray-100 transition-colors"
+                className="px-6 py-3 bg-white text-gray-800 dark:text-slate-100 font-semibold rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 transition-colors"
               >
                 {showGuide ? 'Hide Guide' : 'How It Works'}
               </button>
@@ -267,20 +272,20 @@ export default function CreditFreezeManager() {
 
         {/* Guide */}
         {showGuide && (
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Credit Freeze Guide 📖
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Credit Freeze Guide 
             </h2>
 
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">What is a Credit Freeze?</h3>
-                <p className="text-sm text-gray-700 mb-4">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">What is a Credit Freeze?</h3>
+                <p className="text-sm text-gray-700 dark:text-slate-200 mb-4">
                   A credit freeze (also called a security freeze) restricts access to your credit report, making it nearly impossible for identity thieves to open new accounts in your name. It's the strongest form of identity theft protection available.
                 </p>
 
-                <h3 className="font-semibold text-gray-900 mb-2">When to Freeze</h3>
-                <ul className="text-sm text-gray-700 space-y-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">When to Freeze</h3>
+                <ul className="text-sm text-gray-700 dark:text-slate-200 space-y-1">
                   <li>• After a data breach involving your personal info</li>
                   <li>• If you're not planning to apply for credit soon</li>
                   <li>• As preventive protection against identity theft</li>
@@ -289,16 +294,16 @@ export default function CreditFreezeManager() {
               </div>
 
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">When to Unfreeze</h3>
-                <ul className="text-sm text-gray-700 space-y-1 mb-4">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">When to Unfreeze</h3>
+                <ul className="text-sm text-gray-700 dark:text-slate-200 space-y-1 mb-4">
                   <li>• Applying for credit cards or loans</li>
                   <li>• Renting an apartment (some landlords check credit)</li>
                   <li>• Applying for jobs (some employers check credit)</li>
                   <li>• Getting insurance quotes</li>
                 </ul>
 
-                <h3 className="font-semibold text-gray-900 mb-2">Important Notes</h3>
-                <ul className="text-sm text-gray-700 space-y-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Important Notes</h3>
+                <ul className="text-sm text-gray-700 dark:text-slate-200 space-y-1">
                   <li>• Freezing is FREE by federal law</li>
                   <li>• You must freeze at ALL THREE bureaus</li>
                   <li>• Save your PIN/password for unfreezing</li>
@@ -319,25 +324,25 @@ export default function CreditFreezeManager() {
         {unresolvedAlerts.length > 0 && (
           <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6 mb-8">
             <h2 className="text-xl font-bold text-red-900 mb-4 flex items-center gap-2">
-              <span>🚨</span> Identity Alerts ({unresolvedAlerts.length})
+              <span></span> Identity Alerts ({unresolvedAlerts.length})
             </h2>
             <div className="space-y-3">
               {unresolvedAlerts.slice(0, 3).map(alert => (
                 <div
                   key={alert.id}
-                  className="bg-white rounded-lg p-4 border-l-4 border-red-500"
+                  className="bg-white dark:bg-slate-800 rounded-lg p-4 border-l-4 border-red-500"
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-semibold text-gray-900">{alert.description}</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="font-semibold text-gray-900 dark:text-white">{alert.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-300">
                         {alert.bureau} • {new Date(alert.timestamp).toLocaleDateString()}
                       </p>
                     </div>
                     <span className={`px-2 py-1 rounded text-xs font-semibold ${
                       alert.severity === 'high' ? 'bg-red-100 text-red-800' :
                       alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
+                      'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100'
                     }`}>
                       {alert.severity}
                     </span>
@@ -352,10 +357,10 @@ export default function CreditFreezeManager() {
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <button
             onClick={freezeAll}
-            className="p-6 bg-gradient-to-br from-cyan-600 to-blue-600 text-white rounded-xl hover:from-cyan-700 hover:to-blue-700 transition-all shadow-lg"
+            className="p-6 bg-gradient-to-br from-blue-600 to-blue-600 text-white rounded-xl hover:from-blue-700 hover:to-blue-700 transition-all shadow-lg"
           >
             <div className="text-center">
-              <p className="text-4xl mb-2">❄️</p>
+              <p className="text-4xl mb-2"></p>
               <p className="text-xl font-bold mb-1">Freeze All Bureaus</p>
               <p className="text-sm opacity-90">Maximum protection in 3 minutes</p>
             </div>
@@ -366,7 +371,7 @@ export default function CreditFreezeManager() {
             className="p-6 bg-gradient-to-br from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 transition-all shadow-lg"
           >
             <div className="text-center">
-              <p className="text-4xl mb-2">🔓</p>
+              <p className="text-4xl mb-2"></p>
               <p className="text-xl font-bold mb-1">Unfreeze All Bureaus</p>
               <p className="text-sm opacity-90">Prepare for credit applications</p>
             </div>
@@ -378,31 +383,31 @@ export default function CreditFreezeManager() {
           {bureaus.map(bureau => (
             <div
               key={bureau.id}
-              className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-gray-200"
+              className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border-2 border-gray-200 dark:border-slate-700"
             >
               {/* Bureau Header */}
               <div className={`p-4 ${
                 bureau.freezeStatus === 'frozen' ? 'bg-green-50' :
                 bureau.freezeStatus === 'unfrozen' ? 'bg-red-50' :
-                'bg-gray-50'
+                'bg-gray-50 dark:bg-slate-900'
               }`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-3xl">{bureau.logo}</span>
-                    <h3 className="font-bold text-gray-900">{bureau.name}</h3>
+                    <h3 className="font-bold text-gray-900 dark:text-white">{bureau.name}</h3>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                     bureau.freezeStatus === 'frozen' ? 'bg-green-100 text-green-800' :
                     bureau.freezeStatus === 'unfrozen' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
+                    'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100'
                   }`}>
-                    {bureau.freezeStatus === 'frozen' ? '🔒 Frozen' :
-                     bureau.freezeStatus === 'unfrozen' ? '🔓 Unfrozen' :
-                     '❓ Unknown'}
+                    {bureau.freezeStatus === 'frozen' ? 'Frozen' :
+                     bureau.freezeStatus === 'unfrozen' ? 'Unfrozen' :
+                     'Unknown'}
                   </span>
                 </div>
                 {bureau.lastUpdated && (
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-gray-600 dark:text-slate-300">
                     Updated: {new Date(bureau.lastUpdated).toLocaleDateString()}
                   </p>
                 )}
@@ -424,9 +429,9 @@ export default function CreditFreezeManager() {
                   </div>
                 )}
 
-                <div className="space-y-2 text-sm text-gray-600 mb-4">
+                <div className="space-y-2 text-sm text-gray-600 dark:text-slate-300 mb-4">
                   <p className="flex items-center gap-2">
-                    <span>📞</span> {bureau.phone}
+                    <span></span> {bureau.phone}
                   </p>
                   <p className="flex items-center gap-2">
                     <span>⏱️</span> Est. time: {bureau.estimatedTime}
@@ -439,13 +444,13 @@ export default function CreditFreezeManager() {
                     <>
                       <button
                         onClick={() => window.open(bureau.freezeUrl, '_blank')}
-                        className="w-full py-2 bg-cyan-600 text-white font-semibold rounded-lg hover:bg-cyan-700 transition-colors"
+                        className="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         Freeze on Website
                       </button>
                       <button
                         onClick={() => handleFreezeAction(bureau, 'freeze')}
-                        className="w-full py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
+                        className="w-full py-2 bg-gray-100 text-gray-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-gray-200 dark:bg-slate-700 transition-colors"
                       >
                         Mark as Frozen
                       </button>
@@ -462,13 +467,13 @@ export default function CreditFreezeManager() {
                       </button>
                       <button
                         onClick={() => handleFreezeAction(bureau, 'temporary')}
-                        className="w-full py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors"
+                        className="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         Temporary Lift
                       </button>
                       <button
                         onClick={() => handleFreezeAction(bureau, 'unfreeze')}
-                        className="w-full py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
+                        className="w-full py-2 bg-gray-100 text-gray-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-gray-200 dark:bg-slate-700 transition-colors"
                       >
                         Mark as Unfrozen
                       </button>
@@ -482,32 +487,32 @@ export default function CreditFreezeManager() {
 
         {/* Freeze History */}
         {freezeHistory.length > 0 && (
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
               Recent Activity
             </h2>
             <div className="space-y-3">
               {freezeHistory.slice(0, 10).map(entry => (
                 <div
                   key={entry.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg"
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">
-                      {entry.action === 'freeze' ? '❄️' :
-                       entry.action === 'unfreeze' ? '🔓' : '⏰'}
+                      {entry.action === 'freeze' ? '' :
+                       entry.action === 'unfreeze' ? '' : '⏰'}
                     </span>
                     <div>
-                      <p className="font-semibold text-gray-900 capitalize">
+                      <p className="font-semibold text-gray-900 dark:text-white capitalize">
                         {entry.action.replace('_', ' ')} - {entry.bureau}
                       </p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-slate-300">
                         {new Date(entry.timestamp).toLocaleString()}
                       </p>
                     </div>
                   </div>
                   {entry.duration && (
-                    <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
                       {entry.duration} days
                     </span>
                   )}
@@ -520,40 +525,40 @@ export default function CreditFreezeManager() {
         {/* PIN Modal */}
         {showPinModal && selectedBureau && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 {selectedAction === 'freeze' ? 'Confirm Freeze' :
                  selectedAction === 'unfreeze' ? 'Confirm Unfreeze' :
                  'Temporary Lift'} - {selectedBureau.name}
               </h3>
 
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
                 After completing the {selectedAction} on {selectedBureau.name}'s website, enter your PIN and confirmation number here for tracking.
               </p>
 
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">
                     PIN / Password
                   </label>
                   <input
                     type="text"
                     value={tempPin}
                     onChange={(e) => setTempPin(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500"
                     placeholder="Enter PIN from bureau"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">
                     Confirmation Number (Optional)
                   </label>
                   <input
                     type="text"
                     value={tempConfirmation}
                     onChange={(e) => setTempConfirmation(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-cyan-500"
                     placeholder="Enter confirmation number"
                   />
                 </div>
@@ -566,13 +571,13 @@ export default function CreditFreezeManager() {
                     setTempPin('');
                     setTempConfirmation('');
                   }}
-                  className="flex-1 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
+                  className="flex-1 py-2 bg-gray-100 text-gray-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-gray-200 dark:bg-slate-700 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmAction}
-                  className="flex-1 py-2 bg-cyan-600 text-white font-semibold rounded-lg hover:bg-cyan-700 transition-colors"
+                  className="flex-1 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Confirm
                 </button>
@@ -582,11 +587,11 @@ export default function CreditFreezeManager() {
         )}
 
         {/* Educational Info */}
-        <div className="mt-8 bg-cyan-50 border border-cyan-200 rounded-xl p-6">
-          <h3 className="font-semibold text-cyan-900 mb-3">
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <h3 className="font-semibold text-blue-900 mb-3">
             Credit Freeze vs. Fraud Alert
           </h3>
-          <div className="grid md:grid-cols-2 gap-4 text-sm text-cyan-800">
+          <div className="grid md:grid-cols-2 gap-4 text-sm text-blue-800">
             <div>
               <p className="font-semibold mb-1">Credit Freeze (Recommended)</p>
               <ul className="space-y-1">

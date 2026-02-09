@@ -43,7 +43,7 @@ export default function GoodwillLetterPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-slate-300">Loading...</p>
         </div>
       </div>
     );
@@ -265,13 +265,13 @@ Enclosures:
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link href="/credit-builder" className="text-sm text-emerald-600 hover:text-emerald-700 mb-2 inline-block">
             ← Back to Credit Builder
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Goodwill Letter Generator</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Goodwill Letter Generator</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
             Request removal of late payments with AI-powered goodwill letters
           </p>
         </div>
@@ -282,8 +282,8 @@ Enclosures:
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">✉️</span>
+              <div className="w-10 h-10 bg-white dark:bg-slate-800/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl"></span>
               </div>
               <div>
                 <h3 className="font-semibold mb-1">High Success Rate</h3>
@@ -291,8 +291,8 @@ Enclosures:
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">🤖</span>
+              <div className="w-10 h-10 bg-white dark:bg-slate-800/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl"></span>
               </div>
               <div>
                 <h3 className="font-semibold mb-1">AI-Powered</h3>
@@ -300,8 +300,8 @@ Enclosures:
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">⚡</span>
+              <div className="w-10 h-10 bg-white dark:bg-slate-800/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl"></span>
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Fast Results</h3>
@@ -315,7 +315,7 @@ Enclosures:
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* What is a Goodwill Letter */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-8 mb-8">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-50 border-2 border-blue-200 rounded-xl p-8 mb-8">
           <div className="flex items-start space-x-4">
             <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
               <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -323,21 +323,21 @@ Enclosures:
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">What is a Goodwill Letter?</h2>
-              <p className="text-gray-700 mb-4">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">What is a Goodwill Letter?</h2>
+              <p className="text-gray-700 dark:text-slate-200 mb-4">
                 A goodwill letter is a formal request to a creditor asking them to remove a late payment from your credit report
                 as a courtesy. Unlike dispute letters (which challenge inaccurate information), goodwill letters acknowledge
                 the late payment was accurate but request removal due to extenuating circumstances.
               </p>
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-blue-200">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
                     <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                     Best Use Cases
                   </h3>
-                  <ul className="text-sm text-gray-700 space-y-1">
+                  <ul className="text-sm text-gray-700 dark:text-slate-200 space-y-1">
                     <li>• One-time late payment (not chronic lateness)</li>
                     <li>• Long history of on-time payments</li>
                     <li>• Legitimate hardship or emergency</li>
@@ -345,14 +345,14 @@ Enclosures:
                     <li>• You're a loyal, long-term customer</li>
                   </ul>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-blue-200">
-                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-blue-200">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
                     <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
                     Not Suitable For
                   </h3>
-                  <ul className="text-sm text-gray-700 space-y-1">
+                  <ul className="text-sm text-gray-700 dark:text-slate-200 space-y-1">
                     <li>• Multiple late payments</li>
                     <li>• Accounts in collections</li>
                     <li>• Charge-offs or defaults</li>
@@ -366,8 +366,8 @@ Enclosures:
         </div>
 
         {/* Template Selection */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Step 1: Choose Your Letter Template</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Step 1: Choose Your Letter Template</h2>
 
           <div className="grid md:grid-cols-2 gap-6">
             {templates.map((template) => (
@@ -377,13 +377,13 @@ Enclosures:
                 className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
                   selectedTemplate?.id === template.id
                     ? 'border-emerald-500 bg-emerald-50'
-                    : 'border-gray-200 hover:border-emerald-300'
+                    : 'border-gray-200 dark:border-slate-700 hover:border-emerald-300'
                 }`}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{template.name}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{template.description}</p>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{template.name}</h3>
+                    <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">{template.description}</p>
                   </div>
                   {selectedTemplate?.id === template.id && (
                     <svg className="w-6 h-6 text-emerald-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -394,10 +394,10 @@ Enclosures:
 
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-600">Success Rate</span>
+                    <span className="text-sm text-gray-600 dark:text-slate-300">Success Rate</span>
                     <span className="text-lg font-bold text-emerald-600">{template.successRate}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                     <div
                       className="bg-emerald-500 h-2 rounded-full"
                       style={{ width: `${template.successRate}%` }}
@@ -406,10 +406,10 @@ Enclosures:
                 </div>
 
                 <div>
-                  <div className="text-sm text-gray-600 mb-2">Best for:</div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300 mb-2">Best for:</div>
                   <div className="flex flex-wrap gap-2">
                     {template.bestFor.map((item, idx) => (
-                      <span key={idx} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                      <span key={idx} className="text-xs bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 px-2 py-1 rounded">
                         {item}
                       </span>
                     ))}
@@ -421,8 +421,8 @@ Enclosures:
         </div>
 
         {/* Hardship Reason */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Step 2: Select Your Hardship Reason</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Step 2: Select Your Hardship Reason</h2>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {hardshipReasons.map((reason) => (
@@ -432,22 +432,22 @@ Enclosures:
                 className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
                   selectedHardship?.id === reason.id
                     ? 'border-emerald-500 bg-emerald-50'
-                    : 'border-gray-200 hover:border-emerald-300'
+                    : 'border-gray-200 dark:border-slate-700 hover:border-emerald-300'
                 }`}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900">{reason.label}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{reason.label}</h3>
                   {selectedHardship?.id === reason.id && (
                     <svg className="w-5 h-5 text-emerald-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                   )}
                 </div>
-                <p className="text-sm text-gray-600 mb-3">{reason.description}</p>
+                <p className="text-sm text-gray-600 dark:text-slate-300 mb-3">{reason.description}</p>
                 {selectedHardship?.id === reason.id && (
                   <div className="mt-3 pt-3 border-t border-emerald-200">
-                    <div className="text-xs text-gray-600 mb-1">Examples:</div>
-                    <ul className="text-xs text-gray-700 space-y-1">
+                    <div className="text-xs text-gray-600 dark:text-slate-300 mb-1">Examples:</div>
+                    <ul className="text-xs text-gray-700 dark:text-slate-200 space-y-1">
                       {reason.examples.map((example, idx) => (
                         <li key={idx}>• {example}</li>
                       ))}
@@ -460,12 +460,12 @@ Enclosures:
         </div>
 
         {/* Account Details */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Step 3: Enter Account Details</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Step 3: Enter Account Details</h2>
 
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Creditor Name *
               </label>
               <input
@@ -473,12 +473,12 @@ Enclosures:
                 value={creditorName}
                 onChange={(e) => setCreditorName(e.target.value)}
                 placeholder="e.g., Chase Bank, Capital One, Discover"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Last 4 Digits of Account Number
               </label>
               <input
@@ -487,25 +487,25 @@ Enclosures:
                 onChange={(e) => setAccountNumber(e.target.value)}
                 placeholder="1234"
                 maxLength={4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Date of Late Payment
               </label>
               <input
                 type="date"
                 value={latePaymentDate}
                 onChange={(e) => setLatePaymentDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
           </div>
 
           <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
               Tell Your Story (Optional but Recommended)
             </label>
             <textarea
@@ -513,9 +513,9 @@ Enclosures:
               onChange={(e) => setYourStory(e.target.value)}
               placeholder="Provide specific details about your situation. The more genuine and specific, the better your chances. Example: 'I was hospitalized for emergency surgery and was unable to manage my finances during my recovery period...'"
               rows={5}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             />
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
               Tip: Be honest, specific, and sincere. Creditors respond better to genuine hardship stories.
             </p>
           </div>
@@ -532,12 +532,12 @@ Enclosures:
         {/* Preview Modal */}
         {showPreview && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-auto">
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Your Goodwill Letter</h2>
+            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-auto">
+              <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Your Goodwill Letter</h2>
                 <button
                   onClick={() => setShowPreview(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 dark:text-slate-300"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -546,7 +546,7 @@ Enclosures:
               </div>
 
               <div className="p-6">
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6 font-mono text-sm whitespace-pre-wrap">
+                <div className="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-6 mb-6 font-mono text-sm whitespace-pre-wrap">
                   {generatedLetter}
                 </div>
 
@@ -582,8 +582,8 @@ Enclosures:
         )}
 
         {/* Success Tips */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Tips for Success</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Tips for Success</h2>
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
@@ -594,8 +594,8 @@ Enclosures:
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Best Practices</h3>
-                  <ul className="text-sm text-gray-700 space-y-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Best Practices</h3>
+                  <ul className="text-sm text-gray-700 dark:text-slate-200 space-y-1">
                     <li>• Be honest and sincere</li>
                     <li>• Take responsibility for the late payment</li>
                     <li>• Show you've taken corrective action</li>
@@ -613,8 +613,8 @@ Enclosures:
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Timing Matters</h3>
-                  <ul className="text-sm text-gray-700 space-y-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Timing Matters</h3>
+                  <ul className="text-sm text-gray-700 dark:text-slate-200 space-y-1">
                     <li>• Send within 1-2 years of late payment</li>
                     <li>• Ensure account is current before requesting</li>
                     <li>• Best chances if you have 6+ months of on-time payments since</li>
@@ -632,8 +632,8 @@ Enclosures:
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Avoid These Mistakes</h3>
-                  <ul className="text-sm text-gray-700 space-y-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Avoid These Mistakes</h3>
+                  <ul className="text-sm text-gray-700 dark:text-slate-200 space-y-1">
                     <li>• Don't make excuses or blame others</li>
                     <li>• Don't threaten to close account</li>
                     <li>• Don't lie about circumstances</li>
@@ -650,8 +650,8 @@ Enclosures:
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Realistic Expectations</h3>
-                  <ul className="text-sm text-gray-700 space-y-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Realistic Expectations</h3>
+                  <ul className="text-sm text-gray-700 dark:text-slate-200 space-y-1">
                     <li>• Success rate: 65-75% for first-time late payments</li>
                     <li>• Response time: 30-60 days typically</li>
                     <li>• Smaller creditors more likely to approve</li>

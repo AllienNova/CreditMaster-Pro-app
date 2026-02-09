@@ -90,8 +90,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error calculating impact:', error);
-
     // Audit log error
     try {
       await auditLogger.logSecurityEvent({
@@ -99,8 +97,8 @@ export async function POST(request: NextRequest) {
         message: `Failed to calculate impact: ${(error as Error).message}`,
         severity: 'medium',
       });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
+    } catch (_auditError) {
+      // Audit error silently caught
     }
 
     return NextResponse.json(

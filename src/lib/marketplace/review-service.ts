@@ -40,7 +40,7 @@ class ReviewService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching product reviews:', error);
+      // ReviewService error: Error fetching product reviews
       return [];
     }
 
@@ -54,7 +54,7 @@ class ReviewService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching provider reviews:', error);
+      // ReviewService error: Error fetching provider reviews
       return [];
     }
 
@@ -68,7 +68,7 @@ class ReviewService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching user reviews:', error);
+      // ReviewService error: Error fetching user reviews
       return [];
     }
 
@@ -80,7 +80,7 @@ class ReviewService {
     input: CreateReviewInput
   ): Promise<Review | null> {
     if (!input.productId && !input.providerId) {
-      console.error('Review must have either productId or providerId');
+      // ReviewService error: Review must have either productId or providerId
       return null;
     }
 
@@ -100,7 +100,7 @@ class ReviewService {
     const { data, error } = await query.insert(insertData).select().single();
 
     if (error) {
-      console.error('Error creating review:', error);
+      // ReviewService error: Error creating review
       return null;
     }
 

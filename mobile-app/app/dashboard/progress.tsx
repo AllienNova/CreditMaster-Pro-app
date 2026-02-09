@@ -1,5 +1,5 @@
 /**
- * CPFI Dashboard Progress Screen
+ * Fynvita Dashboard Progress Screen
  * Milestones, achievements, and gamification
  */
 

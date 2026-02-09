@@ -2,6 +2,7 @@
 
 import { CreditAlert } from '@/lib/credit-monitoring/credit-monitoring-service';
 import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CreditAlertsListProps {
   alerts: CreditAlert[];
@@ -9,32 +10,33 @@ interface CreditAlertsListProps {
 }
 
 export default function CreditAlertsList({ alerts, onRefresh }: CreditAlertsListProps) {
+  const { user } = useAuth();
   const [markingAsRead, setMarkingAsRead] = useState<string | null>(null);
 
   const getAlertIcon = (type: string): string => {
     switch (type) {
       case 'score_increase':
-        return '📈';
+        return '';
       case 'score_decrease':
-        return '📉';
+        return '';
       case 'new_account':
         return '🆕';
       case 'new_inquiry':
-        return '🔍';
+        return '';
       case 'account_closed':
-        return '🚫';
+        return '';
       case 'payment_missed':
-        return '⚠️';
+        return '';
       case 'credit_limit_change':
-        return '💳';
+        return '';
       case 'address_change':
-        return '🏠';
+        return '';
       case 'fraud_alert':
-        return '🚨';
+        return '';
       case 'identity_theft':
-        return '🛡️';
+        return '';
       default:
-        return '📢';
+        return '';
     }
   };
 
@@ -49,48 +51,48 @@ export default function CreditAlertsList({ alerts, onRefresh }: CreditAlertsList
       case 'low':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 border-gray-200 dark:border-slate-700';
     }
   };
 
   const handleMarkAsRead = async (alertId: string) => {
+    if (!user) return;
+
     setMarkingAsRead(alertId);
     try {
-      // TODO: Replace with actual user ID from auth
-      const userId = 'user_123';
-      
       const response = await fetch('/api/credit-monitoring/alerts', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, alertId }),
+        body: JSON.stringify({ userId: user.id, alertId }),
       });
 
       if (response.ok) {
         onRefresh();
       }
-    } catch (error) {
-      console.error('Error marking alert as read:', error);
+    } catch (_error) {
+      // CreditAlertsList error: Error marking alert as read
+      void _error;
     } finally {
       setMarkingAsRead(null);
     }
   };
 
   const handleMarkAllAsRead = async () => {
+    if (!user) return;
+
     try {
-      // TODO: Replace with actual user ID from auth
-      const userId = 'user_123';
-      
       const response = await fetch('/api/credit-monitoring/alerts', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, markAllAsRead: true }),
+        body: JSON.stringify({ userId: user.id, markAllAsRead: true }),
       });
 
       if (response.ok) {
         onRefresh();
       }
-    } catch (error) {
-      console.error('Error marking all alerts as read:', error);
+    } catch (_error) {
+      // CreditAlertsList error: Error marking all alerts as read
+      void _error;
     }
   };
 
@@ -117,9 +119,9 @@ export default function CreditAlertsList({ alerts, onRefresh }: CreditAlertsList
   if (alerts.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-400 text-6xl mb-4">🔔</div>
-        <p className="text-gray-600">No alerts yet</p>
-        <p className="text-sm text-gray-500 mt-2">
+        <div className="text-gray-400 dark:text-slate-500 text-6xl mb-4"></div>
+        <p className="text-gray-600 dark:text-slate-300">No alerts yet</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
           We'll notify you when there are changes to your credit
         </p>
       </div>
@@ -149,7 +151,7 @@ export default function CreditAlertsList({ alerts, onRefresh }: CreditAlertsList
           <div
             key={alert.id}
             className={`p-4 rounded-lg border-2 transition-all ${
-              !alert.read ? 'bg-blue-50/50 border-blue-200' : 'bg-white border-gray-200'
+              !alert.read ? 'bg-blue-50/50 border-blue-200' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
             }`}
           >
             <div className="flex items-start gap-4">
@@ -163,18 +165,18 @@ export default function CreditAlertsList({ alerts, onRefresh }: CreditAlertsList
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className={`font-semibold ${!alert.read ? 'text-gray-900' : 'text-gray-700'}`}>
+                      <h4 className={`font-semibold ${!alert.read ? 'text-gray-900' : 'text-gray-700 dark:text-slate-200'}`}>
                         {alert.title}
                       </h4>
                       {!alert.read && (
                         <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{alert.message}</p>
+                    <p className="text-sm text-gray-600 dark:text-slate-300 mb-2">{alert.message}</p>
                     <div className="flex items-center gap-3 text-xs">
-                      <span className="text-gray-500">{formatDate(alert.createdAt)}</span>
+                      <span className="text-gray-500 dark:text-slate-400">{formatDate(alert.createdAt)}</span>
                       {alert.bureau && (
-                        <span className="px-2 py-1 bg-gray-100 rounded text-gray-700">
+                        <span className="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded text-gray-700 dark:text-slate-200">
                           {alert.bureau.charAt(0).toUpperCase() + alert.bureau.slice(1)}
                         </span>
                       )}

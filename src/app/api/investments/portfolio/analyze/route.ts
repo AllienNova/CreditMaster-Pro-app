@@ -84,8 +84,9 @@ export async function POST(request: NextRequest) {
               : 'low',
       },
     });
-  } catch (error) {
-    console.error('Portfolio analysis error:', error);
+  } catch (_error) {
+    // PortfolioAnalyzeRoute error: Analysis failed
+    void _error;
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -112,7 +113,7 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Error fetching holdings:', error);
+      // PortfolioAnalyzeRoute error: Failed to fetch holdings
       return NextResponse.json(
         { error: 'Failed to fetch holdings' },
         { status: 500 }
@@ -156,8 +157,9 @@ export async function GET(request: NextRequest) {
         diversificationScore: diversification.score,
       },
     });
-  } catch (error) {
-    console.error('Portfolio GET error:', error);
+  } catch (_error) {
+    // PortfolioAnalyzeRoute error: GET failed
+    void _error;
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

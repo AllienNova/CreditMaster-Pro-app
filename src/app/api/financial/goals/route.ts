@@ -139,10 +139,10 @@ export async function GET(request: NextRequest) {
         },
       },
     });
-  } catch (error) {
-    console.error('Error fetching financial goals:', error);
+  } catch (_error) {
+    // FinancialGoalsRoute error: Failed to fetch goals
 
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch financial goals';
+    const errorMessage = _error instanceof Error ? _error.message : 'Failed to fetch financial goals';
 
     return NextResponse.json(
       {
@@ -243,10 +243,10 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('Error creating financial goal:', error);
+  } catch (_error) {
+    // FinancialGoalsRoute error: Failed to create goal
 
-    const errorMessage = error instanceof Error ? error.message : 'Failed to create financial goal';
+    const errorMessage = _error instanceof Error ? _error.message : 'Failed to create financial goal';
 
     return NextResponse.json(
       {

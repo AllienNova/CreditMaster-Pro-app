@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Utilization Screen
+ * Fynvita Credit Utilization Screen
  * Optimize credit utilization ratio
  */
 

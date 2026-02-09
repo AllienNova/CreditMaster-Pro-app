@@ -1,5 +1,5 @@
 /**
- * CPFI Performance Utilities
+ * Fynvita Performance Utilities
  * Provides performance monitoring and optimization helpers
  */
 

@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error getting goodwill letters:', error);
+    // GoodwillAPI error: Error getting goodwill letters
 
     // Audit log error
     try {
@@ -103,8 +103,8 @@ export async function GET(request: NextRequest) {
         message: `Failed to get goodwill letters: ${(error as Error).message}`,
         severity: 'medium',
       });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
+    } catch {
+      // GoodwillAPI error: Failed to log audit event
     }
 
     return NextResponse.json(
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating goodwill letter:', error);
+    // GoodwillAPI error: Error creating goodwill letter
 
     // Audit log error
     try {
@@ -209,8 +209,8 @@ export async function POST(request: NextRequest) {
         message: `Failed to create goodwill letter: ${(error as Error).message}`,
         severity: 'high',
       });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
+    } catch {
+      // GoodwillAPI error: Failed to log audit event
     }
 
     return NextResponse.json(

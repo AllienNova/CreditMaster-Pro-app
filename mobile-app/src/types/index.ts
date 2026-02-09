@@ -123,31 +123,93 @@ export type RootStackParamList = {
 };
 
 // Theme types
+export interface ThemeColors {
+  primary: string;
+  primaryDark: string;
+  primaryLight: string;
+  secondary: string;
+  secondaryDark: string;
+  accent: string;
+  background: string;
+  backgroundSecondary: string;
+  surface: string;
+  card: string;
+  text: string;
+  textSecondary: string;
+  textMuted: string;
+  textInverse: string;
+  border: string;
+  borderLight: string;
+  borderDark: string;
+  error: string;
+  success: string;
+  warning: string;
+  info: string;
+  white: string;
+  black: string;
+  gray50: string;
+  gray100: string;
+  gray200: string;
+  gray300: string;
+  gray400: string;
+  gray500: string;
+  gray600: string;
+  gray700: string;
+  gray800: string;
+  gray900: string;
+}
+
+export interface ThemeShadow {
+  shadowColor: string;
+  shadowOffset: { width: number; height: number };
+  shadowOpacity: number;
+  shadowRadius: number;
+  elevation: number;
+}
+
 export interface Theme {
-  colors: {
-    primary: string;
-    secondary: string;
-    background: string;
-    surface: string;
-    text: string;
-    textSecondary: string;
-    border: string;
-    error: string;
-    success: string;
-    warning: string;
-  };
+  colors: ThemeColors;
   spacing: {
     xs: number;
     sm: number;
     md: number;
     lg: number;
     xl: number;
+    xxl: number;
   };
   borderRadius: {
     sm: number;
     md: number;
     lg: number;
+    xl: number;
     full: number;
   };
+  fontSize: {
+    xs: number;
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+    xxl: number;
+    xxxl: number;
+  };
+  fontWeight: {
+    normal: '400';
+    medium: '500';
+    semibold: '600';
+    bold: '700';
+  };
+  shadow: {
+    none: ThemeShadow;
+    sm: ThemeShadow;
+    md: ThemeShadow;
+    lg: ThemeShadow;
+  };
+  iconSize: {
+    xs: number;
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+  };
 }
-

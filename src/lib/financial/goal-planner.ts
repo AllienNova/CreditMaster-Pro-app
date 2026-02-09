@@ -50,7 +50,7 @@ const DEFAULT_MILESTONES = [
   {
     percentage: 100,
     name: 'Goal Achieved!',
-    celebrationMessage: "Congratulations! You've reached your goal! 🎉",
+    celebrationMessage: "Congratulations! You've reached your goal! ",
   },
 ];
 
@@ -82,7 +82,7 @@ class GoalPlanner {
       try {
         this.aimlService = new AIMLService();
       } catch {
-        console.warn('Failed to initialize AIML service for goal planning');
+        // GoalPlanner warning: Failed to initialize AIML service for goal planning
       }
     }
     return this.aimlService;
@@ -176,7 +176,7 @@ class GoalPlanner {
       .order('priority', { ascending: false });
 
     if (error) {
-      console.error('Error fetching goals:', error);
+      // GoalPlanner error: Error fetching goals
       return [];
     }
 
@@ -482,8 +482,9 @@ class GoalPlanner {
       if (match) {
         return JSON.parse(match[0]);
       }
-    } catch (error) {
-      console.warn('Failed to generate AI recommendations:', error);
+    } catch (_error) {
+      // GoalPlanner warning: Failed to generate AI recommendations
+      void _error;
     }
 
     return this.getDefaultRecommendations(goalType);

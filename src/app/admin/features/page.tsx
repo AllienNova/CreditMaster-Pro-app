@@ -44,7 +44,7 @@ export default function AdminFeaturesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Feature Flags</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Feature Flags</h1>
         <button className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition">
           + Create Flag
         </button>
@@ -52,46 +52,46 @@ export default function AdminFeaturesPage() {
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-          <p className="text-sm text-gray-500">Total Flags</p>
-          <p className="text-2xl font-bold text-gray-900">{flags.length}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
+          <p className="text-sm text-gray-500 dark:text-slate-400">Total Flags</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{flags.length}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-          <p className="text-sm text-gray-500">Enabled</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
+          <p className="text-sm text-gray-500 dark:text-slate-400">Enabled</p>
           <p className="text-2xl font-bold text-emerald-600">{flags.filter((f) => f.enabled).length}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-          <p className="text-sm text-gray-500">In Staging</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
+          <p className="text-sm text-gray-500 dark:text-slate-400">In Staging</p>
           <p className="text-2xl font-bold text-yellow-600">{flags.filter((f) => f.environment === "staging").length}</p>
         </div>
       </div>
 
       {/* Feature Flags List */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="divide-y divide-gray-100">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
+        <div className="divide-y divide-gray-100 dark:divide-slate-700">
           {flags.map((flag) => (
             <div key={flag.id} className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold text-gray-900 font-mono">{flag.name}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white font-mono">{flag.name}</h3>
                     {getEnvBadge(flag.environment)}
                   </div>
-                  <p className="text-sm text-gray-500 mb-4">{flag.description}</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">{flag.description}</p>
                   
                   {/* Rollout Slider */}
                   <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-500 w-20">Rollout:</span>
+                    <span className="text-sm text-gray-500 dark:text-slate-400 w-20">Rollout:</span>
                     <input
                       type="range"
                       min="0"
                       max="100"
                       value={flag.rollout}
                       onChange={(e) => updateRollout(flag.id, parseInt(e.target.value))}
-                      className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      className="flex-1 h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
                       disabled={!flag.enabled}
                     />
-                    <span className="text-sm font-medium text-gray-900 w-12">{flag.rollout}%</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white w-12">{flag.rollout}%</span>
                   </div>
                 </div>
                 
@@ -100,11 +100,11 @@ export default function AdminFeaturesPage() {
                   onClick={() => toggleFlag(flag.id)}
                   className={`w-14 h-7 rounded-full transition ${flag.enabled ? "bg-emerald-500" : "bg-gray-300"}`}
                 >
-                  <span className={`block w-5 h-5 bg-white rounded-full shadow transform transition ${flag.enabled ? "translate-x-8" : "translate-x-1"}`} />
+                  <span className={`block w-5 h-5 bg-white dark:bg-slate-800 rounded-full shadow transform transition ${flag.enabled ? "translate-x-8" : "translate-x-1"}`} />
                 </button>
               </div>
               
-              <div className="mt-4 flex items-center gap-4 text-xs text-gray-400">
+              <div className="mt-4 flex items-center gap-4 text-xs text-gray-400 dark:text-slate-500">
                 <span>Created: {flag.createdAt}</span>
                 <button className="text-emerald-500 hover:text-emerald-600">Edit</button>
                 <button className="text-red-500 hover:text-red-600">Delete</button>

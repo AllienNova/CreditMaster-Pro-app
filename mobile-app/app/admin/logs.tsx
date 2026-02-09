@@ -1,5 +1,5 @@
 /**
- * CPFI Admin System Logs Screen
+ * Fynvita Admin System Logs Screen
  * View and filter system logs
  */
 

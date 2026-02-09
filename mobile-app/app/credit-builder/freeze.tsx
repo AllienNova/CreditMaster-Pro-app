@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Freeze Screen
+ * Fynvita Credit Freeze Screen
  * Manage credit freezes at all bureaus
  */
 

@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Score Detail Screen
+ * Fynvita Credit Score Detail Screen
  * Large animated score display with history chart and bureau comparison
  */
 

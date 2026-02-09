@@ -28,7 +28,7 @@ export default function AdminLogsPage() {
       error: "bg-red-100 text-red-700",
       warning: "bg-yellow-100 text-yellow-700",
       info: "bg-blue-100 text-blue-700",
-      debug: "bg-gray-100 text-gray-700",
+      debug: "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200",
     };
     return <span className={`px-2 py-1 text-xs rounded-full font-medium ${styles[level]}`}>{level.toUpperCase()}</span>;
   };
@@ -39,9 +39,9 @@ export default function AdminLogsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Error Logs</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Error Logs</h1>
         <div className="flex gap-3">
-          <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+          <button className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition">
             Clear Logs
           </button>
           <button className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition">
@@ -67,45 +67,45 @@ export default function AdminLogsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-6">
         <div className="flex flex-wrap gap-4">
           <input
             type="text"
             placeholder="Search logs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+            className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
           />
-          <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-lg">
+          <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)} className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg">
             <option value="all">All Levels</option>
             <option value="error">Errors</option>
             <option value="warning">Warnings</option>
             <option value="info">Info</option>
           </select>
-          <input type="date" className="px-4 py-2 border border-gray-300 rounded-lg" />
+          <input type="date" className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg" />
         </div>
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 dark:bg-slate-900">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Level</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Message</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Count</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Level</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Message</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Source</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Count</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Timestamp</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 font-mono text-sm">
+          <tbody className="divide-y divide-gray-100 dark:divide-slate-700 font-mono text-sm">
             {filteredLogs.map((log) => (
-              <tr key={log.id} className="hover:bg-gray-50">
+              <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900">
                 <td className="px-6 py-4">{getLevelBadge(log.level)}</td>
-                <td className="px-6 py-4 text-gray-900 max-w-md truncate">{log.message}</td>
-                <td className="px-6 py-4 text-gray-500">{log.source}</td>
-                <td className="px-6 py-4 text-gray-500">{log.count > 1 ? `×${log.count}` : "-"}</td>
-                <td className="px-6 py-4 text-gray-500">{log.timestamp}</td>
+                <td className="px-6 py-4 text-gray-900 dark:text-white max-w-md truncate">{log.message}</td>
+                <td className="px-6 py-4 text-gray-500 dark:text-slate-400">{log.source}</td>
+                <td className="px-6 py-4 text-gray-500 dark:text-slate-400">{log.count > 1 ? `×${log.count}` : "-"}</td>
+                <td className="px-6 py-4 text-gray-500 dark:text-slate-400">{log.timestamp}</td>
               </tr>
             ))}
           </tbody>

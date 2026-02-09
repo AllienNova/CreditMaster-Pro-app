@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Score Index - Redirects to tab
+ * Fynvita Credit Score Index - Redirects to tab
  */
 
 import { Redirect } from 'expo-router';

@@ -5,7 +5,7 @@
  * Tests provider fallback, caching, health checks, and error handling
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+// Use global jest instead of @jest/globals to avoid type issues with mocked functions
 import { UnifiedMarketDataService } from '../market-data-service';
 import { AssetType, TimeInterval, MarketDataAPIError } from '../types/market-data.types';
 
@@ -21,9 +21,9 @@ import { CoinGeckoClient } from '../../integrations/coingecko';
 
 describe('UnifiedMarketDataService', () => {
   let service: UnifiedMarketDataService;
-  let mockAlphaVantage: jest.Mocked<AlphaVantageClient>;
-  let mockPolygon: jest.Mocked<PolygonClient>;
-  let mockCoinGecko: jest.Mocked<CoinGeckoClient>;
+  let mockAlphaVantage: any;
+  let mockPolygon: any;
+  let mockCoinGecko: any;
 
   beforeEach(() => {
     // Clear all mocks

@@ -66,7 +66,7 @@ class BackupCodesService {
         codes,
       };
     } catch (error) {
-      console.error('Generate backup codes error:', error);
+      // BackupCodesService error: Generate backup codes error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to generate backup codes',
@@ -115,7 +115,7 @@ class BackupCodesService {
 
       return { success: true };
     } catch (error) {
-      console.error('Verify backup code error:', error);
+      // BackupCodesService error: Verify backup code error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to verify backup code',
@@ -135,13 +135,13 @@ class BackupCodesService {
         .eq('used', false);
 
       if (error) {
-        console.error('Get remaining codes count error:', error);
+        // BackupCodesService error: Get remaining codes count error
         return 0;
       }
 
       return data?.length || 0;
     } catch (error) {
-      console.error('Get remaining codes count error:', error);
+      // BackupCodesService error: Get remaining codes count error
       return 0;
     }
   }
@@ -158,7 +158,7 @@ class BackupCodesService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Get backup codes error:', error);
+        // BackupCodesService error: Get backup codes error
         return [];
       }
 
@@ -171,7 +171,7 @@ class BackupCodesService {
         createdAt: new Date(code.created_at),
       }));
     } catch (error) {
-      console.error('Get backup codes error:', error);
+      // BackupCodesService error: Get backup codes error
       return [];
     }
   }

@@ -79,8 +79,8 @@ export async function GET(request: NextRequest) {
       topFeatures,
       timeRange: range,
     });
-  } catch (error) {
-    console.error('Admin analytics error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

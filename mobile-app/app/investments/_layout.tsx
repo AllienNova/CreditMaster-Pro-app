@@ -51,6 +51,27 @@ export default function InvestmentLayout() {
           presentation: 'modal',
         }}
       />
+      <Stack.Screen
+        name="signals"
+        options={{
+          title: 'Trading Signals',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="analytics"
+        options={{
+          title: 'Portfolio Analytics',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="crypto-analysis"
+        options={{
+          title: 'Crypto Analysis',
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

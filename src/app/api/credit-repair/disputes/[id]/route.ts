@@ -81,9 +81,9 @@ export async function GET(
       success: true,
       data: dispute,
     });
-  } catch (error) {
-    console.error('Error getting dispute:', error);
-
+  } catch (_error) {
+    // CreditRepairDisputeRoute error: Failed to get dispute
+    void _error;
     return NextResponse.json(
       { error: 'Failed to get dispute' },
       { status: 500 }
@@ -224,11 +224,11 @@ export async function PUT(
       success: true,
       data: dispute,
     });
-  } catch (error) {
-    console.error('Error updating dispute:', error);
+  } catch (_error) {
+    // CreditRepairDisputeRoute error: Failed to update dispute
 
     // Check for optimistic locking error
-    if ((error as Error).message.includes('modified by another process')) {
+    if ((_error as Error).message.includes('modified by another process')) {
       return NextResponse.json(
         {
           error:
@@ -284,9 +284,9 @@ export async function DELETE(
       success: true,
       message: 'Dispute deleted successfully',
     });
-  } catch (error) {
-    console.error('Error deleting dispute:', error);
-
+  } catch (_error) {
+    // CreditRepairDisputeRoute error: Failed to delete dispute
+    void _error;
     return NextResponse.json(
       { error: 'Failed to delete dispute' },
       { status: 500 }

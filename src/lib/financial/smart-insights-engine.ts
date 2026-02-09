@@ -69,7 +69,7 @@ class SmartInsightsEngine {
       try {
         this.aimlService = new AIMLService();
       } catch {
-        console.warn('Failed to initialize AIML service for insights');
+        // SmartInsightsEngine warning: Failed to initialize AIML service for insights
       }
     }
     return this.aimlService;
@@ -174,7 +174,7 @@ class SmartInsightsEngine {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching stored insights:', error);
+      // SmartInsightsEngine error: Error fetching stored insights
       return [];
     }
 
@@ -219,7 +219,7 @@ class SmartInsightsEngine {
       .upsert(records, { onConflict: 'id' });
 
     if (error) {
-      console.error('Error saving insights:', error);
+      // SmartInsightsEngine error: Error saving insights
     }
   }
 
@@ -702,8 +702,9 @@ class SmartInsightsEngine {
           insight.aiRecommendation = rec.recommendation;
         }
       }
-    } catch (error) {
-      console.warn('Failed to generate AI recommendations:', error);
+    } catch (_error) {
+      // SmartInsightsEngine warning: Failed to generate AI recommendations
+      void _error;
     }
 
     return insights;

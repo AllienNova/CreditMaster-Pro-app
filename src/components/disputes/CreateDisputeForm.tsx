@@ -215,7 +215,7 @@ export default function CreateDisputeForm() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
       {/* Progress Bar */}
       <div className="px-8 pt-8 pb-4">
         <div className="flex items-center justify-between mb-2">
@@ -225,7 +225,7 @@ export default function CreateDisputeForm() {
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
                   step <= currentStep
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-600'
+                    : 'bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300'
                 }`}
               >
                 {step}
@@ -233,14 +233,14 @@ export default function CreateDisputeForm() {
               {step < 5 && (
                 <div
                   className={`flex-1 h-1 mx-2 ${
-                    step < currentStep ? 'bg-blue-600' : 'bg-gray-200'
+                    step < currentStep ? 'bg-blue-600' : 'bg-gray-200 dark:bg-slate-700'
                   }`}
                 />
               )}
             </div>
           ))}
         </div>
-        <div className="flex justify-between text-xs text-gray-600 mt-2">
+        <div className="flex justify-between text-xs text-gray-600 dark:text-slate-300 mt-2">
           <span>Bureau</span>
           <span>Item Info</span>
           <span>Reason</span>
@@ -298,13 +298,13 @@ export default function CreateDisputeForm() {
       </div>
 
       {/* Navigation Buttons */}
-      <div className="px-8 py-6 bg-gray-50 border-t border-gray-200 flex justify-between">
+      <div className="px-8 py-6 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 flex justify-between">
         <div>
           {currentStep > 1 && (
             <button
               onClick={prevStep}
               disabled={loading}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+              className="px-6 py-2 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 transition-colors disabled:opacity-50"
             >
               Back
             </button>
@@ -315,7 +315,7 @@ export default function CreateDisputeForm() {
             <button
               onClick={saveDraft}
               disabled={loading}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+              className="px-6 py-2 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 transition-colors disabled:opacity-50"
             >
               Save Draft
             </button>
@@ -369,8 +369,8 @@ function Step1Bureau({ bureau, onChange }: { bureau: Bureau | ''; onChange: (val
 
   return (
     <div className="py-6">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Select Credit Bureau</h2>
-      <p className="text-gray-600 mb-6">Choose which bureau you want to dispute with</p>
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Select Credit Bureau</h2>
+      <p className="text-gray-600 dark:text-slate-300 mb-6">Choose which bureau you want to dispute with</p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {bureaus.map((b) => (
@@ -380,11 +380,11 @@ function Step1Bureau({ bureau, onChange }: { bureau: Bureau | ''; onChange: (val
             className={`p-6 border-2 rounded-lg text-left transition-all ${
               bureau === b.value
                 ? `${b.color} border-opacity-100 bg-opacity-10`
-                : 'border-gray-200 hover:border-gray-300'
+                : 'border-gray-200 hover:border-gray-300 dark:border-slate-600'
             }`}
           >
             <h3 className="text-xl font-semibold mb-2">{b.name}</h3>
-            <p className="text-sm text-gray-600">{b.description}</p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">{b.description}</p>
           </button>
         ))}
       </div>
@@ -419,18 +419,18 @@ function Step2ItemInfo({
 
   return (
     <div className="py-6">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Item Information</h2>
-      <p className="text-gray-600 mb-6">Provide details about the item you're disputing</p>
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Item Information</h2>
+      <p className="text-gray-600 dark:text-slate-300 mb-6">Provide details about the item you're disputing</p>
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Item Type
           </label>
           <select
             value={itemType}
             onChange={(e) => onChangeType(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Select item type...</option>
             {itemTypes.map((type) => (
@@ -442,7 +442,7 @@ function Step2ItemInfo({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Item Description
           </label>
           <textarea
@@ -450,7 +450,7 @@ function Step2ItemInfo({
             onChange={(e) => onChangeDescription(e.target.value)}
             rows={4}
             placeholder="Describe the item in detail (e.g., 'Chase Credit Card ending in 1234, opened 01/2020, current balance $5,000')"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
       </div>
@@ -475,12 +475,12 @@ function Step3Reason({ reason, onChange }: { reason: string; onChange: (value: s
 
   return (
     <div className="py-6">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Dispute Reason</h2>
-      <p className="text-gray-600 mb-6">Explain why you're disputing this item</p>
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Dispute Reason</h2>
+      <p className="text-gray-600 dark:text-slate-300 mb-6">Explain why you're disputing this item</p>
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Common Reasons (Optional)
           </label>
           <select
@@ -489,7 +489,7 @@ function Step3Reason({ reason, onChange }: { reason: string; onChange: (value: s
                 onChange(e.target.value);
               }
             }}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Select a common reason...</option>
             {commonReasons.map((r) => (
@@ -501,7 +501,7 @@ function Step3Reason({ reason, onChange }: { reason: string; onChange: (value: s
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Detailed Reason
           </label>
           <textarea
@@ -509,9 +509,9 @@ function Step3Reason({ reason, onChange }: { reason: string; onChange: (value: s
             onChange={(e) => onChange(e.target.value)}
             rows={6}
             placeholder="Provide a detailed explanation of why this item is inaccurate or incomplete..."
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">
             Be specific and factual. Include dates, amounts, and any relevant details.
           </p>
         </div>
@@ -538,12 +538,12 @@ function Step4UserInfo({
 }) {
   return (
     <div className="py-6">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Your Information</h2>
-      <p className="text-gray-600 mb-6">Provide your information for the dispute letter</p>
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Your Information</h2>
+      <p className="text-gray-600 dark:text-slate-300 mb-6">Provide your information for the dispute letter</p>
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Full Name
           </label>
           <input
@@ -551,12 +551,12 @@ function Step4UserInfo({
             value={name}
             onChange={(e) => onChangeName(e.target.value)}
             placeholder="John Doe"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Address
           </label>
           <textarea
@@ -564,7 +564,7 @@ function Step4UserInfo({
             onChange={(e) => onChangeAddress(e.target.value)}
             rows={3}
             placeholder="123 Main St&#10;Anytown, ST 12345"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
@@ -583,7 +583,7 @@ function Step4UserInfo({
                 Generating Letter with AI...
               </span>
             ) : (
-              '🤖 Generate Dispute Letter with AI'
+              'Generate Dispute Letter with AI'
             )}
           </button>
         </div>
@@ -604,45 +604,45 @@ function Step5Review({
 }) {
   return (
     <div className="py-6">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Review & Submit</h2>
-      <p className="text-gray-600 mb-6">Review your dispute letter before submitting</p>
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Review & Submit</h2>
+      <p className="text-gray-600 dark:text-slate-300 mb-6">Review your dispute letter before submitting</p>
 
       <div className="space-y-6">
         {/* Summary */}
-        <div className="bg-gray-50 rounded-lg p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Dispute Summary</h3>
+        <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-6">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Dispute Summary</h3>
           <dl className="space-y-2">
             <div className="flex">
-              <dt className="font-medium text-gray-700 w-32">Bureau:</dt>
-              <dd className="text-gray-900 capitalize">{formData.bureau}</dd>
+              <dt className="font-medium text-gray-700 dark:text-slate-200 w-32">Bureau:</dt>
+              <dd className="text-gray-900 dark:text-white capitalize">{formData.bureau}</dd>
             </div>
             <div className="flex">
-              <dt className="font-medium text-gray-700 w-32">Item Type:</dt>
-              <dd className="text-gray-900">{formData.itemType}</dd>
+              <dt className="font-medium text-gray-700 dark:text-slate-200 w-32">Item Type:</dt>
+              <dd className="text-gray-900 dark:text-white">{formData.itemType}</dd>
             </div>
             <div className="flex">
-              <dt className="font-medium text-gray-700 w-32">Description:</dt>
-              <dd className="text-gray-900">{formData.itemDescription}</dd>
+              <dt className="font-medium text-gray-700 dark:text-slate-200 w-32">Description:</dt>
+              <dd className="text-gray-900 dark:text-white">{formData.itemDescription}</dd>
             </div>
             <div className="flex">
-              <dt className="font-medium text-gray-700 w-32">Reason:</dt>
-              <dd className="text-gray-900">{formData.reason}</dd>
+              <dt className="font-medium text-gray-700 dark:text-slate-200 w-32">Reason:</dt>
+              <dd className="text-gray-900 dark:text-white">{formData.reason}</dd>
             </div>
           </dl>
         </div>
 
         {/* Letter */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Dispute Letter (Editable)
           </label>
           <textarea
             value={letterContent}
             onChange={(e) => onEdit(e.target.value)}
             rows={15}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+            className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
           />
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">
             You can edit the letter before submitting. Make sure all information is accurate.
           </p>
         </div>

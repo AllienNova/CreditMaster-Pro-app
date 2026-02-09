@@ -13,8 +13,27 @@
  * - Batch export support
  */
 
-import type { InvestmentAnalysis } from '@/lib/investments/services/InvestmentAnalysisEngine';
-import type { PortfolioAnalysis } from '@/lib/investments/services/PortfolioAnalysisService';
+import type { ComprehensiveAnalysis } from '@/lib/investments/services/InvestmentAnalysisEngine';
+import type { PortfolioMetrics } from '@/lib/investments/services/PortfolioAnalysisService';
+
+// Type alias for backwards compatibility
+type InvestmentAnalysis = ComprehensiveAnalysis;
+
+// Portfolio Analysis type
+export interface PortfolioAnalysis {
+  portfolioId: string;
+  analyzedAt: Date;
+  totalValue: number;
+  totalCost: number;
+  totalGainLoss: number;
+  totalGainLossPercent: number;
+  portfolioHealth: number;
+  portfolioRisk: string;
+  diversificationScore: number;
+  overallSignal: string;
+  overallConfidence: number;
+  summary?: string;
+}
 
 export interface ExportOptions {
   format: 'csv' | 'pdf' | 'json';
@@ -93,16 +112,16 @@ export class AnalysisExportService {
 
     // Composite Scores
     rows.push(['Composite Scores']);
-    rows.push(['Technical Score', analysis.compositeScores.technicalScore.toString()]);
-    rows.push(['Fundamental Score', analysis.compositeScores.fundamentalScore.toString()]);
-    rows.push(['Sentiment Score', analysis.compositeScores.sentimentScore.toString()]);
-    rows.push(['Pattern Score', analysis.compositeScores.patternScore.toString()]);
-    rows.push(['AI Score', analysis.compositeScores.aiScore.toString()]);
+    rows.push(['Technical Score', analysis.compositeScore.technical.toString()]);
+    rows.push(['Fundamental Score', analysis.compositeScore.fundamental.toString()]);
+    rows.push(['Sentiment Score', analysis.compositeScore.sentiment.toString()]);
+    rows.push(['Pattern Score', analysis.compositeScore.pattern.toString()]);
+    rows.push(['Overall Score', analysis.compositeScore.overall.toString()]);
     rows.push([]);
 
     // Insights
     rows.push(['Key Insights']);
-    analysis.insights.forEach((insight, index) => {
+    analysis.keyInsights.forEach((insight, index) => {
       rows.push([`${index + 1}`, insight]);
     });
     rows.push([]);
@@ -282,30 +301,30 @@ export class AnalysisExportService {
     <h2>Composite Scores</h2>
     <div class="metric">
       <span class="metric-label">Technical Score:</span>
-      <span>${analysis.compositeScores.technicalScore}/100</span>
+      <span>${analysis.compositeScore.technical}/100</span>
     </div>
     <div class="metric">
       <span class="metric-label">Fundamental Score:</span>
-      <span>${analysis.compositeScores.fundamentalScore}/100</span>
+      <span>${analysis.compositeScore.fundamental}/100</span>
     </div>
     <div class="metric">
       <span class="metric-label">Sentiment Score:</span>
-      <span>${analysis.compositeScores.sentimentScore}/100</span>
+      <span>${analysis.compositeScore.sentiment}/100</span>
     </div>
     <div class="metric">
       <span class="metric-label">Pattern Score:</span>
-      <span>${analysis.compositeScores.patternScore}/100</span>
+      <span>${analysis.compositeScore.pattern}/100</span>
     </div>
     <div class="metric">
-      <span class="metric-label">AI Score:</span>
-      <span>${analysis.compositeScores.aiScore}/100</span>
+      <span class="metric-label">Overall Score:</span>
+      <span>${analysis.compositeScore.overall}/100</span>
     </div>
   </div>
 
   <div class="section">
     <h2>Key Insights</h2>
     <ul>
-      ${analysis.insights.map((insight) => `<li>${insight}</li>`).join('')}
+      ${analysis.keyInsights.map((insight) => `<li>${insight}</li>`).join('')}
     </ul>
   </div>
 

@@ -8,6 +8,13 @@ jest.mock('next/link', () => {
   };
 });
 
+// Mock the Header component since it uses client-side hooks
+jest.mock('@/components/ui/Header', () => {
+  return function MockHeader() {
+    return <nav data-testid="header">Mock Header</nav>;
+  };
+});
+
 describe('HomePage', () => {
   it('should render the home page', () => {
     render(<HomePage />);
@@ -16,12 +23,14 @@ describe('HomePage', () => {
 
   it('should display the hero heading', () => {
     render(<HomePage />);
-    expect(screen.getByText(/Financial Intelligence/i)).toBeInTheDocument();
+    // Updated to match new Fynvita branding - may appear multiple times
+    expect(screen.getAllByText(/The Only Platform That/i).length).toBeGreaterThan(0);
   });
 
-  it('should display credit intelligence text', () => {
+  it('should display financial life text', () => {
     render(<HomePage />);
-    expect(screen.getAllByText(/Credit Intelligence/i).length).toBeGreaterThan(0);
+    // Updated to match new branding - "Unifies Your Financial Life"
+    expect(screen.getAllByText(/Financial Life/i).length).toBeGreaterThan(0);
   });
 
   it('should have proper heading hierarchy', () => {

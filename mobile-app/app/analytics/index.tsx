@@ -1,5 +1,5 @@
 /**
- * CPFI Analytics Dashboard
+ * Fynvita Analytics Dashboard
  */
 
 import React from 'react';

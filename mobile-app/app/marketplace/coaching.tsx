@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Coaching Marketplace Screen
+ * Fynvita Credit Coaching Marketplace Screen
  * 1-on-1 credit coaching services
  */
 

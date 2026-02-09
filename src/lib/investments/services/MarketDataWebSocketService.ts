@@ -46,7 +46,7 @@ export class MarketDataWebSocketService {
     }
 
     if (this.subscribedSymbols.size === 0) {
-      console.warn('No symbols subscribed, skipping connection');
+      // MarketDataWebSocketService: No symbols subscribed, skipping connection
       return;
     }
 
@@ -69,15 +69,15 @@ export class MarketDataWebSocketService {
         this.handleMessage(event.data);
       };
 
-      this.eventSource.onerror = (error) => {
-        console.error('SSE error:', error);
+      this.eventSource.onerror = (_error) => {
+        // MarketDataWebSocketService error: SSE error
         this.setStatus('error');
         this.eventSource?.close();
         this.eventSource = null;
         this.attemptReconnect();
       };
-    } catch (error) {
-      console.error('Failed to create SSE connection:', error);
+    } catch (_error) {
+      // MarketDataWebSocketService error: Failed to create SSE connection
       this.setStatus('error');
       this.attemptReconnect();
     }
@@ -139,9 +139,11 @@ export class MarketDataWebSocketService {
         this.subscribers.delete(symbol);
         this.subscribedSymbols.delete(symbol);
 
-        // Send unsubscribe message if connected
-        if (this.status === 'connected') {
-          this.sendMessage({ type: 'unsubscribe', symbol });
+        // Note: SSE doesn't support sending messages to server
+        // Reconnect with updated symbol list if needed
+        if (this.status === 'connected' && this.subscribedSymbols.size > 0) {
+          this.disconnect();
+          this.connect();
         }
       }
     }
@@ -200,8 +202,8 @@ export class MarketDataWebSocketService {
       } else if (message.type === 'pong') {
         // Heartbeat response received
       }
-    } catch (error) {
-      console.error('Failed to parse WebSocket message:', error);
+    } catch (_error) {
+      // MarketDataWebSocketService error: Failed to parse WebSocket message
     }
   }
 
@@ -218,14 +220,15 @@ export class MarketDataWebSocketService {
    */
   private attemptReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnect attempts reached');
+      // MarketDataWebSocketService error: Max reconnect attempts reached
       return;
     }
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); // Exponential backoff
 
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    // MarketDataWebSocketService: Reconnecting with exponential backoff
+    void delay;
 
     this.reconnectTimer = setTimeout(() => {
       this.connect();

@@ -86,7 +86,7 @@ export const jwtValidation = {
       const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
 
       if (!jwtSecret) {
-        console.error('JWT_SECRET or SUPABASE_JWT_SECRET not configured');
+        // JWT error: JWT_SECRET or SUPABASE_JWT_SECRET not configured
         return null;
       }
 
@@ -95,7 +95,7 @@ export const jwtValidation = {
 
       // Validate required fields
       if (!decoded.userId || !decoded.email) {
-        console.warn('JWT missing required fields (userId, email)');
+        // JWT warning: JWT missing required fields (userId, email)
         return null;
       }
 
@@ -106,17 +106,8 @@ export const jwtValidation = {
         name: decoded.name,
         role: decoded.role || 'user',
       };
-    } catch (error) {
-      // Log specific JWT errors for debugging
-      if (error instanceof jwt.JsonWebTokenError) {
-        console.warn('Invalid JWT token:', error.message);
-      } else if (error instanceof jwt.TokenExpiredError) {
-        console.warn('JWT token expired:', error.message);
-      } else if (error instanceof jwt.NotBeforeError) {
-        console.warn('JWT not yet valid:', error.message);
-      } else {
-        console.error('JWT verification error:', error);
-      }
+    } catch (_error) {
+      // JWT error: Token verification failed (invalid, expired, or not yet valid)
       return null;
     }
   },

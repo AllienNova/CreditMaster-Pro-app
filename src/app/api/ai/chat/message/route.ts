@@ -2,17 +2,34 @@
  * Chat Message API Endpoint
  *
  * POST /api/ai/chat/message - Send a message in a chat session
+ * PROTECTED: Requires authentication
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 import { getChatEngine } from '@/lib/ai/chat-engine';
 import type { SendMessageRequest } from '@/lib/ai/types/chat.types';
 
 export async function POST(request: NextRequest) {
   try {
-    // TODO: Add authentication middleware
-    // For now, use a mock user ID
-    const userId = request.headers.get('x-user-id') || 'user_mock';
+    // AUTHENTICATION CHECK - Required for all AI endpoints
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+        },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id;
 
     // Parse request body
     const body: SendMessageRequest = await request.json();
@@ -54,7 +71,8 @@ export async function POST(request: NextRequest) {
         success: false,
         error: {
           code: 'CHAT_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown error occurred',
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
         },
       },
       { status: 500 }

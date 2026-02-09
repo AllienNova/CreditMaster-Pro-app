@@ -1,5 +1,5 @@
 /**
- * CPFI Debt Store
+ * Fynvita Debt Store
  * Manages debt overview and payoff strategies
  * Split from financialStore for better modularity
  */

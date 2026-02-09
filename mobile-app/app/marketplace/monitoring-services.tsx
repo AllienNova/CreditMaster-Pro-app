@@ -1,5 +1,5 @@
 /**
- * CPFI Monitoring Services Marketplace Screen
+ * Fynvita Monitoring Services Marketplace Screen
  * Compare credit monitoring services
  */
 
@@ -22,7 +22,7 @@ interface MonitoringService {
 }
 
 const SERVICES: MonitoringService[] = [
-  { id: '1', name: 'CPFI Premium', price: '$29.99/mo', bureaus: 3, features: ['All 3 bureau monitoring', 'Daily score updates', 'AI dispute assistant', 'Identity protection'], rating: 4.9, recommended: true },
+  { id: '1', name: 'Fynvita Premium', price: '$29.99/mo', bureaus: 3, features: ['All 3 bureau monitoring', 'Daily score updates', 'AI dispute assistant', 'Identity protection'], rating: 4.9, recommended: true },
   { id: '2', name: 'Experian CreditWorks', price: '$24.99/mo', bureaus: 1, features: ['Experian monitoring', 'FICO score', 'Dark web scan', 'Identity theft insurance'], rating: 4.5, recommended: false },
   { id: '3', name: 'IdentityForce', price: '$17.99/mo', bureaus: 3, features: ['3-bureau monitoring', 'Identity protection', 'Social media monitoring', '$1M insurance'], rating: 4.6, recommended: false },
   { id: '4', name: 'myFICO', price: '$39.95/mo', bureaus: 3, features: ['All FICO scores', '3-bureau reports', 'Score simulator', 'Identity monitoring'], rating: 4.4, recommended: false },
@@ -30,7 +30,7 @@ const SERVICES: MonitoringService[] = [
 
 export default function MonitoringServicesScreen() {
   const handleLearnMore = (service: MonitoringService) => {
-    if (service.name === 'CPFI Premium') {
+    if (service.name === 'Fynvita Premium') {
       router.push('/settings/billing');
     } else {
       Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(service.name)}`);
@@ -100,7 +100,7 @@ export default function MonitoringServicesScreen() {
         <Card style={styles.comparisonCard}>
           <View style={styles.comparisonRow}>
             <Text style={styles.comparisonLabel}>Feature</Text>
-            <Text style={styles.comparisonValue}>CPFI</Text>
+            <Text style={styles.comparisonValue}>Fynvita</Text>
             <Text style={styles.comparisonValue}>Others</Text>
           </View>
           {[

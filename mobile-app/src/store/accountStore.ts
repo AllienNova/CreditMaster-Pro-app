@@ -1,5 +1,5 @@
 /**
- * CPFI Account Store
+ * Fynvita Account Store
  * Manages bank account connections and Plaid integration
  * Split from financialStore for better modularity
  */

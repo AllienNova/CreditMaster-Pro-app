@@ -1,5 +1,5 @@
 /**
- * CPFI Help & Support Dashboard
+ * Fynvita Help & Support Dashboard
  */
 
 import React from 'react';

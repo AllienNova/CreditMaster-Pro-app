@@ -332,25 +332,25 @@ export default function BudgetManagement() {
           <SummaryCard
             title="Total Budgeted"
             value={formatCurrency(summary.totalBudgeted)}
-            icon="💰"
+            icon=""
             color="blue"
           />
           <SummaryCard
             title="Total Spent"
             value={formatCurrency(summary.totalSpent)}
-            icon="💸"
+            icon=""
             color="green"
           />
           <SummaryCard
             title="Remaining"
             value={formatCurrency(summary.totalRemaining)}
-            icon="🎯"
+            icon=""
             color={summary.totalRemaining >= 0 ? 'emerald' : 'red'}
           />
           <SummaryCard
             title="Over Budget"
             value={`${summary.overBudgetCount} of ${summary.budgetCount}`}
-            icon="⚠️"
+            icon=""
             color={summary.overBudgetCount > 0 ? 'red' : 'gray'}
           />
         </div>
@@ -384,8 +384,8 @@ export default function BudgetManagement() {
       )}
 
       {/* Budget List Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Your Budgets
           </h2>
@@ -395,7 +395,7 @@ export default function BudgetManagement() {
                 window.location.href =
                   '/api/financial/export?type=budgets&format=csv';
               }}
-              className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-2 text-sm"
+              className="px-3 py-2 bg-gray-100 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 flex items-center gap-2 text-sm"
               title="Export to CSV"
             >
               <svg
@@ -517,7 +517,7 @@ function SummaryCard({
     emerald:
       'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800',
     red: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
-    gray: 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700',
+    gray: 'bg-gray-50 dark:bg-slate-900/20 border-gray-200 dark:border-slate-700',
   };
 
   return (
@@ -527,7 +527,7 @@ function SummaryCard({
       <div className="flex items-center gap-3">
         <span className="text-2xl">{icon}</span>
         <div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">{title}</p>
           <p className="text-xl font-semibold text-gray-900 dark:text-white">
             {value}
           </p>
@@ -540,7 +540,7 @@ function SummaryCard({
 function EmptyBudgetState({ onCreateClick }: { onCreateClick: () => void }) {
   return (
     <div className="p-8 text-center">
-      <p className="text-gray-500 dark:text-gray-400 mb-4">
+      <p className="text-gray-500 dark:text-slate-400 mb-4">
         No budgets yet. Create your first budget to start tracking your
         spending.
       </p>
@@ -561,17 +561,17 @@ function BudgetLoadingSkeleton() {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="bg-gray-200 dark:bg-gray-700 rounded-lg h-24"
+            className="bg-gray-200 dark:bg-slate-700 rounded-lg h-24"
           />
         ))}
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6" />
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/4 mb-6" />
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-20 bg-gray-200 dark:bg-gray-700 rounded"
+              className="h-20 bg-gray-200 dark:bg-slate-700 rounded"
             />
           ))}
         </div>
@@ -611,7 +611,7 @@ function BudgetList({
         return (
           <div
             key={budget.id}
-            className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            className="p-4 hover:bg-gray-50 dark:hover:bg-slate-700/50"
           >
             <div className="flex items-center justify-between mb-2">
               <div>
@@ -623,7 +623,7 @@ function BudgetList({
                     </span>
                   )}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500 dark:text-slate-400">
                   {budget.category} • {budget.period}
                   {budget.rolloverEnabled && budget.rolloverAmount > 0 && (
                     <span className="ml-2 text-blue-600 dark:text-blue-400">
@@ -635,7 +635,7 @@ function BudgetList({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => onEdit(budget)}
-                  className="p-2 text-gray-400 hover:text-blue-600"
+                  className="p-2 text-gray-400 dark:text-slate-500 hover:text-blue-600"
                   aria-label="Edit"
                 >
                   <svg
@@ -654,7 +654,7 @@ function BudgetList({
                 </button>
                 <button
                   onClick={() => onDelete(budget)}
-                  className="p-2 text-gray-400 hover:text-red-600"
+                  className="p-2 text-gray-400 dark:text-slate-500 hover:text-red-600"
                   aria-label="Delete"
                 >
                   <svg
@@ -674,7 +674,7 @@ function BudgetList({
               </div>
             </div>
             <div className="mb-2">
-              <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div
                   className={`h-full ${progressColor} transition-all`}
                   style={{ width: `${percentage}%` }}
@@ -682,7 +682,7 @@ function BudgetList({
               </div>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500 dark:text-gray-400">
+              <span className="text-gray-500 dark:text-slate-400">
                 {formatCurrency(budget.spent)} of{' '}
                 {formatCurrency(effectiveBudget)}
                 {budget.rolloverEnabled && budget.rolloverAmount > 0 && (
@@ -737,7 +737,7 @@ function BudgetForm({
       className="space-y-4"
     >
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
           Budget Name
         </label>
         <input
@@ -746,19 +746,19 @@ function BudgetForm({
           value={formData.name}
           onChange={onInputChange}
           required
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
           placeholder="e.g., Monthly Groceries"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
           Category
         </label>
         <select
           name="category"
           value={formData.category}
           onChange={onInputChange}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
         >
           {CATEGORIES.map((cat) => (
             <option key={cat} value={cat}>
@@ -769,7 +769,7 @@ function BudgetForm({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
             Amount
           </label>
           <input
@@ -780,18 +780,18 @@ function BudgetForm({
             min="0"
             step="0.01"
             required
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
             Period
           </label>
           <select
             name="period"
             value={formData.period}
             onChange={onInputChange}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
           >
             <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
@@ -800,7 +800,7 @@ function BudgetForm({
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
           Alert Threshold (%)
         </label>
         <input
@@ -810,7 +810,7 @@ function BudgetForm({
           onChange={onInputChange}
           min="0"
           max="100"
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
         />
       </div>
       <div className="flex items-center gap-2">
@@ -820,11 +820,11 @@ function BudgetForm({
           checked={formData.rolloverEnabled}
           onChange={onCheckboxChange}
           id="rolloverEnabled"
-          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-600 rounded focus:ring-blue-500"
         />
         <label
           htmlFor="rolloverEnabled"
-          className="text-sm text-gray-700 dark:text-gray-300"
+          className="text-sm text-gray-700 dark:text-slate-300"
         >
           Enable budget rollover
         </label>
@@ -834,7 +834,7 @@ function BudgetForm({
           type="button"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+          className="px-4 py-2 text-gray-700 dark:text-slate-300 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50"
         >
           Cancel
         </button>

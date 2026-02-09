@@ -3,12 +3,14 @@
  *
  * GET /api/financial/budgets - List all budgets for user
  * POST /api/financial/budgets - Create a new budget
+ *
+ * Uses the new withPermission guard for consistent authentication.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { budgetService } from '@/lib/financial/budget-service';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { withPermission } from '@/lib/auth/api-guard';
+import { JWTUser } from '@/lib/auth/jwt-validation';
 import {
   CreateBudgetInput,
   BudgetCategoryValue,
@@ -19,32 +21,16 @@ import {
 /**
  * GET /api/financial/budgets
  * List all budgets for the authenticated user
+ * Requires: financial:read permission
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission('financial:read', async (request: NextRequest, user: JWTUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check permissions (premium feature)
-    if (!rbac.hasPermission(validation.user, 'financial:read')) {
-      return NextResponse.json(
-        { error: 'Forbidden - Premium feature' },
-        { status: 403 }
-      );
-    }
-
-    const userId = validation.user.id;
-
     // Parse query parameters
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('activeOnly') === 'true';
     const category = searchParams.get('category') as BudgetCategoryValue | null;
 
-    const budgets = await budgetService.getBudgetsByUser(userId, {
+    const budgets = await budgetService.getBudgetsByUser(user.id, {
       activeOnly,
       category: category || undefined,
     });
@@ -54,41 +40,25 @@ export async function GET(request: NextRequest) {
       data: budgets,
       count: budgets.length,
     });
-  } catch (error) {
-    console.error('Error fetching budgets:', error);
+  } catch (_error) {
+    // BudgetsRoute error: Failed to fetch budgets
     return NextResponse.json(
       {
         error: 'Failed to fetch budgets',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: _error instanceof Error ? _error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
-}
+});
 
 /**
  * POST /api/financial/budgets
  * Create a new budget
+ * Requires: financial:create_budgets permission
  */
-export async function POST(request: NextRequest) {
+export const POST = withPermission('financial:create_budgets', async (request: NextRequest, user: JWTUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check permissions (premium feature)
-    if (!rbac.hasPermission(validation.user, 'financial:create_budgets')) {
-      return NextResponse.json(
-        { error: 'Forbidden - Premium feature' },
-        { status: 403 }
-      );
-    }
-
-    const userId = validation.user.id;
-
     const body = await request.json();
     const {
       name,
@@ -162,7 +132,7 @@ export async function POST(request: NextRequest) {
     }
 
     const input: CreateBudgetInput = {
-      userId,
+      userId: user.id,
       name,
       category,
       budgetedAmount,
@@ -181,14 +151,14 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('Error creating budget:', error);
+  } catch (_error) {
+    // BudgetsRoute error: Failed to create budget
     return NextResponse.json(
       {
         error: 'Failed to create budget',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: _error instanceof Error ? _error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
-}
+});

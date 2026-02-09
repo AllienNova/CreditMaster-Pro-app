@@ -1,5 +1,5 @@
 /**
- * CPFI Alert Detail Screen
+ * Fynvita Alert Detail Screen
  * Alert type, severity, description, recommended actions
  */
 

@@ -119,7 +119,7 @@ export async function createGoodwillLetter(
 
     return mapGoodwillLetterFromDb(data as GoodwillLetterRow);
   } catch (error) {
-    console.error('Error creating goodwill letter:', error);
+    // GoodwillDB error: Error creating goodwill letter
     throw new Error(`Failed to create goodwill letter: ${(error as Error).message}`);
   }
 }
@@ -148,7 +148,7 @@ export async function getGoodwillLetter(
 
     return data ? mapGoodwillLetterFromDb(data as GoodwillLetterRow) : null;
   } catch (error) {
-    console.error('Error getting goodwill letter:', error);
+    // GoodwillDB error: Error getting goodwill letter
     throw new Error(`Failed to get goodwill letter: ${(error as Error).message}`);
   }
 }
@@ -199,7 +199,7 @@ export async function getGoodwillLettersByUser(
       total: count || 0,
     };
   } catch (error) {
-    console.error('Error getting goodwill letters by user:', error);
+    // GoodwillDB error: Error getting goodwill letters by user
     throw new Error(`Failed to get goodwill letters: ${(error as Error).message}`);
   }
 }
@@ -231,7 +231,7 @@ export async function getGoodwillLettersByStatus(
     const rows = (data ?? []) as GoodwillLetterRow[];
     return rows.map(mapGoodwillLetterFromDb);
   } catch (error) {
-    console.error('Error getting goodwill letters by status:', error);
+    // GoodwillDB error: Error getting goodwill letters by status
     throw new Error(`Failed to get goodwill letters by status: ${(error as Error).message}`);
   }
 }
@@ -270,7 +270,7 @@ export async function updateGoodwillLetter(
 
     return mapGoodwillLetterFromDb(data as GoodwillLetterRow);
   } catch (error) {
-    console.error('Error updating goodwill letter:', error);
+    // GoodwillDB error: Error updating goodwill letter
     throw new Error(`Failed to update goodwill letter: ${(error as Error).message}`);
   }
 }
@@ -293,7 +293,7 @@ export async function deleteGoodwillLetter(
 
     return true;
   } catch (error) {
-    console.error('Error deleting goodwill letter:', error);
+    // GoodwillDB error: Error deleting goodwill letter
     throw new Error(`Failed to delete goodwill letter: ${(error as Error).message}`);
   }
 }
@@ -337,7 +337,7 @@ export async function getGoodwillLetterStats(
       successRate,
     };
   } catch (error) {
-    console.error('Error getting goodwill letter stats:', error);
+    // GoodwillDB error: Error getting goodwill letter stats
     throw new Error(`Failed to get goodwill letter stats: ${(error as Error).message}`);
   }
 }

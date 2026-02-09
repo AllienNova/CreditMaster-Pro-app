@@ -64,11 +64,12 @@ export default function FinancialSettings() {
       
       // Simulate saving settings
       await new Promise(resolve => setTimeout(resolve, 1000));
-      console.info('Settings saved for user', userId);
-      
+      // FinancialSettings: Settings saved for user
+
       alert('Settings saved successfully!');
-    } catch (error) {
-      console.error('Failed to save financial settings', error);
+    } catch (_error) {
+      // FinancialSettings error: Failed to save financial settings
+      void _error;
       alert('Failed to save settings');
     } finally {
       setSaving(false);
@@ -91,8 +92,8 @@ export default function FinancialSettings() {
 
   if (!user) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-600">Please log in to manage your financial settings.</p>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <p className="text-gray-600 dark:text-slate-300">Please log in to manage your financial settings.</p>
       </div>
     );
   }
@@ -100,19 +101,19 @@ export default function FinancialSettings() {
   return (
     <div className="space-y-6">
       {/* Notification Settings */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <span>🔔</span>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <span></span>
             Notification Preferences
           </h2>
-          <p className="text-sm text-gray-600 mt-1">Manage how you receive notifications</p>
+          <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">Manage how you receive notifications</p>
         </div>
         <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <div>
-              <h3 className="font-semibold text-gray-900">Email Notifications</h3>
-              <p className="text-sm text-gray-600">Receive notifications via email</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Email Notifications</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">Receive notifications via email</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -121,14 +122,14 @@ export default function FinancialSettings() {
                 onChange={(e) => updateNotification('email', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-800 after:border-gray-300 dark:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <div>
-              <h3 className="font-semibold text-gray-900">Push Notifications</h3>
-              <p className="text-sm text-gray-600">Receive push notifications in browser</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Push Notifications</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">Receive push notifications in browser</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -137,14 +138,14 @@ export default function FinancialSettings() {
                 onChange={(e) => updateNotification('push', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-800 after:border-gray-300 dark:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <div>
-              <h3 className="font-semibold text-gray-900">Budget Alerts</h3>
-              <p className="text-sm text-gray-600">Alert when approaching budget limits</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Budget Alerts</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">Alert when approaching budget limits</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -153,14 +154,14 @@ export default function FinancialSettings() {
                 onChange={(e) => updateNotification('budgetAlerts', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-800 after:border-gray-300 dark:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <div>
-              <h3 className="font-semibold text-gray-900">Bill Reminders</h3>
-              <p className="text-sm text-gray-600">Remind me about upcoming bills</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Bill Reminders</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">Remind me about upcoming bills</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -169,14 +170,14 @@ export default function FinancialSettings() {
                 onChange={(e) => updateNotification('billReminders', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-800 after:border-gray-300 dark:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <div>
-              <h3 className="font-semibold text-gray-900">Goal Milestones</h3>
-              <p className="text-sm text-gray-600">Celebrate when reaching financial goals</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Goal Milestones</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">Celebrate when reaching financial goals</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -185,14 +186,14 @@ export default function FinancialSettings() {
                 onChange={(e) => updateNotification('goalMilestones', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-800 after:border-gray-300 dark:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <div>
-              <h3 className="font-semibold text-gray-900">Large Transactions</h3>
-              <p className="text-sm text-gray-600">Alert for transactions over $500</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Large Transactions</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">Alert for transactions over $500</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -201,26 +202,26 @@ export default function FinancialSettings() {
                 onChange={(e) => updateNotification('largeTransactions', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-800 after:border-gray-300 dark:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
         </div>
       </div>
 
       {/* Sync Settings */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <span>🔄</span>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <span></span>
             Data Sync
           </h2>
-          <p className="text-sm text-gray-600 mt-1">Manage how your data is synchronized</p>
+          <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">Manage how your data is synchronized</p>
         </div>
         <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <div>
-              <h3 className="font-semibold text-gray-900">Auto Sync</h3>
-              <p className="text-sm text-gray-600">Automatically sync account data</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Auto Sync</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">Automatically sync account data</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -229,12 +230,12 @@ export default function FinancialSettings() {
                 onChange={(e) => setSettings({ ...settings, sync: { ...settings.sync, autoSync: e.target.checked } })}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-800 after:border-gray-300 dark:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Sync Frequency</label>
+          <div className="p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Sync Frequency</label>
               <select
                 value={settings.sync.syncFrequency}
                 onChange={(e) =>
@@ -244,7 +245,7 @@ export default function FinancialSettings() {
                   })
                 }
                 disabled={!settings.sync.autoSync}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-200"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-200 dark:bg-slate-700"
               >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -255,19 +256,19 @@ export default function FinancialSettings() {
       </div>
 
       {/* Privacy Settings */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <span>🔒</span>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <span></span>
             Privacy & Data
           </h2>
-          <p className="text-sm text-gray-600 mt-1">Control your data and privacy preferences</p>
+          <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">Control your data and privacy preferences</p>
         </div>
         <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <div>
-              <h3 className="font-semibold text-gray-900">Share Anonymous Data</h3>
-              <p className="text-sm text-gray-600">Help improve our service with anonymous usage data</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Share Anonymous Data</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">Help improve our service with anonymous usage data</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -276,14 +277,14 @@ export default function FinancialSettings() {
                 onChange={(e) => updatePrivacy('shareData', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-800 after:border-gray-300 dark:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <div>
-              <h3 className="font-semibold text-gray-900">Analytics</h3>
-              <p className="text-sm text-gray-600">Allow analytics to improve your experience</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Analytics</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">Allow analytics to improve your experience</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -292,14 +293,14 @@ export default function FinancialSettings() {
                 onChange={(e) => updatePrivacy('analytics', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-800 after:border-gray-300 dark:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <div>
-              <h3 className="font-semibold text-gray-900">Marketing Communications</h3>
-              <p className="text-sm text-gray-600">Receive tips and product updates</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Marketing Communications</h3>
+              <p className="text-sm text-gray-600 dark:text-slate-300">Receive tips and product updates</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -308,7 +309,7 @@ export default function FinancialSettings() {
                 onChange={(e) => updatePrivacy('marketing', e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-slate-800 after:border-gray-300 dark:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
         </div>

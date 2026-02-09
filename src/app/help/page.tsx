@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { Icon } from '@/components/ui/Icon';
 
 const categories = [
-  { icon: "🚀", title: "Getting Started", description: "Learn the basics of CreditMaster Pro", articles: 8, href: "/help/guides" },
-  { icon: "📝", title: "Disputes", description: "How to create and manage disputes", articles: 12, href: "/help/guides" },
-  { icon: "📊", title: "Credit Reports", description: "Understanding your credit reports", articles: 10, href: "/help/guides" },
-  { icon: "💳", title: "Billing & Plans", description: "Manage your subscription", articles: 6, href: "/help/guides" },
-  { icon: "🔒", title: "Account & Security", description: "Protect your account", articles: 5, href: "/help/guides" },
-  { icon: "🔗", title: "Integrations", description: "Connect banks and bureaus", articles: 7, href: "/help/guides" },
+  { icon: "book-open", title: "Getting Started", description: "Learn the basics of Fynvita", articles: 8, href: "/help/guides" },
+  { icon: "chart-bar", title: "Credit Health", description: "Monitor and improve your credit", articles: 12, href: "/help/guides" },
+  { icon: "banknotes", title: "Financial Wellness", description: "Budget, save, and thrive", articles: 10, href: "/help/guides" },
+  { icon: "trending-up", title: "Investment Intelligence", description: "Grow your wealth wisely", articles: 9, href: "/help/guides" },
+  { icon: "credit-card", title: "Billing & Plans", description: "Manage your subscription", articles: 6, href: "/help/guides" },
+  { icon: "shield", title: "Account & Security", description: "Protect your account", articles: 5, href: "/help/guides" },
 ];
 
 const popularArticles = [
@@ -20,9 +21,9 @@ const popularArticles = [
 ];
 
 const quickLinks = [
-  { icon: "📧", title: "Email Support", description: "Get help via email", action: "support@creditmasterpro.com" },
-  { icon: "💬", title: "Live Chat", description: "Chat with our team", action: "Start Chat" },
-  { icon: "📞", title: "Phone Support", description: "Premium members only", action: "1-800-CREDIT" },
+  { icon: "envelope", title: "Email Support", description: "Get help via email", action: "support@fynvita.com" },
+  { icon: "chat", title: "Live Chat", description: "Chat with our team", action: "Start Chat" },
+  { icon: "phone", title: "Phone Support", description: "Premium members only", action: "1-800-FYNVITA" },
 ];
 
 export default function HelpCenterPage() {
@@ -30,17 +31,17 @@ export default function HelpCenterPage() {
     <div>
       {/* Categories */}
       <section className="mb-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Browse by Category</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Browse by Category</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map((category) => (
             <Link
               key={category.title}
               href={category.href}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:border-emerald-300 hover:shadow-md transition"
+              className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700 hover:border-emerald-300 hover:shadow-md transition"
             >
-              <span className="text-3xl mb-4 block">{category.icon}</span>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">{category.title}</h3>
-              <p className="text-gray-500 text-sm mb-3">{category.description}</p>
+              <Icon name={category.icon} className="text-3xl mb-4 inline-block" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{category.title}</h3>
+              <p className="text-gray-500 dark:text-slate-400 text-sm mb-3">{category.description}</p>
               <p className="text-emerald-500 text-sm">{category.articles} articles →</p>
             </Link>
           ))}
@@ -50,20 +51,20 @@ export default function HelpCenterPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Popular Articles */}
         <div className="lg:col-span-2">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Popular Articles</h2>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="divide-y divide-gray-100">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Popular Articles</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
+            <div className="divide-y divide-gray-100 dark:divide-slate-700">
               {popularArticles.map((article, i) => (
                 <Link
                   key={i}
                   href="/help/guides"
-                  className="flex items-center justify-between p-4 hover:bg-gray-50 transition"
+                  className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition"
                 >
                   <div>
-                    <h3 className="font-medium text-gray-900">{article.title}</h3>
-                    <p className="text-sm text-gray-500">{article.category}</p>
+                    <h3 className="font-medium text-gray-900 dark:text-white">{article.title}</h3>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">{article.category}</p>
                   </div>
-                  <span className="text-sm text-gray-400">{article.views} views</span>
+                  <span className="text-sm text-gray-400 dark:text-slate-500">{article.views} views</span>
                 </Link>
               ))}
             </div>
@@ -72,15 +73,15 @@ export default function HelpCenterPage() {
 
         {/* Quick Links */}
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Need More Help?</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Need More Help?</h2>
           <div className="space-y-4">
             {quickLinks.map((link) => (
-              <div key={link.title} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+              <div key={link.title} className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl">{link.icon}</span>
+                  <Icon name={link.icon} className="text-2xl inline-block" />
                   <div>
-                    <h3 className="font-medium text-gray-900">{link.title}</h3>
-                    <p className="text-sm text-gray-500">{link.description}</p>
+                    <h3 className="font-medium text-gray-900 dark:text-white">{link.title}</h3>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">{link.description}</p>
                     <p className="text-sm text-emerald-500 mt-1">{link.action}</p>
                   </div>
                 </div>
@@ -92,16 +93,16 @@ export default function HelpCenterPage() {
 
       {/* Video Tutorials */}
       <section className="mt-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Video Tutorials</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Video Tutorials</h2>
         <div className="grid md:grid-cols-3 gap-6">
           {["Getting Started Guide", "How to File a Dispute", "Understanding Credit Scores"].map((title, i) => (
-            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="aspect-video bg-gray-100 flex items-center justify-center">
-                <span className="text-4xl">▶️</span>
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+              <div className="aspect-video bg-gray-100 dark:bg-slate-800 flex items-center justify-center">
+                <Icon name="sparkles" className="w-10 h-10 text-emerald-500" />
               </div>
               <div className="p-4">
-                <h3 className="font-medium text-gray-900">{title}</h3>
-                <p className="text-sm text-gray-500">5 min watch</p>
+                <h3 className="font-medium text-gray-900 dark:text-white">{title}</h3>
+                <p className="text-sm text-gray-500 dark:text-slate-400">5 min watch</p>
               </div>
             </div>
           ))}

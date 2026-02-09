@@ -1,5 +1,5 @@
 /**
- * CPFI Secured Card Screen
+ * Fynvita Secured Card Screen
  * Build credit with secured credit cards
  */
 

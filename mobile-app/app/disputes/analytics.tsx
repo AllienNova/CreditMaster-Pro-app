@@ -1,5 +1,5 @@
 /**
- * CPFI Dispute Analytics Screen
+ * Fynvita Dispute Analytics Screen
  * Success rate by bureau, resolution time trends, export
  */
 

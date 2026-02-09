@@ -51,18 +51,12 @@ export function OfflineIndicator({
   if (variant === 'badge') {
     return (
       <div
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-200 ${
-          isOnline
-            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-        } ${className}`}
+        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-200 ${ isOnline ? 'bg-green-100 text-green-700' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' } ${className}`}
         role="status"
         aria-live="polite"
       >
         <span
-          className={`w-2 h-2 rounded-full ${
-            isOnline ? 'bg-green-600 dark:bg-green-400' : 'bg-yellow-600 dark:bg-yellow-400'
-          }`}
+          className={`w-2 h-2 rounded-full ${ isOnline ? 'bg-green-600' : 'bg-yellow-600 dark:bg-yellow-400' }`}
           aria-hidden="true"
         />
         <span>
@@ -84,11 +78,7 @@ export function OfflineIndicator({
       aria-live="polite"
     >
       <div
-        className={`px-4 py-3 text-center text-sm font-medium transition-colors duration-200 ${
-          isOnline
-            ? 'bg-green-600 dark:bg-green-700 text-white'
-            : 'bg-yellow-500 dark:bg-yellow-600 text-gray-900 dark:text-white'
-        }`}
+        className={`px-4 py-3 text-center text-sm font-medium transition-colors duration-200 ${ isOnline ? 'bg-green-600 text-white' : 'bg-yellow-500 dark:bg-yellow-600 text-gray-900 dark:text-white' }`}
       >
         <div className="flex items-center justify-center gap-2">
           {isOnline ? (

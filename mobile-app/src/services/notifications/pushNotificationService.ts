@@ -1,5 +1,5 @@
 /**
- * CPFI Push Notification Service
+ * Fynvita Push Notification Service
  * FCM/APNs registration, background handling, deep linking
  */
 
@@ -42,7 +42,9 @@ class PushNotificationService {
    */
   async initialize(): Promise<boolean> {
     if (!Device.isDevice) {
-      console.log('Push notifications require a physical device');
+      if (__DEV__) {
+        console.log('Push notifications require a physical device');
+      }
       return false;
     }
 
@@ -57,7 +59,9 @@ class PushNotificationService {
       }
 
       if (finalStatus !== 'granted') {
-        console.log('Push notification permission denied');
+        if (__DEV__) {
+          console.log('Push notification permission denied');
+        }
         return false;
       }
 
@@ -77,7 +81,7 @@ class PushNotificationService {
 
       return true;
     } catch (error) {
-      console.error('Failed to initialize push notifications:', error);
+      if (__DEV__) console.error('Failed to initialize push notifications:', error);
       return false;
     }
   }
@@ -94,7 +98,7 @@ class PushNotificationService {
       await AsyncStorage.setItem(PUSH_TOKEN_KEY, this.pushToken);
       return this.pushToken;
     } catch (error) {
-      console.error('Failed to get push token:', error);
+      if (__DEV__) console.error('Failed to get push token:', error);
       return null;
     }
   }
@@ -110,7 +114,7 @@ class PushNotificationService {
         deviceId: Device.deviceName || 'unknown',
       });
     } catch (error) {
-      console.error('Failed to register push token:', error);
+      if (__DEV__) console.error('Failed to register push token:', error);
     }
   }
 
@@ -121,7 +125,9 @@ class PushNotificationService {
     // Handle notifications received while app is foregrounded
     this.notificationListener = Notifications.addNotificationReceivedListener(
       (notification) => {
-        console.log('Notification received:', notification);
+        if (__DEV__) {
+          console.log('Notification received:', notification);
+        }
         this.handleNotification(notification);
       }
     );
@@ -129,7 +135,9 @@ class PushNotificationService {
     // Handle notification taps
     this.responseListener = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        console.log('Notification tapped:', response);
+        if (__DEV__) {
+          console.log('Notification tapped:', response);
+        }
         this.handleNotificationResponse(response);
       }
     );
@@ -141,7 +149,9 @@ class PushNotificationService {
   private handleNotification(notification: Notifications.Notification): void {
     const data = notification.request.content.data as PushNotificationPayload['data'];
     // Could update badge count, show in-app notification, etc.
-    console.log('Processing notification data:', data);
+    if (__DEV__) {
+      console.log('Processing notification data:', data);
+    }
   }
 
   /**
@@ -162,7 +172,7 @@ class PushNotificationService {
    */
   private async setupAndroidChannel(): Promise<void> {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'CPFI Alerts',
+      name: 'Fynvita Alerts',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#2563EB',
@@ -242,7 +252,7 @@ class PushNotificationService {
         await AsyncStorage.removeItem(PUSH_TOKEN_KEY);
       }
     } catch (error) {
-      console.error('Failed to unregister push token:', error);
+      if (__DEV__) console.error('Failed to unregister push token:', error);
     }
   }
 

@@ -14,6 +14,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { useMarketDataWebSocket } from '@/hooks/useMarketDataWebSocket';
+import { Icon } from '@/components/ui/Icon';
 
 // ============================================================================
 // TYPES
@@ -201,9 +202,9 @@ export function ComprehensiveAnalysisPanel({
       {/* Header */}
       <div className="p-6 border-b border-gray-800">
         <h2 className="text-2xl font-bold text-white mb-4">
-          🎯 Comprehensive Investment Analysis
+          Comprehensive Investment Analysis
         </h2>
-        <p className="text-gray-400 mb-6">
+        <p className="text-gray-400 dark:text-slate-500 mb-6">
           Unified analysis combining Technical, Fundamental, Sentiment, Pattern Recognition, AI
           Recommendations, and Portfolio Analysis
         </p>
@@ -212,17 +213,17 @@ export function ComprehensiveAnalysisPanel({
         <div className="flex gap-4">
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-400">Stock Symbol</label>
+              <label className="block text-sm font-medium text-gray-400 dark:text-slate-500">Stock Symbol</label>
               {realtimePrice && (
                 <div className="flex items-center gap-2">
                   <span
                     className={`text-xs px-2 py-1 rounded ${
                       wsStatus === 'connected'
                         ? 'bg-green-900/30 text-green-400'
-                        : 'bg-gray-800 text-gray-500'
+                        : 'bg-gray-800 text-gray-500 dark:text-slate-400'
                     }`}
                   >
-                    {wsStatus === 'connected' ? '🟢 Live' : '⚪ Offline'}
+                    {wsStatus === 'connected' ? 'Live' : 'Offline'}
                   </span>
                   <span className="text-sm font-mono text-white">
                     ${realtimePrice.toFixed(2)}
@@ -235,11 +236,11 @@ export function ComprehensiveAnalysisPanel({
               value={symbol}
               onChange={(e) => setSymbol(e.target.value.toUpperCase())}
               placeholder="Enter symbol (e.g., AAPL)"
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="w-48">
-            <label className="block text-sm font-medium text-gray-400 mb-2">
+            <label className="block text-sm font-medium text-gray-400 dark:text-slate-500 mb-2">
               Timeframe
             </label>
             <select
@@ -263,7 +264,7 @@ export function ComprehensiveAnalysisPanel({
               disabled={loading || !symbol}
               className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
             >
-              {loading ? '🔄 Analyzing...' : '🚀 Analyze'}
+              {loading ? 'Analyzing...' : 'Analyze'}
             </button>
 
             {analysis && (
@@ -274,15 +275,15 @@ export function ComprehensiveAnalysisPanel({
                   className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
                   title="Export to CSV"
                 >
-                  📊 CSV
+                  CSV
                 </button>
                 <button
                   onClick={() => handleExport('json')}
                   disabled={exporting}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
                   title="Export to JSON"
                 >
-                  📄 JSON
+                  JSON
                 </button>
                 <button
                   onClick={() => handleExport('pdf')}
@@ -290,7 +291,7 @@ export function ComprehensiveAnalysisPanel({
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
                   title="Export to PDF/HTML"
                 >
-                  📑 PDF
+                  PDF
                 </button>
               </div>
             )}
@@ -302,7 +303,7 @@ export function ComprehensiveAnalysisPanel({
       <div className="p-6">
         {error && (
           <div className="mb-6 p-4 bg-red-900/20 border border-red-800 rounded-lg">
-            <p className="text-red-400">❌ {error}</p>
+            <p className="text-red-400">{error}</p>
           </div>
         )}
 
@@ -310,8 +311,8 @@ export function ComprehensiveAnalysisPanel({
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-400">Analyzing {symbol}...</p>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-gray-400 dark:text-slate-500">Analyzing {symbol}...</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
                 Running comprehensive analysis across all 6 services
               </p>
             </div>
@@ -320,9 +321,9 @@ export function ComprehensiveAnalysisPanel({
 
         {!loading && !error && !analysis && (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">📊</div>
-            <p className="text-gray-400 text-lg">Enter a symbol and click Analyze</p>
-            <p className="text-sm text-gray-500 mt-2">
+            <div className="text-6xl mb-4"></div>
+            <p className="text-gray-400 dark:text-slate-500 text-lg">Enter a symbol and click Analyze</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
               Get comprehensive insights from technical, fundamental, sentiment, and AI analysis
             </p>
           </div>
@@ -357,26 +358,26 @@ export function ComprehensiveAnalysisPanel({
 
 function OverallSignalCard({ analysis }: { analysis: AnalysisResult }) {
   const signalConfig = {
-    strong_buy: { label: 'STRONG BUY', color: 'bg-green-600', icon: '🚀' },
-    buy: { label: 'BUY', color: 'bg-green-500', icon: '📈' },
-    neutral: { label: 'NEUTRAL', color: 'bg-gray-600', icon: '➡️' },
-    sell: { label: 'SELL', color: 'bg-red-500', icon: '📉' },
-    strong_sell: { label: 'STRONG SELL', color: 'bg-red-600', icon: '⚠️' },
+    strong_buy: { label: 'STRONG BUY', color: 'bg-green-600', icon: "sparkles" },
+    buy: { label: 'BUY', color: 'bg-green-500', icon: "sparkles" },
+    neutral: { label: 'NEUTRAL', color: 'bg-gray-600', icon: "sparkles" },
+    sell: { label: 'SELL', color: 'bg-red-500', icon: "sparkles" },
+    strong_sell: { label: 'STRONG SELL', color: 'bg-red-600', icon: "sparkles" },
   };
 
   const config = signalConfig[analysis.overallSignal];
 
   const riskConfig = {
-    low: { label: 'Low Risk', color: 'text-green-400', icon: '✅' },
-    moderate: { label: 'Moderate Risk', color: 'text-yellow-400', icon: '⚡' },
-    high: { label: 'High Risk', color: 'text-orange-400', icon: '⚠️' },
-    very_high: { label: 'Very High Risk', color: 'text-red-400', icon: '🔥' },
+    low: { label: 'Low Risk', color: 'text-green-400', icon: "sparkles" },
+    moderate: { label: 'Moderate Risk', color: 'text-yellow-400', icon: "sparkles" },
+    high: { label: 'High Risk', color: 'text-orange-400', icon: "sparkles" },
+    very_high: { label: 'Very High Risk', color: 'text-red-400', icon: "sparkles" },
   };
 
   const risk = riskConfig[analysis.riskLevel];
 
   return (
-    <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-lg p-6 border border-blue-800/50">
+    <div className="bg-gradient-to-br from-blue-900/30 to-blue-900/30 rounded-lg p-6 border border-blue-800/50">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-white mb-2">
@@ -396,7 +397,7 @@ function OverallSignalCard({ analysis }: { analysis: AnalysisResult }) {
           <div className={`${risk.color} font-semibold mb-1`}>
             {risk.icon} {risk.label}
           </div>
-          <div className="text-sm text-gray-400">
+          <div className="text-sm text-gray-400 dark:text-slate-500">
             Analyzed: {new Date(analysis.analyzedAt).toLocaleString()}
           </div>
         </div>
@@ -407,11 +408,11 @@ function OverallSignalCard({ analysis }: { analysis: AnalysisResult }) {
 
 function CompositeScoreGrid({ analysis }: { analysis: AnalysisResult }) {
   const scores = [
-    { label: 'Overall', value: analysis.compositeScore.overall, icon: '🎯' },
-    { label: 'Technical', value: analysis.compositeScore.technical, icon: '📊' },
-    { label: 'Fundamental', value: analysis.compositeScore.fundamental, icon: '💼' },
-    { label: 'Sentiment', value: analysis.compositeScore.sentiment, icon: '💭' },
-    { label: 'Pattern', value: analysis.compositeScore.pattern, icon: '🔍' },
+    { label: 'Overall', value: analysis.compositeScore.overall, icon: "sparkles" },
+    { label: 'Technical', value: analysis.compositeScore.technical, icon: "sparkles" },
+    { label: 'Fundamental', value: analysis.compositeScore.fundamental, icon: "sparkles" },
+    { label: 'Sentiment', value: analysis.compositeScore.sentiment, icon: "sparkles" },
+    { label: 'Pattern', value: analysis.compositeScore.pattern, icon: "sparkles" },
   ];
 
   const getScoreColor = (score: number) => {
@@ -430,13 +431,13 @@ function CompositeScoreGrid({ analysis }: { analysis: AnalysisResult }) {
 
   return (
     <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
-      <h3 className="text-lg font-semibold text-white mb-4">📈 Composite Scores</h3>
+      <h3 className="text-lg font-semibold text-white mb-4">Composite Scores</h3>
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {scores.map((score) => (
           <div key={score.label} className="bg-gray-900/50 rounded-lg p-4">
             <div className="text-center mb-2">
               <div className="text-2xl mb-1">{score.icon}</div>
-              <div className="text-sm text-gray-400">{score.label}</div>
+              <div className="text-sm text-gray-400 dark:text-slate-500">{score.label}</div>
             </div>
             <div className={`text-3xl font-bold text-center ${getScoreColor(score.value)}`}>
               {score.value.toFixed(0)}
@@ -457,23 +458,23 @@ function CompositeScoreGrid({ analysis }: { analysis: AnalysisResult }) {
 
 function CorrelationCard({ analysis }: { analysis: AnalysisResult }) {
   const alignmentConfig = {
-    strong: { label: 'Strong Alignment', color: 'text-green-400', icon: '✅' },
-    moderate: { label: 'Moderate Alignment', color: 'text-yellow-400', icon: '⚡' },
-    weak: { label: 'Weak Alignment', color: 'text-orange-400', icon: '⚠️' },
-    conflicting: { label: 'Conflicting Signals', color: 'text-red-400', icon: '❌' },
+    strong: { label: 'Strong Alignment', color: 'text-green-400', icon: "sparkles" },
+    moderate: { label: 'Moderate Alignment', color: 'text-yellow-400', icon: "sparkles" },
+    weak: { label: 'Weak Alignment', color: 'text-orange-400', icon: "sparkles" },
+    conflicting: { label: 'Conflicting Signals', color: 'text-red-400', icon: "sparkles" },
   };
 
   const config = alignmentConfig[analysis.correlationAnalysis.alignmentLevel];
 
   return (
     <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
-      <h3 className="text-lg font-semibold text-white mb-4">🔗 Correlation Analysis</h3>
+      <h3 className="text-lg font-semibold text-white mb-4">Correlation Analysis</h3>
       <div className="flex items-center justify-between">
         <div>
           <div className={`text-xl font-semibold ${config.color} mb-2`}>
             {config.icon} {config.label}
           </div>
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-400 dark:text-slate-500 text-sm">
             Alignment Score: {(analysis.correlationAnalysis.overallAlignment * 100).toFixed(1)}%
           </p>
         </div>
@@ -516,7 +517,7 @@ function InsightsGrid({ analysis }: { analysis: AnalysisResult }) {
       {/* Key Insights */}
       <div className="bg-blue-900/20 rounded-lg p-4 border border-blue-800/50">
         <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-          💡 Key Insights
+          Key Insights
         </h4>
         <ul className="space-y-2">
           {analysis.keyInsights.map((insight, idx) => (
@@ -531,7 +532,7 @@ function InsightsGrid({ analysis }: { analysis: AnalysisResult }) {
       {/* Risks */}
       <div className="bg-red-900/20 rounded-lg p-4 border border-red-800/50">
         <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-          ⚠️ Risks
+          Risks
         </h4>
         <ul className="space-y-2">
           {analysis.risks.map((risk, idx) => (
@@ -546,7 +547,7 @@ function InsightsGrid({ analysis }: { analysis: AnalysisResult }) {
       {/* Opportunities */}
       <div className="bg-green-900/20 rounded-lg p-4 border border-green-800/50">
         <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-          🎯 Opportunities
+          Opportunities
         </h4>
         <ul className="space-y-2">
           {analysis.opportunities.map((opportunity, idx) => (
@@ -563,9 +564,9 @@ function InsightsGrid({ analysis }: { analysis: AnalysisResult }) {
 
 function SummaryCard({ analysis }: { analysis: AnalysisResult }) {
   return (
-    <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-lg p-6 border border-purple-800/50">
+    <div className="bg-gradient-to-r from-blue-900/30 to-blue-900/30 rounded-lg p-6 border border-blue-800/50">
       <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-        📝 Analysis Summary
+        Analysis Summary
       </h3>
       <p className="text-gray-300 leading-relaxed">{analysis.summary}</p>
     </div>

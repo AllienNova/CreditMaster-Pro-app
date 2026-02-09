@@ -202,7 +202,7 @@ test.describe('Asset Allocation Demo', () => {
     const currentURL = page.url();
 
     // Check if redirected to login or if page contains login elements
-    const isLoginPage = currentURL.includes('/login') || currentURL.includes('/auth');
+    const isLoginPage = currentURL.includes('/auth/login') || currentURL.includes('/auth');
     const hasLoginForm = await page.locator('form').count() > 0;
 
     // At least one should be true

@@ -43,7 +43,7 @@ export default function CategoryBreakdown({ categories, totalBudgeted }: Categor
       case 'on_track': return 'bg-blue-100 text-blue-700';
       case 'near_limit': return 'bg-yellow-100 text-yellow-700';
       case 'over_budget': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
+      default: return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200';
     }
   };
 
@@ -69,32 +69,26 @@ export default function CategoryBreakdown({ categories, totalBudgeted }: Categor
   }));
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6" data-testid="category-breakdown">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Category Breakdown</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Category Breakdown</h3>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setViewMode('list')}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-              viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:bg-slate-700' }`}
           >
             List
           </button>
           <button
             onClick={() => setViewMode('pie')}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-              viewMode === 'pie' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ viewMode === 'pie' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:bg-slate-700' }`}
           >
             Pie
           </button>
           <button
             onClick={() => setViewMode('bar')}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-              viewMode === 'bar' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ viewMode === 'bar' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:bg-slate-700' }`}
           >
             Bar
           </button>
@@ -108,7 +102,7 @@ export default function CategoryBreakdown({ categories, totalBudgeted }: Categor
             <div key={category.category} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-700 capitalize">
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200 capitalize">
                     {category.category.replace(/_/g, ' ')}
                   </span>
                   <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(category.status)}`}>
@@ -116,21 +110,21 @@ export default function CategoryBreakdown({ categories, totalBudgeted }: Categor
                   </span>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-semibold text-gray-900">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white">
                     {formatCurrency(category.spent)} / {formatCurrency(category.budgeted)}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 dark:text-slate-400">
                     {category.transactions} transactions
                   </div>
                 </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${getProgressColor(category.percentUsed)}`}
                   style={{ width: `${Math.min(100, category.percentUsed)}%` }}
                 ></div>
               </div>
-              <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-slate-400">
                 <span>{category.percentUsed.toFixed(1)}% used</span>
                 <span className={category.remaining >= 0 ? 'text-green-600' : 'text-red-600'}>
                   {category.remaining >= 0 ? formatCurrency(category.remaining) : formatCurrency(Math.abs(category.remaining))} {category.remaining >= 0 ? 'remaining' : 'over'}
@@ -155,4 +149,3 @@ export default function CategoryBreakdown({ categories, totalBudgeted }: Categor
     </div>
   );
 }
-

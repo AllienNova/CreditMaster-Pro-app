@@ -1,5 +1,5 @@
 /**
- * CPFI Marketplace Navigation Layout
+ * Fynvita Marketplace Navigation Layout
  */
 
 import { Stack } from 'expo-router';

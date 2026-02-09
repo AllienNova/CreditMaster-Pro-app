@@ -118,8 +118,9 @@ export class SpendingAnalyzer {
   private async initializeAIService(): Promise<void> {
     try {
       this.aiService = new AIMLService();
-    } catch (error) {
-      console.warn('AI service initialization failed, will use rule-based analysis:', error);
+    } catch (_error) {
+      // SpendingAnalyzer warning: AI service initialization failed, will use rule-based analysis
+      void _error;
       this.aiService = null;
     }
   }
@@ -543,7 +544,7 @@ export class SpendingAnalyzer {
       .order('date', { ascending: false });
 
     if (error) {
-      console.error('Error fetching transactions:', error);
+      // SpendingAnalyzer error: Error fetching transactions
       return [];
     }
 
@@ -907,8 +908,9 @@ export class SpendingAnalyzer {
       try {
         const aiInsights = await this.getAIInsights(userId, context);
         insights.push(...aiInsights);
-      } catch (error) {
-        console.warn('AI insights generation failed:', error);
+      } catch (_error) {
+        // SpendingAnalyzer warning: AI insights generation failed
+        void _error;
       }
     }
 

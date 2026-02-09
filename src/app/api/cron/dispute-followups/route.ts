@@ -20,11 +20,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('Starting dispute follow-up processing...');
-    
+    // CronDisputeFollowups: Starting dispute follow-up processing
+
     const stats = await processFollowups();
-    
-    console.log('Follow-up processing complete:', stats);
+
+    // CronDisputeFollowups: Follow-up processing complete
 
     return NextResponse.json({
       success: true,
@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
       stats
     });
   } catch (error) {
-    console.error('Dispute follow-up cron error:', error);
-    
+    // CronDisputeFollowups error: Dispute follow-up cron error
+
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

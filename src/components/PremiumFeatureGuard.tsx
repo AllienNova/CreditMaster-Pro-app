@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { rbac, Permission } from '@/lib/auth/rbac';
 import Link from 'next/link';
+import { Icon } from '@/components/ui/Icon';
 
 interface PremiumFeatureGuardProps {
   children: ReactNode;
@@ -43,15 +44,15 @@ export default function PremiumFeatureGuard({
   if (!user) {
     return (
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-        <div className="text-yellow-600 text-5xl mb-4">🔒</div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        <div className="text-yellow-600 text-5xl mb-4"></div>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
           Authentication Required
         </h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600 dark:text-slate-300 mb-4">
           Please log in to access this feature.
         </p>
         <Link
-          href="/login"
+          href="/auth/login"
           className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           Log In
@@ -91,32 +92,32 @@ function UpgradePrompt({ permission }: { permission: Permission }) {
   const featureInfo = getFeatureInfo(permission);
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-8 text-center">
+    <div className="bg-gradient-to-br from-blue-50 to-blue-50 border-2 border-blue-200 rounded-xl p-8 text-center">
       {/* Icon */}
-      <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mb-6">
-        <span className="text-4xl">{featureInfo.icon}</span>
+      <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mb-6">
+        <Icon name={featureInfo.icon} className="text-4xl inline-block" />
       </div>
 
       {/* Title */}
-      <h3 className="text-2xl font-bold text-gray-900 mb-3">
+      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
         {featureInfo.title}
       </h3>
 
       {/* Description */}
-      <p className="text-gray-600 mb-6 max-w-md mx-auto">
+      <p className="text-gray-600 dark:text-slate-300 mb-6 max-w-md mx-auto">
         {featureInfo.description}
       </p>
 
       {/* Features List */}
-      <div className="bg-white rounded-lg p-6 mb-6 max-w-md mx-auto">
-        <h4 className="font-semibold text-gray-900 mb-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg p-6 mb-6 max-w-md mx-auto">
+        <h4 className="font-semibold text-gray-900 dark:text-white mb-4">
           Premium features include:
         </h4>
         <ul className="space-y-3 text-left">
           {featureInfo.features.map((feature, index) => (
             <li key={index} className="flex items-start gap-3">
-              <span className="text-green-500 text-xl flex-shrink-0">✓</span>
-              <span className="text-gray-700">{feature}</span>
+              <span className="text-green-500 text-xl flex-shrink-0"></span>
+              <span className="text-gray-700 dark:text-slate-200">{feature}</span>
             </li>
           ))}
         </ul>
@@ -126,21 +127,21 @@ function UpgradePrompt({ permission }: { permission: Permission }) {
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <Link
           href="/pricing"
-          className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl"
+          className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl"
         >
           Upgrade to Premium
         </Link>
         <Link
           href="/pricing"
-          className="px-8 py-3 bg-white text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors border-2 border-gray-300"
+          className="px-8 py-3 bg-white text-gray-700 dark:text-slate-200 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors border-2 border-gray-300 dark:border-slate-600"
         >
           View Plans
         </Link>
       </div>
 
       {/* Pricing hint */}
-      <p className="text-sm text-gray-500 mt-6">
-        Starting at <span className="font-semibold text-gray-700">$29/month</span>
+      <p className="text-sm text-gray-500 dark:text-slate-400 mt-6">
+        Starting at <span className="font-semibold text-gray-700 dark:text-slate-200">$29/month</span>
       </p>
     </div>
   );
@@ -162,7 +163,7 @@ function getFeatureInfo(permission: Permission): {
     features: string[];
   }> = {
     'financial:create_budgets': {
-      icon: '💰',
+      icon: "calculator",
       title: 'Budget Management',
       description: 'Create and track budgets to take control of your spending and reach your financial goals faster.',
       features: [
@@ -174,7 +175,7 @@ function getFeatureInfo(permission: Permission): {
       ],
     },
     'financial:create_goals': {
-      icon: '🎯',
+      icon: "target",
       title: 'Financial Goals',
       description: 'Set and track financial goals with AI-powered recommendations to achieve your dreams.',
       features: [
@@ -186,7 +187,7 @@ function getFeatureInfo(permission: Permission): {
       ],
     },
     'financial:generate_reports': {
-      icon: '📊',
+      icon: "document",
       title: 'Financial Reports',
       description: 'Generate comprehensive financial reports to understand your complete financial picture.',
       features: [
@@ -198,7 +199,7 @@ function getFeatureInfo(permission: Permission): {
       ],
     },
     'credit:alerts': {
-      icon: '🔔',
+      icon: "chart-bar",
       title: 'Credit Alerts',
       description: 'Get instant alerts about changes to your credit report and score.',
       features: [
@@ -210,7 +211,7 @@ function getFeatureInfo(permission: Permission): {
       ],
     },
     'credit:view_history': {
-      icon: '📈',
+      icon: "chart-bar",
       title: 'Credit History',
       description: 'View your complete credit history and track improvements over time.',
       features: [
@@ -222,7 +223,7 @@ function getFeatureInfo(permission: Permission): {
       ],
     },
     'ai:consensus': {
-      icon: '🤖',
+      icon: "sparkles",
       title: 'AI Consensus',
       description: 'Get responses from multiple AI models for the most accurate and reliable answers.',
       features: [
@@ -234,7 +235,7 @@ function getFeatureInfo(permission: Permission): {
       ],
     },
     'voice:synthesize': {
-      icon: '🎙️',
+      icon: "sparkles",
       title: 'Voice Synthesis',
       description: 'Convert text to natural-sounding speech with advanced AI voice technology.',
       features: [
@@ -246,7 +247,7 @@ function getFeatureInfo(permission: Permission): {
       ],
     },
     'disputes:delete': {
-      icon: '🗑️',
+      icon: "document-text",
       title: 'Advanced Dispute Management',
       description: 'Full control over your disputes with advanced management features.',
       features: [
@@ -258,7 +259,7 @@ function getFeatureInfo(permission: Permission): {
       ],
     },
     'documents:share': {
-      icon: '📤',
+      icon: "chart-bar",
       title: 'Document Sharing',
       description: 'Securely share documents with credit bureaus, lenders, and advisors.',
       features: [
@@ -272,7 +273,7 @@ function getFeatureInfo(permission: Permission): {
   };
 
   return featureMap[permission] || {
-    icon: '⭐',
+    icon: 'star',
     title: 'Premium Feature',
     description: 'This is a premium feature available to Premium, Admin, and Super Admin users.',
     features: [

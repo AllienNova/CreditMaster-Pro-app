@@ -33,7 +33,7 @@ import type {
 // CONFIGURATION
 // ============================================================================
 
-const DEFAULT_SYSTEM_PROMPT = `You are a professional financial advisor assistant for CreditMaster Pro, a comprehensive financial intelligence platform.
+const DEFAULT_SYSTEM_PROMPT = `You are a professional financial advisor assistant for Fynvita, a comprehensive financial intelligence platform.
 
 Your role is to help users with:
 - Credit repair and improvement strategies
@@ -57,13 +57,13 @@ Guidelines:
 When you identify a clear user intent to perform an action (like creating a budget or goal), confirm the details and offer to execute it.`;
 
 const MODEL_CONFIG = {
-  chat: 'openai/gpt-4o',                  // Fast, cost-effective for chat
+  chat: 'openai/gpt-4o', // Fast, cost-effective for chat
   chatAlternate: 'google/gemini-2.0-flash', // Alternative chat model
-  intent: 'openai/gpt-4o-mini',           // Quick intent recognition
-  extract: 'openai/gpt-4o-mini',          // Entity extraction
+  intent: 'openai/gpt-4o-mini', // Quick intent recognition
+  extract: 'openai/gpt-4o-mini', // Entity extraction
   complex: 'anthropic/claude-4.5-sonnet', // Complex financial advice
-  complexAlternate: 'x-ai/grok-2-1212',   // Alternative complex reasoning
-  creative: 'google/gemini-2.5-pro',      // Creative financial planning
+  complexAlternate: 'x-ai/grok-2-1212', // Alternative complex reasoning
+  creative: 'google/gemini-2.5-pro', // Creative financial planning
 };
 
 // ============================================================================
@@ -95,19 +95,15 @@ export class FinancialChatEngine {
       // 1. Get or validate session
       const session = await chatDbService.getSession(request.sessionId, userId);
       if (!session) {
-        throw new ChatError(
-          'Session not found',
-          'SESSION_NOT_FOUND',
-          { sessionId: request.sessionId }
-        );
+        throw new ChatError('Session not found', 'SESSION_NOT_FOUND', {
+          sessionId: request.sessionId,
+        });
       }
 
       if (session.status !== 'active') {
-        throw new ChatError(
-          'Session is not active',
-          'SESSION_NOT_FOUND',
-          { status: session.status }
-        );
+        throw new ChatError('Session is not active', 'SESSION_NOT_FOUND', {
+          status: session.status,
+        });
       }
 
       // 2. Validate message length
@@ -144,22 +140,26 @@ export class FinancialChatEngine {
       const context = await this.buildContext(session, userId);
 
       // 5. Build prompt with context
-      const prompt = await this.buildPrompt(
-        request.message,
-        context,
-        options
-      );
+      const prompt = await this.buildPrompt(request.message, context, options);
 
       // 6. Get AI response
       const aiResponse = await this.getAIResponse(prompt, session.sessionType);
 
       // 7. Parse intent and entities (if needed)
-      const intent = await this.recognizeIntent(request.message, aiResponse.content, context);
+      const intent = await this.recognizeIntent(
+        request.message,
+        aiResponse.content,
+        context
+      );
       const entities = await this.extractEntities(request.message, intent);
 
       // 8. Execute action if requested and intent is clear
       let actionResult: ActionResult | null = null;
-      if (options.executeAction && intent.confidence > 0.8 && !intent.requiresConfirmation) {
+      if (
+        options.executeAction &&
+        intent.confidence > 0.8 &&
+        !intent.requiresConfirmation
+      ) {
         const actionExecutor = getActionExecutor();
 
         // Validate action can be executed
@@ -174,7 +174,7 @@ export class FinancialChatEngine {
               context
             );
           } catch (error) {
-            console.error('Action execution failed:', error);
+            // Action execution failed
             actionResult = {
               success: false,
               type: intent.type,
@@ -210,7 +210,9 @@ export class FinancialChatEngine {
           entities,
           actionTaken: null,
           actionResult,
-          referencedData: context.financialContext ? { snapshot: context.financialContext } : null,
+          referencedData: context.financialContext
+            ? { snapshot: context.financialContext }
+            : null,
           tokensUsed: aiResponse.tokensUsed,
           modelUsed: aiResponse.model,
           latencyMs: latency,
@@ -221,7 +223,10 @@ export class FinancialChatEngine {
 
       // 11. Generate response suggestions
       const suggestions = this.generateSuggestions(intent, context);
-      const relatedQuestions = this.generateRelatedQuestions(session.sessionType, intent);
+      const relatedQuestions = this.generateRelatedQuestions(
+        session.sessionType,
+        intent
+      );
 
       return {
         message: assistantMessage,
@@ -234,7 +239,7 @@ export class FinancialChatEngine {
       };
     } catch (error) {
       // Log error and re-throw
-      console.error('Chat engine error:', error);
+      // ChatEngine error: Chat engine error
 
       if (error instanceof ChatError) {
         throw error;
@@ -249,18 +254,27 @@ export class FinancialChatEngine {
   }
 
   /**
-   * Stream a message response (for real-time UI updates)
+   * Stream a message response (for real-time UI updates).
+   * Currently falls back to non-streaming response.
+   * Streaming requires SSE or WebSocket transport implementation.
    */
   async streamMessage(
     userId: string,
     request: SendMessageRequest,
     onChunk: (chunk: string) => void
   ): Promise<ChatResponse> {
-    // TODO: Implement streaming support
-    // For now, fall back to non-streaming
-    return this.sendMessage(userId, request, {
+    // Streaming not yet implemented - fall back to standard response
+    // Future: Use SSE (Server-Sent Events) or WebSocket for real-time streaming
+    const response = await this.sendMessage(userId, request, {
       stream: false,
     });
+
+    // Simulate chunked delivery for callback compatibility
+    if (response.message?.content) {
+      onChunk(response.message.content);
+    }
+
+    return response;
   }
 
   // ==========================================================================
@@ -304,26 +318,33 @@ export class FinancialChatEngine {
     context: ConversationContext,
     options: SendMessageOptions
   ): Promise<BuiltPrompt> {
-    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
+    const messages: Array<{
+      role: 'system' | 'user' | 'assistant';
+      content: string;
+    }> = [];
 
     // 1. System prompt
     let systemPrompt = DEFAULT_SYSTEM_PROMPT;
 
     // Add financial context if available
     if (options.includeContext !== false && context.financialContext) {
-      systemPrompt += '\n\n' + this.buildFinancialContextPrompt(context.financialContext);
+      systemPrompt +=
+        '\n\n' + this.buildFinancialContextPrompt(context.financialContext);
     }
 
     // Add conversation summary if available
     if (context.conversationSummary) {
-      systemPrompt += '\n\nConversation Summary:\n' + context.conversationSummary;
+      systemPrompt +=
+        '\n\nConversation Summary:\n' + context.conversationSummary;
     }
 
     messages.push({ role: 'system', content: systemPrompt });
 
     // 2. Add recent message history
     if (options.includeContext !== false && context.recentMessages.length > 0) {
-      const maxHistory = options.maxTokens ? Math.min(5, options.maxTokens / 500) : 5;
+      const maxHistory = options.maxTokens
+        ? Math.min(5, options.maxTokens / 500)
+        : 5;
       const recentToInclude = context.recentMessages.slice(-maxHistory);
 
       for (const msg of recentToInclude) {
@@ -358,11 +379,13 @@ export class FinancialChatEngine {
    * Build financial context prompt section
    */
   private buildFinancialContextPrompt(snapshot: FinancialSnapshot): string {
-    const parts: string[] = ['User\'s Current Financial Snapshot:'];
+    const parts: string[] = ["User's Current Financial Snapshot:"];
 
     parts.push(`- Net Worth: $${snapshot.netWorth.toLocaleString()}`);
     parts.push(`- Monthly Income: $${snapshot.monthlyIncome.toLocaleString()}`);
-    parts.push(`- Monthly Expenses: $${snapshot.monthlyExpenses.toLocaleString()}`);
+    parts.push(
+      `- Monthly Expenses: $${snapshot.monthlyExpenses.toLocaleString()}`
+    );
     parts.push(`- Monthly Cash Flow: $${snapshot.cashFlow.toLocaleString()}`);
     parts.push(`- Financial Health Score: ${snapshot.healthScore}/100`);
     parts.push(`- Total Debt: $${snapshot.totalDebt.toLocaleString()}`);
@@ -394,7 +417,8 @@ export class FinancialChatEngine {
     sessionType: string
   ): Promise<{ content: string; tokensUsed: number; model: string }> {
     // Select model based on complexity
-    const model = sessionType === 'general' ? MODEL_CONFIG.chat : MODEL_CONFIG.complex;
+    const model =
+      sessionType === 'general' ? MODEL_CONFIG.chat : MODEL_CONFIG.complex;
 
     try {
       const response = await this.aimlService.chat(model, prompt.messages, {
@@ -411,12 +435,10 @@ export class FinancialChatEngine {
         model,
       };
     } catch (error) {
-      console.error('AI response error:', error);
-      throw new ChatError(
-        'Failed to get AI response',
-        'AI_SERVICE_ERROR',
-        { error }
-      );
+      // ChatEngine error: AI response error
+      throw new ChatError('Failed to get AI response', 'AI_SERVICE_ERROR', {
+        error,
+      });
     }
   }
 
@@ -437,17 +459,18 @@ export class FinancialChatEngine {
 
     // Build conversation context for intent recognizer
     const intentContext = {
-      recentIntents: context?.recentMessages
-        .filter((m) => m.intent)
-        .map((m) => m.intent!)
-        .slice(-5) || [],
+      recentIntents:
+        context?.recentMessages
+          .filter((m) => m.intent)
+          .map((m) => m.intent!)
+          .slice(-5) || [],
       pendingAction: context?.pendingAction?.intent || null,
     };
 
     try {
       return await intentRecognizer.recognize(userMessage, intentContext);
     } catch (error) {
-      console.error('Intent recognition failed, using fallback:', error);
+      // ChatEngine: Intent recognition failed, using fallback
 
       // Fallback to simple keyword detection
       return {
@@ -473,7 +496,7 @@ export class FinancialChatEngine {
     try {
       return await entityExtractor.extract(userMessage, intent.type);
     } catch (error) {
-      console.error('Entity extraction failed:', error);
+      // ChatEngine: Entity extraction failed
       // Return null on failure - non-critical
       return null;
     }
@@ -486,7 +509,10 @@ export class FinancialChatEngine {
   /**
    * Generate contextual suggestions
    */
-  private generateSuggestions(intent: Intent, context: ConversationContext): string[] {
+  private generateSuggestions(
+    intent: Intent,
+    context: ConversationContext
+  ): string[] {
     const suggestions: string[] = [];
 
     switch (intent.type) {
@@ -517,7 +543,10 @@ export class FinancialChatEngine {
   /**
    * Generate related questions
    */
-  private generateRelatedQuestions(sessionType: string, intent: Intent): string[] {
+  private generateRelatedQuestions(
+    sessionType: string,
+    intent: Intent
+  ): string[] {
     const questions: string[] = [];
 
     if (sessionType === 'budget') {
@@ -527,7 +556,7 @@ export class FinancialChatEngine {
       questions.push('Should I focus on high-interest debt first?');
       questions.push('Can I negotiate lower interest rates?');
     } else if (sessionType === 'investing') {
-      questions.push('What\'s my risk tolerance?');
+      questions.push("What's my risk tolerance?");
       questions.push('How should I diversify my portfolio?');
     } else {
       questions.push('How can I improve my credit score?');

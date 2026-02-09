@@ -66,8 +66,8 @@ export default function AIBillsOptimizer() {
       
       const result = await response.json();
       setData(result.data);
-    } catch (error) {
-      console.error('Error fetching bill optimizations:', error);
+    } catch (_error) {
+      // Error logged
       toast.error('Failed to load AI recommendations', 'Please try again later');
     } finally {
       setLoading(false);
@@ -94,7 +94,7 @@ export default function AIBillsOptimizer() {
       case 'easy': return 'text-green-600 bg-green-100 border-green-200';
       case 'medium': return 'text-yellow-600 bg-yellow-100 border-yellow-200';
       case 'hard': return 'text-red-600 bg-red-100 border-red-200';
-      default: return 'text-gray-600 bg-gray-100 border-gray-200';
+      default: return 'text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700';
     }
   };
 
@@ -103,17 +103,17 @@ export default function AIBillsOptimizer() {
       case 'keep': return 'text-green-600 bg-green-100 border-green-200';
       case 'downgrade': return 'text-yellow-600 bg-yellow-100 border-yellow-200';
       case 'cancel': return 'text-red-600 bg-red-100 border-red-200';
-      default: return 'text-gray-600 bg-gray-100 border-gray-200';
+      default: return 'text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700';
     }
   };
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg shadow-lg p-6 animate-pulse">
-        <div className="h-6 bg-white/20 rounded w-1/3 mb-4"></div>
+      <div className="bg-gradient-to-br from-teal-500 to-blue-600 rounded-lg shadow-lg p-6 animate-pulse">
+        <div className="h-6 bg-white dark:bg-slate-800/20 rounded w-1/3 mb-4"></div>
         <div className="space-y-3">
-          <div className="h-4 bg-white/20 rounded w-full"></div>
-          <div className="h-4 bg-white/20 rounded w-5/6"></div>
+          <div className="h-4 bg-white dark:bg-slate-800/20 rounded w-full"></div>
+          <div className="h-4 bg-white dark:bg-slate-800/20 rounded w-5/6"></div>
         </div>
       </div>
     );
@@ -124,11 +124,11 @@ export default function AIBillsOptimizer() {
   }
 
   return (
-    <div className="bg-gradient-to-br from-teal-500 to-cyan-600 rounded-lg shadow-lg p-6 text-white">
+    <div className="bg-gradient-to-br from-teal-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="text-3xl">💡</div>
+          <div className="text-3xl"></div>
           <div>
             <h3 className="text-xl font-bold">AI Bills Optimizer</h3>
             <p className="text-sm opacity-90">Negotiation opportunities and subscription optimization</p>
@@ -136,7 +136,7 @@ export default function AIBillsOptimizer() {
         </div>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm font-medium"
+          className="px-4 py-2 bg-white hover:bg-white dark:bg-slate-800/30 rounded-lg transition-colors text-sm font-medium"
         >
           {expanded ? 'Collapse' : 'Expand'}
         </button>
@@ -147,10 +147,10 @@ export default function AIBillsOptimizer() {
           {/* Optimization Score & Potential Savings */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* Optimization Score */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
               <div className="text-sm font-medium opacity-90 mb-2">Optimization Score</div>
               <div className="text-4xl font-bold">{data.optimizationScore}/100</div>
-              <div className="mt-2 w-full bg-white/20 rounded-full h-2">
+              <div className="mt-2 w-full bg-white dark:bg-slate-800/20 rounded-full h-2">
                 <div
                   className={`h-2 rounded-full transition-all duration-500 ${
                     data.optimizationScore >= 80 ? 'bg-green-400' :
@@ -168,7 +168,7 @@ export default function AIBillsOptimizer() {
             </div>
 
             {/* Potential Savings */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
               <div className="text-sm font-medium opacity-90 mb-2">Total Monthly Savings</div>
               <div className="text-4xl font-bold">{formatCurrency(data.totalPotentialSavings)}</div>
               <div className="text-xs opacity-75 mt-2">
@@ -180,10 +180,10 @@ export default function AIBillsOptimizer() {
           {/* Negotiation Opportunities */}
           {data.negotiationOpportunities.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-sm font-semibold mb-3 opacity-90">💰 Bill Negotiation Opportunities</h4>
+              <h4 className="text-sm font-semibold mb-3 opacity-90">Bill Negotiation Opportunities</h4>
               <div className="space-y-3">
                 {data.negotiationOpportunities.slice(0, 3).map((opp) => (
-                  <div key={opp.id} className="bg-white rounded-lg p-4 text-gray-900">
+                  <div key={opp.id} className="bg-white dark:bg-slate-800 rounded-lg p-4 text-gray-900 dark:text-white">
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -194,22 +194,22 @@ export default function AIBillsOptimizer() {
                         </div>
                         <div className="flex items-center gap-4 text-sm mb-2">
                           <div>
-                            <span className="text-gray-500">Current:</span>{' '}
+                            <span className="text-gray-500 dark:text-slate-400">Current:</span>{' '}
                             <span className="font-semibold">{formatCurrency(opp.currentAmount)}/mo</span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Potential Savings:</span>{' '}
+                            <span className="text-gray-500 dark:text-slate-400">Potential Savings:</span>{' '}
                             <span className="font-semibold text-green-600">{formatCurrency(opp.estimatedSavings)}/mo</span>
                           </div>
                           <div>
-                            <span className="text-gray-500">Success Rate:</span>{' '}
+                            <span className="text-gray-500 dark:text-slate-400">Success Rate:</span>{' '}
                             <span className="font-semibold text-blue-600">{opp.successProbability}%</span>
                           </div>
                         </div>
-                        <div className="text-xs text-gray-600 mb-2">
+                        <div className="text-xs text-gray-600 dark:text-slate-300 mb-2">
                           <span className="font-medium">Best time to call:</span> {opp.bestTimeToCall}
                         </div>
-                        <div className="text-xs text-gray-600">
+                        <div className="text-xs text-gray-600 dark:text-slate-300">
                           <span className="font-medium">Tips:</span>
                           <ul className="list-disc list-inside mt-1 space-y-0.5">
                             {opp.tips.slice(0, 2).map((tip, idx) => (
@@ -235,10 +235,10 @@ export default function AIBillsOptimizer() {
           {/* Subscription Optimizations */}
           {data.subscriptionOptimizations.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-sm font-semibold mb-3 opacity-90">📱 Subscription Optimization</h4>
+              <h4 className="text-sm font-semibold mb-3 opacity-90">Subscription Optimization</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.subscriptionOptimizations.slice(0, 4).map((sub) => (
-                  <div key={sub.id} className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <div key={sub.id} className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium">{sub.name}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${getRecommendationColor(sub.recommendation)}`}>
@@ -254,12 +254,12 @@ export default function AIBillsOptimizer() {
                     </div>
                     {sub.potentialSavings > 0 && (
                       <div className="text-xs text-green-300 font-medium">
-                        💰 Save {formatCurrency(sub.potentialSavings)}/mo
+                        Save {formatCurrency(sub.potentialSavings)}/mo
                       </div>
                     )}
                     {sub.alternativeSuggestion && (
-                      <div className="text-xs text-cyan-200 mt-1">
-                        💡 {sub.alternativeSuggestion}
+                      <div className="text-xs text-blue-200 mt-1">
+                        {sub.alternativeSuggestion}
                       </div>
                     )}
                   </div>
@@ -271,10 +271,10 @@ export default function AIBillsOptimizer() {
           {/* Due Date Optimizations */}
           {data.dueDateOptimizations.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold mb-3 opacity-90">📅 Smart Due Date Alignment</h4>
+              <h4 className="text-sm font-semibold mb-3 opacity-90">Smart Due Date Alignment</h4>
               <div className="space-y-2">
                 {data.dueDateOptimizations.slice(0, 3).map((opt, idx) => (
-                  <div key={idx} className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <div key={idx} className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
                         <div className="font-medium text-sm mb-1">{opt.billName}</div>
@@ -285,8 +285,8 @@ export default function AIBillsOptimizer() {
                         <div className="text-xs opacity-75">
                           <span className="font-medium">Reason:</span> {opt.reason}
                         </div>
-                        <div className="text-xs text-cyan-200 mt-1">
-                          ✨ {opt.benefit}
+                        <div className="text-xs text-blue-200 mt-1">
+                          {opt.benefit}
                         </div>
                       </div>
                     </div>
@@ -300,17 +300,17 @@ export default function AIBillsOptimizer() {
           <div className="mt-6 flex gap-3 justify-center">
             <Link
               href="/financial/bills/negotiate"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-teal-600 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-teal-600 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
             >
               <span>View All Opportunities</span>
               <span>→</span>
             </Link>
             <button
               onClick={fetchOptimizations}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 text-white rounded-lg font-semibold hover:bg-white/30 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-white rounded-lg font-semibold hover:bg-white dark:bg-slate-800/30 transition-colors"
             >
               <span>Refresh</span>
-              <span>🔄</span>
+              <span></span>
             </button>
           </div>
         </>

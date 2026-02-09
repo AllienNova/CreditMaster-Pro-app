@@ -1,5 +1,5 @@
 /**
- * CPFI Auth Store Unit Tests
+ * Fynvita Auth Store Unit Tests
  */
 
 import { act } from '@testing-library/react-native';

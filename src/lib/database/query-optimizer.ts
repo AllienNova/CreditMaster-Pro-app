@@ -91,7 +91,7 @@ export class QueryOptimizer {
     const queries = this.batchQueue.get(batchKey);
     if (!queries || queries.length === 0) return;
     
-    console.log(`⚡ Executing batch of ${queries.length} queries for ${batchKey}`);
+    // Executing batch queries
     
     // Clear batch
     this.batchQueue.delete(batchKey);
@@ -156,7 +156,7 @@ export class QueryOptimizer {
     fetchFn: (key: string) => Promise<T>,
     ttl?: number
   ): Promise<void> {
-    console.log(`🔄 Prefetching ${keys.length} items`);
+    // Prefetching items
     
     await Promise.all(
       keys.map(async (key) => {
@@ -164,7 +164,7 @@ export class QueryOptimizer {
           const data = await fetchFn(key);
           cache.set(key, data, ttl);
         } catch (error) {
-          console.error(`Failed to prefetch ${key}:`, error);
+          // Prefetch failed, continue with next
         }
       })
     );
@@ -179,7 +179,7 @@ export class QueryOptimizer {
 
     // Limit to reasonable size (PostgreSQL limit is ~65535)
     if (unique.length > 1000) {
-      console.warn(`⚠️ IN query with ${unique.length} items, consider pagination`);
+      // Large IN query - consider pagination
       return unique.slice(0, 1000);
     }
 
@@ -205,9 +205,9 @@ export class QueryOptimizer {
     const duration = Date.now() - startTime;
     
     if (duration > 1000) {
-      console.warn(`⚠️ Slow query detected: ${queryName} took ${duration}ms`);
+      // Slow query detected
     } else {
-      console.log(`✅ Query ${queryName} completed in ${duration}ms`);
+      // Query completed
     }
     
     return { result, duration };

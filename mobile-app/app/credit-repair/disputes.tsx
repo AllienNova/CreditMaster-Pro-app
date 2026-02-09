@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Repair Disputes Screen
+ * Fynvita Credit Repair Disputes Screen
  * File and track credit disputes
  */
 

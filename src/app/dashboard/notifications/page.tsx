@@ -54,10 +54,10 @@ export default function NotificationsPage() {
 
   const getIcon = (type: string) => {
     const icons: Record<string, string> = {
-      dispute_update: '📋', score_change: '📈', document_processed: '📄',
-      recommendation: '💡', payment_reminder: '💳', system: '⚙️', promotion: '🎁',
+      dispute_update: '', score_change: '', document_processed: '',
+      recommendation: '', payment_reminder: '', system: '', promotion: '',
     };
-    return icons[type] || '🔔';
+    return icons[type] || '';
   };
 
   const filteredNotifications = filter === 'unread' 
@@ -68,23 +68,23 @@ export default function NotificationsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50 p-8">
         <div className="animate-pulse space-y-4 max-w-2xl mx-auto">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          {[...Array(5)].map((_, i) => <div key={i} className="h-20 bg-gray-200 rounded"></div>)}
+          <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/4"></div>
+          {[...Array(5)].map((_, i) => <div key={i} className="h-20 bg-gray-200 dark:bg-slate-700 rounded"></div>)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50">
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-white/20 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
+      <header className="bg-white dark:bg-slate-800/80 backdrop-blur-sm shadow-sm border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">← Back</Link>
-              <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
+              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-white">← Back</Link>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Notifications</h1>
               {unreadCount > 0 && (
                 <span className="px-2 py-1 text-xs font-medium bg-red-500 text-white rounded-full">{unreadCount}</span>
               )}
@@ -108,16 +108,16 @@ export default function NotificationsPage() {
             <div
               key={notification.id}
               onClick={() => markAsRead(notification.id)}
-              className={`bg-white rounded-xl shadow-sm border p-4 cursor-pointer transition-all hover:shadow-md ${!notification.read ? 'border-blue-300 bg-blue-50/50' : 'border-gray-200'}`}
+              className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border p-4 cursor-pointer transition-all hover:shadow-md ${!notification.read ? 'border-blue-300 bg-blue-50/50' : 'border-gray-200 dark:border-slate-700'}`}
             >
               <div className="flex items-start space-x-4">
                 <span className="text-2xl">{getIcon(notification.type)}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <h3 className={`font-medium ${!notification.read ? 'text-gray-900' : 'text-gray-700'}`}>{notification.title}</h3>
-                    <span className="text-xs text-gray-500">{new Date(notification.createdAt).toLocaleDateString()}</span>
+                    <h3 className={`font-medium ${!notification.read ? 'text-gray-900' : 'text-gray-700 dark:text-slate-200'}`}>{notification.title}</h3>
+                    <span className="text-xs text-gray-500 dark:text-slate-400">{new Date(notification.createdAt).toLocaleDateString()}</span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">{notification.body}</p>
+                  <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">{notification.body}</p>
                   {notification.actionUrl && (
                     <Link href={notification.actionUrl} className="text-sm text-blue-600 hover:underline mt-2 inline-block">View details →</Link>
                   )}
@@ -127,8 +127,8 @@ export default function NotificationsPage() {
             </div>
           ))}
           {filteredNotifications.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-4xl mb-4">🔔</p>
+            <div className="text-center py-12 text-gray-500 dark:text-slate-400">
+              <p className="text-4xl mb-4"></p>
               <p>{filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}</p>
             </div>
           )}

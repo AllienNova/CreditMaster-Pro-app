@@ -1,5 +1,5 @@
 /**
- * CPFI Alerts List Screen
+ * Fynvita Alerts List Screen
  * All monitoring alerts with filtering
  */
 

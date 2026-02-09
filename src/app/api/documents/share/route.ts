@@ -25,8 +25,9 @@ export async function GET(request: NextRequest) {
 
     const links = documentService.listShareLinks(documentId, validation.user.id);
     return NextResponse.json({ links });
-  } catch (error) {
-    console.error('List share links error:', error);
+  } catch (_error) {
+    // DocumentShareRoute error: Failed to list share links
+    void _error;
     return NextResponse.json({ error: 'Failed to list share links' }, { status: 500 });
   }
 }
@@ -80,9 +81,9 @@ export async function POST(request: NextRequest) {
     await auditLogger.logAPIRequest('POST', '/api/documents/share', validation.user.id, 200);
 
     return NextResponse.json({ link });
-  } catch (error) {
-    console.error('Create share link error:', error);
-    const message = error instanceof Error ? error.message : 'Failed to create share link';
+  } catch (_error) {
+    // DocumentShareRoute error: Failed to create share link
+    const message = _error instanceof Error ? _error.message : 'Failed to create share link';
     const status = message === 'Document not found' ? 404 : 500;
     return NextResponse.json({ error: message }, { status });
   }
@@ -108,8 +109,9 @@ export async function DELETE(request: NextRequest) {
 
     await auditLogger.logAPIRequest('DELETE', '/api/documents/share', validation.user.id, 200);
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Revoke share link error:', error);
+  } catch (_error) {
+    // DocumentShareRoute error: Failed to revoke share link
+    void _error;
     return NextResponse.json({ error: 'Failed to revoke share link' }, { status: 500 });
   }
 }

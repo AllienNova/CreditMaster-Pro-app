@@ -61,9 +61,9 @@ export default function FinancialDashboard() {
       <div className="space-y-6 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow p-6">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-              <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
+              <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4"></div>
             </div>
           ))}
         </div>
@@ -73,11 +73,11 @@ export default function FinancialDashboard() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">❌</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Dashboard</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="text-red-600 text-xl mb-4"></div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Dashboard</h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-4">{error}</p>
           <button
             type="button"
             onClick={fetchDashboard}
@@ -97,16 +97,16 @@ export default function FinancialDashboard() {
   // Check if user has any accounts
   if (dashboard.accounts.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-12">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12">
         <div className="text-center max-w-md mx-auto">
-          <div className="text-6xl mb-6">🏦</div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Connect Your Bank Account</h3>
-          <p className="text-gray-600 mb-8">
+          <div className="text-6xl mb-6"></div>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Connect Your Bank Account</h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-8">
             Link your bank accounts to start tracking your finances, managing budgets, and achieving your financial goals.
           </p>
           <PlaidLinkButton onSuccess={fetchDashboard} />
-          <p className="text-sm text-gray-500 mt-4">
-            🔒 Your data is encrypted and secure. We use bank-level security.
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-4">
+            Your data is encrypted and secure. We use bank-level security.
           </p>
         </div>
       </div>
@@ -118,8 +118,8 @@ export default function FinancialDashboard() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Financial Dashboard</h1>
-          <p className="text-gray-600 mt-1">Your complete financial overview powered by AI</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Financial Dashboard</h1>
+          <p className="text-gray-600 dark:text-slate-300 mt-1">Your complete financial overview powered by AI</p>
         </div>
         <PlaidLinkButton onSuccess={fetchDashboard} variant="primary" />
       </div>
@@ -145,7 +145,7 @@ export default function FinancialDashboard() {
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold opacity-90">Net Worth</h3>
-            <span className="text-2xl">💰</span>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold mb-1">{formatCurrency(dashboard.netWorth)}</div>
           <div className="text-sm opacity-75">
@@ -157,12 +157,12 @@ export default function FinancialDashboard() {
         </div>
 
         {/* Monthly Income */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600">Monthly Income</h3>
-            <span className="text-2xl">📈</span>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Monthly Income</h3>
+            <span className="text-2xl"></span>
           </div>
-          <div className="text-3xl font-bold text-gray-900 mb-1">
+          <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
             {formatCurrency(dashboard.monthlyIncome)}
           </div>
           <div className="text-sm text-green-600">
@@ -171,15 +171,15 @@ export default function FinancialDashboard() {
         </div>
 
         {/* Monthly Expenses */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600">Monthly Expenses</h3>
-            <span className="text-2xl">📊</span>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Monthly Expenses</h3>
+            <span className="text-2xl"></span>
           </div>
-          <div className="text-3xl font-bold text-gray-900 mb-1">
+          <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
             {formatCurrency(dashboard.monthlyExpenses)}
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-slate-300">
             Last 30 days
           </div>
         </div>
@@ -189,15 +189,15 @@ export default function FinancialDashboard() {
           dashboard.cashFlow >= 0 ? 'bg-green-50' : 'bg-red-50'
         }`}>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600">Cash Flow</h3>
-            <span className="text-2xl">{dashboard.cashFlow >= 0 ? '✅' : '⚠️'}</span>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Cash Flow</h3>
+            <span className="text-2xl">{dashboard.cashFlow >= 0 ? '' : ''}</span>
           </div>
           <div className={`text-3xl font-bold mb-1 ${
             dashboard.cashFlow >= 0 ? 'text-green-600' : 'text-red-600'
           }`}>
             {formatCurrency(dashboard.cashFlow)}
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-slate-300">
             Savings Rate: {formatPercentage(dashboard.savingsRate)}
           </div>
         </div>
@@ -206,9 +206,9 @@ export default function FinancialDashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Spending by Category */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Spending by Category</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Spending by Category</h3>
             <Link
               href="/financial/spending"
               className="text-sm text-blue-600 hover:text-blue-700"
@@ -221,34 +221,34 @@ export default function FinancialDashboard() {
               {dashboard.spendingByCategory.slice(0, 5).map((category, index) => (
                 <div key={index}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">{category.category}</span>
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{category.category}</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
                       {formatCurrency(category.amount)}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                     <div
                       className="bg-blue-600 h-2 rounded-full"
                       style={{ width: `${category.percentage}%` }}
                     ></div>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                     {category.percentage.toFixed(1)}% • {category.transactionCount} transactions
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-slate-400">
               No spending data available
             </div>
           )}
         </div>
 
         {/* Monthly Trend */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Monthly Trend</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Monthly Trend</h3>
             <Link
               href="/financial/cash-flow"
               className="text-sm text-blue-600 hover:text-blue-700"
@@ -260,10 +260,10 @@ export default function FinancialDashboard() {
             <div className="space-y-3">
               {dashboard.monthlyTrend.slice(-6).map((month, index) => (
                 <div key={index} className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700 w-20">{month.month}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-200 w-20">{month.month}</span>
                   <div className="flex-1 mx-4">
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div className="flex-1 bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                         <div
                           className="bg-green-500 h-2 rounded-full"
                           style={{
@@ -271,7 +271,7 @@ export default function FinancialDashboard() {
                           }}
                         ></div>
                       </div>
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div className="flex-1 bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                         <div
                           className="bg-red-500 h-2 rounded-full"
                           style={{
@@ -289,16 +289,16 @@ export default function FinancialDashboard() {
               <div className="flex items-center justify-center gap-6 pt-4 border-t">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-xs text-gray-600">Income</span>
+                  <span className="text-xs text-gray-600 dark:text-slate-300">Income</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-xs text-gray-600">Expenses</span>
+                  <span className="text-xs text-gray-600 dark:text-slate-300">Expenses</span>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-slate-400">
               No trend data available
             </div>
           )}
@@ -308,9 +308,9 @@ export default function FinancialDashboard() {
       {/* Accounts & Recent Transactions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Accounts */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Accounts</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Accounts</h3>
             <Link
               href="/financial/accounts"
               className="text-sm text-blue-600 hover:text-blue-700"
@@ -320,21 +320,21 @@ export default function FinancialDashboard() {
           </div>
           <div className="space-y-3">
             {dashboard.accounts.slice(0, 5).map((account) => (
-              <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold">
                     {account.institutionName.charAt(0)}
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">{account.accountName}</div>
-                    <div className="text-sm text-gray-500">••••{account.mask}</div>
+                    <div className="font-medium text-gray-900 dark:text-white">{account.accountName}</div>
+                    <div className="text-sm text-gray-500 dark:text-slate-400">••••{account.mask}</div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-semibold text-gray-900">
+                  <div className="font-semibold text-gray-900 dark:text-white">
                     {formatCurrency(account.currentBalance)}
                   </div>
-                  <div className="text-xs text-gray-500">{account.accountType}</div>
+                  <div className="text-xs text-gray-500 dark:text-slate-400">{account.accountType}</div>
                 </div>
               </div>
             ))}
@@ -342,9 +342,9 @@ export default function FinancialDashboard() {
         </div>
 
         {/* Recent Transactions */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Transactions</h3>
             <Link
               href="/financial/transactions"
               className="text-sm text-blue-600 hover:text-blue-700"
@@ -354,10 +354,10 @@ export default function FinancialDashboard() {
           </div>
           <div className="space-y-3">
             {dashboard.recentTransactions.map((txn) => (
-              <div key={txn.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
+              <div key={txn.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 rounded-lg transition-colors">
                 <div className="flex-1">
-                  <div className="font-medium text-gray-900">{txn.name}</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="font-medium text-gray-900 dark:text-white">{txn.name}</div>
+                  <div className="text-sm text-gray-500 dark:text-slate-400">
                     {txn.date.toLocaleDateString()} • {txn.category[0] || 'Uncategorized'}
                   </div>
                 </div>

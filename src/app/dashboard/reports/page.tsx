@@ -27,12 +27,12 @@ export default function ReportsPage() {
 
   const getTypeIcon = (type: string) => {
     const icons: Record<string, string> = {
-      analysis: '📊',
-      disputes: '📝',
-      score: '📈',
-      plan: '🎯',
+      analysis: '',
+      disputes: '',
+      score: '',
+      plan: '',
     };
-    return icons[type] || '📄';
+    return icons[type] || '';
   };
 
   const reportTypes = [
@@ -43,13 +43,13 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50">
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-white/20 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
+      <header className="bg-white dark:bg-slate-800/80 backdrop-blur-sm shadow-sm border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">← Back</Link>
-              <h1 className="text-xl font-bold text-gray-900">📑 Reports</h1>
+              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-white">← Back</Link>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Reports</h1>
             </div>
           </div>
         </div>
@@ -57,19 +57,19 @@ export default function ReportsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Generate New Report */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="font-semibold text-gray-900 mb-4">Generate New Report</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Generate New Report</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {reportTypes.map((rt) => (
               <button
                 key={rt.type}
                 onClick={() => handleGenerate(rt.type)}
                 disabled={generating === rt.type}
-                className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all text-left disabled:opacity-50"
+                className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all text-left disabled:opacity-50"
               >
                 <span className="text-2xl">{getTypeIcon(rt.type)}</span>
-                <p className="font-medium text-gray-900 mt-2">{rt.name}</p>
-                <p className="text-sm text-gray-500">{rt.desc}</p>
+                <p className="font-medium text-gray-900 dark:text-white mt-2">{rt.name}</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">{rt.desc}</p>
                 {generating === rt.type && (
                   <p className="text-sm text-blue-600 mt-2">Generating...</p>
                 )}
@@ -79,18 +79,18 @@ export default function ReportsPage() {
         </div>
 
         {/* Previous Reports */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="font-semibold text-gray-900">Previous Reports</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+            <h2 className="font-semibold text-gray-900 dark:text-white">Previous Reports</h2>
           </div>
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-gray-200 dark:divide-slate-700">
             {reports.map((report) => (
-              <div key={report.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+              <div key={report.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900">
                 <div className="flex items-center space-x-4">
                   <span className="text-2xl">{getTypeIcon(report.type)}</span>
                   <div>
-                    <p className="font-medium text-gray-900">{report.name}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium text-gray-900 dark:text-white">{report.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">
                       Generated {new Date(report.generatedAt).toLocaleDateString()} • {report.size}
                     </p>
                   </div>

@@ -31,7 +31,7 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
-const STORAGE_KEY = 'cpfi-theme';
+const STORAGE_KEY = 'fynvita-theme';
 
 function getSystemTheme(): ResolvedTheme {
   if (typeof window === 'undefined') return 'light';
@@ -87,11 +87,17 @@ export function ThemeProvider({
     root.classList.add(resolved);
 
     // Update meta theme-color for mobile browsers
+    // Uses computed background color from CSS variables for theme consistency
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
+      const bgColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--background')
+        .trim();
+      // CSS variables are in HSL format (e.g., "222.2 47.4% 11.2%")
+      // Convert to usable hsl() string for meta tag
       metaThemeColor.setAttribute(
         'content',
-        resolved === 'dark' ? '#0f172a' : '#ffffff'
+        bgColor ? `hsl(${bgColor})` : resolved === 'dark' ? '#0f172a' : '#ffffff'
       );
     }
   }, [theme, mounted]);

@@ -100,13 +100,13 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
     <div className="dispute-generator">
       <div className="max-w-4xl mx-auto p-6">
         <h2 className="text-3xl font-bold mb-6">AI-Powered Dispute Letter Generator</h2>
-        <p className="text-gray-600 mb-8">
+        <p className="text-gray-600 dark:text-slate-300 mb-8">
           Generate professional, legally compliant credit dispute letters using Claude 4.5 Sonnet
         </p>
 
         <div className="space-y-6">
           {/* User Information */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
             <h3 className="text-xl font-semibold mb-4">Your Information</h3>
             <div className="space-y-4">
               <div>
@@ -143,7 +143,7 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
           </div>
 
           {/* Dispute Details */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
             <h3 className="text-xl font-semibold mb-4">Dispute Details</h3>
             <div className="space-y-4">
               <div>
@@ -193,7 +193,7 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
                 : 'bg-yellow-50 border border-yellow-200'
             }`}>
               <h4 className="font-semibold mb-2">
-                {complianceReview.compliant ? '✅ Compliant' : '⚠️ Compliance Review'}
+                {complianceReview.compliant ? 'Compliant' : 'Compliance Review'}
               </h4>
               <p className="text-sm mb-2">Risk Level: {complianceReview.risk_level.toUpperCase()}</p>
               {complianceReview.issues.length > 0 && (
@@ -221,13 +221,13 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
 
           {/* Generated Letter */}
           {disputeLetter && (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold">Generated Dispute Letter</h3>
                 <div className="space-x-2">
                   <button
                     onClick={handleCopy}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors"
                   >
                     Copy
                   </button>
@@ -239,10 +239,10 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
                   </button>
                 </div>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg">
                 <pre className="whitespace-pre-wrap font-sans text-sm">{disputeLetter}</pre>
               </div>
-              <p className="text-xs text-gray-500 mt-4">
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-4">
                 Generated using Claude 4.5 Sonnet • Powered by AIML API
               </p>
             </div>

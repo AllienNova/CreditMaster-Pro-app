@@ -1,9 +1,37 @@
 import { FederalProgramApplication } from "@/types/student-loan";
 
+export interface FreshStartApplicationData {
+  userId: string;
+  loanIds: string[];
+  reason?: string;
+  documentation?: string[];
+}
+
+export interface RehabilitationApplicationData {
+  userId: string;
+  loanIds: string[];
+  proposedMonthlyPayment?: number;
+  documentation?: string[];
+}
+
+export interface ConsolidationApplicationData {
+  userId: string;
+  loanIds: string[];
+  targetServicer?: string;
+  documentation?: string[];
+}
+
+export interface ApplicationResult {
+  success: boolean;
+  applicationId: string;
+  application_id: string;
+  status: string;
+}
+
 export class FederalIntegrationService {
-  async submitFreshStartApplication(applicationData: any) {
+  async submitFreshStartApplication(applicationData: FreshStartApplicationData): Promise<ApplicationResult> {
     // Mock implementation
-    console.log("Submitting Fresh Start application:", applicationData);
+    // FederalIntegration: Submitting Fresh Start application
     return { 
       success: true, 
       applicationId: `fresh-start-${Date.now()}`,
@@ -12,9 +40,9 @@ export class FederalIntegrationService {
     };
   }
 
-  async submitRehabilitationApplication(applicationData: any) {
+  async submitRehabilitationApplication(applicationData: RehabilitationApplicationData): Promise<ApplicationResult> {
     // Mock implementation
-    console.log("Submitting Rehabilitation application:", applicationData);
+    // FederalIntegration: Submitting Rehabilitation application
     return { 
       success: true, 
       applicationId: `rehab-${Date.now()}`,
@@ -23,9 +51,9 @@ export class FederalIntegrationService {
     };
   }
 
-  async submitConsolidationApplication(applicationData: any) {
+  async submitConsolidationApplication(applicationData: ConsolidationApplicationData): Promise<ApplicationResult> {
     // Mock implementation
-    console.log("Submitting Consolidation application:", applicationData);
+    // FederalIntegration: Submitting Consolidation application
     return { 
       success: true, 
       applicationId: `consolidation-${Date.now()}`,
@@ -36,7 +64,7 @@ export class FederalIntegrationService {
 
   async trackApplicationStatus(applicationId: string) {
     // Mock implementation
-    console.log("Tracking application status for:", applicationId);
+    // FederalIntegration: Tracking application status
     return { 
       application_id: applicationId,
       status: "In Progress", 
@@ -46,7 +74,7 @@ export class FederalIntegrationService {
 
   async retrieveNSLDSData(userId: string) {
     // Mock implementation
-    console.log("Retrieving NSLDS data for user:", userId);
+    // FederalIntegration: Retrieving NSLDS data
     return {
       user_id: userId,
       loans: [],
@@ -57,7 +85,7 @@ export class FederalIntegrationService {
 
   async checkFreshStartEligibility(ssn: string) {
     // Mock implementation
-    console.log("Checking Fresh Start eligibility for SSN:", ssn.slice(-4));
+    // FederalIntegration: Checking Fresh Start eligibility
     return {
       eligible: true,
       program: 'fresh_start',
@@ -68,7 +96,7 @@ export class FederalIntegrationService {
 
   async checkRehabilitationEligibility(ssn: string) {
     // Mock implementation
-    console.log("Checking Rehabilitation eligibility for SSN:", ssn.slice(-4));
+    // FederalIntegration: Checking Rehabilitation eligibility
     return {
       eligible: true,
       program: 'rehabilitation',
@@ -79,7 +107,7 @@ export class FederalIntegrationService {
 
   async checkDischargeEligibility(ssn: string) {
     // Mock implementation
-    console.log("Checking Discharge eligibility for SSN:", ssn.slice(-4));
+    // FederalIntegration: Checking Discharge eligibility
     return {
       eligible: false,
       program: 'discharge',

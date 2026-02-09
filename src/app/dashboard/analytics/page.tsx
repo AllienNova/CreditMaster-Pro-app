@@ -96,12 +96,12 @@ export default function UserAnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50 p-8">
         <div className="animate-pulse space-y-6 max-w-7xl mx-auto">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/4"></div>
           <div className="grid grid-cols-2 gap-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-64 bg-gray-200 rounded-lg"></div>
+              <div key={i} className="h-64 bg-gray-200 dark:bg-slate-700 rounded-lg"></div>
             ))}
           </div>
         </div>
@@ -110,19 +110,19 @@ export default function UserAnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-cyan-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-white/20 sticky top-0 z-50">
+      <header className="bg-white dark:bg-slate-800/80 backdrop-blur-sm shadow-sm border-b border-white/20 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">← Back</Link>
-              <h1 className="text-xl font-bold text-gray-900">Credit Analytics</h1>
+              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-white">← Back</Link>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Credit Analytics</h1>
             </div>
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="3m">Last 3 months</option>
               <option value="6m">Last 6 months</option>
@@ -134,58 +134,58 @@ export default function UserAnalyticsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Score Progress */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Credit Score Progress</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Credit Score Progress</h2>
           <div className="h-48 flex items-end justify-between gap-2">
             {data?.creditHistory.map((item, i) => (
               <div key={i} className="flex-1 flex flex-col items-center">
-                <span className="text-sm font-medium text-gray-900 mb-1">{item.score}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white mb-1">{item.score}</span>
                 <div
-                  className="w-full bg-gradient-to-t from-blue-600 to-purple-600 rounded-t"
+                  className="w-full bg-gradient-to-t from-blue-600 to-blue-600 rounded-t"
                   style={{ height: `${((item.score - 300) / 550) * 100}%` }}
                 ></div>
-                <span className="text-xs text-gray-500 mt-2">{item.date}</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400 mt-2">{item.date}</span>
               </div>
             ))}
           </div>
           <div className="mt-4 text-center">
             <span className="text-3xl font-bold text-green-600">+{(data?.creditHistory[data.creditHistory.length - 1]?.score || 0) - (data?.creditHistory[0]?.score || 0)}</span>
-            <span className="text-gray-600 ml-2">points gained</span>
+            <span className="text-gray-600 dark:text-slate-300 ml-2">points gained</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Dispute Stats */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Dispute Performance</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Dispute Performance</h2>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <p className="text-3xl font-bold text-blue-600">{data?.disputeStats.total}</p>
-                <p className="text-sm text-gray-600">Total Disputes</p>
+                <p className="text-sm text-gray-600 dark:text-slate-300">Total Disputes</p>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <p className="text-3xl font-bold text-green-600">{data?.disputeStats.resolved}</p>
-                <p className="text-sm text-gray-600">Resolved</p>
+                <p className="text-sm text-gray-600 dark:text-slate-300">Resolved</p>
               </div>
               <div className="text-center p-4 bg-yellow-50 rounded-lg">
                 <p className="text-3xl font-bold text-yellow-600">{data?.disputeStats.pending}</p>
-                <p className="text-sm text-gray-600">Pending</p>
+                <p className="text-sm text-gray-600 dark:text-slate-300">Pending</p>
               </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <p className="text-3xl font-bold text-purple-600">{data?.disputeStats.successRate}%</p>
-                <p className="text-sm text-gray-600">Success Rate</p>
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <p className="text-3xl font-bold text-blue-600">{data?.disputeStats.successRate}%</p>
+                <p className="text-sm text-gray-600 dark:text-slate-300">Success Rate</p>
               </div>
             </div>
           </div>
 
           {/* Score Factors */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Score Factors</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Score Factors</h2>
             <div className="space-y-3">
               {data?.scoreFactors.map((factor, i) => (
                 <div key={i} className="flex items-center">
-                  <span className="w-32 text-sm text-gray-600">{factor.factor}</span>
-                  <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden mx-3">
+                  <span className="w-32 text-sm text-gray-600 dark:text-slate-300">{factor.factor}</span>
+                  <div className="flex-1 h-4 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden mx-3">
                     <div
                       className={`h-full rounded-full ${
                         factor.status === 'positive' ? 'bg-green-500' :
@@ -202,13 +202,13 @@ export default function UserAnalyticsPage() {
         </div>
 
         {/* AI Recommendations */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">🤖 AI Recommendations</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">AI Recommendations</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {data?.recommendations.map((rec, i) => (
-              <div key={i} className="flex items-start p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-                <span className="text-blue-600 mr-3">💡</span>
-                <p className="text-sm text-gray-700">{rec}</p>
+              <div key={i} className="flex items-start p-4 bg-gradient-to-r from-blue-50 to-blue-50 rounded-lg">
+                <span className="text-blue-600 mr-3"></span>
+                <p className="text-sm text-gray-700 dark:text-slate-200">{rec}</p>
               </div>
             ))}
           </div>

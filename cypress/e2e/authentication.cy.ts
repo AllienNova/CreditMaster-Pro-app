@@ -22,14 +22,14 @@ describe('Authentication', () => {
 
   describe('Login Flow', () => {
     it('should display login page', () => {
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.contains('Sign In').should('be.visible');
       cy.get('input[type="email"]').should('be.visible');
       cy.get('input[type="password"]').should('be.visible');
     });
 
     it('should show validation errors for empty fields', () => {
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.get('button[type="submit"]').click();
       
       // Check for validation messages
@@ -38,7 +38,7 @@ describe('Authentication', () => {
     });
 
     it('should show error for invalid credentials', () => {
-      cy.visit('/login');
+      cy.visit('/auth/login');
       
       cy.get('input[type="email"]').type('invalid@example.com');
       cy.get('input[type="password"]').type('wrongpassword');
@@ -48,7 +48,7 @@ describe('Authentication', () => {
     });
 
     it('should successfully login with valid credentials', () => {
-      cy.visit('/login');
+      cy.visit('/auth/login');
       
       cy.get('input[type="email"]').type(testUser.email);
       cy.get('input[type="password"]').type(testUser.password);
@@ -61,7 +61,7 @@ describe('Authentication', () => {
 
     it('should persist session after page reload', () => {
       // Login first
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.get('input[type="email"]').type(testUser.email);
       cy.get('input[type="password"]').type(testUser.password);
       cy.get('button[type="submit"]').click();
@@ -79,7 +79,7 @@ describe('Authentication', () => {
   describe('Logout Flow', () => {
     beforeEach(() => {
       // Login before each logout test
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.get('input[type="email"]').type(testUser.email);
       cy.get('input[type="password"]').type(testUser.password);
       cy.get('button[type="submit"]').click();
@@ -91,32 +91,32 @@ describe('Authentication', () => {
       cy.contains('Sign Out').click();
       
       // Should redirect to login page
-      cy.url({ timeout: 10000 }).should('include', '/login');
+      cy.url({ timeout: 10000 }).should('include', '/auth/login');
       cy.contains('Sign In').should('be.visible');
     });
 
     it('should clear session after logout', () => {
       // Logout
       cy.contains('Sign Out').click();
-      cy.url({ timeout: 10000 }).should('include', '/login');
+      cy.url({ timeout: 10000 }).should('include', '/auth/login');
       
       // Try to access protected route
       cy.visit('/dashboard');
       
       // Should redirect back to login
-      cy.url({ timeout: 10000 }).should('include', '/login');
+      cy.url({ timeout: 10000 }).should('include', '/auth/login');
     });
   });
 
   describe('Protected Routes', () => {
     it('should redirect to login when accessing dashboard without auth', () => {
       cy.visit('/dashboard');
-      cy.url({ timeout: 10000 }).should('include', '/login');
+      cy.url({ timeout: 10000 }).should('include', '/auth/login');
     });
 
     it('should redirect to login when accessing credit reports without auth', () => {
       cy.visit('/credit-reports');
-      cy.url({ timeout: 10000 }).should('include', '/login');
+      cy.url({ timeout: 10000 }).should('include', '/auth/login');
     });
 
     it('should allow access to public pages without auth', () => {
@@ -137,7 +137,7 @@ describe('Authentication', () => {
   describe('Session Management', () => {
     it('should handle expired session gracefully', () => {
       // Login
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.get('input[type="email"]').type(testUser.email);
       cy.get('input[type="password"]').type(testUser.password);
       cy.get('button[type="submit"]').click();
@@ -151,12 +151,12 @@ describe('Authentication', () => {
       cy.visit('/dashboard');
       
       // Should redirect to login
-      cy.url({ timeout: 10000 }).should('include', '/login');
+      cy.url({ timeout: 10000 }).should('include', '/auth/login');
     });
 
     it('should maintain session across multiple tabs', () => {
       // Login
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.get('input[type="email"]').type(testUser.email);
       cy.get('input[type="password"]').type(testUser.password);
       cy.get('button[type="submit"]').click();
@@ -176,7 +176,7 @@ describe('Authentication', () => {
   describe('User Profile', () => {
     beforeEach(() => {
       // Login before each test
-      cy.visit('/login');
+      cy.visit('/auth/login');
       cy.get('input[type="email"]').type(testUser.email);
       cy.get('input[type="password"]').type(testUser.password);
       cy.get('button[type="submit"]').click();

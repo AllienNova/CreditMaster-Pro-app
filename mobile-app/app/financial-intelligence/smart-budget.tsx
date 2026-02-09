@@ -481,7 +481,7 @@ export default function SmartBudgetScreen() {
         setTrends(data.trends || []);
       }
     } catch (error) {
-      console.error('Error fetching budget data:', error);
+      if (__DEV__) console.error('Error fetching budget data:', error);
       Alert.alert('Error', 'Failed to load budget data. Please try again.');
     } finally {
       setLoading(false);
@@ -515,7 +515,7 @@ export default function SmartBudgetScreen() {
         Alert.alert('Error', 'Failed to update budget. Please try again.');
       }
     } catch (error) {
-      console.error('Error updating category:', error);
+      if (__DEV__) console.error('Error updating category:', error);
       Alert.alert('Error', 'Failed to update budget. Please try again.');
     }
   };
@@ -540,7 +540,7 @@ export default function SmartBudgetScreen() {
         Alert.alert('Error', 'Failed to apply recommendation. Please try again.');
       }
     } catch (error) {
-      console.error('Error applying recommendation:', error);
+      if (__DEV__) console.error('Error applying recommendation:', error);
       Alert.alert('Error', 'Failed to apply recommendation. Please try again.');
     }
   };

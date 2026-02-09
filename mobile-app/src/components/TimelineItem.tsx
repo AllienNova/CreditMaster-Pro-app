@@ -1,5 +1,5 @@
 /**
- * CPFI Timeline Item Component
+ * Fynvita Timeline Item Component
  * Activity timeline for disputes, credit history, etc.
  */
 

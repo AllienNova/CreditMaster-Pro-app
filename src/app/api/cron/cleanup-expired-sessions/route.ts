@@ -93,15 +93,13 @@ export async function GET(request: Request) {
       results.auditLogs = auditIds.length;
     }
 
-    console.log(`[CRON] cleanup-expired-sessions: ${JSON.stringify(results)}`);
-
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       results,
     });
-  } catch (error) {
-    console.error('[CRON] cleanup-expired-sessions error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json({ error: 'Failed to cleanup sessions' }, { status: 500 });
   }
 }

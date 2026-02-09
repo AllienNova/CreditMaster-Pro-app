@@ -1,24 +1,26 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../src/constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
 
 export default function TabLayout() {
+  const { colors, fontWeight, fontSize } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textSecondary,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.border,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
           height: 85,
           paddingBottom: 25,
           paddingTop: 10,
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '500',
+          fontWeight: fontWeight.medium,
         },
       }}
     >
@@ -80,22 +82,21 @@ export default function TabLayout() {
       <Tabs.Screen
         name="reports"
         options={{
-          href: null, // Hide from tab bar
+          href: null,
         }}
       />
       <Tabs.Screen
         name="loans"
         options={{
-          href: null, // Hide from tab bar
+          href: null,
         }}
       />
       <Tabs.Screen
         name="student-loans"
         options={{
-          href: null, // Hide from tab bar - accessed via Money tab or direct navigation
+          href: null,
         }}
       />
     </Tabs>
   );
 }
-

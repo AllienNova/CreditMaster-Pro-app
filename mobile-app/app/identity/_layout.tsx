@@ -1,5 +1,5 @@
 /**
- * CPFI Identity Protection Navigation Layout
+ * Fynvita Identity Protection Navigation Layout
  */
 
 import { Stack } from 'expo-router';

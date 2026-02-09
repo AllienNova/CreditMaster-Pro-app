@@ -1,5 +1,5 @@
 /**
- * CPFI Guides Screen
+ * Fynvita Guides Screen
  * How-to guides and tutorials
  */
 

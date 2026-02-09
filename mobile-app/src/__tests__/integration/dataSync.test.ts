@@ -1,5 +1,5 @@
 /**
- * CPFI Data Sync Integration Tests
+ * Fynvita Data Sync Integration Tests
  * Tests data synchronization between stores and API
  */
 

@@ -1,5 +1,5 @@
 /**
- * CPFI Loading Skeleton Component
+ * Fynvita Loading Skeleton Component
  * Animated loading placeholders
  */
 

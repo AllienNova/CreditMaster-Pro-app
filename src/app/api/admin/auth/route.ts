@@ -8,12 +8,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { requireRole, createAuthResponse } from '@/lib/security/auth-middleware';
+import {
+  requireRole,
+  createAuthResponse,
+} from '@/lib/security/auth-middleware';
 
 // Admin email whitelist (in production, use database roles)
 const ADMIN_EMAILS = [
-  'admin@CPFI.pro',
+  'admin@fynvita.com',
   'khonour@yahoo.com',
+  'kimhons@gmail.com',
 ];
 
 export async function GET(request: NextRequest) {
@@ -54,7 +58,10 @@ export async function GET(request: NextRequest) {
     });
 
     // Get current user
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser(accessToken);
 
     if (error || !user) {
       return NextResponse.json(
@@ -84,12 +91,11 @@ export async function GET(request: NextRequest) {
         role: isAdmin ? 'admin' : hasAdminTier ? 'enterprise' : 'user',
       },
     });
-  } catch (error) {
-    console.error('Admin auth error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { isAdmin: false, error: 'Authentication failed' },
       { status: 500 }
     );
   }
 }
-

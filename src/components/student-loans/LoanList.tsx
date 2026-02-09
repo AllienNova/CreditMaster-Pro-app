@@ -49,13 +49,13 @@ export default function LoanList({ loans, onViewStrategies, onCreateDispute }: L
   return (
     <div>
       {/* Filters and Sort */}
-      <div className="p-6 border-b border-gray-200 flex flex-wrap gap-4">
+      <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex flex-wrap gap-4">
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Sort by:</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-slate-200">Sort by:</label>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'balance' | 'rate' | 'status')}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="balance">Balance (High to Low)</option>
             <option value="rate">Interest Rate (High to Low)</option>
@@ -64,11 +64,11 @@ export default function LoanList({ loans, onViewStrategies, onCreateDispute }: L
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Filter:</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-slate-200">Filter:</label>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {statuses.map(status => (
               <option key={status} value={status}>
@@ -78,7 +78,7 @@ export default function LoanList({ loans, onViewStrategies, onCreateDispute }: L
           </select>
         </div>
 
-        <div className="ml-auto text-sm text-gray-600">
+        <div className="ml-auto text-sm text-gray-600 dark:text-slate-300">
           Showing {sortedLoans.length} of {loans.length} loans
         </div>
       </div>
@@ -87,7 +87,7 @@ export default function LoanList({ loans, onViewStrategies, onCreateDispute }: L
       <div className="p-6 space-y-4">
         {sortedLoans.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">No loans match your filters</p>
+            <p className="text-gray-500 dark:text-slate-400">No loans match your filters</p>
           </div>
         ) : (
           sortedLoans.map(loan => (

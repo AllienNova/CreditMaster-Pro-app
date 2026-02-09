@@ -28,8 +28,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json({ success: true, data: { rule } });
-  } catch (error) {
-    console.error('Error fetching savings rule:', error);
+  } catch (_error) {
+    // SavingsRulesRoute error: Failed to fetch savings rule
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch savings rule' },
       { status: 500 }
@@ -71,8 +72,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     );
 
     return NextResponse.json({ success: true, data: { rule } });
-  } catch (error) {
-    console.error('Error updating savings rule:', error);
+  } catch (_error) {
+    // SavingsRulesRoute error: Failed to update savings rule
+    void _error;
     return NextResponse.json(
       { error: 'Failed to update savings rule' },
       { status: 500 }
@@ -101,8 +103,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting savings rule:', error);
+  } catch (_error) {
+    // SavingsRulesRoute error: Failed to delete savings rule
+    void _error;
     return NextResponse.json(
       { error: 'Failed to delete savings rule' },
       { status: 500 }

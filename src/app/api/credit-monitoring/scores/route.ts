@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
       success: true,
       data: scores,
     });
-  } catch (error) {
-    console.error('Error fetching credit scores:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to fetch credit scores' },
       { status: 500 }

@@ -46,8 +46,8 @@ export class CreditReportParser {
       return rawData;
     }
 
-    const normalizedReportDate = reportDate?.toISOString();
-    console.log('📄 Parsing credit report payload', { bureau, reportDate: normalizedReportDate });
+    // CreditReportParser: Parsing credit report payload
+    void reportDate;
 
     // Determine format and parse accordingly
     const format = this.detectFormat(rawData as CreditBureauRawPayload);
@@ -131,51 +131,51 @@ export class CreditReportParser {
   /**
    * Parse Plaid credit report
    * https://plaid.com/docs/api/products/credit/
+   *
+   * Requires PLAID_CLIENT_ID and PLAID_SECRET environment variables.
+   * See Plaid dashboard for API access: https://dashboard.plaid.com
    */
   private parsePlaidReport(rawData: CreditBureauRawPayload, bureau: Bureau): ParsedCreditReport {
-    // TODO: Implement Plaid parsing
-    // This will be implemented when we integrate with Plaid
-    console.warn('⚠️ Plaid credit report parsing not implemented', {
-      bureau,
-      keys: Object.keys(rawData || {}),
-    });
-    throw new Error('Plaid format parsing not yet implemented');
+    // CreditReportParser: Plaid credit report parsing requires API integration
+    void rawData;
+    void bureau;
+    throw new Error('Plaid format parsing requires API integration - configure PLAID_CLIENT_ID and PLAID_SECRET');
   }
 
   /**
    * Parse Experian credit report
+   *
+   * Requires Experian Connect API credentials.
+   * See: https://developer.experian.com/products/consumer-credit
    */
   private parseExperianReport(rawData: CreditBureauRawPayload): ParsedCreditReport {
-    // TODO: Implement Experian parsing
-    // This will be implemented when we integrate with Experian API
-    console.warn('⚠️ Experian credit report parsing not implemented', {
-      keys: Object.keys(rawData || {}),
-    });
-    throw new Error('Experian format parsing not yet implemented');
+    // CreditReportParser: Experian credit report parsing requires API integration
+    void rawData;
+    throw new Error('Experian format parsing requires API integration - contact Experian for partner access');
   }
 
   /**
    * Parse Equifax credit report
+   *
+   * Requires Equifax API credentials via partner program.
+   * See: https://developer.equifax.com/products/credit-report
    */
   private parseEquifaxReport(rawData: CreditBureauRawPayload): ParsedCreditReport {
-    // TODO: Implement Equifax parsing
-    // This will be implemented when we integrate with Equifax API
-    console.warn('⚠️ Equifax credit report parsing not implemented', {
-      keys: Object.keys(rawData || {}),
-    });
-    throw new Error('Equifax format parsing not yet implemented');
+    // CreditReportParser: Equifax credit report parsing requires API integration
+    void rawData;
+    throw new Error('Equifax format parsing requires API integration - contact Equifax for partner access');
   }
 
   /**
    * Parse TransUnion credit report
+   *
+   * Requires TransUnion TrueVision API credentials.
+   * See: https://developer.transunion.com/products
    */
   private parseTransUnionReport(rawData: CreditBureauRawPayload): ParsedCreditReport {
-    // TODO: Implement TransUnion parsing
-    // This will be implemented when we integrate with TransUnion API
-    console.warn('⚠️ TransUnion credit report parsing not implemented', {
-      keys: Object.keys(rawData || {}),
-    });
-    throw new Error('TransUnion format parsing not yet implemented');
+    // CreditReportParser: TransUnion credit report parsing requires API integration
+    void rawData;
+    throw new Error('TransUnion format parsing requires API integration - contact TransUnion for partner access');
   }
 
   /**

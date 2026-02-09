@@ -117,25 +117,49 @@ export async function POST(request: NextRequest) {
         );
 
         if (historicalData && historicalData.length > 0) {
-          historicalDataMap.set(holding.symbol, historicalData);
+          // Convert CandleData to expected format
+          const convertedData = historicalData.map(candle => ({
+            close: candle.close,
+            high: candle.high,
+            low: candle.low,
+            volume: candle.volume,
+            timestamp: new Date(candle.timestamp),
+          }));
+          historicalDataMap.set(holding.symbol, convertedData);
         }
 
         updatedHoldings.push({
-          ...holding,
+          symbol: holding.symbol,
+          shares: holding.shares,
+          costBasis: holding.averageCost,
           currentPrice,
+          sector: holding.sector,
+          assetClass: holding.assetClass,
         });
       } catch (error) {
         console.error(`Error fetching data for ${holding.symbol}:`, error);
         // Continue with other holdings
         updatedHoldings.push({
-          ...holding,
+          symbol: holding.symbol,
+          shares: holding.shares,
+          costBasis: holding.averageCost,
           currentPrice: holding.currentPrice || holding.averageCost,
+          sector: holding.sector,
+          assetClass: holding.assetClass,
         });
       }
     }
 
     // Get investment analysis engine
     const analysisEngine = getInvestmentAnalysisEngine();
+
+    // Convert userProfile to expected format (if provided)
+    const convertedUserProfile = userProfile ? {
+      riskTolerance: userProfile.riskTolerance || 'moderate' as const,
+      investmentHorizon: userProfile.investmentHorizon || 'medium_term' as const,
+      portfolioSize: 100000, // Default value
+      goals: [{ type: 'growth' as const }],
+    } : undefined;
 
     // Perform comprehensive portfolio analysis
     const analysis = await analysisEngine.analyzePortfolio(
@@ -144,7 +168,7 @@ export async function POST(request: NextRequest) {
       historicalDataMap,
       {
         timeframe,
-        userProfile,
+        userProfile: convertedUserProfile,
       }
     );
 

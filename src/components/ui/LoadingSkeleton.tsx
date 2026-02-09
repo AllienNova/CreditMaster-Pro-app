@@ -17,7 +17,7 @@ export default function LoadingSkeleton({
         return (
           <div className={`animate-pulse space-y-3 ${className}`}>
             {Array.from({ length: count }).map((_, i) => (
-              <div key={i} className="h-4 bg-gray-200 rounded w-full" />
+              <div key={i} className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-full" />
             ))}
           </div>
         );
@@ -26,12 +26,12 @@ export default function LoadingSkeleton({
         return (
           <div className={`animate-pulse ${className}`}>
             {Array.from({ length: count }).map((_, i) => (
-              <div key={i} className="bg-white rounded-lg shadow-lg p-6 mb-4">
-                <div className="h-6 bg-gray-200 rounded w-3/4 mb-4" />
+              <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-4">
+                <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mb-4" />
                 <div className="space-y-3">
-                  <div className="h-4 bg-gray-200 rounded w-full" />
-                  <div className="h-4 bg-gray-200 rounded w-5/6" />
-                  <div className="h-4 bg-gray-200 rounded w-4/6" />
+                  <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-full" />
+                  <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-5/6" />
+                  <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-4/6" />
                 </div>
               </div>
             ))}
@@ -41,10 +41,10 @@ export default function LoadingSkeleton({
       case 'avatar':
         return (
           <div className={`animate-pulse flex items-center space-x-4 ${className}`}>
-            <div className="rounded-full bg-gray-200 h-12 w-12" />
+            <div className="rounded-full bg-gray-200 dark:bg-slate-700 h-12 w-12" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-3/4" />
-              <div className="h-3 bg-gray-200 rounded w-1/2" />
+              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
+              <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
             </div>
           </div>
         );
@@ -53,7 +53,7 @@ export default function LoadingSkeleton({
         return (
           <div className={`animate-pulse ${className}`}>
             {Array.from({ length: count }).map((_, i) => (
-              <div key={i} className="h-10 bg-gray-200 rounded-lg w-32 mr-2 inline-block" />
+              <div key={i} className="h-10 bg-gray-200 dark:bg-slate-700 rounded-lg w-32 mr-2 inline-block" />
             ))}
           </div>
         );
@@ -61,24 +61,24 @@ export default function LoadingSkeleton({
       case 'table':
         return (
           <div className={`animate-pulse ${className}`}>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
               {/* Table header */}
-              <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+              <div className="bg-gray-50 dark:bg-slate-900 px-6 py-3 border-b border-gray-200 dark:border-slate-700">
                 <div className="flex space-x-4">
-                  <div className="h-4 bg-gray-200 rounded w-1/4" />
-                  <div className="h-4 bg-gray-200 rounded w-1/4" />
-                  <div className="h-4 bg-gray-200 rounded w-1/4" />
-                  <div className="h-4 bg-gray-200 rounded w-1/4" />
+                  <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4" />
+                  <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4" />
+                  <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4" />
+                  <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4" />
                 </div>
               </div>
               {/* Table rows */}
               {Array.from({ length: count }).map((_, i) => (
-                <div key={i} className="px-6 py-4 border-b border-gray-200">
+                <div key={i} className="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
                   <div className="flex space-x-4">
-                    <div className="h-4 bg-gray-200 rounded w-1/4" />
-                    <div className="h-4 bg-gray-200 rounded w-1/4" />
-                    <div className="h-4 bg-gray-200 rounded w-1/4" />
-                    <div className="h-4 bg-gray-200 rounded w-1/4" />
+                    <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4" />
+                    <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4" />
+                    <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4" />
+                    <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4" />
                   </div>
                 </div>
               ))}
@@ -91,28 +91,28 @@ export default function LoadingSkeleton({
           <div className={`animate-pulse space-y-6 ${className}`}>
             {/* Header */}
             <div className="space-y-3">
-              <div className="h-8 bg-gray-200 rounded w-1/3" />
-              <div className="h-4 bg-gray-200 rounded w-1/2" />
+              <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/3" />
+              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
             </div>
 
             {/* Metrics cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-lg shadow-lg p-6">
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-4" />
-                  <div className="h-8 bg-gray-200 rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
+                  <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4" />
+                  <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
                 </div>
               ))}
             </div>
 
             {/* Content area */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="h-6 bg-gray-200 rounded w-1/4 mb-4" />
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
+              <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/4 mb-4" />
               <div className="space-y-3">
-                <div className="h-4 bg-gray-200 rounded w-full" />
-                <div className="h-4 bg-gray-200 rounded w-5/6" />
-                <div className="h-4 bg-gray-200 rounded w-4/6" />
+                <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-full" />
+                <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-5/6" />
+                <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-4/6" />
               </div>
             </div>
           </div>
@@ -141,11 +141,11 @@ export function PulseLoader({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
         style={{ animationDelay: '0ms' }}
       />
       <div
-        className={`${sizeClasses[size]} bg-purple-500 rounded-full animate-pulse`}
+        className={`${sizeClasses[size]} bg-blue-500 rounded-full animate-pulse`}
         style={{ animationDelay: '150ms' }}
       />
       <div
-        className={`${sizeClasses[size]} bg-cyan-500 rounded-full animate-pulse`}
+        className={`${sizeClasses[size]} bg-blue-500 rounded-full animate-pulse`}
         style={{ animationDelay: '300ms' }}
       />
     </div>
@@ -165,7 +165,7 @@ export function Spinner({ size = 'md', label }: { size?: 'sm' | 'md' | 'lg'; lab
       <div
         className={`${sizeClasses[size]} border-blue-600 border-t-transparent rounded-full animate-spin`}
       />
-      {label && <p className="text-sm text-gray-600">{label}</p>}
+      {label && <p className="text-sm text-gray-600 dark:text-slate-300">{label}</p>}
     </div>
   );
 }

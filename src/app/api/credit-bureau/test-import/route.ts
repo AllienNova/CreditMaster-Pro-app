@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`🧪 Testing credit report import for user ${userId}, bureau: ${bureau}`);
+    // TestImport: Testing credit report import
 
     // 2. Generate mock credit report
     const mockReport = generateMockCreditReport({
@@ -41,12 +41,7 @@ export async function POST(request: NextRequest) {
       includeNegativeItems,
     });
 
-    console.log('✅ Mock credit report generated:', {
-      score: mockReport.creditScore,
-      accounts: mockReport.accounts.length,
-      inquiries: mockReport.inquiries.length,
-      publicRecords: mockReport.publicRecords.length,
-    });
+    // TestImport: Mock credit report generated
 
     // 3. Save credit report to database
     const reportDate = new Date().toISOString().split('T')[0];
@@ -66,14 +61,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (reportError) {
-      console.error('❌ Error saving credit report:', reportError);
+      // TestImport error: Error saving credit report
       return NextResponse.json(
         { error: 'Failed to save credit report', details: reportError.message },
         { status: 500 }
       );
     }
 
-    console.log('✅ Credit report saved to database:', creditReportData.id);
+    // TestImport: Credit report saved to database
 
     // 4. Save credit accounts
     const accountsToInsert = mockReport.accounts.map(account => ({
@@ -98,14 +93,14 @@ export async function POST(request: NextRequest) {
       .select();
 
     if (accountsError) {
-      console.error('❌ Error saving credit accounts:', accountsError);
+      // TestImport error: Error saving credit accounts
       return NextResponse.json(
         { error: 'Failed to save credit accounts', details: accountsError.message },
         { status: 500 }
       );
     }
 
-    console.log(`✅ ${accountsData.length} credit accounts saved`);
+    // TestImport: credit accounts saved
 
     // 5. Save credit inquiries
     const inquiriesToInsert = mockReport.inquiries.map(inquiry => ({
@@ -123,14 +118,14 @@ export async function POST(request: NextRequest) {
       .select();
 
     if (inquiriesError) {
-      console.error('❌ Error saving credit inquiries:', inquiriesError);
+      // TestImport error: Error saving credit inquiries
       return NextResponse.json(
         { error: 'Failed to save credit inquiries', details: inquiriesError.message },
         { status: 500 }
       );
     }
 
-    console.log(`✅ ${inquiriesData.length} credit inquiries saved`);
+    // TestImport: credit inquiries saved
 
     // 6. Save public records (if any)
     if (mockReport.publicRecords.length > 0) {
@@ -152,14 +147,14 @@ export async function POST(request: NextRequest) {
         .select();
 
       if (recordsError) {
-        console.error('❌ Error saving public records:', recordsError);
+        // TestImport error: Error saving public records
         return NextResponse.json(
           { error: 'Failed to save public records', details: recordsError.message },
           { status: 500 }
         );
       }
 
-      console.log(`✅ ${recordsData.length} public records saved`);
+      // TestImport: public records saved
     }
 
     // 7. Return success response
@@ -179,13 +174,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error) {
-    console.error('❌ Test import error:', error);
-    
+  } catch (_error) {
+    // TestImport error: Test import error
+
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to import test credit report'
+        error: _error instanceof Error ? _error.message : 'Failed to import test credit report'
       },
       { status: 500 }
     );
@@ -213,7 +208,7 @@ export async function GET(request: NextRequest) {
       .order('report_date', { ascending: false });
 
     if (reportsError) {
-      console.error('❌ Error fetching credit reports:', reportsError);
+      // TestImport error: Error fetching credit reports
       return NextResponse.json(
         { error: 'Failed to fetch credit reports', details: reportsError.message },
         { status: 500 }
@@ -243,13 +238,13 @@ export async function GET(request: NextRequest) {
       data: reportsWithDetails,
     });
 
-  } catch (error) {
-    console.error('❌ Test fetch error:', error);
-    
+  } catch (_error) {
+    // TestImport error: Test fetch error
+
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch test credit reports'
+        error: _error instanceof Error ? _error.message : 'Failed to fetch test credit reports'
       },
       { status: 500 }
     );

@@ -30,8 +30,9 @@ export async function GET(request: NextRequest) {
       success: true,
       data: summary,
     });
-  } catch (error) {
-    console.error('Error fetching rollover summary:', error);
+  } catch (_error) {
+    // RolloverRoute error: Failed to fetch rollover summary
+    void _error;
     return NextResponse.json(
       {
         error: 'Internal Server Error',
@@ -71,8 +72,9 @@ export async function POST(request: NextRequest) {
             : 'No budgets needed rollover processing',
       },
     });
-  } catch (error) {
-    console.error('Error processing rollovers:', error);
+  } catch (_error) {
+    // RolloverRoute error: Failed to process rollovers
+    void _error;
     return NextResponse.json(
       {
         error: 'Internal Server Error',
@@ -128,10 +130,10 @@ export async function PATCH(request: NextRequest) {
       success: true,
       data: budget,
     });
-  } catch (error) {
-    console.error('Error adjusting rollover:', error);
+  } catch (_error) {
+    // RolloverRoute error: Failed to adjust rollover
     const message =
-      error instanceof Error ? error.message : 'Failed to adjust rollover';
+      _error instanceof Error ? _error.message : 'Failed to adjust rollover';
     return NextResponse.json(
       { error: 'Internal Server Error', message },
       { status: 500 }

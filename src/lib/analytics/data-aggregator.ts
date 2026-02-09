@@ -56,7 +56,7 @@ export class DataAggregator {
     dateField: string,
     options: AggregationOptions
   ): AggregatedData[] {
-    console.log(`📊 Aggregating data by ${options.groupBy}`);
+    // DataAggregator: Aggregating data by time period
     
     const grouped = new Map<string, Record<string, unknown>[]>();
     

@@ -51,15 +51,15 @@ export default function BankAccountsList() {
   const getAccountTypeIcon = (type: string): string => {
     switch (type) {
       case 'depository':
-        return '🏦';
+        return '';
       case 'credit':
-        return '💳';
+        return '';
       case 'loan':
-        return '🏠';
+        return '';
       case 'investment':
-        return '📈';
+        return '';
       default:
-        return '💰';
+        return '';
     }
   };
 
@@ -68,13 +68,13 @@ export default function BankAccountsList() {
       case 'depository':
         return 'bg-blue-100 text-blue-800';
       case 'credit':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-blue-100 text-blue-800';
       case 'loan':
         return 'bg-orange-100 text-orange-800';
       case 'investment':
         return 'bg-green-100 text-green-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100';
     }
   };
 
@@ -83,9 +83,9 @@ export default function BankAccountsList() {
       <div className="space-y-6 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow p-6">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-              <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
+              <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4"></div>
             </div>
           ))}
         </div>
@@ -95,11 +95,11 @@ export default function BankAccountsList() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">❌</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Accounts</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="text-red-600 text-xl mb-4"></div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Accounts</h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-4">{error}</p>
           <button
             type="button"
             onClick={fetchAccounts}
@@ -114,11 +114,11 @@ export default function BankAccountsList() {
 
   if (accounts.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-12">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12">
         <div className="text-center max-w-md mx-auto">
-          <div className="text-6xl mb-6">🏦</div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">No Accounts Connected</h3>
-          <p className="text-gray-600 mb-8">
+          <div className="text-6xl mb-6"></div>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">No Accounts Connected</h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-8">
             Connect your bank accounts to start tracking your finances.
           </p>
           <PlaidLinkButton onSuccess={fetchAccounts} />
@@ -144,36 +144,36 @@ export default function BankAccountsList() {
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600">Total Accounts</h3>
-            <span className="text-2xl">🏦</span>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Total Accounts</h3>
+            <span className="text-2xl"></span>
           </div>
-          <div className="text-3xl font-bold text-gray-900">{accounts.length}</div>
-          <div className="text-sm text-gray-500 mt-1">Connected accounts</div>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">{accounts.length}</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Connected accounts</div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600">Total Balance</h3>
-            <span className="text-2xl">💰</span>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Total Balance</h3>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold text-green-600">{formatCurrency(totalBalance)}</div>
-          <div className="text-sm text-gray-500 mt-1">Assets</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Assets</div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600">Total Debt</h3>
-            <span className="text-2xl">💳</span>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-300">Total Debt</h3>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold text-red-600">{formatCurrency(totalDebt)}</div>
-          <div className="text-sm text-gray-500 mt-1">Liabilities</div>
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">Liabilities</div>
         </div>
       </div>
 
       {/* Actions Bar */}
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           {/* Filter Buttons */}
           <div className="flex flex-wrap gap-2">
@@ -182,11 +182,7 @@ export default function BankAccountsList() {
                 key={type}
                 type="button"
                 onClick={() => setFilter(type)}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  filter === type
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${ filter === type ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:bg-slate-700' }`}
               >
                 {type === 'all' ? 'All' : type.charAt(0).toUpperCase() + type.slice(1)}
                 {type !== 'all' && (
@@ -204,21 +200,21 @@ export default function BankAccountsList() {
       </div>
 
       {/* Accounts List */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             {filter === 'all' ? 'All Accounts' : `${filter.charAt(0).toUpperCase() + filter.slice(1)} Accounts`}
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
             {filteredAccounts.length} {filteredAccounts.length === 1 ? 'account' : 'accounts'}
           </p>
         </div>
 
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-slate-700">
           {filteredAccounts.map((account) => (
             <div
               key={account.id}
-              className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+              className="p-6 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors cursor-pointer"
               onClick={() => setSelectedAccount(account)}
             >
               <div className="flex items-center justify-between">
@@ -230,19 +226,19 @@ export default function BankAccountsList() {
                   
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                         {account.accountName}
                       </h3>
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${getAccountTypeColor(account.accountType)}`}>
                         {getAccountTypeIcon(account.accountType)} {account.accountType}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-slate-300">
                       <span>{account.institutionName}</span>
                       <span>••••{account.mask}</span>
                       <span>{account.accountSubtype}</span>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                       Last synced: {account.lastSynced.toLocaleString()}
                     </div>
                   </div>
@@ -250,15 +246,15 @@ export default function BankAccountsList() {
 
                 {/* Balance */}
                 <div className="text-right ml-4">
-                  <div className="text-2xl font-bold text-gray-900">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">
                     {formatCurrency(account.currentBalance)}
                   </div>
                   {account.availableBalance !== undefined && (
-                    <div className="text-sm text-gray-600 mt-1">
+                    <div className="text-sm text-gray-600 dark:text-slate-300 mt-1">
                       Available: {formatCurrency(account.availableBalance)}
                     </div>
                   )}
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
                     {account.currency}
                   </div>
                 </div>

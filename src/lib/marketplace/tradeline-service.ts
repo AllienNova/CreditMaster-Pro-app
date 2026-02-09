@@ -60,7 +60,7 @@ class TradelineService {
     const { data, error } = await query.order('estimated_score_impact', { ascending: false });
 
     if (error) {
-      console.error('Error fetching tradelines:', error);
+      // TradelineService error: Error fetching tradelines
       return [];
     }
 
@@ -101,7 +101,7 @@ class TradelineService {
       .order('estimated_score_impact', { ascending: false });
 
     if (error) {
-      console.error('Error fetching tradelines by provider:', error);
+      // TradelineService error: Error fetching tradelines by provider
       return [];
     }
 
@@ -116,7 +116,7 @@ class TradelineService {
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching top tradelines:', error);
+      // TradelineService error: Error fetching top tradelines
       return [];
     }
 

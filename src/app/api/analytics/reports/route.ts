@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
       }
     );
     
-    console.log(`📄 Generated ${format} report for user ${userId}`);
-    
+    // ReportsRoute: Generated report for user
+
     // Return report based on format
     if (format === 'json') {
       return NextResponse.json({
@@ -81,8 +81,9 @@ export async function POST(request: NextRequest) {
         }
       });
     }
-  } catch (error) {
-    console.error('Error generating report:', error);
+  } catch (_error) {
+    // ReportsRoute error: Failed to generate report
+    void _error;
     return NextResponse.json(
       { error: 'Failed to generate report' },
       { status: 500 }
@@ -107,8 +108,9 @@ export async function GET(request: NextRequest) {
     const reports: ReportSummary[] = [];
 
     return NextResponse.json({ reports });
-  } catch (error) {
-    console.error('Error fetching reports:', error);
+  } catch (_error) {
+    // ReportsRoute error: Failed to fetch reports
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch reports' },
       { status: 500 }

@@ -1,6 +1,6 @@
 /**
  * Security Notifications Service
- * 
+ *
  * Sends email notifications for security events:
  * - New login from new device
  * - Password changed
@@ -12,7 +12,13 @@
 import { notificationService } from '@/lib/notifications/notification-service';
 
 export interface SecurityEvent {
-  type: 'new_login' | 'password_changed' | '2fa_enabled' | '2fa_disabled' | 'account_recovery' | 'suspicious_activity';
+  type:
+    | 'new_login'
+    | 'password_changed'
+    | '2fa_enabled'
+    | '2fa_disabled'
+    | 'account_recovery'
+    | 'suspicious_activity';
   userId: string;
   userEmail: string;
   userName: string;
@@ -30,14 +36,17 @@ class SecurityNotificationsService {
   /**
    * Send new login notification
    */
-  async sendNewLoginNotification(event: SecurityEvent): Promise<{ success: boolean; error?: string }> {
+  async sendNewLoginNotification(
+    event: SecurityEvent
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const { metadata } = event;
-      const deviceInfo = metadata?.deviceName || `${metadata?.browser} on ${metadata?.os}`;
+      const deviceInfo =
+        metadata?.deviceName || `${metadata?.browser} on ${metadata?.os}`;
       const location = metadata?.location || 'Unknown location';
       const timestamp = metadata?.timestamp || new Date();
 
-      const subject = '🔐 New Login to Your CPFI Account';
+      const subject = 'New Login to Your Fynvita Account';
       const html = `
         <!DOCTYPE html>
         <html>
@@ -58,11 +67,11 @@ class SecurityNotificationsService {
         <body>
           <div class="container">
             <div class="header">
-              <h1>🔐 New Login Detected</h1>
+              <h1>New Login Detected</h1>
             </div>
             <div class="content">
               <p>Hi ${event.userName},</p>
-              <p>We detected a new login to your CPFI account.</p>
+              <p>We detected a new login to your Fynvita account.</p>
               
               <div class="info-box">
                 <div class="info-item">
@@ -80,7 +89,7 @@ class SecurityNotificationsService {
               </div>
 
               <div class="warning">
-                <strong>⚠️ Was this you?</strong>
+                <strong>Was this you?</strong>
                 <p>If you recognize this activity, you can safely ignore this email.</p>
                 <p>If you don't recognize this login, please secure your account immediately:</p>
                 <ul>
@@ -95,7 +104,7 @@ class SecurityNotificationsService {
               </a>
 
               <div class="footer">
-                <p>This is an automated security notification from CPFI.</p>
+                <p>This is an automated security notification from Fynvita.</p>
                 <p>If you have any concerns, please contact our support team.</p>
               </div>
             </div>
@@ -107,11 +116,14 @@ class SecurityNotificationsService {
       await notificationService.sendEmail(event.userEmail, subject, html);
 
       return { success: true };
-    } catch (error) {
-      console.error('Send new login notification error:', error);
+    } catch (_error) {
+      // SecurityNotifications error: Send new login notification error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to send notification',
+        error:
+          _error instanceof Error
+            ? _error.message
+            : 'Failed to send notification',
       };
     }
   }
@@ -119,9 +131,11 @@ class SecurityNotificationsService {
   /**
    * Send password changed notification
    */
-  async sendPasswordChangedNotification(event: SecurityEvent): Promise<{ success: boolean; error?: string }> {
+  async sendPasswordChangedNotification(
+    event: SecurityEvent
+  ): Promise<{ success: boolean; error?: string }> {
     try {
-      const subject = '🔑 Your CPFI Password Was Changed';
+      const subject = 'Your Fynvita Password Was Changed';
       const html = `
         <!DOCTYPE html>
         <html>
@@ -140,18 +154,18 @@ class SecurityNotificationsService {
         <body>
           <div class="container">
             <div class="header">
-              <h1>🔑 Password Changed</h1>
+              <h1>Password Changed</h1>
             </div>
             <div class="content">
               <p>Hi ${event.userName},</p>
               
               <div class="success-box">
-                <strong>✓ Your password was successfully changed</strong>
+                <strong>Your password was successfully changed</strong>
                 <p>Time: ${new Date().toLocaleString()}</p>
               </div>
 
               <div class="warning">
-                <strong>⚠️ Didn't change your password?</strong>
+                <strong>Didn't change your password?</strong>
                 <p>If you didn't make this change, your account may be compromised. Take action immediately:</p>
                 <ul>
                   <li>Reset your password using the "Forgot Password" link</li>
@@ -166,7 +180,7 @@ class SecurityNotificationsService {
               </a>
 
               <div class="footer">
-                <p>This is an automated security notification from CPFI.</p>
+                <p>This is an automated security notification from Fynvita.</p>
                 <p>If you have any concerns, please contact our support team immediately.</p>
               </div>
             </div>
@@ -178,11 +192,14 @@ class SecurityNotificationsService {
       await notificationService.sendEmail(event.userEmail, subject, html);
 
       return { success: true };
-    } catch (error) {
-      console.error('Send password changed notification error:', error);
+    } catch (_error) {
+      // SecurityNotifications error: Send password changed notification error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to send notification',
+        error:
+          _error instanceof Error
+            ? _error.message
+            : 'Failed to send notification',
       };
     }
   }
@@ -190,9 +207,11 @@ class SecurityNotificationsService {
   /**
    * Send 2FA enabled notification
    */
-  async send2FAEnabledNotification(event: SecurityEvent): Promise<{ success: boolean; error?: string }> {
+  async send2FAEnabledNotification(
+    event: SecurityEvent
+  ): Promise<{ success: boolean; error?: string }> {
     try {
-      const subject = '🔒 Two-Factor Authentication Enabled';
+      const subject = 'Two-Factor Authentication Enabled';
       const html = `
         <!DOCTYPE html>
         <html>
@@ -210,13 +229,13 @@ class SecurityNotificationsService {
         <body>
           <div class="container">
             <div class="header">
-              <h1>🔒 2FA Enabled</h1>
+              <h1>2FA Enabled</h1>
             </div>
             <div class="content">
               <p>Hi ${event.userName},</p>
               
               <div class="success-box">
-                <strong>✓ Two-factor authentication has been enabled on your account</strong>
+                <strong>Two-factor authentication has been enabled on your account</strong>
                 <p>Your account is now more secure!</p>
               </div>
 
@@ -232,7 +251,7 @@ class SecurityNotificationsService {
               <p><strong>Important:</strong> Make sure you have access to your authenticator app. If you lose access, you may not be able to log in.</p>
 
               <div class="footer">
-                <p>This is an automated security notification from CPFI.</p>
+                <p>This is an automated security notification from Fynvita.</p>
               </div>
             </div>
           </div>
@@ -243,11 +262,14 @@ class SecurityNotificationsService {
       await notificationService.sendEmail(event.userEmail, subject, html);
 
       return { success: true };
-    } catch (error) {
-      console.error('Send 2FA enabled notification error:', error);
+    } catch (_error) {
+      // SecurityNotifications error: Send 2FA enabled notification error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to send notification',
+        error:
+          _error instanceof Error
+            ? _error.message
+            : 'Failed to send notification',
       };
     }
   }
@@ -255,9 +277,11 @@ class SecurityNotificationsService {
   /**
    * Send 2FA disabled notification
    */
-  async send2FADisabledNotification(event: SecurityEvent): Promise<{ success: boolean; error?: string }> {
+  async send2FADisabledNotification(
+    event: SecurityEvent
+  ): Promise<{ success: boolean; error?: string }> {
     try {
-      const subject = '⚠️ Two-Factor Authentication Disabled';
+      const subject = 'Two-Factor Authentication Disabled';
       const html = `
         <!DOCTYPE html>
         <html>
@@ -275,13 +299,13 @@ class SecurityNotificationsService {
         <body>
           <div class="container">
             <div class="header">
-              <h1>⚠️ 2FA Disabled</h1>
+              <h1>2FA Disabled</h1>
             </div>
             <div class="content">
               <p>Hi ${event.userName},</p>
               
               <div class="warning">
-                <strong>⚠️ Two-factor authentication has been disabled on your account</strong>
+                <strong>Two-factor authentication has been disabled on your account</strong>
                 <p>Your account is now less secure. We strongly recommend re-enabling 2FA.</p>
               </div>
 
@@ -298,7 +322,7 @@ class SecurityNotificationsService {
               </a>
 
               <div class="footer">
-                <p>This is an automated security notification from CPFI.</p>
+                <p>This is an automated security notification from Fynvita.</p>
               </div>
             </div>
           </div>
@@ -309,11 +333,14 @@ class SecurityNotificationsService {
       await notificationService.sendEmail(event.userEmail, subject, html);
 
       return { success: true };
-    } catch (error) {
-      console.error('Send 2FA disabled notification error:', error);
+    } catch (_error) {
+      // SecurityNotifications error: Send 2FA disabled notification error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to send notification',
+        error:
+          _error instanceof Error
+            ? _error.message
+            : 'Failed to send notification',
       };
     }
   }
@@ -321,7 +348,9 @@ class SecurityNotificationsService {
   /**
    * Send notification for any security event
    */
-  async sendSecurityNotification(event: SecurityEvent): Promise<{ success: boolean; error?: string }> {
+  async sendSecurityNotification(
+    event: SecurityEvent
+  ): Promise<{ success: boolean; error?: string }> {
     switch (event.type) {
       case 'new_login':
         return this.sendNewLoginNotification(event);
@@ -343,4 +372,3 @@ class SecurityNotificationsService {
 // Export singleton instance
 export const securityNotifications = new SecurityNotificationsService();
 export default securityNotifications;
-

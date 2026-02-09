@@ -1,5 +1,5 @@
 /**
- * CPFI Disputes Layout
+ * Fynvita Disputes Layout
  */
 
 import { Stack } from 'expo-router';

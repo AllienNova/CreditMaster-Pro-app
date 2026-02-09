@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Building Screen
+ * Fynvita Credit Building Screen
  * Strategies to build credit
  */
 

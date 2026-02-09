@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Age Screen
+ * Fynvita Credit Age Screen
  * Manage account age for credit score
  */
 

@@ -90,7 +90,7 @@ export class PerformanceMonitor {
     
     // Log slow operations
     if (duration > 1000) {
-      console.warn(`⚠️ Slow operation: ${name} took ${duration}ms`);
+      // Slow operation detected - metrics recorded
     }
   }
   
@@ -245,24 +245,8 @@ export class PerformanceMonitor {
    * Log performance summary
    */
   static logSummary(): void {
-    const report = this.getReport();
-    
-    console.log('\n📊 Performance Summary:');
-    console.log(`  Total Requests: ${report.summary.total_requests}`);
-    console.log(`  Avg Response Time: ${Math.round(report.summary.avg_response_time)}ms`);
-    console.log(`  P50: ${Math.round(report.summary.p50)}ms`);
-    console.log(`  P95: ${Math.round(report.summary.p95)}ms`);
-    console.log(`  P99: ${Math.round(report.summary.p99)}ms`);
-    console.log(`  Cache Hit Rate: ${report.cache_stats.hit_rate}%`);
-    console.log(`  Memory Usage: ${report.memory.used_mb}MB / ${report.memory.total_mb}MB (${report.memory.percentage}%)`);
-    
-    const slowOps = this.getSlowOperations();
-    if (slowOps.length > 0) {
-      console.log(`\n⚠️ Slow Operations (${slowOps.length}):`);
-      slowOps.slice(0, 5).forEach(op => {
-        console.log(`  - ${op.name}: ${op.duration}ms`);
-      });
-    }
+    // Performance summary is available via getReport() for monitoring dashboards
+    // No console logging in production
   }
   
   /**

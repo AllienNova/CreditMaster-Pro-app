@@ -90,20 +90,12 @@ describe('StrategyEngine', () => {
   });
 
   describe('generateStrategies', () => {
-    it('should generate strategies for federal loans', () => {
-      const analysis = {
-        loans: [
-          {
-            type: 'federal',
-            balance: 50000,
-            status: 'default',
-            servicer: 'Navient',
-          },
-        ],
-        creditReport: {
-          score: 580,
-          negativeItems: 5,
-        },
+    it('should generate strategies for federal loans in default', () => {
+      const analysis: import('../student-loan-agent/StrategyEngine').LoanAnalysis = {
+        defaultStatus: true,
+        loanType: 'federal',
+        balance: 50000,
+        status: 'default',
       };
       const strategies = engine.generateStrategies(analysis);
       expect(Array.isArray(strategies)).toBe(true);
@@ -111,35 +103,22 @@ describe('StrategyEngine', () => {
     });
 
     it('should generate strategies for private loans', () => {
-      const analysis = {
-        loans: [
-          {
-            type: 'private',
-            balance: 30000,
-            status: 'delinquent',
-            servicer: 'Sallie Mae',
-          },
-        ],
-        creditReport: {
-          score: 620,
-          negativeItems: 3,
-        },
+      const analysis: import('../student-loan-agent/StrategyEngine').LoanAnalysis = {
+        defaultStatus: false,
+        loanType: 'private',
+        balance: 30000,
+        status: 'delinquent',
       };
       const strategies = engine.generateStrategies(analysis);
       expect(Array.isArray(strategies)).toBe(true);
     });
 
-    it('should handle multiple loans', () => {
-      const analysis = {
-        loans: [
-          { type: 'federal', balance: 40000, status: 'default' },
-          { type: 'federal', balance: 20000, status: 'current' },
-          { type: 'private', balance: 15000, status: 'delinquent' },
-        ],
-        creditReport: {
-          score: 600,
-          negativeItems: 4,
-        },
+    it('should handle loans not in default', () => {
+      const analysis: import('../student-loan-agent/StrategyEngine').LoanAnalysis = {
+        defaultStatus: false,
+        loanType: 'federal',
+        balance: 40000,
+        status: 'current',
       };
       const strategies = engine.generateStrategies(analysis);
       expect(Array.isArray(strategies)).toBe(true);
@@ -149,10 +128,10 @@ describe('StrategyEngine', () => {
 
   describe('prioritizeStrategies', () => {
     it('should prioritize strategies by impact', () => {
-      const strategies = [
-        { id: '1', priority: 'low', estimatedImpact: 20 },
-        { id: '2', priority: 'high', estimatedImpact: 80 },
-        { id: '3', priority: 'medium', estimatedImpact: 50 },
+      const strategies: import('../student-loan-agent/StrategyEngine').LoanStrategy[] = [
+        { name: 'Strategy 1', description: 'Low priority', regulation: undefined, priority: 'low' },
+        { name: 'Strategy 2', description: 'High priority', regulation: undefined, priority: 'high' },
+        { name: 'Strategy 3', description: 'Medium priority', regulation: undefined, priority: 'medium' },
       ];
       const prioritized = engine.prioritizeStrategies(strategies);
       expect(Array.isArray(prioritized)).toBe(true);
@@ -168,9 +147,10 @@ describe('StrategyEngine', () => {
 
   describe('estimateTimeline', () => {
     it('should estimate timeline for strategy execution', () => {
-      const strategy = {
-        type: 'dispute',
-        steps: ['gather_docs', 'submit_dispute', 'follow_up'],
+      const strategy: import('../student-loan-agent/StrategyEngine').LoanStrategy = {
+        name: 'FCRA Dispute',
+        description: 'Dispute inaccurate information',
+        regulation: undefined,
         complexity: 'medium',
       };
       const timeline = engine.estimateTimeline(strategy);
@@ -180,9 +160,10 @@ describe('StrategyEngine', () => {
     });
 
     it('should handle complex strategies', () => {
-      const strategy = {
-        type: 'rehabilitation',
-        steps: ['application', 'payment_plan', 'completion'],
+      const strategy: import('../student-loan-agent/StrategyEngine').LoanStrategy = {
+        name: 'Loan Rehabilitation',
+        description: 'Rehabilitate defaulted loans',
+        regulation: undefined,
         complexity: 'high',
       };
       const timeline = engine.estimateTimeline(strategy);
@@ -193,11 +174,12 @@ describe('StrategyEngine', () => {
 
   describe('calculateSuccessProbability', () => {
     it('should calculate success probability based on factors', () => {
-      const strategy = {
-        type: 'dispute',
-        regulation: 'FCRA',
+      const strategy: import('../student-loan-agent/StrategyEngine').LoanStrategy = {
+        name: 'FCRA Dispute',
+        description: 'Dispute inaccurate information',
+        regulation: undefined,
       };
-      const context = {
+      const context: import('../student-loan-agent/StrategyEngine').StrategyContext = {
         creditScore: 650,
         loanStatus: 'default',
         documentation: 'complete',
@@ -209,11 +191,12 @@ describe('StrategyEngine', () => {
     });
 
     it('should return higher probability for strong cases', () => {
-      const strategy = {
-        type: 'dispute',
-        regulation: 'FCRA',
+      const strategy: import('../student-loan-agent/StrategyEngine').LoanStrategy = {
+        name: 'FCRA Dispute',
+        description: 'Dispute inaccurate information',
+        regulation: undefined,
       };
-      const strongContext = {
+      const strongContext: import('../student-loan-agent/StrategyEngine').StrategyContext = {
         creditScore: 720,
         loanStatus: 'current',
         documentation: 'complete',

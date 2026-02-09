@@ -73,15 +73,13 @@ export async function GET(request: Request) {
       results.notifications++;
     }
 
-    console.log(`[CRON] check-dispute-status: ${JSON.stringify(results)}`);
-
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       results,
     });
-  } catch (error) {
-    console.error('[CRON] check-dispute-status error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to check dispute status' },
       { status: 500 }

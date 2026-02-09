@@ -69,7 +69,8 @@ export function trackError(error: Error, context: ErrorContext = {}): string {
 
   // Log error
   logger.error(`Error tracked: ${errorId}`, error, {
-    ...context,
+    userId: context.userId,
+    requestId: context.requestId,
     fingerprint,
   });
 

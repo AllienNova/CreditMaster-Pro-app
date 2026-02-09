@@ -1,5 +1,5 @@
 /**
- * CPFI Admin Disputes Management Screen
+ * Fynvita Admin Disputes Management Screen
  * View and manage all platform disputes
  */
 

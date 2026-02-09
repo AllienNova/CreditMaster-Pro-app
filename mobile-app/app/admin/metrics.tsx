@@ -1,5 +1,5 @@
 /**
- * CPFI Admin Metrics Screen
+ * Fynvita Admin Metrics Screen
  * Detailed metrics and analytics
  */
 

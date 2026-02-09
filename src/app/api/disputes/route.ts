@@ -1,39 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { jwtValidation } from '@/lib/auth/jwt-validation';
 import { disputeService } from '@/lib/disputes/dispute-service';
 
 export async function GET(request: NextRequest) {
   try {
+    // Support both JWT auth (mobile) and query param (legacy web)
+    const validation = await jwtValidation.validateFromHeaders(request);
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const disputeId = searchParams.get('disputeId');
-    const status = searchParams.get('status') as any;
     
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Missing userId parameter' },
-        { status: 400 }
-      );
-    }
-    
-    if (disputeId) {
-      const dispute = disputeService.getDispute(disputeId);
-      if (!dispute || dispute.userId !== userId) {
+    let userId: string;
+    if (validation.valid && validation.user?.id) {
+      userId = validation.user.id;
+    } else {
+      // Fallback to query param for legacy support
+      const queryUserId = searchParams.get('userId');
+      if (!queryUserId) {
         return NextResponse.json(
-          { error: 'Dispute not found' },
-          { status: 404 }
+          { success: false, error: 'Unauthorized' },
+          { status: 401 }
         );
       }
-      return NextResponse.json({ dispute });
+      userId = queryUserId;
     }
     
-    const disputes = disputeService.getUserDisputes(userId, status);
-    const stats = disputeService.getUserDisputeStats(userId);
+    const statusParam = searchParams.get('status');
+    const bureau = searchParams.get('bureau');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
     
-    return NextResponse.json({ disputes, stats });
+    // Cast status to expected type - service will handle invalid values
+    const disputes = disputeService.getUserDisputes(
+      userId, 
+      statusParam as Parameters<typeof disputeService.getUserDisputes>[1]
+    );
+    
+    // Filter by bureau if specified
+    const filteredDisputes = bureau 
+      ? disputes.filter(d => d.bureau === bureau)
+      : disputes;
+    
+    // Paginate
+    const startIdx = (page - 1) * limit;
+    const paginatedDisputes = filteredDisputes.slice(startIdx, startIdx + limit);
+    
+    return NextResponse.json({
+      success: true,
+      data: {
+        items: paginatedDisputes,
+        total: filteredDisputes.length,
+        page,
+        limit,
+        totalPages: Math.ceil(filteredDisputes.length / limit),
+      },
+    });
   } catch (error) {
-    console.error('Get disputes error:', error);
+    // Error handled - returning 500
     return NextResponse.json(
-      { error: 'Failed to get disputes' },
+      { success: false, error: 'Failed to get disputes' },
       { status: 500 }
     );
   }
@@ -41,20 +64,44 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Support both JWT auth (mobile) and body userId (legacy)
+    const validation = await jwtValidation.validateFromHeaders(request);
     const body = await request.json();
+    
+    let userId: string;
+    if (validation.valid && validation.user?.id) {
+      userId = validation.user.id;
+    } else if (body.userId) {
+      userId = body.userId;
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const { 
-      userId, 
       bureau, 
       itemType, 
-      itemDescription, 
+      itemDescription,
+      creditorName,
+      accountNumber,
+      disputeReason,
       reason, 
       letterContent,
+      documents,
       evidence 
     } = body;
     
-    if (!userId || !bureau || !itemType || !itemDescription || !reason || !letterContent) {
+    // Support both old and new field names
+    const finalItemType = itemType || 'general';
+    const finalDescription = itemDescription || creditorName || '';
+    const finalReason = reason || disputeReason || '';
+    const finalEvidence = evidence || documents || [];
+    
+    if (!bureau || !finalDescription || !finalReason) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { success: false, error: 'Missing required fields: bureau, description, and reason are required' },
         { status: 400 }
       );
     }
@@ -62,18 +109,18 @@ export async function POST(request: NextRequest) {
     const dispute = disputeService.createDispute(
       userId,
       bureau,
-      itemType,
-      itemDescription,
-      reason,
-      letterContent,
-      evidence
+      finalItemType,
+      finalDescription,
+      finalReason,
+      letterContent || '',
+      finalEvidence
     );
     
-    return NextResponse.json({ dispute });
+    return NextResponse.json({ success: true, data: dispute });
   } catch (error) {
-    console.error('Create dispute error:', error);
+    // Error handled - returning 500
     return NextResponse.json(
-      { error: 'Failed to create dispute' },
+      { success: false, error: 'Failed to create dispute' },
       { status: 500 }
     );
   }
@@ -131,7 +178,7 @@ export async function PATCH(request: NextRequest) {
     
     return NextResponse.json({ dispute });
   } catch (error) {
-    console.error('Update dispute error:', error);
+    // Error handled - returning 500
     return NextResponse.json(
       { error: 'Failed to update dispute' },
       { status: 500 }
@@ -154,7 +201,7 @@ export async function DELETE(request: NextRequest) {
     const success = disputeService.deleteDispute(disputeId);
     return NextResponse.json({ success });
   } catch (error) {
-    console.error('Delete dispute error:', error);
+    // Error handled - returning 500
     return NextResponse.json(
       { error: 'Failed to delete dispute' },
       { status: 500 }

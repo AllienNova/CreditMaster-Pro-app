@@ -77,7 +77,7 @@ class MarketplaceService {
     const { data, error } = await query.order('rating', { ascending: false });
 
     if (error) {
-      console.error('Error fetching products:', error);
+      // MarketplaceService error: Error fetching products
       return [];
     }
 
@@ -119,7 +119,7 @@ class MarketplaceService {
       .limit(20);
 
     if (error) {
-      console.error('Error searching products:', error);
+      // MarketplaceService error: Error searching products
       return [];
     }
 
@@ -135,7 +135,7 @@ class MarketplaceService {
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching featured products:', error);
+      // MarketplaceService error: Error fetching featured products
       return [];
     }
 

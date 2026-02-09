@@ -112,7 +112,7 @@ export default function AIChat({
   return (
     <div className="ai-chat flex flex-col h-full">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-600 text-white p-4 rounded-t-lg">
         <div className="flex justify-between items-center">
           <div>
             <h3 className="text-lg font-semibold">AI Assistant</h3>
@@ -121,7 +121,7 @@ export default function AIChat({
           {messages.length > 0 && (
             <button
               onClick={clearChat}
-              className="px-3 py-1 bg-white bg-opacity-20 rounded hover:bg-opacity-30 transition-colors text-sm"
+              className="px-3 py-1 bg-white dark:bg-slate-800 bg-opacity-20 rounded hover:bg-opacity-30 transition-colors text-sm"
             >
               Clear
             </button>
@@ -130,10 +130,10 @@ export default function AIChat({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-slate-900">
         {messages.length === 0 && (
-          <div className="text-center text-gray-500 mt-8">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-center text-gray-500 dark:text-slate-400 mt-8">
+            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
             </svg>
             <p>Start a conversation with the AI assistant</p>
@@ -150,12 +150,12 @@ export default function AIChat({
               className={`max-w-[80%] rounded-lg p-4 ${
                 message.role === 'user'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-800 shadow'
+                  : 'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow'
               }`}
             >
               <p className="whitespace-pre-wrap">{message.content}</p>
               <p className={`text-xs mt-2 ${
-                message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
+                message.role === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-slate-400'
               }`}>
                 {message.timestamp.toLocaleTimeString()}
               </p>
@@ -165,7 +165,7 @@ export default function AIChat({
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-white rounded-lg p-4 shadow">
+            <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow">
               <div className="flex space-x-2">
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -186,7 +186,7 @@ export default function AIChat({
       )}
 
       {/* Input */}
-      <div className="bg-white border-t p-4 rounded-b-lg">
+      <div className="bg-white dark:bg-slate-800 border-t p-4 rounded-b-lg">
         <div className="flex space-x-2">
           <textarea
             value={input}
@@ -212,7 +212,7 @@ export default function AIChat({
             )}
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
           Press Enter to send, Shift+Enter for new line
         </p>
       </div>

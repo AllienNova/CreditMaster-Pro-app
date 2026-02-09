@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-interface CheckoutButtonProps {
+export interface CheckoutButtonProps {
   priceId: string;
   planName: string;
   planPrice: number;
   className?: string;
+  children?: React.ReactNode;
 }
 
 export default function CheckoutButton({
@@ -15,6 +16,7 @@ export default function CheckoutButton({
   planName,
   planPrice,
   className = '',
+  children,
 }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export default function CheckoutButton({
         throw new Error('No checkout URL returned');
       }
     } catch (err) {
-      console.error('Checkout error:', err);
+      // Error logged
       setError(err instanceof Error ? err.message : 'An error occurred');
       setLoading(false);
     }
@@ -65,7 +67,7 @@ export default function CheckoutButton({
         className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
           loading
             ? 'bg-gray-400 cursor-not-allowed'
-            : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl'
+            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
         } ${className}`}
       >
         {loading ? (
@@ -93,7 +95,7 @@ export default function CheckoutButton({
             Processing...
           </span>
         ) : (
-          `Subscribe to ${planName} - $${planPrice}/month`
+          children || `Subscribe to ${planName} - $${planPrice}/month`
         )}
       </button>
 

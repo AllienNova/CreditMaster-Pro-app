@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Cards Screen
+ * Fynvita Credit Cards Screen
  * Credit card recommendations
  */
 

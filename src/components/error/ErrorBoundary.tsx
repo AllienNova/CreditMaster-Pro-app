@@ -28,9 +28,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to console
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+    // ErrorBoundary: Error caught and being handled
+
     // Call custom error handler if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
@@ -38,10 +37,39 @@ export class ErrorBoundary extends Component<Props, State> {
     
     // In production, send to error tracking service
     if (process.env.NODE_ENV === 'production') {
-      // TODO: Send to Sentry or similar
-      // Sentry.captureException(error, { extra: errorInfo });
+      this.reportError(error, errorInfo);
     }
   }
+
+  /**
+   * Report error to monitoring service
+   * Uses environment variables to determine the error reporting endpoint
+   */
+  private reportError = async (error: Error, errorInfo: ErrorInfo) => {
+    try {
+      // Send to server-side error logging endpoint
+      const errorReport = {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+        url: typeof window !== 'undefined' ? window.location.href : 'unknown',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+        timestamp: new Date().toISOString(),
+      };
+
+      // Report to backend error logging endpoint
+      await fetch('/api/monitoring/errors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(errorReport),
+      }).catch(() => {
+        // Silently fail if error reporting endpoint is unavailable
+      });
+    } catch {
+      // Silently fail - don't throw errors in error handling code
+    }
+  };
 
   handleRetry = () => {
     this.setState({ hasError: false, error: null });
@@ -58,11 +86,11 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-[400px] flex items-center justify-center p-8">
           <div className="text-center max-w-md">
-            <div className="text-6xl mb-4">😕</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="text-6xl mb-4"></div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Something went wrong
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-slate-300 mb-6">
               We encountered an unexpected error. Please try again or contact support if the problem persists.
             </p>
             <div className="space-x-4">
@@ -74,7 +102,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </button>
               <button
                 onClick={() => window.location.href = '/'}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                className="px-6 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition"
               >
                 Go Home
               </button>
@@ -107,13 +135,13 @@ export function PageErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-8">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 p-8">
           <div className="text-center max-w-lg">
-            <div className="text-8xl mb-6">🔧</div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            <div className="text-8xl mb-6"></div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
               Page Error
             </h1>
-            <p className="text-gray-600 mb-8">
+            <p className="text-gray-600 dark:text-slate-300 mb-8">
               This page encountered an error. Our team has been notified.
             </p>
             <div className="space-y-4">
@@ -125,7 +153,7 @@ export function PageErrorBoundary({ children }: { children: ReactNode }) {
               </button>
               <a
                 href="/dashboard"
-                className="block w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-center"
+                className="block w-full px-6 py-3 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition text-center"
               >
                 Back to Dashboard
               </a>

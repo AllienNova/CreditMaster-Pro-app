@@ -1,6 +1,6 @@
 import { supabase } from '../src/services/supabase';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.CPFI.pro';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.Fynvita.pro';
 
 // Generic API request helper
 async function apiRequest<T>(

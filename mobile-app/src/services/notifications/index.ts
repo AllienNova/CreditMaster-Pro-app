@@ -1,5 +1,5 @@
 /**
- * CPFI Notifications Service Index
+ * Fynvita Notifications Service Index
  */
 
 export { pushNotificationService, type PushNotificationPayload } from './pushNotificationService';

@@ -1,5 +1,5 @@
 /**
- * CPFI Transactions Screen
+ * Fynvita Transactions Screen
  * Transaction list, category filters, spending charts
  */
 

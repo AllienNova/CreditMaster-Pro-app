@@ -159,15 +159,15 @@ export default function CreditBuilding() {
       {/* Warning */}
       <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6 mb-6">
         <h3 className="font-bold text-yellow-900 mb-3 text-lg flex items-center gap-2">
-          ⚠️ IMPORTANT: Do This LAST, Not First!
+          IMPORTANT: Do This LAST, Not First!
         </h3>
         <div className="space-y-2 text-sm text-yellow-800">
           <p className="font-semibold">
             Credit Karma pushes these strategies because they make money from them. But they're the SLOWEST and most EXPENSIVE way to improve your credit.
           </p>
-          <div className="mt-3 p-3 bg-white rounded">
-            <div className="font-semibold text-gray-800 mb-2">Do This First (30-90 days):</div>
-            <ol className="list-decimal list-inside space-y-1 text-gray-700">
+          <div className="mt-3 p-3 bg-white dark:bg-slate-800 rounded">
+            <div className="font-semibold text-gray-800 dark:text-slate-100 mb-2">Do This First (30-90 days):</div>
+            <ol className="list-decimal list-inside space-y-1 text-gray-700 dark:text-slate-200">
               <li>Dispute inaccurate items (50-150 points)</li>
               <li>Pay down high utilization (20-50 points)</li>
               <li>Remove collections via pay-for-delete (50-100 points)</li>
@@ -175,9 +175,9 @@ export default function CreditBuilding() {
               <li>Optimize payment timing (10-20 points)</li>
             </ol>
           </div>
-          <div className="mt-3 p-3 bg-white rounded">
-            <div className="font-semibold text-gray-800 mb-2">Then Do This (6-12 months):</div>
-            <p className="text-gray-700">
+          <div className="mt-3 p-3 bg-white dark:bg-slate-800 rounded">
+            <div className="font-semibold text-gray-800 dark:text-slate-100 mb-2">Then Do This (6-12 months):</div>
+            <p className="text-gray-700 dark:text-slate-200">
               Once your report is clean, use these building strategies to maintain and slowly grow your score.
             </p>
           </div>
@@ -190,33 +190,29 @@ export default function CreditBuilding() {
           <div
             key={strategy.id}
             onClick={() => setSelectedStrategy(strategy.id)}
-            className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${
-              selectedStrategy === strategy.id
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300'
-            } ${!strategy.recommended ? 'opacity-75' : ''}`}
+            className={`cursor-pointer border-2 rounded-lg p-4 transition-all ${ selectedStrategy === strategy.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 dark:border-slate-600' } ${!strategy.recommended ? 'opacity-75' : ''}`}
           >
             <div className="flex items-start justify-between mb-2">
-              <h3 className="font-bold text-gray-800">{strategy.name}</h3>
+              <h3 className="font-bold text-gray-800 dark:text-slate-100">{strategy.name}</h3>
               {strategy.recommended && (
                 <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
                   Recommended
                 </span>
               )}
             </div>
-            <p className="text-sm text-gray-600 mb-3">{strategy.description}</p>
+            <p className="text-sm text-gray-600 dark:text-slate-300 mb-3">{strategy.description}</p>
             <div className="space-y-1 text-xs">
               <div className="flex justify-between">
-                <span className="text-gray-500">Impact:</span>
+                <span className="text-gray-500 dark:text-slate-400">Impact:</span>
                 <span className="font-semibold text-green-600">{strategy.impact}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Timeline:</span>
-                <span className="font-semibold text-gray-700">{strategy.timeline}</span>
+                <span className="text-gray-500 dark:text-slate-400">Timeline:</span>
+                <span className="font-semibold text-gray-700 dark:text-slate-200">{strategy.timeline}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Cost:</span>
-                <span className="font-semibold text-gray-700">{strategy.cost}</span>
+                <span className="text-gray-500 dark:text-slate-400">Cost:</span>
+                <span className="font-semibold text-gray-700 dark:text-slate-200">{strategy.cost}</span>
               </div>
             </div>
           </div>
@@ -225,9 +221,9 @@ export default function CreditBuilding() {
 
       {/* Selected Strategy Details */}
       {selected && (
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
           <div className="flex items-start justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">{selected.name}</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100">{selected.name}</h2>
             <span className={`px-3 py-1 text-sm rounded-full ${
               selected.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
               selected.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
@@ -237,15 +233,15 @@ export default function CreditBuilding() {
             </span>
           </div>
 
-          <p className="text-gray-600 mb-6">{selected.description}</p>
+          <p className="text-gray-600 dark:text-slate-300 mb-6">{selected.description}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Pros */}
             <div>
-              <h3 className="font-semibold text-green-800 mb-3">✅ Pros</h3>
+              <h3 className="font-semibold text-green-800 mb-3">Pros</h3>
               <ul className="space-y-2">
                 {selected.pros.map((pro, idx) => (
-                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-slate-200">
                     <span className="text-green-600 mt-0.5">•</span>
                     <span>{pro}</span>
                   </li>
@@ -255,10 +251,10 @@ export default function CreditBuilding() {
 
             {/* Cons */}
             <div>
-              <h3 className="font-semibold text-red-800 mb-3">❌ Cons</h3>
+              <h3 className="font-semibold text-red-800 mb-3">Cons</h3>
               <ul className="space-y-2">
                 {selected.cons.map((con, idx) => (
-                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-slate-200">
                     <span className="text-red-600 mt-0.5">•</span>
                     <span>{con}</span>
                   </li>
@@ -268,18 +264,18 @@ export default function CreditBuilding() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <div className="text-center">
-              <div className="text-sm text-gray-600 mb-1">Expected Impact</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Expected Impact</div>
               <div className="text-xl font-bold text-green-600">{selected.impact}</div>
             </div>
             <div className="text-center">
-              <div className="text-sm text-gray-600 mb-1">Timeline</div>
-              <div className="text-xl font-bold text-gray-800">{selected.timeline}</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Timeline</div>
+              <div className="text-xl font-bold text-gray-800 dark:text-slate-100">{selected.timeline}</div>
             </div>
             <div className="text-center">
-              <div className="text-sm text-gray-600 mb-1">Total Cost</div>
-              <div className="text-xl font-bold text-gray-800">{selected.cost}</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Total Cost</div>
+              <div className="text-xl font-bold text-gray-800 dark:text-slate-100">{selected.cost}</div>
             </div>
           </div>
 
@@ -295,12 +291,12 @@ export default function CreditBuilding() {
       )}
 
       {/* Comparison */}
-      <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
+      <div className="mt-6 bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Strategy Comparison</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b-2 border-gray-200">
+              <tr className="border-b-2 border-gray-200 dark:border-slate-700">
                 <th className="text-left py-2 px-3">Strategy</th>
                 <th className="text-center py-2 px-3">Impact</th>
                 <th className="text-center py-2 px-3">Timeline</th>
@@ -310,7 +306,7 @@ export default function CreditBuilding() {
             </thead>
             <tbody>
               {strategies.map((strategy) => (
-                <tr key={strategy.id} className="border-b border-gray-100">
+                <tr key={strategy.id} className="border-b border-gray-100 dark:border-slate-700">
                   <td className="py-3 px-3 font-medium">{strategy.name}</td>
                   <td className="py-3 px-3 text-center text-green-600 font-semibold">{strategy.impact}</td>
                   <td className="py-3 px-3 text-center">{strategy.timeline}</td>
@@ -333,7 +329,7 @@ export default function CreditBuilding() {
 
       {/* Final Reminder */}
       <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h3 className="font-semibold text-blue-800 mb-2">💡 Remember:</h3>
+        <h3 className="font-semibold text-blue-800 mb-2">Remember:</h3>
         <p className="text-sm text-blue-700">
           These strategies are for <strong>building</strong> credit, not <strong>repairing</strong> it. 
           If you have negative items on your report, focus on removing those first. You'll see results 

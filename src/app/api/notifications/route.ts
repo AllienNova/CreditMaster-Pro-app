@@ -18,8 +18,9 @@ export async function GET(request: NextRequest) {
     const unreadCount = notificationService.getUnreadCount(userId);
     
     return NextResponse.json({ notifications, unreadCount });
-  } catch (error) {
-    console.error('Get notifications error:', error);
+  } catch (_error) {
+    // NotificationsAPI error: Get notifications error
+    void _error;
     return NextResponse.json(
       { error: 'Failed to get notifications' },
       { status: 500 }
@@ -48,8 +49,9 @@ export async function POST(request: NextRequest) {
     );
     
     return NextResponse.json({ notification });
-  } catch (error) {
-    console.error('Create notification error:', error);
+  } catch (_error) {
+    // NotificationsAPI error: Create notification error
+    void _error;
     return NextResponse.json(
       { error: 'Failed to create notification' },
       { status: 500 }
@@ -81,8 +83,9 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       );
     }
-  } catch (error) {
-    console.error('Update notification error:', error);
+  } catch (_error) {
+    // NotificationsAPI error: Update notification error
+    void _error;
     return NextResponse.json(
       { error: 'Failed to update notification' },
       { status: 500 }
@@ -105,8 +108,9 @@ export async function DELETE(request: NextRequest) {
     
     const success = notificationService.deleteNotification(userId, notificationId);
     return NextResponse.json({ success });
-  } catch (error) {
-    console.error('Delete notification error:', error);
+  } catch (_error) {
+    // NotificationsAPI error: Delete notification error
+    void _error;
     return NextResponse.json(
       { error: 'Failed to delete notification' },
       { status: 500 }

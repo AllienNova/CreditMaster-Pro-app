@@ -1,5 +1,5 @@
 /**
- * CPFI Invoices Screen
+ * Fynvita Invoices Screen
  * View all billing invoices
  */
 

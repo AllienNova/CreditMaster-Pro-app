@@ -1,6 +1,12 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 
 interface OnboardingContextType {
   hasCompletedOnboarding: boolean;
@@ -10,9 +16,11 @@ interface OnboardingContextType {
   resetOnboarding: () => void;
 }
 
-const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
+const OnboardingContext = createContext<OnboardingContextType | undefined>(
+  undefined
+);
 
-const ONBOARDING_STORAGE_KEY = 'creditmaster_onboarding_completed';
+const ONBOARDING_STORAGE_KEY = 'fynvita_onboarding_completed';
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true); // Default to true to avoid flash
@@ -64,4 +72,3 @@ export function useOnboarding() {
   }
   return context;
 }
-

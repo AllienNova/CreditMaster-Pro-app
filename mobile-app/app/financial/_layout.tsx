@@ -1,5 +1,5 @@
 /**
- * CPFI Financial Navigation Layout
+ * Fynvita Financial Navigation Layout
  */
 
 import { Stack } from 'expo-router';

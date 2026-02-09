@@ -28,8 +28,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json({ success: true, data: { goal } });
-  } catch (error) {
-    console.error('Error fetching savings goal:', error);
+  } catch (_error) {
+    // SavingsGoalsRoute error: Failed to fetch savings goal
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch savings goal' },
       { status: 500 }
@@ -84,8 +85,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     );
 
     return NextResponse.json({ success: true, data: { goal } });
-  } catch (error) {
-    console.error('Error updating savings goal:', error);
+  } catch (_error) {
+    // SavingsGoalsRoute error: Failed to update savings goal
+    void _error;
     return NextResponse.json(
       { error: 'Failed to update savings goal' },
       { status: 500 }
@@ -114,8 +116,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting savings goal:', error);
+  } catch (_error) {
+    // SavingsGoalsRoute error: Failed to delete savings goal
+    void _error;
     return NextResponse.json(
       { error: 'Failed to delete savings goal' },
       { status: 500 }

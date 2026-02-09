@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Analysis Marketplace Screen
+ * Fynvita Credit Analysis Marketplace Screen
  * Professional credit analysis services
  */
 

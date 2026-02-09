@@ -67,12 +67,12 @@ export async function POST(request: NextRequest) {
       predictions,
       timestamp: new Date().toISOString(),
     });
-  } catch (error) {
-    console.error('Outcome prediction error:', error);
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to predict outcomes' 
+        error: _error instanceof Error ? _error.message : 'Failed to predict outcomes'
       },
       { status: 500 }
     );

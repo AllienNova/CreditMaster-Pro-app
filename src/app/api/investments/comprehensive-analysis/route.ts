@@ -116,15 +116,31 @@ export async function POST(request: NextRequest) {
     // Get investment analysis engine
     const analysisEngine = getInvestmentAnalysisEngine();
 
+    // Convert CandleData to expected format
+    const convertedHistoricalData = historicalData.map(candle => ({
+      close: candle.close,
+      high: candle.high,
+      low: candle.low,
+      volume: candle.volume,
+      timestamp: new Date(candle.timestamp),
+    }));
+
+    // Convert userProfile to expected format (if provided)
+    const convertedUserProfile = userProfile ? {
+      riskTolerance: userProfile.riskTolerance || 'moderate' as const,
+      investmentHorizon: userProfile.investmentHorizon || 'medium_term' as const,
+      portfolioSize: 100000, // Default value
+      goals: [{ type: 'growth' as const }],
+    } : undefined;
+
     // Perform comprehensive analysis
     const analysis = await analysisEngine.analyzeInvestment(
       symbol,
       quote.price,
-      historicalData,
+      convertedHistoricalData,
       {
         timeframe,
-        userProfile,
-        customWeights,
+        userProfile: convertedUserProfile,
       }
     );
 

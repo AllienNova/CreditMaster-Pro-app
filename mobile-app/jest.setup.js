@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile App Jest Setup
+ * Fynvita Mobile App Jest Setup
  */
 
 // Mock AsyncStorage

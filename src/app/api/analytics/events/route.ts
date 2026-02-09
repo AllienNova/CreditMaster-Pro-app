@@ -51,14 +51,15 @@ export async function POST(request: NextRequest) {
       .insert(rows);
 
     if (error) {
-      console.error('Analytics insert error:', error);
+      // AnalyticsEventsRoute error: Analytics insert failed
       // Don't fail the request - analytics should be non-blocking
       return NextResponse.json({ success: true, warning: 'Some events may not have been stored' });
     }
 
     return NextResponse.json({ success: true, count: events.length });
-  } catch (error) {
-    console.error('Analytics error:', error);
+  } catch (_error) {
+    // AnalyticsEventsRoute error: Analytics processing failed
+    void _error;
     return NextResponse.json({ success: true }); // Don't fail client requests
   }
 }
@@ -120,8 +121,9 @@ export async function GET(request: NextRequest) {
         eventsByType: counts
       }
     });
-  } catch (error) {
-    console.error('Analytics query error:', error);
+  } catch (_error) {
+    // AnalyticsEventsRoute error: Failed to fetch analytics
+    void _error;
     return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 });
   }
 }

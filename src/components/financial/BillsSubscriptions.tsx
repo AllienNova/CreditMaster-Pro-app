@@ -245,19 +245,19 @@ export default function BillsSubscriptions() {
 
   const getCategoryIcon = (category: string): string => {
     const icons: Record<string, string> = {
-      utilities: '⚡',
-      rent: '🏠',
-      mortgage: '🏦',
-      insurance: '🛡️',
-      subscription: '📺',
-      loan: '💳',
-      credit_card: '💳',
-      phone: '📱',
-      internet: '🌐',
-      streaming: '🎬',
-      other: '📄',
+      utilities: '',
+      rent: '',
+      mortgage: '',
+      insurance: '',
+      subscription: '',
+      loan: '',
+      credit_card: '',
+      phone: '',
+      internet: '',
+      streaming: '',
+      other: '',
     };
-    return icons[category] || '📄';
+    return icons[category] || '';
   };
 
   const getStatusColor = (status: string): string => {
@@ -267,9 +267,9 @@ export default function BillsSubscriptions() {
       case 'paused':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
       case 'cancelled':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 dark:bg-slate-700 dark:text-slate-400';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 dark:bg-slate-700 dark:text-slate-400';
     }
   };
 
@@ -329,7 +329,7 @@ export default function BillsSubscriptions() {
   }) => (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
           Bill Name *
         </label>
         <input
@@ -338,13 +338,13 @@ export default function BillsSubscriptions() {
           onChange={(e) =>
             setFormData({ ...formData, merchantName: e.target.value })
           }
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
           placeholder="e.g., Netflix, Electric Bill"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
             Category *
           </label>
           <select
@@ -355,7 +355,7 @@ export default function BillsSubscriptions() {
                 category: e.target.value as BillCategory,
               })
             }
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
           >
             <option value="subscription">Subscription</option>
             <option value="streaming">Streaming</option>
@@ -371,7 +371,7 @@ export default function BillsSubscriptions() {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
             Amount *
           </label>
           <input
@@ -381,14 +381,14 @@ export default function BillsSubscriptions() {
             onChange={(e) =>
               setFormData({ ...formData, amount: e.target.value })
             }
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
             placeholder="0.00"
           />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
             Frequency *
           </label>
           <select
@@ -399,7 +399,7 @@ export default function BillsSubscriptions() {
                 frequency: e.target.value as BillFrequency,
               })
             }
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
           >
             <option value="weekly">Weekly</option>
             <option value="biweekly">Bi-weekly</option>
@@ -409,7 +409,7 @@ export default function BillsSubscriptions() {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
             Next Due Date *
           </label>
           <input
@@ -418,7 +418,7 @@ export default function BillsSubscriptions() {
             onChange={(e) =>
               setFormData({ ...formData, nextDueDate: e.target.value })
             }
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
           />
         </div>
       </div>
@@ -434,20 +434,20 @@ export default function BillsSubscriptions() {
         />
         <label
           htmlFor="autoPay"
-          className="text-sm text-gray-700 dark:text-gray-300"
+          className="text-sm text-gray-700 dark:text-slate-300"
         >
           Auto-pay enabled
         </label>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
           Notes
         </label>
         <textarea
           value={formData.notes}
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           rows={2}
-          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
           placeholder="Optional notes..."
         />
       </div>
@@ -459,7 +459,7 @@ export default function BillsSubscriptions() {
             setShowEditModal(false);
             setFormData(initialFormData);
           }}
-          className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+          className="px-4 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
         >
           Cancel
         </button>
@@ -482,20 +482,20 @@ export default function BillsSubscriptions() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+              className="bg-white dark:bg-slate-800 rounded-lg shadow p-6"
             >
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4" />
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+              <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4" />
+              <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
             </div>
           ))}
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6" />
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/4 mb-6" />
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-20 bg-gray-200 dark:bg-gray-700 rounded"
+                className="h-20 bg-gray-200 dark:bg-slate-700 rounded"
               />
             ))}
           </div>
@@ -506,13 +506,13 @@ export default function BillsSubscriptions() {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center py-12">
-          <div className="text-red-600 text-xl mb-4">❌</div>
+          <div className="text-red-600 text-xl mb-4"></div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Error Loading Bills
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+          <p className="text-gray-600 dark:text-slate-400 mb-4">{error}</p>
           <button
             type="button"
             onClick={() => void fetchBills()}
@@ -535,47 +535,47 @@ export default function BillsSubscriptions() {
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold opacity-90">Total Bills</h3>
-            <span className="text-2xl">📄</span>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold">
             {bills.filter((b) => b.status === 'active').length}
           </div>
           <div className="text-sm opacity-90 mt-1">Active bills</div>
         </div>
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow p-6 text-white">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold opacity-90">Monthly Total</h3>
-            <span className="text-2xl">💰</span>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold">
             {formatCurrency(totalMonthly)}
           </div>
           <div className="text-sm opacity-90 mt-1">Per month</div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-slate-400">
               Upcoming
             </h3>
-            <span className="text-2xl">📅</span>
+            <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold text-blue-600">
             {upcomingCount}
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             Due soon
           </div>
         </div>
         <div
-          className={`rounded-lg shadow p-6 ${overdueCount > 0 ? 'bg-gradient-to-br from-red-500 to-red-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
+          className={`rounded-lg shadow p-6 ${overdueCount > 0 ? 'bg-gradient-to-br from-red-500 to-red-600 text-white' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700'}`}
         >
           <div className="flex items-center justify-between mb-2">
             <h3
-              className={`text-sm font-semibold ${overdueCount > 0 ? 'opacity-90' : 'text-gray-600 dark:text-gray-400'}`}
+              className={`text-sm font-semibold ${overdueCount > 0 ? 'opacity-90' : 'text-gray-600 dark:text-slate-400'}`}
             >
               Overdue
             </h3>
-            <span className="text-2xl">⚠️</span>
+            <span className="text-2xl"></span>
           </div>
           <div
             className={`text-3xl font-bold ${overdueCount > 0 ? '' : 'text-red-600'}`}
@@ -583,7 +583,7 @@ export default function BillsSubscriptions() {
             {overdueCount}
           </div>
           <div
-            className={`text-sm mt-1 ${overdueCount > 0 ? 'opacity-90' : 'text-gray-500 dark:text-gray-400'}`}
+            className={`text-sm mt-1 ${overdueCount > 0 ? 'opacity-90' : 'text-gray-500 dark:text-slate-400'}`}
           >
             Need attention
           </div>
@@ -596,7 +596,7 @@ export default function BillsSubscriptions() {
           <ChartContainer title="Bills by Category" height={300}>
             <PieChartComponent data={categoryChartData} showLegend />
           </ChartContainer>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
               Upcoming Bills Timeline
             </h3>
@@ -614,7 +614,7 @@ export default function BillsSubscriptions() {
                   return (
                     <div
                       key={bill.id}
-                      className={`flex items-center justify-between p-3 rounded-lg ${days < 0 ? 'bg-red-50 dark:bg-red-900/20' : days <= 7 ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-gray-50 dark:bg-gray-700'}`}
+                      className={`flex items-center justify-between p-3 rounded-lg ${days < 0 ? 'bg-red-50' : days <= 7 ? 'bg-yellow-50' : 'bg-gray-50 dark:bg-slate-700'}`}
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">
@@ -625,7 +625,7 @@ export default function BillsSubscriptions() {
                             {bill.merchantName}
                           </div>
                           <div
-                            className={`text-sm ${days < 0 ? 'text-red-600' : days <= 7 ? 'text-yellow-600' : 'text-gray-600 dark:text-gray-400'}`}
+                            className={`text-sm ${days < 0 ? 'text-red-600' : days <= 7 ? 'text-yellow-600' : 'text-gray-600 dark:text-slate-400'}`}
                           >
                             {days < 0
                               ? `${Math.abs(days)} days overdue`
@@ -647,7 +647,7 @@ export default function BillsSubscriptions() {
       )}
 
       {/* Filters and Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex flex-wrap gap-2">
             {(['all', 'upcoming', 'overdue', 'subscriptions'] as const).map(
@@ -656,7 +656,7 @@ export default function BillsSubscriptions() {
                   key={status}
                   type="button"
                   onClick={() => setFilter(status)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors capitalize ${filter === status ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors capitalize ${filter === status ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
                 >
                   {status}
                 </button>
@@ -670,7 +670,7 @@ export default function BillsSubscriptions() {
                 window.location.href =
                   '/api/financial/export?type=bills&format=csv';
               }}
-              className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-2 text-sm"
+              className="px-3 py-2 bg-gray-100 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 flex items-center gap-2 text-sm"
               title="Export to CSV"
             >
               <svg
@@ -692,9 +692,9 @@ export default function BillsSubscriptions() {
               type="button"
               onClick={() => void detectBills()}
               disabled={isDetecting}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-semibold"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-semibold"
             >
-              {isDetecting ? '🔍 Detecting...' : '🔍 Detect Bills'}
+              {isDetecting ? 'Detecting...' : 'Detect Bills'}
             </button>
             <button
               type="button"
@@ -711,22 +711,22 @@ export default function BillsSubscriptions() {
       </div>
 
       {/* Bills List */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             Bills & Subscriptions
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
             {filteredBills.length} bills
           </p>
         </div>
         {filteredBills.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="text-6xl mb-4">📄</div>
+            <div className="text-6xl mb-4"></div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               No bills found
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 dark:text-slate-400 mb-4">
               Add your first bill or detect bills from your transactions
             </p>
             <button
@@ -748,7 +748,7 @@ export default function BillsSubscriptions() {
               return (
                 <div
                   key={bill.id}
-                  className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  className="p-6 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1">
@@ -771,12 +771,12 @@ export default function BillsSubscriptions() {
                             </span>
                           )}
                           {bill.isAutoPay && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 rounded text-xs font-semibold">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded text-xs font-semibold">
                               Auto-Pay
                             </span>
                           )}
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
                           <span className="capitalize">
                             {bill.category.replace('_', ' ')}
                           </span>
@@ -806,7 +806,7 @@ export default function BillsSubscriptions() {
                         <div className="text-2xl font-bold text-gray-900 dark:text-white">
                           {formatCurrency(bill.amount)}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+                        <div className="text-sm text-gray-500 dark:text-slate-400 capitalize">
                           {bill.frequency}
                         </div>
                       </div>
@@ -814,22 +814,20 @@ export default function BillsSubscriptions() {
                         <button
                           type="button"
                           onClick={() => openEditModal(bill)}
-                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+                          className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
                           title="Edit"
                         >
-                          ✏️
-                        </button>
+                                                  </button>
                         <button
                           type="button"
                           onClick={() => {
                             setSelectedBill(bill);
                             setShowDeleteConfirm(true);
                           }}
-                          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                          className="p-2 text-gray-500 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                           title="Delete"
                         >
-                          🗑️
-                        </button>
+                                                  </button>
                       </div>
                     </div>
                   </div>
@@ -895,14 +893,14 @@ export default function BillsSubscriptions() {
       >
         <div className="space-y-4">
           {detectedBills.length === 0 ? (
-            <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+            <p className="text-gray-600 dark:text-slate-400 text-center py-8">
               No recurring bills detected from your transactions.
             </p>
           ) : (
             detectedBills.map((detected, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">
@@ -912,7 +910,7 @@ export default function BillsSubscriptions() {
                     <div className="font-semibold text-gray-900 dark:text-white">
                       {detected.merchantName}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <div className="text-sm text-gray-600 dark:text-slate-400">
                       {detected.frequency} • {detected.confidence}% confidence
                     </div>
                   </div>
@@ -922,7 +920,7 @@ export default function BillsSubscriptions() {
                     <div className="font-bold text-gray-900 dark:text-white">
                       {formatCurrency(detected.averageAmount)}
                     </div>
-                    <div className="text-xs text-gray-500">avg amount</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400">avg amount</div>
                   </div>
                   <button
                     type="button"

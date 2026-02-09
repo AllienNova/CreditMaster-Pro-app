@@ -1,5 +1,5 @@
 /**
- * CPFI Accessibility Utilities
+ * Fynvita Accessibility Utilities
  * Provides accessibility helpers for screen readers and assistive technologies
  */
 

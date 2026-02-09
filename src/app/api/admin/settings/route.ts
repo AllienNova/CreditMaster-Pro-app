@@ -6,12 +6,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRole, createAuthResponse } from '@/lib/security/auth-middleware';
+import {
+  requireRole,
+  createAuthResponse,
+} from '@/lib/security/auth-middleware';
 
 // In production, these would be stored in database or environment
 let settings = {
-  siteName: 'CPFI',
-  supportEmail: 'support@CPFI.pro',
+  siteName: 'Fynvita',
+  supportEmail: 'support@Fynvita.pro',
   maxDisputesPerMonth: 10,
   aiModelDefault: 'gpt-4',
   maintenanceMode: false,
@@ -37,7 +40,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    
+
     // Validate and update settings
     settings = {
       ...settings,
@@ -48,9 +51,11 @@ export async function POST(request: NextRequest) {
     // await db.settings.update(settings);
 
     return NextResponse.json({ success: true, settings });
-  } catch (error) {
-    console.error('Admin settings error:', error);
-    return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 });
+  } catch (_error) {
+    // Error silently caught
+    return NextResponse.json(
+      { error: 'Failed to save settings' },
+      { status: 500 }
+    );
   }
 }
-

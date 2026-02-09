@@ -1,5 +1,5 @@
 /**
- * CPFI Admin Feature Flags Screen
+ * Fynvita Admin Feature Flags Screen
  * Manage feature flags and A/B tests
  */
 

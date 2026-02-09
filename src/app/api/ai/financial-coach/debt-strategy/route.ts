@@ -11,11 +11,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { debtStrategyOptimizer } from '@/lib/financial/debt-strategy-optimizer';
 import { financialContextEngine } from '@/lib/financial/financial-context-engine';
+import { DebtComparison } from '@/lib/financial/types/debt-strategy.types';
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -41,12 +41,7 @@ const DebtStrategyRequestSchema = z.object({
 // ============================================================================
 
 async function getUser() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll() } }
-  );
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -85,13 +80,13 @@ function checkRateLimit(userId: string): boolean {
 // ============================================================================
 
 interface CachedResponse {
-  data: any;
+  data: DebtComparison;
   expiresAt: number;
 }
 
 const responseCache = new Map<string, CachedResponse>();
 
-function getCachedResponse(cacheKey: string): any | null {
+function getCachedResponse(cacheKey: string): DebtComparison | null {
   const cached = responseCache.get(cacheKey);
   if (!cached) return null;
 
@@ -103,14 +98,20 @@ function getCachedResponse(cacheKey: string): any | null {
   return cached.data;
 }
 
-function setCachedResponse(cacheKey: string, data: any, ttlMs: number = 300000): void {
+function setCachedResponse(cacheKey: string, data: DebtComparison, ttlMs: number = 300000): void {
   responseCache.set(cacheKey, {
     data,
     expiresAt: Date.now() + ttlMs,
   });
 }
 
-function generateCacheKey(userId: string, debts: any[], extraPayment: number): string {
+interface DebtInput {
+  id: string;
+  balance: number;
+  interestRate: number;
+}
+
+function generateCacheKey(userId: string, debts: DebtInput[], extraPayment: number): string {
   const debtHash = debts
     .map((d) => `${d.id}:${d.balance}:${d.interestRate}`)
     .sort()
@@ -206,8 +207,9 @@ export async function POST(request: NextRequest) {
     if (includeAIOptimization) {
       try {
         financialContext = await financialContextEngine.getFinancialContext(user.id);
-      } catch (error) {
-        console.warn('Failed to get financial context, proceeding without AI optimization:', error);
+      } catch (_ctxError) {
+        // DebtStrategyRoute: Proceeding without AI optimization
+        void _ctxError;
       }
     }
 
@@ -254,7 +256,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Cache the result (5 minutes)
-    setCachedResponse(cacheKey, comparison, 300000);
+    setCachedResponse(cacheKey, comparison as DebtComparison, 300000);
 
     const responseTime = Date.now() - startTime;
 
@@ -277,8 +279,8 @@ export async function POST(request: NextRequest) {
         },
       }
     );
-  } catch (error) {
-    console.error('Error calculating debt strategy:', error);
+  } catch (_error) {
+    // DebtStrategyRoute error: Calculation failed
 
     const responseTime = Date.now() - startTime;
 
@@ -288,7 +290,7 @@ export async function POST(request: NextRequest) {
         error: {
           code: 'INTERNAL_ERROR',
           message: 'Failed to calculate debt strategy',
-          details: error instanceof Error ? error.message : 'Unknown error',
+          details: _error instanceof Error ? _error.message : 'Unknown error',
         },
         _meta: {
           responseTime,

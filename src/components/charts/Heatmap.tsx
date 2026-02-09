@@ -28,6 +28,8 @@ export interface HeatmapProps {
   cellSize?: number;
   onCellClick?: (point: HeatmapDataPoint) => void;
   className?: string;
+  /** Accessible label for the chart */
+  ariaLabel?: string;
 }
 
 const COLOR_SCALES: Record<string, { low: string; mid: string; high: string }> =
@@ -50,8 +52,12 @@ export default function HeatmapComponent({
   cellSize = 40,
   onCellClick,
   className = '',
+  ariaLabel,
 }: HeatmapProps) {
   const colors = customColors || COLOR_SCALES[colorScale];
+
+  // Generate accessible description
+  const accessibleDescription = ariaLabel || `Heatmap with ${xLabels.length} columns and ${yLabels.length} rows showing data intensity. Use Tab to navigate cells.`;
 
   // Create a map for quick value lookup
   const valueMap = useMemo(() => {
@@ -99,6 +105,8 @@ export default function HeatmapComponent({
     <div
       className={`w-full overflow-x-auto ${className}`}
       style={{ minHeight: height }}
+      role="grid"
+      aria-label={accessibleDescription}
     >
       <div className="inline-block min-w-full">
         {/* X-axis labels at top */}
@@ -106,7 +114,7 @@ export default function HeatmapComponent({
           {xLabels.map((label) => (
             <div
               key={label}
-              className="text-xs text-gray-500 dark:text-gray-400 text-center font-medium"
+              className="text-xs text-gray-500 dark:text-slate-400 text-center font-medium"
               style={{ width: cellSize, minWidth: cellSize }}
             >
               {label}
@@ -120,7 +128,7 @@ export default function HeatmapComponent({
             <div key={yLabel} className="flex items-center gap-2">
               {/* Y-axis label */}
               <div
-                className="text-xs text-gray-500 dark:text-gray-400 text-right font-medium"
+                className="text-xs text-gray-500 dark:text-slate-400 text-right font-medium"
                 style={{ width: cellSize, minWidth: cellSize }}
               >
                 {yLabel}

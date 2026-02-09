@@ -34,7 +34,7 @@ export class EquifaxClient {
     userPII: UserPII
   ): Promise<BureauResponse<CreditReport>> {
     try {
-      console.log('📊 Retrieving Equifax credit report...');
+      // EquifaxClient: Retrieving Equifax credit report
 
       const endpoint = this.environment === 'sandbox'
         ? 'https://api.sandbox.equifax.com/business/oneview/v1/credit-report'
@@ -86,8 +86,8 @@ export class EquifaxClient {
       // Transform Equifax response to our format
       const creditReport = this.transformResponse(data, request.user_id);
 
-      console.log('✅ Equifax report retrieved successfully');
-      
+      // EquifaxClient: Equifax report retrieved successfully
+
       return {
         success: true,
         data: creditReport,
@@ -96,11 +96,11 @@ export class EquifaxClient {
         reference_id: data.reportId
       };
 
-    } catch (error) {
-      console.error('❌ Equifax API error:', error);
+    } catch (_error) {
+      // EquifaxClient error: Equifax API error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: _error instanceof Error ? _error.message : 'Unknown error',
         bureau: 'equifax',
         timestamp: new Date().toISOString()
       };
@@ -115,7 +115,7 @@ export class EquifaxClient {
     userPII: UserPII
   ): Promise<BureauResponse> {
     try {
-      console.log('📝 Submitting dispute to Equifax...');
+      // EquifaxClient: Submitting dispute to Equifax
 
       const endpoint = this.environment === 'sandbox'
         ? 'https://api.sandbox.equifax.com/business/oneview/v1/dispute'
@@ -156,7 +156,7 @@ export class EquifaxClient {
 
       const data = await response.json();
 
-      console.log('✅ Equifax dispute submitted successfully');
+      // EquifaxClient: Equifax dispute submitted successfully
 
       return {
         success: true,
@@ -166,11 +166,11 @@ export class EquifaxClient {
         reference_id: data.disputeId
       };
 
-    } catch (error) {
-      console.error('❌ Equifax dispute error:', error);
+    } catch (_error) {
+      // EquifaxClient error: Equifax dispute error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: _error instanceof Error ? _error.message : 'Unknown error',
         bureau: 'equifax',
         timestamp: new Date().toISOString()
       };

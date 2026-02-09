@@ -4,11 +4,11 @@ import BillNegotiationAssistant from '@/components/financial/BillNegotiationAssi
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Bill Negotiation Assistant | CPFI',
+  title: 'Bill Negotiation Assistant | Fynvita',
   description:
     'AI-powered bill negotiation with scripts, talking points, and savings tracking',
   openGraph: {
-    title: 'Bill Negotiation Assistant | CPFI',
+    title: 'Bill Negotiation Assistant | Fynvita',
     description:
       'AI-powered bill negotiation with scripts, talking points, and savings tracking',
     type: 'website',
@@ -26,14 +26,14 @@ function NegotiationLoadingSkeleton() {
           />
         ))}
       </div>
-      <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded" />
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6">
-        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6" />
+      <div className="h-12 bg-gray-200 dark:bg-slate-700 rounded" />
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-6">
+        <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/4 mb-6" />
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-24 bg-gray-200 dark:bg-gray-700 rounded"
+              className="h-24 bg-gray-200 dark:bg-slate-700 rounded"
             />
           ))}
         </div>
@@ -44,10 +44,10 @@ function NegotiationLoadingSkeleton() {
 
 export default function BillNegotiationPage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400 mb-4">
             <Link
               href="/financial/bills"
               className="hover:text-blue-600 dark:hover:text-blue-400"
@@ -60,7 +60,7 @@ export default function BillNegotiationPage() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Bill Negotiation Assistant
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-gray-600 dark:text-slate-400">
             AI-powered negotiation scripts and tracking to help you save money
             on your bills
           </p>
@@ -72,4 +72,3 @@ export default function BillNegotiationPage() {
     </div>
   );
 }
-

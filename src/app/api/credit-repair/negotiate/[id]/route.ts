@@ -65,9 +65,9 @@ export async function GET(
       success: true,
       data: negotiation,
     });
-  } catch (error) {
-    console.error('Error getting negotiation:', error);
-
+  } catch (_error) {
+    // NegotiateRoute error: Failed to get negotiation
+    void _error;
     return NextResponse.json(
       { error: 'Failed to get negotiation' },
       { status: 500 }
@@ -168,9 +168,9 @@ export async function PUT(
       success: true,
       data: negotiation,
     });
-  } catch (error) {
-    console.error('Error updating negotiation:', error);
-
+  } catch (_error) {
+    // NegotiateRoute error: Failed to update negotiation
+    void _error;
     return NextResponse.json(
       { error: 'Failed to update negotiation' },
       { status: 500 }
@@ -223,9 +223,9 @@ export async function DELETE(
       success: true,
       message: 'Negotiation deleted successfully',
     });
-  } catch (error) {
-    console.error('Error deleting negotiation:', error);
-
+  } catch (_error) {
+    // NegotiateRoute error: Failed to delete negotiation
+    void _error;
     return NextResponse.json(
       { error: 'Failed to delete negotiation' },
       { status: 500 }

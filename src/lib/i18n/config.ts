@@ -1,14 +1,14 @@
 /**
  * Internationalization (i18n) Configuration
- * 
- * Multi-language support for CreditMaster Pro
+ *
+ * Multi-language support for Fynvita
  */
 
 export const defaultLocale = 'en';
 
 export const locales = ['en', 'es', 'fr', 'de', 'pt', 'zh'] as const;
 
-export type Locale = typeof locales[number];
+export type Locale = (typeof locales)[number];
 
 export const localeNames: Record<Locale, string> = {
   en: 'English',
@@ -16,7 +16,7 @@ export const localeNames: Record<Locale, string> = {
   fr: 'Français',
   de: 'Deutsch',
   pt: 'Português',
-  zh: '中文'
+  zh: '中文',
 };
 
 export const localeFlags: Record<Locale, string> = {
@@ -25,7 +25,7 @@ export const localeFlags: Record<Locale, string> = {
   fr: '🇫🇷',
   de: '🇩🇪',
   pt: '🇧🇷',
-  zh: '🇨🇳'
+  zh: '🇨🇳',
 };
 
 // RTL languages (none currently, but ready for Arabic, Hebrew, etc.)
@@ -46,16 +46,18 @@ export const dateFormats: Record<Locale, Intl.DateTimeFormatOptions> = {
   fr: { day: 'numeric', month: 'short', year: 'numeric' },
   de: { day: 'numeric', month: 'short', year: 'numeric' },
   pt: { day: 'numeric', month: 'short', year: 'numeric' },
-  zh: { year: 'numeric', month: 'short', day: 'numeric' }
+  zh: { year: 'numeric', month: 'short', day: 'numeric' },
 };
 
 // Currency formatting per locale
-export const currencyFormats: Record<Locale, { currency: string; locale: string }> = {
+export const currencyFormats: Record<
+  Locale,
+  { currency: string; locale: string }
+> = {
   en: { currency: 'USD', locale: 'en-US' },
   es: { currency: 'EUR', locale: 'es-ES' },
   fr: { currency: 'EUR', locale: 'fr-FR' },
   de: { currency: 'EUR', locale: 'de-DE' },
   pt: { currency: 'BRL', locale: 'pt-BR' },
-  zh: { currency: 'CNY', locale: 'zh-CN' }
+  zh: { currency: 'CNY', locale: 'zh-CN' },
 };
-

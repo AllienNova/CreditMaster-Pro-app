@@ -381,8 +381,8 @@ class SpendingAnalysisService {
       return allTransactions.sort(
         (a, b) => b.date.getTime() - a.date.getTime()
       );
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
+    } catch (_error) {
+      // Error logged
       return [];
     }
   }

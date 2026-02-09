@@ -1,5 +1,5 @@
 /**
- * CPFI Admin Analytics Screen
+ * Fynvita Admin Analytics Screen
  * Platform performance and insights
  */
 

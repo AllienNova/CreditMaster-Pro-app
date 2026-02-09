@@ -1,5 +1,5 @@
 /**
- * CPFI Admin Audit Trail Screen
+ * Fynvita Admin Audit Trail Screen
  * Security events and activity logs
  */
 

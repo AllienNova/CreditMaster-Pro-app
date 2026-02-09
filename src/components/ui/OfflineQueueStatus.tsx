@@ -34,13 +34,7 @@ export function OfflineQueueStatus({
   if (variant === 'compact') {
     return (
       <div
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-200 ${
-          isProcessing
-            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-            : pendingCount > 0
-            ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
-            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400'
-        } ${className}`}
+        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-200 ${ isProcessing ? 'bg-blue-100 text-blue-700' : pendingCount > 0 ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-400' } ${className}`}
         role="status"
         aria-live="polite"
       >
@@ -93,7 +87,7 @@ export function OfflineQueueStatus({
   // Detailed variant
   return (
     <div
-      className={`bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-4 transition-colors duration-200 ${className}`}
+      className={`bg-white dark:bg-slate-800 rounded-lg border-2 border-gray-200 dark:border-slate-700 p-4 transition-colors duration-200 ${className}`}
       role="region"
       aria-label="Offline queue status"
     >
@@ -104,7 +98,7 @@ export function OfflineQueueStatus({
         {queue.length > 0 && (
           <button
             onClick={clearCompleted}
-            className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
+            className="text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
             aria-label="Clear completed actions"
           >
             Clear completed
@@ -113,7 +107,7 @@ export function OfflineQueueStatus({
       </div>
 
       {queue.length === 0 ? (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-gray-600 dark:text-slate-400">
           No queued actions
         </p>
       ) : (
@@ -122,33 +116,25 @@ export function OfflineQueueStatus({
             {queue.slice(0, 5).map((action) => (
               <div
                 key={action.id}
-                className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-750 rounded"
+                className="flex items-center justify-between p-2 bg-gray-50 dark:bg-slate-750 rounded"
               >
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
                     {action.type.charAt(0).toUpperCase() + action.type.slice(1)}
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                  <p className="text-xs text-gray-600 dark:text-slate-400">
                     {action.method} {action.endpoint}
                   </p>
                 </div>
                 <span
-                  className={`text-xs px-2 py-1 rounded ${
-                    action.status === 'completed'
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                      : action.status === 'failed'
-                      ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                      : action.status === 'processing'
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}
+                  className={`text-xs px-2 py-1 rounded ${ action.status === 'completed' ? 'bg-green-100 text-green-700' : action.status === 'failed' ? 'bg-red-100 text-red-700' : action.status === 'processing' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300' }`}
                 >
                   {action.status}
                 </span>
               </div>
             ))}
             {queue.length > 5 && (
-              <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
+              <p className="text-xs text-gray-600 dark:text-slate-400 text-center">
                 +{queue.length - 5} more action{queue.length - 5 !== 1 ? 's' : ''}
               </p>
             )}

@@ -1,5 +1,5 @@
 /**
- * CPFI Inquiry Removal Screen
+ * Fynvita Inquiry Removal Screen
  * Remove hard inquiries from credit report
  */
 

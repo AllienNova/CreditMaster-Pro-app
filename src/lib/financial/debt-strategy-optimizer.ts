@@ -126,8 +126,9 @@ export class DebtStrategyOptimizer {
       plan.aiInsights = aiInsights;
 
       return plan;
-    } catch (error) {
-      console.error('AI optimization failed, falling back to hybrid:', error);
+    } catch (_error) {
+      // DebtStrategyOptimizer error: AI optimization failed, falling back to hybrid
+      void _error;
       // Fallback to hybrid strategy
       const hybridPlan = this.debtPayoffService.calculatePayoffPlan(
         debts,
@@ -320,8 +321,9 @@ export class DebtStrategyOptimizer {
 
       const content = response.choices[0]?.message?.content || '';
       return this.parseAIInsights(content);
-    } catch (error) {
-      console.error('Failed to get AI insights:', error);
+    } catch (_error) {
+      // DebtStrategyOptimizer error: Failed to get AI insights
+      void _error;
       return {
         reasoning:
           'Using hybrid approach to balance interest savings and psychological wins.',
@@ -393,8 +395,9 @@ Format as JSON:
           alternativeApproaches: parsed.alternativeApproaches || [],
         };
       }
-    } catch (error) {
-      console.error('Failed to parse AI insights:', error);
+    } catch (_error) {
+      // DebtStrategyOptimizer error: Failed to parse AI insights
+      void _error;
     }
 
     // Fallback

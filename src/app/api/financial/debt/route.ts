@@ -132,8 +132,9 @@ export async function GET(request: NextRequest) {
         insights,
       },
     });
-  } catch (error) {
-    console.error('Error fetching debt data:', error);
+  } catch (_error) {
+    // DebtRoute error: Failed to fetch debt data
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch debt data' },
       { status: 500 }
@@ -187,8 +188,9 @@ export async function POST(request: NextRequest) {
       success: true,
       data: newDebt,
     });
-  } catch (error) {
-    console.error('Error creating debt:', error);
+  } catch (_error) {
+    // DebtRoute error: Failed to create debt
+    void _error;
     return NextResponse.json(
       { error: 'Failed to create debt' },
       { status: 500 }

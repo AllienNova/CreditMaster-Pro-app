@@ -95,7 +95,7 @@ export class AIMLService {
 
       return response as OpenAI.Chat.Completions.ChatCompletion;
     } catch (error) {
-      console.error('AIML Chat Error:', error);
+      // AIML error: Chat Error
       throw new Error(`AIML chat failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -124,7 +124,7 @@ export class AIMLService {
 
       return stream as AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
     } catch (error) {
-      console.error('AIML Chat Stream Error:', error);
+      // AIML error: Chat Stream Error
       throw new Error(`AIML chat stream failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -153,7 +153,7 @@ export class AIMLService {
 
       return response;
     } catch (error) {
-      console.error('AIML Image Generation Error:', error);
+      // AIML error: Image Generation Error
       throw new Error(`AIML image generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -180,7 +180,7 @@ export class AIMLService {
 
       return response;
     } catch (error) {
-      console.error('AIML Embedding Error:', error);
+      // AIML error: Embedding Error
       throw new Error(`AIML embedding failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -204,7 +204,7 @@ export class AIMLService {
 
       return response;
     } catch (error) {
-      console.error('AIML Transcription Error:', error);
+      // AIML error: Transcription Error
       throw new Error(`AIML transcription failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -231,7 +231,7 @@ export class AIMLService {
 
       return await response.arrayBuffer();
     } catch (error) {
-      console.error('AIML Speech Generation Error:', error);
+      // AIML error: Speech Generation Error
       throw new Error(`AIML speech generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -250,7 +250,7 @@ export class AIMLService {
 
       return response;
     } catch (error) {
-      console.error('AIML Moderation Error:', error);
+      // AIML error: Moderation Error
       throw new Error(`AIML moderation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, createContext, useContext, useCallback } from "react";
+import { Icon } from '@/components/ui/Icon';
 
 interface Toast {
   id: string;
@@ -73,11 +74,11 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   const getTypeStyles = () => {
     switch (toast.type) {
       case "success":
-        return { bg: "bg-emerald-50", border: "border-emerald-200", icon: "✅", iconColor: "text-emerald-500" };
+        return { bg: "bg-emerald-50", border: "border-emerald-200", icon: "sparkles", iconColor: "text-emerald-500" };
       case "error":
-        return { bg: "bg-red-50", border: "border-red-200", icon: "❌", iconColor: "text-red-500" };
+        return { bg: "bg-red-50", border: "border-red-200", icon: "sparkles", iconColor: "text-red-500" };
       case "warning":
-        return { bg: "bg-yellow-50", border: "border-yellow-200", icon: "⚠️", iconColor: "text-yellow-500" };
+        return { bg: "bg-yellow-50", border: "border-yellow-200", icon: "sparkles", iconColor: "text-yellow-500" };
       case "info":
         return { bg: "bg-blue-50", border: "border-blue-200", icon: "ℹ️", iconColor: "text-blue-500" };
     }
@@ -94,16 +95,15 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       <div className="flex items-start gap-3">
         <span className={`text-xl ${styles.iconColor}`}>{styles.icon}</span>
         <div className="flex-1">
-          <p className="font-semibold text-gray-900">{toast.title}</p>
-          {toast.message && <p className="text-sm text-gray-600 mt-1">{toast.message}</p>}
+          <p className="font-semibold text-gray-900 dark:text-white">{toast.title}</p>
+          {toast.message && <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">{toast.message}</p>}
         </div>
         <button
           onClick={handleClose}
-          className="text-gray-400 hover:text-gray-600 transition"
+          className="text-gray-400 hover:text-gray-600 dark:text-slate-300 transition"
           aria-label="Close"
         >
-          ✕
-        </button>
+                  </button>
       </div>
     </div>
   );

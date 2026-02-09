@@ -1,40 +1,80 @@
-import { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
-import { router } from 'expo-router';
+import { useState, useCallback, useMemo } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme, colors } from '../../src/constants/theme';
-import type { Dispute } from '../../src/types';
+import { useTheme } from '../../src/hooks/useTheme';
+import { colors } from '../../src/constants/theme';
+import { useDisputeStore } from '../../src/store/disputeStore';
+import type { Dispute } from '../../src/services/api/types';
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   draft: { bg: '#F3F4F6', text: '#6B7280' },
   sent: { bg: '#DBEAFE', text: '#2563EB' },
+  pending: { bg: '#DBEAFE', text: '#2563EB' },
+  in_review: { bg: '#FEF3C7', text: '#D97706' },
   under_review: { bg: '#FEF3C7', text: '#D97706' },
   resolved: { bg: '#DCFCE7', text: '#16A34A' },
   rejected: { bg: '#FEE2E2', text: '#DC2626' },
 };
 
 export default function DisputesScreen() {
-  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const { colors: themeColors, spacing, borderRadius, fontSize, fontWeight, withOpacity } = useTheme();
+  const { disputes, isLoading, error, fetchDisputes } = useDisputeStore();
   const [filter, setFilter] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchDisputes = async () => {
-    // Mock data
-    setDisputes([
-      { id: '1', user_id: '1', bureau: 'experian', status: 'under_review', item_type: 'Late Payment', item_description: 'Capital One late payment March 2023', dispute_reason: 'Payment was made on time', created_at: '2024-11-01T10:00:00Z', updated_at: '2024-11-15T10:00:00Z' },
-      { id: '2', user_id: '1', bureau: 'equifax', status: 'resolved', item_type: 'Collection', item_description: 'ABC Collections medical debt', dispute_reason: 'Not my account', created_at: '2024-10-15T10:00:00Z', updated_at: '2024-11-10T10:00:00Z', outcome: 'removed' },
-      { id: '3', user_id: '1', bureau: 'transunion', status: 'sent', item_type: 'Hard Inquiry', item_description: 'XYZ Lender unauthorized inquiry', dispute_reason: 'Unauthorized inquiry', created_at: '2024-11-10T10:00:00Z', updated_at: '2024-11-10T10:00:00Z' },
-      { id: '4', user_id: '1', bureau: 'experian', status: 'draft', item_type: 'Balance Error', item_description: 'Chase incorrect balance reported', dispute_reason: 'Incorrect information', created_at: '2024-11-18T10:00:00Z', updated_at: '2024-11-18T10:00:00Z' },
-    ]);
-  };
-
-  useEffect(() => { fetchDisputes(); }, []);
+  // Fetch disputes when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchDisputes();
+    }, [fetchDisputes])
+  );
 
   const onRefresh = async () => { setRefreshing(true); await fetchDisputes(); setRefreshing(false); };
 
   const filteredDisputes = filter === 'all' ? disputes : disputes.filter(d => d.status === filter);
 
   const filters = ['all', 'draft', 'sent', 'under_review', 'resolved'];
+
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: themeColors.background },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, paddingTop: 60 },
+    title: { fontSize: 28, fontWeight: '700', color: themeColors.text },
+    addButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: themeColors.primary, alignItems: 'center', justifyContent: 'center' },
+    quickActionsContainer: { flexDirection: 'row', paddingHorizontal: spacing.md, marginBottom: spacing.md, gap: 12 },
+    quickActionCard: { flex: 1, backgroundColor: themeColors.surface, padding: spacing.md, borderRadius: borderRadius.lg },
+    quickActionIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+    quickActionText: { fontSize: 15, fontWeight: '600', color: themeColors.text },
+    quickActionSubtext: { fontSize: 12, color: themeColors.textSecondary, marginTop: 2 },
+    statsContainer: { flexDirection: 'row', paddingHorizontal: spacing.md, marginBottom: spacing.md },
+    statCard: { flex: 1, backgroundColor: themeColors.surface, marginHorizontal: 4, padding: spacing.md, borderRadius: borderRadius.md, alignItems: 'center' },
+    statValue: { fontSize: 24, fontWeight: '700' },
+    statLabel: { fontSize: 12, color: themeColors.textSecondary },
+    filterContainer: { flexDirection: 'row', paddingHorizontal: spacing.md, marginBottom: spacing.sm },
+    filterButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, marginRight: 8, backgroundColor: themeColors.surface },
+    filterButtonActive: { backgroundColor: themeColors.primary },
+    filterText: { fontSize: 12, color: themeColors.textSecondary },
+    filterTextActive: { color: themeColors.white, fontWeight: '600' },
+    list: { padding: spacing.md },
+    disputeCard: { backgroundColor: themeColors.surface, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md },
+    disputeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    bureau: { fontSize: 14, fontWeight: '600' },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+    statusText: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
+    itemType: { fontSize: 16, fontWeight: '600', color: themeColors.text, marginBottom: 4 },
+    itemDescription: { fontSize: 14, color: themeColors.textSecondary, marginBottom: 8 },
+    disputeFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    dateText: { fontSize: 12, color: themeColors.textSecondary },
+    outcomeText: { fontSize: 12, color: themeColors.success, fontWeight: '500' },
+    emptyState: { alignItems: 'center', paddingTop: 60 },
+    emptyText: { fontSize: 16, color: themeColors.textSecondary, marginTop: spacing.md },
+    emptyButton: { marginTop: spacing.lg, backgroundColor: themeColors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: borderRadius.md },
+    emptyButtonText: { color: themeColors.white, fontWeight: '600' },
+    errorContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: withOpacity(themeColors.error, 0.1), padding: spacing.md, marginHorizontal: spacing.md, borderRadius: borderRadius.md, gap: 8 },
+    errorText: { color: themeColors.error, fontSize: 14, flex: 1 },
+    loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
+    loadingText: { marginTop: spacing.md, color: themeColors.textSecondary, fontSize: 14 },
+  }), [themeColors, spacing, borderRadius, withOpacity]);
 
   const renderDispute = ({ item }: { item: Dispute }) => (
     <TouchableOpacity style={styles.disputeCard} onPress={() => router.push(`/dispute/${item.id}` as never)}>
@@ -48,10 +88,10 @@ export default function DisputesScreen() {
           </Text>
         </View>
       </View>
-      <Text style={styles.itemType}>{item.item_type}</Text>
-      <Text style={styles.itemDescription} numberOfLines={2}>{item.item_description}</Text>
+      <Text style={styles.itemType}>{item.itemType}</Text>
+      <Text style={styles.itemDescription} numberOfLines={2}>{item.creditorName || item.disputeReason}</Text>
       <View style={styles.disputeFooter}>
-        <Text style={styles.dateText}>{new Date(item.created_at).toLocaleDateString()}</Text>
+        <Text style={styles.dateText}>{new Date(item.createdAt).toLocaleDateString()}</Text>
         {item.outcome && <Text style={styles.outcomeText}>Outcome: {item.outcome}</Text>}
       </View>
     </TouchableOpacity>
@@ -63,7 +103,7 @@ export default function DisputesScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>My Disputes</Text>
         <TouchableOpacity style={styles.addButton} onPress={() => router.push('/dispute/create' as never)}>
-          <Ionicons name="add" size={24} color="#FFFFFF" />
+          <Ionicons name="add" size={24} color={themeColors.white} />
         </TouchableOpacity>
       </View>
 
@@ -73,8 +113,8 @@ export default function DisputesScreen() {
           style={styles.quickActionCard}
           onPress={() => router.push('/dispute/templates' as never)}
         >
-          <View style={[styles.quickActionIcon, { backgroundColor: '#3B82F620' }]}>
-            <Ionicons name="document-text" size={20} color="#3B82F6" />
+          <View style={[styles.quickActionIcon, { backgroundColor: withOpacity(themeColors.primary, 0.125) }]}>
+            <Ionicons name="document-text" size={20} color={themeColors.primary} />
           </View>
           <Text style={styles.quickActionText}>Templates</Text>
           <Text style={styles.quickActionSubtext}>10 proven letters</Text>
@@ -83,8 +123,8 @@ export default function DisputesScreen() {
           style={styles.quickActionCard}
           onPress={() => router.push('/dispute/strategies' as never)}
         >
-          <View style={[styles.quickActionIcon, { backgroundColor: '#8B5CF620' }]}>
-            <Ionicons name="shield-checkmark" size={20} color="#8B5CF6" />
+          <View style={[styles.quickActionIcon, { backgroundColor: withOpacity(themeColors.accent, 0.125) }]}>
+            <Ionicons name="shield-checkmark" size={20} color={themeColors.accent} />
           </View>
           <Text style={styles.quickActionText}>Strategies</Text>
           <Text style={styles.quickActionSubtext}>7 advanced tactics</Text>
@@ -94,9 +134,9 @@ export default function DisputesScreen() {
       {/* Stats */}
       <View style={styles.statsContainer}>
         {[
-          { label: 'Total', value: disputes.length, color: theme.colors.primary },
-          { label: 'Pending', value: disputes.filter(d => ['sent', 'under_review'].includes(d.status)).length, color: theme.colors.warning },
-          { label: 'Resolved', value: disputes.filter(d => d.status === 'resolved').length, color: theme.colors.success },
+          { label: 'Total', value: disputes.length, color: themeColors.primary },
+          { label: 'Pending', value: disputes.filter(d => ['sent', 'under_review'].includes(d.status)).length, color: themeColors.warning },
+          { label: 'Resolved', value: disputes.filter(d => d.status === 'resolved').length, color: themeColors.success },
         ].map((stat, i) => (
           <View key={i} style={styles.statCard}>
             <Text style={[styles.statValue, { color: stat.color }]}>{stat.value}</Text>
@@ -120,60 +160,39 @@ export default function DisputesScreen() {
         ))}
       </View>
 
-      {/* Disputes List */}
-      <FlatList
-        data={filteredDisputes}
-        renderItem={renderDispute}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={64} color={theme.colors.border} />
-            <Text style={styles.emptyText}>No disputes found</Text>
-            <TouchableOpacity style={styles.emptyButton} onPress={() => router.push('/dispute/wizard' as never)}>
-              <Text style={styles.emptyButtonText}>Create New Dispute</Text>
-            </TouchableOpacity>
-          </View>
-        }
-      />
+      {/* Error State */}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={20} color={themeColors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      {/* Loading State */}
+      {isLoading && disputes.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={themeColors.primary} />
+          <Text style={styles.loadingText}>Loading disputes...</Text>
+        </View>
+      ) : (
+        /* Disputes List */
+        <FlatList
+          data={filteredDisputes}
+          renderItem={renderDispute}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.primary} />}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="document-text-outline" size={64} color={themeColors.border} />
+              <Text style={styles.emptyText}>No disputes found</Text>
+              <TouchableOpacity style={styles.emptyButton} onPress={() => router.push('/dispute/create' as never)}>
+                <Text style={styles.emptyButtonText}>Create New Dispute</Text>
+              </TouchableOpacity>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: theme.spacing.lg, paddingTop: 60 },
-  title: { fontSize: 28, fontWeight: '700', color: theme.colors.text },
-  addButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center' },
-  quickActionsContainer: { flexDirection: 'row', paddingHorizontal: theme.spacing.md, marginBottom: theme.spacing.md, gap: 12 },
-  quickActionCard: { flex: 1, backgroundColor: theme.colors.surface, padding: theme.spacing.md, borderRadius: theme.borderRadius.lg },
-  quickActionIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  quickActionText: { fontSize: 15, fontWeight: '600', color: theme.colors.text },
-  quickActionSubtext: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
-  statsContainer: { flexDirection: 'row', paddingHorizontal: theme.spacing.md, marginBottom: theme.spacing.md },
-  statCard: { flex: 1, backgroundColor: theme.colors.surface, marginHorizontal: 4, padding: theme.spacing.md, borderRadius: theme.borderRadius.md, alignItems: 'center' },
-  statValue: { fontSize: 24, fontWeight: '700' },
-  statLabel: { fontSize: 12, color: theme.colors.textSecondary },
-  filterContainer: { flexDirection: 'row', paddingHorizontal: theme.spacing.md, marginBottom: theme.spacing.sm },
-  filterButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, marginRight: 8, backgroundColor: theme.colors.surface },
-  filterButtonActive: { backgroundColor: theme.colors.primary },
-  filterText: { fontSize: 12, color: theme.colors.textSecondary },
-  filterTextActive: { color: '#FFFFFF', fontWeight: '600' },
-  list: { padding: theme.spacing.md },
-  disputeCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.md },
-  disputeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  bureau: { fontSize: 14, fontWeight: '600' },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  statusText: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
-  itemType: { fontSize: 16, fontWeight: '600', color: theme.colors.text, marginBottom: 4 },
-  itemDescription: { fontSize: 14, color: theme.colors.textSecondary, marginBottom: 8 },
-  disputeFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dateText: { fontSize: 12, color: theme.colors.textSecondary },
-  outcomeText: { fontSize: 12, color: theme.colors.success, fontWeight: '500' },
-  emptyState: { alignItems: 'center', paddingTop: 60 },
-  emptyText: { fontSize: 16, color: theme.colors.textSecondary, marginTop: theme.spacing.md },
-  emptyButton: { marginTop: theme.spacing.lg, backgroundColor: theme.colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: theme.borderRadius.md },
-  emptyButtonText: { color: '#FFFFFF', fontWeight: '600' },
-});
-

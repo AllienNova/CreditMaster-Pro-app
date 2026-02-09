@@ -1,5 +1,5 @@
 /**
- * CPFI Loan Pre-qualification Screen
+ * Fynvita Loan Pre-qualification Screen
  * Pre-qualified loan offers with rate comparison and calculator
  */
 

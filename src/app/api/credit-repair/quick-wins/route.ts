@@ -95,8 +95,6 @@ export async function GET(request: NextRequest) {
       data: quickWins,
     });
   } catch (error) {
-    console.error('Error getting quick wins:', error);
-
     // Audit log error
     try {
       await auditLogger.logSecurityEvent({
@@ -104,8 +102,8 @@ export async function GET(request: NextRequest) {
         message: `Failed to get quick wins: ${(error as Error).message}`,
         severity: 'medium',
       });
-    } catch (auditError) {
-      console.error('Failed to log audit event:', auditError);
+    } catch (_auditError) {
+      // Audit error silently caught
     }
 
     return NextResponse.json(

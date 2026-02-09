@@ -44,51 +44,112 @@ export interface Subscription {
 
 /**
  * Subscription Plans
+ *
+ * New pricing model (2025):
+ * - Free: $0/month - Basic features for getting started
+ * - Standard: $29.99/month - Complete credit health & financial wellness (3% annual discount)
+ * - Pro: $99.99/month - Everything for complete financial vitality (8% annual discount)
+ * - Family Duo: $159.99/month - For couples (2 members) (18% annual discount)
+ * - Family: $199.99/month - For families (3 members) (18% annual discount)
+ * - Family Plus: $399.99/month - For larger families (5 members) (18% annual discount)
  */
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
-    id: 'basic',
-    name: '🌟 Basic Plan',
-    priceId: process.env.STRIPE_BASIC_PRICE_ID || 'price_basic',
-    price: 29,
+    id: 'free',
+    name: 'Free',
+    priceId: 'price_free', // No Stripe price ID needed for free tier
+    price: 0,
     interval: 'month',
     features: [
-      'AI-powered credit analysis',
-      'Basic dispute letter generation',
-      'Credit score tracking',
-      'Email support',
-      '5 disputes per month',
+      'Credit score from 1 bureau',
+      'Basic budgeting tools',
+      '10 AI chat messages/month',
+      'Mobile app access',
+      '2 linked accounts',
     ],
   },
   {
-    id: 'premium',
-    name: '🚀 Premium Plan',
-    priceId: process.env.STRIPE_PREMIUM_PRICE_ID || 'price_premium',
-    price: 79,
+    id: 'standard',
+    name: 'Standard',
+    priceId: process.env.STRIPE_STANDARD_PRICE_ID || 'price_standard',
+    price: 29.99,
     interval: 'month',
     features: [
-      'Everything in Basic',
-      'Advanced AI strategies',
-      'Unlimited disputes',
-      'Priority support',
+      'Credit scores from all 3 bureaus',
+      '10 AI-powered disputes/month',
+      'Smart budgeting with AI insights',
+      'Debt payoff strategies',
+      'Basic investment tracking',
+      'Priority email support',
+      'Unlimited linked accounts',
+    ],
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    priceId: process.env.STRIPE_PRO_PRICE_ID || 'price_pro',
+    price: 99.99,
+    interval: 'month',
+    features: [
+      'Everything in Standard',
+      'Unlimited AI-powered disputes',
+      'Bill negotiation (no success fees!)',
+      'Full investment intelligence suite',
       'Student loan optimization',
-      'Credit building recommendations',
+      '24/7 AI financial coach',
+      'Priority chat & phone support',
+      'Advanced analytics dashboard',
     ],
   },
   {
-    id: 'enterprise',
-    name: '💼 Enterprise Plan',
-    priceId: process.env.STRIPE_ENTERPRISE_PRICE_ID || 'price_enterprise',
-    price: 199,
+    id: 'family-duo',
+    name: 'Family Duo',
+    priceId: process.env.STRIPE_FAMILY_DUO_PRICE_ID || 'price_family_duo',
+    price: 159.99,
     interval: 'month',
     features: [
-      'Everything in Premium',
-      'Multi-user access',
+      'Everything in Pro',
+      'Up to 2 family members',
+      'Family financial dashboard',
+      'Shared goals & milestones',
+      'Joint account tracking',
+      'Family budget collaboration',
+      'Priority support',
+    ],
+  },
+  {
+    id: 'family',
+    name: 'Family',
+    priceId: process.env.STRIPE_FAMILY_PRICE_ID || 'price_family',
+    price: 199.99,
+    interval: 'month',
+    features: [
+      'Everything in Pro',
+      'Up to 3 family members',
+      'Family financial dashboard',
+      'Shared goals & milestones',
+      'Kids financial education module',
+      'College savings optimizer',
+      'Family net worth tracking',
+      'Priority support',
+    ],
+  },
+  {
+    id: 'family-plus',
+    name: 'Family Plus',
+    priceId: process.env.STRIPE_FAMILY_PLUS_PRICE_ID || 'price_family_plus',
+    price: 399.99,
+    interval: 'month',
+    features: [
+      'Everything in Family',
+      'Up to 5 family members',
+      'Inheritance & estate planning tools',
       'Dedicated account manager',
-      'Custom AI training',
-      'API access',
-      'White-label options',
-      'Advanced analytics',
+      'Monthly family financial review call',
+      'Custom reporting & exports',
+      'API access for integrations',
+      'White-glove onboarding',
+      'Priority everything (1-hour response)',
     ],
   },
 ];
@@ -391,48 +452,140 @@ class StripePaymentService {
         await this.handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent);
         break;
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        // Stripe: Unhandled event type
     }
   }
   
   // Webhook handlers
   
   private async handleSubscriptionCreated(subscription: Stripe.Subscription): Promise<void> {
-    console.log('Subscription created:', subscription.id);
+    // Stripe: Subscription created
     const { subscriptionService } = await import('../subscriptions/subscription-service');
     await subscriptionService.handleSubscriptionCreated(subscription);
   }
 
   private async handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
-    console.log('Subscription updated:', subscription.id);
+    // Stripe: Subscription updated
     const { subscriptionService } = await import('../subscriptions/subscription-service');
     await subscriptionService.handleSubscriptionUpdated(subscription);
   }
 
   private async handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
-    console.log('Subscription deleted:', subscription.id);
+    // Stripe: Subscription deleted
     const { subscriptionService } = await import('../subscriptions/subscription-service');
     await subscriptionService.handleSubscriptionDeleted(subscription);
   }
   
   private async handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
-    console.log('Invoice paid:', invoice.id);
-    // TODO: Update payment history in database
+    // Stripe: Invoice paid
+
+    // Get customer email for notification
+    const customerId = typeof invoice.customer === 'string'
+      ? invoice.customer
+      : invoice.customer?.id;
+
+    if (customerId) {
+      try {
+        const customer = await this.getCustomer(customerId);
+        const { notificationService } = await import('../notifications/notification-service');
+
+        // Send payment confirmation email
+        if (customer.email) {
+          await notificationService.sendPaymentSuccessEmail(
+            customer.email,
+            customer.name || 'Customer',
+            invoice.amount_paid ? invoice.amount_paid / 100 : 0,
+            invoice.id
+          );
+        }
+
+        // Log successful payment for analytics
+        const { logger } = await import('../monitoring/logger');
+        logger.info('Payment successful', {
+          invoiceId: invoice.id,
+          customerId,
+          amount: invoice.amount_paid,
+          currency: invoice.currency,
+        });
+      } catch (error) {
+        // Stripe error: Failed to process invoice paid event
+      }
+    }
   }
-  
+
   private async handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
-    console.log('Invoice payment failed:', invoice.id);
-    // TODO: Notify user of payment failure
+    // Stripe: Invoice payment failed
+
+    // Get customer email for notification
+    const customerId = typeof invoice.customer === 'string'
+      ? invoice.customer
+      : invoice.customer?.id;
+
+    if (customerId) {
+      try {
+        const customer = await this.getCustomer(customerId);
+        const { notificationService } = await import('../notifications/notification-service');
+
+        // Send payment failure email
+        if (customer.email) {
+          await notificationService.sendPaymentFailedEmail(
+            customer.email,
+            invoice.amount_due ? invoice.amount_due / 100 : 0,
+            `Invoice ${invoice.id} payment failed. Please update your payment method.`
+          );
+        }
+
+        // Log payment failure for monitoring
+        const { logger } = await import('../monitoring/logger');
+        logger.warn('Payment failed', {
+          invoiceId: invoice.id,
+          customerId,
+          amount: invoice.amount_due,
+          currency: invoice.currency,
+        });
+      } catch (error) {
+        // Stripe error: Failed to process invoice payment failed event
+      }
+    }
   }
-  
+
   private async handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent): Promise<void> {
-    console.log('Payment intent succeeded:', paymentIntent.id);
-    // TODO: Process successful payment
+    // Stripe: Payment intent succeeded
+
+    // Log successful payment for analytics
+    try {
+      const { logger } = await import('../monitoring/logger');
+      logger.info('Payment intent succeeded', {
+        paymentIntentId: paymentIntent.id,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        customerId: typeof paymentIntent.customer === 'string'
+          ? paymentIntent.customer
+          : paymentIntent.customer?.id,
+      });
+    } catch (error) {
+      // Stripe error: Failed to log payment intent success
+    }
   }
-  
+
   private async handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent): Promise<void> {
-    console.log('Payment intent failed:', paymentIntent.id);
-    // TODO: Handle failed payment
+    // Stripe: Payment intent failed
+
+    // Log payment failure for monitoring and alerting
+    try {
+      const { logger } = await import('../monitoring/logger');
+      logger.error('Payment intent failed', new Error('Payment intent failed'), {
+        paymentIntentId: paymentIntent.id,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        customerId: typeof paymentIntent.customer === 'string'
+          ? paymentIntent.customer
+          : paymentIntent.customer?.id,
+        lastPaymentError: paymentIntent.last_payment_error?.message,
+      });
+    } catch (error) {
+      // Stripe error: Failed to log payment intent failure
+    }
   }
   
   /**

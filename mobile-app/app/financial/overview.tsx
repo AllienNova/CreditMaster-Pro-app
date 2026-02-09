@@ -1,5 +1,5 @@
 /**
- * CPFI Financial Overview Screen
+ * Fynvita Financial Overview Screen
  * Net worth, account balances, transactions, budget status
  */
 

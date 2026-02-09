@@ -76,9 +76,9 @@ export async function GET(
       success: true,
       data: letter,
     });
-  } catch (error) {
-    console.error('Error getting goodwill letter:', error);
-
+  } catch (_error) {
+    // GoodwillRoute error: Failed to get goodwill letter
+    void _error;
     return NextResponse.json(
       { error: 'Failed to get goodwill letter' },
       { status: 500 }
@@ -193,9 +193,9 @@ export async function PUT(
       success: true,
       data: letter,
     });
-  } catch (error) {
-    console.error('Error updating goodwill letter:', error);
-
+  } catch (_error) {
+    // GoodwillRoute error: Failed to update goodwill letter
+    void _error;
     return NextResponse.json(
       { error: 'Failed to update goodwill letter' },
       { status: 500 }
@@ -245,9 +245,9 @@ export async function DELETE(
       success: true,
       message: 'Goodwill letter deleted successfully',
     });
-  } catch (error) {
-    console.error('Error deleting goodwill letter:', error);
-
+  } catch (_error) {
+    // GoodwillRoute error: Failed to delete goodwill letter
+    void _error;
     return NextResponse.json(
       { error: 'Failed to delete goodwill letter' },
       { status: 500 }

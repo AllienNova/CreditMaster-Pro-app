@@ -375,14 +375,14 @@ export class TaxLossHarvestingService {
 
     if (opportunity.washSaleViolations.length > 0) {
       notes.push(
-        `⚠️ ${opportunity.washSaleViolations.length} wash sale warning(s) - review before executing`
+        `${opportunity.washSaleViolations.length} wash sale warning(s) - review before executing`
       );
     }
 
     if (opportunity.recommendedAction === 'sell') {
-      notes.push('✓ Recommended for immediate tax-loss harvesting');
+      notes.push('Recommended for immediate tax-loss harvesting');
     } else if (opportunity.recommendedAction === 'review') {
-      notes.push('⚠️ Review wash sale implications before proceeding');
+      notes.push('Review wash sale implications before proceeding');
     }
 
     return notes.join(' | ');

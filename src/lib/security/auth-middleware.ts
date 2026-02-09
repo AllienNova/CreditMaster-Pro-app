@@ -8,9 +8,22 @@
  * - API key authentication
  *
  * SECURITY: All tokens are now properly verified with cryptographic signatures
+ *
+ * @deprecated For API route authentication, prefer using the guards from '@/lib/auth/api-guard':
+ * - `withAuth` - Requires authentication
+ * - `withPermission` - Requires authentication + specific permission
+ * - `withRole` - Requires authentication + minimum role level
+ * - `withOptionalAuth` - Optional authentication
+ *
+ * For JWT validation, use '@/lib/auth/jwt-validation' directly.
  */
 
 import jwt from 'jsonwebtoken';
+import { logger } from '@/lib/monitoring/logger';
+
+// Re-export preferred utilities for migration path
+export { jwtValidation, type JWTUser, type JWTValidationResult } from '@/lib/auth/jwt-validation';
+export { withAuth, withPermission, withRole, withOptionalAuth } from '@/lib/auth/api-guard';
 
 export interface JWTPayload {
   userId: string;
@@ -198,7 +211,7 @@ async function validateToken(token: string): Promise<User | null> {
     const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
 
     if (!jwtSecret) {
-      console.error('SECURITY ERROR: JWT_SECRET or SUPABASE_JWT_SECRET not configured');
+      logger.error('SECURITY ERROR: JWT_SECRET or SUPABASE_JWT_SECRET not configured');
       return null;
     }
 
@@ -208,15 +221,16 @@ async function validateToken(token: string): Promise<User | null> {
 
     // Validate required fields
     if (!decoded.userId || !decoded.email) {
-      console.warn('JWT missing required fields (userId, email)');
+      logger.warn('JWT missing required fields (userId, email)');
       return null;
     }
 
-    // TODO: In production, you may want to fetch user from database to verify:
-    // - User still exists
+    // Production enhancement: For added security, fetch user from database to verify:
+    // - User still exists and is active
     // - User is not banned/suspended
-    // - Role hasn't changed
-    // const dbUser = await getUserFromDatabase(decoded.userId);
+    // - Role hasn't changed since token was issued
+    // Trade-off: Adds database lookup per request but provides stronger security.
+    // Enable via: const dbUser = await supabase.from('users').select('*').eq('id', decoded.userId).single();
 
     // Map JWT payload to User object
     const user: User = {
@@ -233,13 +247,13 @@ async function validateToken(token: string): Promise<User | null> {
   } catch (error) {
     // Log specific JWT errors for security monitoring
     if (error instanceof jwt.JsonWebTokenError) {
-      console.warn('Invalid JWT token:', error.message);
+      logger.warn('Invalid JWT token', { reason: error.message });
     } else if (error instanceof jwt.TokenExpiredError) {
-      console.warn('JWT token expired:', error.message);
+      logger.warn('JWT token expired', { reason: error.message });
     } else if (error instanceof jwt.NotBeforeError) {
-      console.warn('JWT not yet valid:', error.message);
+      logger.warn('JWT not yet valid', { reason: error.message });
     } else {
-      console.error('Token validation error:', error);
+      logger.error('Token validation error', error instanceof Error ? error : new Error(String(error)));
     }
     return null;
   }
@@ -390,12 +404,27 @@ export function deleteSession(token: string): void {
 }
 
 /**
- * Generate random token
+ * Generate cryptographically secure random token
+ * Uses crypto.getRandomValues for secure token generation
  */
 function generateToken(): string {
-  return Math.random().toString(36).substring(2) + 
-         Math.random().toString(36).substring(2) +
-         Date.now().toString(36);
+  // Generate 32 bytes of cryptographically secure random data
+  const buffer = new Uint8Array(32);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(buffer);
+  } else {
+    // Fallback for Node.js environment
+    const nodeCrypto = require('crypto');
+    const randomBytes = nodeCrypto.randomBytes(32);
+    for (let i = 0; i < 32; i++) {
+      buffer[i] = randomBytes[i];
+    }
+  }
+
+  // Convert to hex string
+  return Array.from(buffer)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 /**

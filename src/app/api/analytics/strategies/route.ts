@@ -21,11 +21,9 @@ export async function GET(request: NextRequest) {
     // Get strategy analytics
     const strategies = await AnalyticsEngine.getStrategyAnalytics(strategyId);
     
-    console.log(`📊 Retrieved analytics for ${strategies.length} strategies`);
-    
     return NextResponse.json({ strategies });
-  } catch (error) {
-    console.error('Error fetching strategy analytics:', error);
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
       { error: 'Failed to fetch strategy analytics' },
       { status: 500 }

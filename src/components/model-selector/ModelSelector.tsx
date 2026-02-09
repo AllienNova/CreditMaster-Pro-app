@@ -164,13 +164,13 @@ export default function ModelSelector({
   };
 
   const getQualityBadge = (quality: AIModel['quality']) => {
-    const colors = { standard: 'bg-gray-100 text-gray-700', high: 'bg-blue-100 text-blue-700', premium: 'bg-purple-100 text-purple-700' };
+    const colors = { standard: 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200', high: 'bg-blue-100 text-blue-700', premium: 'bg-blue-100 text-blue-700' };
     return <span className={`text-xs px-2 py-0.5 rounded ${colors[quality]}`}>{quality}</span>;
   };
 
   return (
-    <div className={`bg-white rounded-xl shadow-lg p-6 ${className}`}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Select AI Model</h3>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 ${className}`}>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Select AI Model</h3>
 
       {/* Search and Filter */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -179,12 +179,12 @@ export default function ModelSelector({
           placeholder="Search models..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value as AIModel['category'] | 'all')}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
         >
           {categories.map(cat => (
             <option key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
@@ -199,29 +199,25 @@ export default function ModelSelector({
             key={model.id}
             type="button"
             onClick={() => onSelect(model.id)}
-            className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
-              selectedModel === model.id
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-            }`}
+            className={`w-full p-4 rounded-lg border-2 text-left transition-all ${ selectedModel === model.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900' }`}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900">{model.name}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{model.name}</span>
                   {model.recommended && (
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Recommended</span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mt-1">{model.provider} • {model.description}</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{model.provider} • {model.description}</p>
                 <div className="flex items-center gap-2 mt-2">
                   {getSpeedBadge(model.speed)}
                   {getQualityBadge(model.quality)}
-                  <span className="text-xs text-gray-400">{(model.contextWindow / 1000).toFixed(0)}K context</span>
+                  <span className="text-xs text-gray-400 dark:text-slate-500">{(model.contextWindow / 1000).toFixed(0)}K context</span>
                 </div>
               </div>
               {showPricing && (
-                <div className="text-right text-xs text-gray-500">
+                <div className="text-right text-xs text-gray-500 dark:text-slate-400">
                   <div>${model.inputCost}/M in</div>
                   <div>${model.outputCost}/M out</div>
                 </div>
@@ -232,7 +228,7 @@ export default function ModelSelector({
       </div>
 
       {filteredModels.length === 0 && (
-        <p className="text-center text-gray-500 py-8">No models found matching your criteria</p>
+        <p className="text-center text-gray-500 dark:text-slate-400 py-8">No models found matching your criteria</p>
       )}
     </div>
   );

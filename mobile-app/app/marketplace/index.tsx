@@ -1,5 +1,5 @@
 /**
- * CPFI Marketplace Dashboard
+ * Fynvita Marketplace Dashboard
  */
 
 import React from 'react';

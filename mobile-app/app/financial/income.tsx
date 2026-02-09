@@ -1,5 +1,5 @@
 /**
- * CPFI Income Screen
+ * Fynvita Income Screen
  * Income sources, trends, and tax estimates
  */
 

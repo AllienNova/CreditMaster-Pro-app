@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Monitoring Dashboard
+ * Fynvita Credit Monitoring Dashboard
  * Monitoring status, bureau connections, alerts list
  */
 

@@ -59,7 +59,7 @@ class ProviderService {
     const { data, error } = await query.order('rating', { ascending: false });
 
     if (error) {
-      console.error('Error fetching providers:', error);
+      // ProviderService error: Error fetching providers
       return [];
     }
 
@@ -84,7 +84,7 @@ class ProviderService {
       .order('rating', { ascending: false });
 
     if (error) {
-      console.error('Error fetching providers by category:', error);
+      // ProviderService error: Error fetching providers by category
       return [];
     }
 
@@ -99,7 +99,7 @@ class ProviderService {
       .limit(20);
 
     if (error) {
-      console.error('Error searching providers:', error);
+      // ProviderService error: Error searching providers
       return [];
     }
 
@@ -115,7 +115,7 @@ class ProviderService {
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching top providers:', error);
+      // ProviderService error: Error fetching top providers
       return [];
     }
 

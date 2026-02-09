@@ -1,5 +1,5 @@
 /**
- * CPFI Recommendations Navigation Layout
+ * Fynvita Recommendations Navigation Layout
  */
 
 import { Stack } from 'expo-router';

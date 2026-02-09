@@ -202,7 +202,7 @@ export class TransactionCategorizer {
         this.aiService = new AIMLService();
       }
     } catch (error) {
-      console.warn('AI service not available for categorization:', error);
+      // Transaction categorizer warning: AI service not available
     }
   }
   /**
@@ -492,7 +492,7 @@ export class TransactionCategorizer {
         const aiCategorized = await this.categorizeWithAI(ambiguousTransactions);
         categorized.push(...aiCategorized);
       } catch (error) {
-        console.warn('AI categorization failed, using fallback:', error);
+        // Transaction categorizer warning: AI categorization failed, using fallback
 
         // Fallback: Use 'other' category with low confidence
         for (const transaction of ambiguousTransactions) {
@@ -555,11 +555,11 @@ export class TransactionCategorizer {
           updated_at: new Date().toISOString(),
         });
       } catch (error) {
-        console.warn('Failed to persist merchant category:', error);
+        // Transaction categorizer warning: Failed to persist merchant category
       }
     }
 
-    console.log(`Trained on ${corrections.length} user corrections`);
+    // Transaction categorizer: Trained on user corrections
   }
 
   /**
@@ -612,7 +612,7 @@ export class TransactionCategorizer {
         };
       }
     } catch (error) {
-      console.warn('Failed to fetch merchant category from database:', error);
+      // Transaction categorizer warning: Failed to fetch merchant category from database
     }
 
     // 4. Use AI if available
@@ -621,7 +621,7 @@ export class TransactionCategorizer {
         const aiSuggestion = await this.getAICategorySuggestion(merchant);
         return aiSuggestion;
       } catch (error) {
-        console.warn('AI category suggestion failed:', error);
+        // Transaction categorizer warning: AI category suggestion failed
       }
     }
 
@@ -806,7 +806,7 @@ Respond in JSON format:
 
       return categorized;
     } catch (error) {
-      console.error('AI categorization error:', error);
+      // Transaction categorizer error: AI categorization error
       throw error;
     }
   }
@@ -862,7 +862,7 @@ Respond in JSON format:
         })),
       };
     } catch (error) {
-      console.error('AI category suggestion error:', error);
+      // Transaction categorizer error: AI category suggestion error
       throw error;
     }
   }
@@ -882,7 +882,7 @@ Respond in JSON format:
         categorizations: parsed.categorizations || [],
       };
     } catch (error) {
-      console.warn('Failed to parse AI categorization:', error);
+      // Transaction categorizer warning: Failed to parse AI categorization
       return { categorizations: [] };
     }
   }
@@ -908,7 +908,7 @@ Respond in JSON format:
         alternatives: parsed.alternatives,
       };
     } catch (error) {
-      console.warn('Failed to parse AI category suggestion:', error);
+      // Transaction categorizer warning: Failed to parse AI category suggestion
       return { category: 'other', confidence: 50 };
     }
   }

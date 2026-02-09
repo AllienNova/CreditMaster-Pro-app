@@ -1,18 +1,19 @@
 /**
  * Notification Service
- * 
+ *
  * Handles all notification types:
  * - Email notifications
  * - In-app notifications
+ * - Web Push notifications
  * - SMS notifications (future)
- * - Push notifications (future)
  */
 
 import { Resend } from 'resend';
+import { webPushService, type PushNotificationPayload } from './web-push-service';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build');
 
-export type NotificationType = 
+export type NotificationType =
   | 'dispute_created'
   | 'dispute_updated'
   | 'dispute_resolved'
@@ -46,8 +47,8 @@ export interface EmailTemplate {
  * Notification Service Class
  */
 class NotificationService {
-  private notifications: Map<string, Notification[]> = new Map();
-  
+  private readonly notifications: Map<string, Notification[]> = new Map();
+
   /**
    * Send email notification
    */
@@ -59,19 +60,19 @@ class NotificationService {
   ): Promise<void> {
     try {
       await resend.emails.send({
-        from: from || process.env.EMAIL_FROM || 'CPFI <noreply@CPFI-pro.com>',
+        from: from || process.env.EMAIL_FROM || 'Fynvita <noreply@fynvita.com>',
         to,
         subject,
         html,
       });
-      
-      console.log(`Email sent to ${to}: ${subject}`);
+
+      // Email sent successfully
     } catch (error) {
-      console.error('Failed to send email:', error);
+      // Email send failed - rethrowing
       throw error;
     }
   }
-  
+
   /**
    * Create in-app notification
    */
@@ -83,7 +84,7 @@ class NotificationService {
     data?: Record<string, any>
   ): Notification {
     const notification: Notification = {
-      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
       userId,
       type,
       title,
@@ -92,14 +93,14 @@ class NotificationService {
       createdAt: new Date(),
       data,
     };
-    
+
     const userNotifications = this.notifications.get(userId) || [];
     userNotifications.unshift(notification);
     this.notifications.set(userId, userNotifications);
-    
+
     return notification;
   }
-  
+
   /**
    * Get user notifications
    */
@@ -107,75 +108,75 @@ class NotificationService {
     const notifications = this.notifications.get(userId) || [];
     return notifications.slice(0, limit);
   }
-  
+
   /**
    * Mark notification as read
    */
   markAsRead(userId: string, notificationId: string): boolean {
     const notifications = this.notifications.get(userId) || [];
-    const notification = notifications.find(n => n.id === notificationId);
-    
+    const notification = notifications.find((n) => n.id === notificationId);
+
     if (notification) {
       notification.read = true;
       return true;
     }
-    
+
     return false;
   }
-  
+
   /**
    * Mark all notifications as read
    */
   markAllAsRead(userId: string): number {
     const notifications = this.notifications.get(userId) || [];
     let count = 0;
-    
-    notifications.forEach(n => {
+
+    notifications.forEach((n) => {
       if (!n.read) {
         n.read = true;
         count++;
       }
     });
-    
+
     return count;
   }
-  
+
   /**
    * Delete notification
    */
   deleteNotification(userId: string, notificationId: string): boolean {
     const notifications = this.notifications.get(userId) || [];
-    const index = notifications.findIndex(n => n.id === notificationId);
-    
+    const index = notifications.findIndex((n) => n.id === notificationId);
+
     if (index !== -1) {
       notifications.splice(index, 1);
       this.notifications.set(userId, notifications);
       return true;
     }
-    
+
     return false;
   }
-  
+
   /**
    * Get unread count
    */
   getUnreadCount(userId: string): number {
     const notifications = this.notifications.get(userId) || [];
-    return notifications.filter(n => !n.read).length;
+    return notifications.filter((n) => !n.read).length;
   }
-  
+
   // Email templates
-  
+
   /**
    * Send welcome email
    */
   async sendWelcomeEmail(to: string, name: string): Promise<void> {
-    const subject = 'Welcome to CPFI! 🎉';
+    const subject = 'Welcome to Fynvita! ';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #4F46E5;">Welcome to CPFI!</h1>
+        <h1 style="color: #4F46E5;">Welcome to Fynvita!</h1>
         <p>Hi ${name},</p>
-        <p>We're excited to have you on board! CPFI uses advanced AI to help you repair your credit and achieve your financial goals.</p>
+        <p>We're excited to have you on board! Fynvita uses advanced AI to help you repair your credit and achieve your financial goals.</p>
         <h2>Get Started:</h2>
         <ol>
           <li>Upload your credit report</li>
@@ -193,10 +194,10 @@ class NotificationService {
         </p>
       </div>
     `;
-    
+
     await this.sendEmail(to, subject, html);
   }
-  
+
   /**
    * Send dispute created notification
    */
@@ -205,7 +206,7 @@ class NotificationService {
     disputeId: string,
     itemDescription: string
   ): Promise<void> {
-    const subject = 'Dispute Created Successfully ✅';
+    const subject = 'Dispute Created Successfully ';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #4F46E5;">Dispute Created</h1>
@@ -223,10 +224,10 @@ class NotificationService {
         </p>
       </div>
     `;
-    
+
     await this.sendEmail(to, subject, html);
   }
-  
+
   /**
    * Send dispute resolved notification
    */
@@ -237,15 +238,16 @@ class NotificationService {
     outcome: 'removed' | 'updated' | 'verified'
   ): Promise<void> {
     const outcomeText = {
-      removed: 'The negative item has been removed from your credit report! 🎉',
+      removed: 'The negative item has been removed from your credit report! ',
       updated: 'The item has been updated with corrected information.',
       verified: 'The bureau verified the item as accurate.',
     };
-    
-    const subject = outcome === 'removed' 
-      ? 'Great News! Dispute Resolved - Item Removed 🎉'
-      : 'Dispute Resolved';
-    
+
+    const subject =
+      outcome === 'removed'
+        ? 'Great News! Dispute Resolved - Item Removed '
+        : 'Dispute Resolved';
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: ${outcome === 'removed' ? '#10B981' : '#4F46E5'};">Dispute Resolved</h1>
@@ -263,10 +265,10 @@ class NotificationService {
         </p>
       </div>
     `;
-    
+
     await this.sendEmail(to, subject, html);
   }
-  
+
   /**
    * Send credit score changed notification
    */
@@ -277,11 +279,11 @@ class NotificationService {
   ): Promise<void> {
     const change = newScore - oldScore;
     const isIncrease = change > 0;
-    
+
     const subject = isIncrease
-      ? `Your Credit Score Increased by ${change} Points! 📈`
+      ? `Your Credit Score Increased by ${change} Points! `
       : `Credit Score Update`;
-    
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: ${isIncrease ? '#10B981' : '#EF4444'};">Credit Score Update</h1>
@@ -294,7 +296,7 @@ class NotificationService {
             ${isIncrease ? '+' : ''}${change} points
           </p>
         </div>
-        ${isIncrease ? '<p>Keep up the great work! Your credit repair efforts are paying off.</p>' : '<p>Don\'t worry, we\'re here to help you improve your score.</p>'}
+        ${isIncrease ? '<p>Keep up the great work! Your credit repair efforts are paying off.</p>' : "<p>Don't worry, we're here to help you improve your score.</p>"}
         <p style="margin-top: 30px;">
           <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
             View Dashboard
@@ -302,10 +304,10 @@ class NotificationService {
         </p>
       </div>
     `;
-    
+
     await this.sendEmail(to, subject, html);
   }
-  
+
   /**
    * Send payment successful notification
    */
@@ -314,7 +316,7 @@ class NotificationService {
     amount: number,
     invoiceId: string
   ): Promise<void> {
-    const subject = 'Payment Received - Thank You! 💳';
+    const subject = 'Payment Received - Thank You! ';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #10B981;">Payment Successful</h1>
@@ -332,10 +334,10 @@ class NotificationService {
         </p>
       </div>
     `;
-    
+
     await this.sendEmail(to, subject, html);
   }
-  
+
   /**
    * Send payment failed notification
    */
@@ -344,7 +346,7 @@ class NotificationService {
     amount: number,
     reason: string
   ): Promise<void> {
-    const subject = 'Payment Failed - Action Required ⚠️';
+    const subject = 'Payment Failed - Action Required ';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #EF4444;">Payment Failed</h1>
@@ -353,10 +355,157 @@ class NotificationService {
           <p><strong>Amount:</strong> $${amount.toFixed(2)}</p>
           <p><strong>Reason:</strong> ${reason}</p>
         </div>
-        <p>Please update your payment method to continue using CPFI.</p>
+        <p>Please update your payment method to continue using Fynvita.</p>
         <p style="margin-top: 30px;">
           <a href="${process.env.NEXT_PUBLIC_APP_URL}/billing" style="background-color: #EF4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
             Update Payment Method
+          </a>
+        </p>
+      </div>
+    `;
+
+    await this.sendEmail(to, subject, html);
+  }
+
+  // ==========================================================================
+  // WEB PUSH NOTIFICATIONS
+  // ==========================================================================
+
+  /**
+   * Send web push notification to a user
+   * Requires user's push subscriptions to be registered
+   */
+  async sendPushNotification(
+    userId: string,
+    payload: PushNotificationPayload
+  ): Promise<{ sent: number; failed: number }> {
+    try {
+      // Fetch user's push subscriptions from API
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL || ''}/api/notifications/push/send`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, notification: payload }),
+        }
+      );
+
+      if (!response.ok) {
+        // Push notification failed
+        return { sent: 0, failed: 1 };
+      }
+
+      const result = await response.json();
+      return { sent: result.sent || 0, failed: result.failed || 0 };
+    } catch (error) {
+      // Push notification error - caught
+      return { sent: 0, failed: 1 };
+    }
+  }
+
+  /**
+   * Send credit score change push notification
+   */
+  async sendCreditScorePush(
+    userId: string,
+    oldScore: number,
+    newScore: number,
+    bureau?: string
+  ): Promise<void> {
+    const payload = webPushService.createCreditScoreNotification(
+      oldScore,
+      newScore,
+      bureau
+    );
+    await this.sendPushNotification(userId, payload);
+  }
+
+  /**
+   * Send dispute update push notification
+   */
+  async sendDisputeUpdatePush(
+    userId: string,
+    disputeId: string,
+    status: string,
+    itemDescription: string
+  ): Promise<void> {
+    const payload = webPushService.createDisputeNotification(
+      disputeId,
+      status,
+      itemDescription
+    );
+    await this.sendPushNotification(userId, payload);
+  }
+
+  /**
+   * Send payment reminder push notification
+   */
+  async sendPaymentReminderPush(
+    userId: string,
+    amount: number,
+    dueDate: string,
+    billName?: string
+  ): Promise<void> {
+    const payload = webPushService.createPaymentReminderNotification(
+      amount,
+      dueDate,
+      billName
+    );
+    await this.sendPushNotification(userId, payload);
+  }
+
+  /**
+   * Send security alert push notification
+   */
+  async sendSecurityAlertPush(
+    userId: string,
+    alertType: string,
+    description: string
+  ): Promise<void> {
+    const payload = webPushService.createSecurityAlertNotification(
+      alertType,
+      description
+    );
+    await this.sendPushNotification(userId, payload);
+  }
+
+  /**
+   * Send general push notification
+   */
+  async sendGeneralPush(
+    userId: string,
+    title: string,
+    body: string,
+    url?: string
+  ): Promise<void> {
+    const payload = webPushService.createGeneralNotification(title, body, url);
+    await this.sendPushNotification(userId, payload);
+  }
+
+  /**
+   * Send payment success email (webhook version with customer name)
+   */
+  async sendPaymentSuccessEmail(
+    to: string,
+    customerName: string,
+    amount: number,
+    invoiceId: string
+  ): Promise<void> {
+    const subject = 'Payment Received - Thank You! ';
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #10B981;">Payment Successful</h1>
+        <p>Hi ${customerName},</p>
+        <p>Thank you for your payment!</p>
+        <div style="background-color: #F3F4F6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Amount:</strong> $${amount.toFixed(2)}</p>
+          <p><strong>Invoice ID:</strong> ${invoiceId}</p>
+          <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+        </div>
+        <p>Your subscription is now active and you have full access to all Fynvita features.</p>
+        <p style="margin-top: 30px;">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/billing" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+            View Billing
           </a>
         </p>
       </div>
@@ -376,8 +525,9 @@ class NotificationService {
     shareUrl: string;
     expiresAt: Date;
   }): Promise<void> {
-    const { ownerEmail, documentName, recipients, shareUrl, expiresAt } = params;
-    const senderName = ownerEmail || 'A CPFI user';
+    const { ownerEmail, documentName, recipients, shareUrl, expiresAt } =
+      params;
+    const senderName = ownerEmail || 'A Fynvita user';
 
     for (const recipient of recipients) {
       const subject = `${senderName} shared a document with you`;
@@ -402,8 +552,8 @@ class NotificationService {
 
       try {
         await this.sendEmail(recipient, subject, html);
-      } catch (error) {
-        console.error(`Failed to send share notification to ${recipient}:`, error);
+      } catch {
+        // Failed to send share notification - continue with others
       }
     }
   }
@@ -412,4 +562,3 @@ class NotificationService {
 // Export singleton instance
 export const notificationService = new NotificationService();
 export default notificationService;
-

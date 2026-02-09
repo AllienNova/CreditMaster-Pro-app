@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
       success: true,
       data: history,
     });
-  } catch (error) {
-    console.error('Error fetching score history:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to fetch score history' },
       { status: 500 }

@@ -19,7 +19,7 @@ import {
   Cell,
 } from 'recharts';
 import { ChartTooltip } from './ChartHelpers';
-import { CHART_COLOR_ARRAY, formatCurrency, formatNumber, getCategoryColor } from './chartUtils';
+import { CHART_COLOR_ARRAY, formatCurrency, formatNumber, getCategoryColor, generateChartDescription } from './chartUtils';
 
 export interface BarChartDataPoint {
   label: string;
@@ -50,6 +50,8 @@ export interface BarChartProps {
   animationDuration?: number;
   onBarClick?: (data: BarChartDataPoint) => void;
   className?: string;
+  /** Accessible label for the chart */
+  ariaLabel?: string;
 }
 
 export default function BarChartComponent({
@@ -67,11 +69,20 @@ export default function BarChartComponent({
   animationDuration = 1000,
   onBarClick,
   className = '',
+  ariaLabel,
 }: BarChartProps) {
   const formatAxis = (value: number): string => {
     if (currency) return formatCurrency(value);
     return formatNumber(value);
   };
+
+  // Generate accessible description
+  const accessibleDescription = ariaLabel || generateChartDescription(
+    'Bar chart',
+    data.length,
+    undefined,
+    currency
+  );
 
   const getBarColor = (item: BarChartDataPoint, index: number): string => {
     if (item.color) return item.color;
@@ -86,7 +97,7 @@ export default function BarChartComponent({
 
   // Single bar mode (no bars config provided)
   const singleBarMode = !bars || bars.length === 0;
-  const effectiveBars: BarConfig[] = singleBarMode 
+  const effectiveBars: BarConfig[] = singleBarMode
     ? [{ dataKey: 'value', name: 'Value', color: CHART_COLOR_ARRAY[0] }]
     : bars;
 
@@ -94,21 +105,62 @@ export default function BarChartComponent({
   const layout = horizontal ? 'vertical' : 'horizontal';
 
   return (
-    <div className={`w-full ${className}`} style={{ height }}>
+    <div
+      className={`w-full ${className}`}
+      style={{ height }}
+      role="img"
+      aria-label={accessibleDescription}
+    >
       <ResponsiveContainer width="100%" height="100%">
-        <ChartComponent data={data} layout={layout} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <ChartComponent
+          data={data}
+          layout={layout}
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          aria-hidden="true"
+        >
           {showGrid && (
-            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#E5E7EB"
+              className="dark:stroke-gray-600"
+            />
           )}
           {horizontal ? (
             <>
-              <XAxis type="number" tick={{ fontSize: 12, fill: '#6B7280' }} tickFormatter={formatAxis} />
-              <YAxis type="category" dataKey={xAxisKey} tick={{ fontSize: 12, fill: '#6B7280' }} width={100} />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 11, fill: 'currentColor' }}
+                tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                className="text-gray-500 dark:text-slate-400"
+                tickFormatter={formatAxis}
+              />
+              <YAxis
+                type="category"
+                dataKey={xAxisKey}
+                tick={{ fontSize: 11, fill: 'currentColor' }}
+                tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                className="text-gray-500 dark:text-slate-400"
+                width={100}
+              />
             </>
           ) : (
             <>
-              <XAxis dataKey={xAxisKey} tick={{ fontSize: 12, fill: '#6B7280' }} />
-              <YAxis tick={{ fontSize: 12, fill: '#6B7280' }} tickFormatter={formatAxis} />
+              <XAxis
+                dataKey={xAxisKey}
+                tick={{ fontSize: 11, fill: 'currentColor' }}
+                tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                className="text-gray-500 dark:text-slate-400"
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: 'currentColor' }}
+                tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                className="text-gray-500 dark:text-slate-400"
+                tickFormatter={formatAxis}
+              />
             </>
           )}
           {showTooltip && <Tooltip content={<CustomTooltip />} />}

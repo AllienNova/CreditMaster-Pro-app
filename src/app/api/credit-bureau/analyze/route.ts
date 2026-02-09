@@ -60,22 +60,18 @@ export async function POST(request: NextRequest) {
     // 5. Analyze credit report
     const analysis = await CreditBureauService.analyzeCreditReport(creditReport);
 
-    // 6. Log action
-    console.log(`Credit report analyzed for user ${user.id}, report: ${reportId}, score: ${creditReport.credit_score}`);
-
-    // 7. Return response
+    // 6. Return response
     return NextResponse.json({
       success: true,
       data: analysis
     });
 
-  } catch (error) {
-    console.error('❌ Credit analysis API error:', error);
-    
+  } catch (_error) {
+    // Error logged
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to analyze credit report'
+        error: _error instanceof Error ? _error.message : 'Failed to analyze credit report'
       },
       { status: 500 }
     );

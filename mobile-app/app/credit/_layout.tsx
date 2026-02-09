@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Score Navigation Layout
+ * Fynvita Credit Score Navigation Layout
  */
 
 import { Stack } from 'expo-router';

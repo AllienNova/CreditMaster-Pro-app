@@ -161,8 +161,8 @@ export function logAIInteraction(data: {
   issues?: string[];
   // For simple action logging (used by API routes)
   action?: string;
-  input?: any;
-  output?: any;
+  input?: Record<string, unknown> | string;
+  output?: Record<string, unknown> | string;
   success?: boolean;
 }): void {
   const entry: AIInteractionLog = {
@@ -187,16 +187,7 @@ export function logAIInteraction(data: {
 
   logStore.add(entry);
 
-  // Also log to console in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[AI Interaction]', {
-      model: data.model || data.action,
-      tokens: data.tokens,
-      cost: data.cost,
-      duration: data.duration,
-      success: data.success,
-    });
-  }
+  // AI interactions are logged to the log store
 }
 
 /**
@@ -232,9 +223,6 @@ export function logSecurityEvent(data: {
   };
 
   logStore.add(entry);
-
-  // Log to console
-  console.log(`[Security Event - ${data.severity.toUpperCase()}]`, data.message);
 
   // In production, send critical events to alerting system
   if (data.severity === 'critical') {
@@ -297,7 +285,6 @@ export function logError(error: Error, context?: {
   };
   
   logStore.add(entry);
-  console.error('[Error]', error);
 }
 
 /**

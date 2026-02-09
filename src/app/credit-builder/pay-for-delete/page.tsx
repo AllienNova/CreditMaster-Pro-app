@@ -419,34 +419,34 @@ Sincerely,
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mx-auto"></div>
-          <p className="mt-6 text-lg text-gray-700 font-medium">Loading Pay-for-Delete Negotiator...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto"></div>
+          <p className="mt-6 text-lg text-gray-700 dark:text-slate-200 font-medium">Loading Pay-for-Delete Negotiator...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-pink-50 to-red-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <Link
             href="/credit-builder"
-            className="inline-flex items-center text-purple-600 hover:text-purple-700 mb-4"
+            className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4"
           >
             ← Back to Credit Builder
           </Link>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Pay-for-Delete Negotiator 💰
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            Pay-for-Delete Negotiator 
           </h1>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-slate-300 max-w-3xl mx-auto">
             Negotiate debt settlements with credit report deletion. Professional templates and proven strategies to maximize your success rate.
           </p>
         </div>
 
         {/* Success Rate Banner */}
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-6 mb-8 text-white shadow-xl">
+        <div className="bg-gradient-to-r from-blue-600 to-emerald-600 rounded-xl p-6 mb-8 text-white shadow-xl">
           <div className="grid md:grid-cols-3 gap-6">
             <div className="text-center">
               <p className="text-3xl font-bold mb-1">45-71%</p>
@@ -467,7 +467,7 @@ Sincerely,
         <div className="text-center mb-8">
           <button
             onClick={() => setShowStrategyGuide(!showStrategyGuide)}
-            className="px-6 py-3 bg-white text-purple-600 font-semibold rounded-lg border-2 border-purple-600 hover:bg-purple-50 transition-colors"
+            className="px-6 py-3 bg-white dark:bg-slate-800 text-blue-600 font-semibold rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition-colors"
           >
             {showStrategyGuide ? 'Hide' : 'Show'} Negotiation Strategies
           </button>
@@ -475,18 +475,18 @@ Sincerely,
 
         {/* Strategies */}
         {showStrategyGuide && (
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Proven Negotiation Strategies 📈
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+              Proven Negotiation Strategies 
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
               {strategies.map(strategy => (
                 <div
                   key={strategy.id}
-                  className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200"
+                  className="p-6 bg-gradient-to-br from-blue-50 to-emerald-50 rounded-xl border-2 border-blue-200"
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-bold text-gray-900 text-lg">{strategy.name}</h3>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-lg">{strategy.name}</h3>
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                       strategy.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
                       strategy.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
@@ -495,23 +495,23 @@ Sincerely,
                       {strategy.difficulty}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700 mb-4">{strategy.description}</p>
+                  <p className="text-sm text-gray-700 dark:text-slate-200 mb-4">{strategy.description}</p>
                   <div className="mb-4">
-                    <p className="text-sm font-semibold text-purple-600 mb-2">
+                    <p className="text-sm font-semibold text-blue-600 mb-2">
                       Success Rate: {strategy.successRate}%
                     </p>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                       <div
-                        className="bg-purple-600 h-2 rounded-full"
+                        className="bg-blue-600 h-2 rounded-full"
                         style={{ width: `${strategy.successRate}%` }}
                       ></div>
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 mb-2">Steps:</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Steps:</p>
                     <ol className="space-y-1">
                       {strategy.steps.map((step, idx) => (
-                        <li key={idx} className="text-sm text-gray-700 flex gap-2">
+                        <li key={idx} className="text-sm text-gray-700 dark:text-slate-200 flex gap-2">
                           <span className="font-semibold">{idx + 1}.</span>
                           <span>{step}</span>
                         </li>
@@ -528,15 +528,15 @@ Sincerely,
           {/* Left Column: Debt Selection & Letter Generation */}
           <div className="space-y-6">
             {/* Debt Selection */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                 Select Debt to Negotiate
               </h2>
 
               {debts.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 mb-4">No debts on file</p>
-                  <button className="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700">
+                  <p className="text-gray-500 dark:text-slate-400 mb-4">No debts on file</p>
+                  <button className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
                     Add Debt
                   </button>
                 </div>
@@ -548,12 +548,12 @@ Sincerely,
                       onClick={() => setSelectedDebt(debt)}
                       className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                         selectedDebt?.id === debt.id
-                          ? 'border-purple-500 bg-purple-50'
-                          : 'border-gray-200 hover:border-purple-300'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 dark:border-slate-700 hover:border-blue-300'
                       }`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <p className="font-semibold text-gray-900">{debt.creditor}</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{debt.creditor}</p>
                         <span className={`px-2 py-1 rounded text-xs font-semibold ${
                           debt.priority === 'high' ? 'bg-red-100 text-red-800' :
                           debt.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
@@ -562,14 +562,14 @@ Sincerely,
                           {debt.priority} priority
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">
+                      <p className="text-sm text-gray-600 dark:text-slate-300 mb-2">
                         Balance: ${debt.currentBalance.toLocaleString()} • {debt.type.replace('_', ' ')}
                       </p>
                       <div className="flex gap-2">
                         {debt.bureaus.map(bureau => (
                           <span
                             key={bureau}
-                            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                            className="px-2 py-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded text-xs"
                           >
                             {bureau}
                           </span>
@@ -583,18 +583,18 @@ Sincerely,
 
             {/* Settlement Calculator */}
             {selectedDebt && (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                   Settlement Calculator
                 </h3>
 
                 <div className="mb-6">
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm text-gray-600">Current Balance</span>
+                    <span className="text-sm text-gray-600 dark:text-slate-300">Current Balance</span>
                     <span className="font-semibold">${selectedDebt.currentBalance.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between mb-4">
-                    <span className="text-sm text-gray-600">Settlement Percentage</span>
+                    <span className="text-sm text-gray-600 dark:text-slate-300">Settlement Percentage</span>
                     <span className="font-semibold">{settlementPercentage}%</span>
                   </div>
 
@@ -612,7 +612,7 @@ Sincerely,
                       <button
                         key={pct}
                         onClick={() => setSettlementPercentage(pct)}
-                        className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded hover:bg-purple-100"
+                        className="px-2 py-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 text-xs rounded hover:bg-blue-100"
                       >
                         {pct}%
                       </button>
@@ -620,12 +620,12 @@ Sincerely,
                   </div>
                 </div>
 
-                <div className="p-4 bg-purple-50 border-2 border-purple-200 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Settlement Offer Amount</p>
-                  <p className="text-3xl font-bold text-purple-600">
+                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-slate-300 mb-1">Settlement Offer Amount</p>
+                  <p className="text-3xl font-bold text-blue-600">
                     ${Math.round((selectedDebt.currentBalance * settlementPercentage) / 100).toLocaleString()}
                   </p>
-                  <p className="text-sm text-gray-600 mt-2">
+                  <p className="text-sm text-gray-600 dark:text-slate-300 mt-2">
                     You save: ${(selectedDebt.currentBalance - Math.round((selectedDebt.currentBalance * settlementPercentage) / 100)).toLocaleString()}
                   </p>
                 </div>
@@ -634,8 +634,8 @@ Sincerely,
 
             {/* Template Selection */}
             {selectedDebt && (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                   Choose Letter Template
                 </h3>
 
@@ -646,22 +646,22 @@ Sincerely,
                       onClick={() => setSelectedTemplate(template.id)}
                       className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                         selectedTemplate === template.id
-                          ? 'border-purple-500 bg-purple-50'
-                          : 'border-gray-200 hover:border-purple-300'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 dark:border-slate-700 hover:border-blue-300'
                       }`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <p className="font-semibold text-gray-900">{template.name}</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">{template.name}</p>
                         <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">
                           {template.successRate}% success
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">{template.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-300 mb-2">{template.description}</p>
                       <div className="flex flex-wrap gap-2">
                         {template.bestFor.map((use, idx) => (
                           <span
                             key={idx}
-                            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
+                            className="px-2 py-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded text-xs"
                           >
                             {use}
                           </span>
@@ -674,7 +674,7 @@ Sincerely,
                 <button
                   onClick={generateLetter}
                   disabled={!selectedTemplate}
-                  className="w-full mt-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors"
+                  className="w-full mt-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                 >
                   Generate Letter
                 </button>
@@ -685,12 +685,12 @@ Sincerely,
           {/* Right Column: Generated Letter */}
           <div className="space-y-6">
             {showLetter && generatedLetter ? (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                   Generated Pay-for-Delete Letter
                 </h3>
 
-                <div className="mb-6 p-6 bg-gray-50 border border-gray-200 rounded-lg font-mono text-sm whitespace-pre-wrap max-h-[600px] overflow-y-auto">
+                <div className="mb-6 p-6 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg font-mono text-sm whitespace-pre-wrap max-h-[600px] overflow-y-auto">
                   {generatedLetter}
                 </div>
 
@@ -699,18 +699,18 @@ Sincerely,
                     onClick={copyToClipboard}
                     className="py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    📋 Copy Letter
+                    Copy Letter
                   </button>
                   <button
                     onClick={downloadLetter}
                     className="py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors"
                   >
-                    💾 Download
+                    Download
                   </button>
                 </div>
 
                 <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <h4 className="font-semibold text-yellow-900 mb-2">⚠️ Important Reminders</h4>
+                  <h4 className="font-semibold text-yellow-900 mb-2">Important Reminders</h4>
                   <ul className="text-sm text-yellow-800 space-y-1">
                     <li>• Fill in all [BRACKETED] placeholders with your information</li>
                     <li>• Send via certified mail with return receipt requested</li>
@@ -721,10 +721,10 @@ Sincerely,
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
                 <div className="text-center py-12">
-                  <span className="text-6xl mb-4 block">📝</span>
-                  <p className="text-gray-500">
+                  <span className="text-6xl mb-4 block"></span>
+                  <p className="text-gray-500 dark:text-slate-400">
                     Select a debt and template to generate your letter
                   </p>
                 </div>
@@ -732,37 +732,37 @@ Sincerely,
             )}
 
             {/* Tips & Best Practices */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
-                💡 Negotiation Tips
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                Negotiation Tips
               </h3>
-              <div className="space-y-3 text-sm text-gray-700">
+              <div className="space-y-3 text-sm text-gray-700 dark:text-slate-200">
                 <div className="flex gap-3">
-                  <span className="text-green-500 mt-1">✓</span>
+                  <span className="text-green-500 mt-1"></span>
                   <p><strong>Always get it in writing:</strong> Never make payment until you have written confirmation of deletion agreement.</p>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-green-500 mt-1">✓</span>
+                  <span className="text-green-500 mt-1"></span>
                   <p><strong>Start low:</strong> Initial offer should be 20-30% of balance. You can always go higher.</p>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-green-500 mt-1">✓</span>
+                  <span className="text-green-500 mt-1"></span>
                   <p><strong>Be patient:</strong> Collections agencies often wait to see if you'll increase your offer.</p>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-green-500 mt-1">✓</span>
+                  <span className="text-green-500 mt-1"></span>
                   <p><strong>Get names:</strong> Document who you speak with, when, and what was discussed.</p>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-red-500 mt-1">✗</span>
+                  <span className="text-red-500 mt-1"></span>
                   <p><strong>Don't admit to owing:</strong> Say "alleged debt" until you've validated it's yours.</p>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-red-500 mt-1">✗</span>
+                  <span className="text-red-500 mt-1"></span>
                   <p><strong>Don't restart SOL:</strong> Making payment can restart statute of limitations.</p>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-red-500 mt-1">✗</span>
+                  <span className="text-red-500 mt-1"></span>
                   <p><strong>Don't use debit card:</strong> Use money order or cashier's check for final payment.</p>
                 </div>
               </div>
@@ -771,11 +771,11 @@ Sincerely,
         </div>
 
         {/* Educational Info */}
-        <div className="mt-8 bg-purple-50 border border-purple-200 rounded-xl p-6">
-          <h3 className="font-semibold text-purple-900 mb-3">
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <h3 className="font-semibold text-blue-900 mb-3">
             Understanding Pay-for-Delete
           </h3>
-          <div className="grid md:grid-cols-3 gap-4 text-sm text-purple-800">
+          <div className="grid md:grid-cols-3 gap-4 text-sm text-blue-800">
             <div>
               <p className="font-semibold mb-1">What It Is</p>
               <p>

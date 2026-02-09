@@ -53,15 +53,15 @@ class NotificationServiceDB {
   ): Promise<void> {
     try {
       await resend.emails.send({
-        from: from || process.env.EMAIL_FROM || 'CPFI <noreply@CPFI-pro.com>',
+        from: from || process.env.EMAIL_FROM || 'Fynvita <noreply@fynvita.com>',
         to,
         subject,
         html,
       });
 
-      console.log(`Email sent to ${to}: ${subject}`);
+      // NotificationServiceDB: Email sent
     } catch (error) {
-      console.error('Failed to send email:', error);
+      // NotificationServiceDB error: Failed to send email
       throw error;
     }
   }
@@ -89,7 +89,7 @@ class NotificationServiceDB {
       .single();
 
     if (error) {
-      console.error('Failed to create notification:', error);
+      // NotificationServiceDB error: Failed to create notification
       throw new Error(`Failed to create notification: ${error.message}`);
     }
 
@@ -110,7 +110,7 @@ class NotificationServiceDB {
       .limit(limit);
 
     if (error) {
-      console.error('Failed to fetch notifications:', error);
+      // NotificationServiceDB error: Failed to fetch notifications
       throw new Error(`Failed to fetch notifications: ${error.message}`);
     }
 
@@ -127,7 +127,7 @@ class NotificationServiceDB {
     const { error } = await query.update(updateData).eq('id', notificationId);
 
     if (error) {
-      console.error('Failed to mark notification as read:', error);
+      // NotificationServiceDB error: Failed to mark notification as read
       return false;
     }
 
@@ -148,7 +148,7 @@ class NotificationServiceDB {
       .select();
 
     if (error) {
-      console.error('Failed to mark all as read:', error);
+      // NotificationServiceDB error: Failed to mark all as read
       return 0;
     }
 
@@ -162,7 +162,7 @@ class NotificationServiceDB {
     const { error } = await notifications().delete().eq('id', notificationId);
 
     if (error) {
-      console.error('Failed to delete notification:', error);
+      // NotificationServiceDB error: Failed to delete notification
       return false;
     }
 
@@ -179,7 +179,7 @@ class NotificationServiceDB {
       .eq('read', false);
 
     if (error) {
-      console.error('Failed to get unread count:', error);
+      // NotificationServiceDB error: Failed to get unread count
       return 0;
     }
 
@@ -192,12 +192,12 @@ class NotificationServiceDB {
    * Send welcome email
    */
   async sendWelcomeEmail(to: string, name: string): Promise<void> {
-    const subject = 'Welcome to CPFI!';
+    const subject = 'Welcome to Fynvita!';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #4F46E5;">Welcome to CPFI!</h1>
+        <h1 style="color: #4F46E5;">Welcome to Fynvita!</h1>
         <p>Hi ${name},</p>
-        <p>We're excited to have you on board! CPFI uses advanced AI to help you repair your credit and achieve your financial goals.</p>
+        <p>We're excited to have you on board! Fynvita uses advanced AI to help you repair your credit and achieve your financial goals.</p>
         <h2>Get Started:</h2>
         <ol>
           <li>Upload your credit report</li>

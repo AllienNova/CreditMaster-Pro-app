@@ -1,5 +1,5 @@
 /**
- * CPFI Analytics Navigation Layout
+ * Fynvita Analytics Navigation Layout
  */
 
 import { Stack } from 'expo-router';

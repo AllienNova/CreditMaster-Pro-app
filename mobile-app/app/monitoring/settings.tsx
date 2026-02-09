@@ -1,5 +1,5 @@
 /**
- * CPFI Monitoring Settings Screen
+ * Fynvita Monitoring Settings Screen
  * Enable/disable bureaus, alert preferences, notifications
  */
 

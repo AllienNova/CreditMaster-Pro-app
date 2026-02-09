@@ -20,7 +20,7 @@ export function Skeleton({
   height,
   animation = 'pulse'
 }: SkeletonProps) {
-  const baseClasses = 'bg-gray-200';
+  const baseClasses = 'bg-gray-200 dark:bg-slate-700';
   const animationClasses = {
     pulse: 'animate-pulse',
     wave: 'animate-shimmer',
@@ -53,7 +53,7 @@ export function Skeleton({
  */
 export function CardSkeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 ${className}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 ${className}`}>
       <Skeleton variant="text" height={20} width="40%" className="mb-4" />
       <Skeleton variant="text" height={32} width="60%" className="mb-2" />
       <Skeleton variant="text" height={16} width="80%" />
@@ -66,7 +66,7 @@ export function CardSkeleton({ className = '' }: { className?: string }) {
  */
 export function TableRowSkeleton({ columns = 4 }: { columns?: number }) {
   return (
-    <tr className="border-b border-gray-100">
+    <tr className="border-b border-gray-100 dark:border-slate-700">
       {Array.from({ length: columns }).map((_, i) => (
         <td key={i} className="px-4 py-3">
           <Skeleton variant="text" height={16} width={i === 0 ? '80%' : '60%'} />
@@ -98,13 +98,13 @@ export function DashboardSkeleton() {
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
             <Skeleton variant="text" height={24} width="30%" className="mb-6" />
             <Skeleton variant="rounded" height={300} />
           </div>
         </div>
         <div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
             <Skeleton variant="text" height={24} width="50%" className="mb-4" />
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="flex items-center gap-3 py-3">
@@ -152,7 +152,7 @@ export function ListSkeleton({ items = 5 }: { items?: number }) {
   return (
     <div className="space-y-4 animate-pulse">
       {Array.from({ length: items }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200">
+        <div key={i} className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
           <Skeleton variant="circular" width={48} height={48} />
           <div className="flex-1">
             <Skeleton variant="text" height={18} width="60%" className="mb-2" />

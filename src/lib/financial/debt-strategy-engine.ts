@@ -46,7 +46,7 @@ class DebtStrategyEngine {
       try {
         this.aimlService = new AIMLService();
       } catch {
-        console.warn('Failed to initialize AIML service for debt strategy');
+        // AIML service initialization failed
       }
     }
     return this.aimlService;
@@ -251,7 +251,7 @@ class DebtStrategyEngine {
               (sum, d) => sum + Math.max(0, d.currentBalance),
               0
             ) - debt.balance,
-          celebrationMessage: `🎉 ${debt.name} is paid off! Keep going!`,
+          celebrationMessage: `${debt.name} is paid off! Keep going!`,
         });
       }
       remainingDebts = remainingDebts.filter((d) => d.currentBalance > 0);

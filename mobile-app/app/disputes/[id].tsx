@@ -1,5 +1,5 @@
 /**
- * CPFI Dispute Detail Screen
+ * Fynvita Dispute Detail Screen
  * Individual dispute view with timeline and actions
  */
 

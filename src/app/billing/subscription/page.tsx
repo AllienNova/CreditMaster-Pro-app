@@ -35,7 +35,7 @@ export default function SubscriptionManagement() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+      router.push('/auth/login');
       return;
     }
 
@@ -110,19 +110,19 @@ export default function SubscriptionManagement() {
 
   if (authLoading || loading || !data) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading subscription manager…</div>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="text-gray-600 dark:text-slate-300">Loading subscription manager…</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <header className="space-y-2">
-          <p className="text-sm text-gray-500 uppercase tracking-wide">Billing</p>
-          <h1 className="text-3xl font-bold text-gray-900">Manage subscription</h1>
-          <p className="text-gray-600">
+          <p className="text-sm text-gray-500 dark:text-slate-400 uppercase tracking-wide">Billing</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Manage subscription</h1>
+          <p className="text-gray-600 dark:text-slate-300">
             Choose the plan that best matches your workload. Changes take effect immediately and
             sync to Stripe.
           </p>
@@ -147,19 +147,19 @@ export default function SubscriptionManagement() {
               <div
                 key={plan.id}
                 className={`rounded-xl border ${
-                  isActive ? 'border-blue-500 shadow-lg' : 'border-gray-200 shadow'
-                } bg-white p-6 flex flex-col`}
+                  isActive ? 'border-blue-500 shadow-lg' : 'border-gray-200 dark:border-slate-700 shadow'
+                } bg-white dark:bg-slate-800 p-6 flex flex-col`}
               >
                 <div className="space-y-2">
-                  <p className="text-sm uppercase text-gray-500 tracking-wide">{plan.name}</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-sm uppercase text-gray-500 dark:text-slate-400 tracking-wide">{plan.name}</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
                     ${plan.price}
-                    <span className="text-base font-normal text-gray-500">/{plan.interval}</span>
+                    <span className="text-base font-normal text-gray-500 dark:text-slate-400">/{plan.interval}</span>
                   </p>
-                  <ul className="space-y-2 text-sm text-gray-700 mt-4">
+                  <ul className="space-y-2 text-sm text-gray-700 dark:text-slate-200 mt-4">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-center gap-2">
-                        <span className="text-green-600">✔</span>
+                        <span className="text-green-600"></span>
                         {feature}
                       </li>
                     ))}
@@ -172,7 +172,7 @@ export default function SubscriptionManagement() {
                     disabled={mutating || isActive}
                     className={`w-full px-4 py-2 rounded-lg ${
                       isActive
-                        ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                        ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 cursor-not-allowed'
                         : 'bg-blue-600 text-white hover:bg-blue-700'
                     } transition-colors`}
                   >
@@ -184,10 +184,10 @@ export default function SubscriptionManagement() {
           })}
         </section>
 
-        <section className="bg-white rounded-xl shadow p-6 space-y-4">
+        <section className="bg-white dark:bg-slate-800 rounded-xl shadow p-6 space-y-4">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Need to pause?</h2>
-            <p className="text-gray-600">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Need to pause?</h2>
+            <p className="text-gray-600 dark:text-slate-300">
               Canceling will keep your access until the end of the billing cycle. You can reactivate
               anytime.
             </p>
@@ -197,7 +197,7 @@ export default function SubscriptionManagement() {
               type="button"
               onClick={handleCancellation}
               disabled={mutating}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
             >
               Cancel at renewal
             </button>

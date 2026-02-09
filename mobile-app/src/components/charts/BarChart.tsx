@@ -1,5 +1,5 @@
 /**
- * CPFI Bar Chart Component
+ * Fynvita Bar Chart Component
  * Reusable bar chart for budgets, spending categories, etc.
  */
 

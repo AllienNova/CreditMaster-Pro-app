@@ -21,13 +21,14 @@ export async function GET(request: NextRequest) {
     // Get jobs
     const jobs = JobScheduler.getUserJobs(validation.user.id);
 
+    // JobsAPI: Fetched jobs for user
     const duration = Date.now() - startTime;
-
-    console.log(`✅ Fetched ${jobs.length} jobs for user ${validation.user.id} in ${duration}ms`);
+    void duration;
 
     return NextResponse.json({ jobs });
-  } catch (error) {
-    console.error('Error fetching jobs:', error);
+  } catch (_error) {
+    // JobsAPI error: Error fetching jobs
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch jobs' },
       { status: 500 }
@@ -78,13 +79,14 @@ export async function POST(request: NextRequest) {
       enabled: true
     });
 
+    // JobsAPI: Scheduled job for user
     const duration = Date.now() - startTime;
-
-    console.log(`✅ Scheduled job ${job.id} for user ${validation.user.id} in ${duration}ms`);
+    void duration;
 
     return NextResponse.json({ job });
-  } catch (error) {
-    console.error('Error scheduling job:', error);
+  } catch (_error) {
+    // JobsAPI error: Error scheduling job
+    void _error;
     return NextResponse.json(
       { error: 'Failed to schedule job' },
       { status: 500 }
@@ -131,13 +133,14 @@ export async function DELETE(request: NextRequest) {
     // Cancel job
     const success = JobScheduler.cancelJob(jobId);
 
+    // JobsAPI: Cancelled job for user
     const duration = Date.now() - startTime;
-
-    console.log(`✅ Cancelled job ${jobId} for user ${validation.user.id} in ${duration}ms`);
+    void duration;
 
     return NextResponse.json({ success });
-  } catch (error) {
-    console.error('Error cancelling job:', error);
+  } catch (_error) {
+    // JobsAPI error: Error cancelling job
+    void _error;
     return NextResponse.json(
       { error: 'Failed to cancel job' },
       { status: 500 }

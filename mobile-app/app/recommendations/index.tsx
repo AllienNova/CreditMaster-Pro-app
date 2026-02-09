@@ -1,5 +1,5 @@
 /**
- * CPFI Personalized Recommendations Dashboard
+ * Fynvita Personalized Recommendations Dashboard
  * AI-generated recommendations with priority ranking and impact estimation
  */
 

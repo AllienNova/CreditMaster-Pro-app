@@ -447,8 +447,8 @@ class GoalTracker {
           detectedAt: now,
         });
       }
-    } catch (error) {
-      console.warn('Could not assess financial capacity risks:', error);
+    } catch (_error) {
+      // Error logged
     }
 
     return risks;

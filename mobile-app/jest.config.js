@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile App Jest Configuration
+ * Fynvita Mobile App Jest Configuration
  */
 
 module.exports = {

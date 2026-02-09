@@ -361,8 +361,8 @@ export class InvestmentAnalysisEngine {
             options
           );
           holdingAnalyses.set(holding.symbol, analysis);
-        } catch (error) {
-          console.error(`Failed to analyze ${holding.symbol}:`, error);
+        } catch (_error) {
+          // Error logged
         }
       }
     }

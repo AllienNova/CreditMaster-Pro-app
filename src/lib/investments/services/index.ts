@@ -78,3 +78,32 @@ export {
   SentimentAnalysisService,
   getSentimentAnalysisService,
 } from './SentimentAnalysisService';
+
+// Portfolio Rebalancing
+export {
+  PortfolioRebalanceService,
+  getPortfolioRebalanceService,
+  PORTFOLIO_MODELS,
+  type Portfolio,
+  type TargetAllocation,
+  type CurrentAllocation,
+  type RebalanceAlert,
+  type RebalanceHistory,
+  type RebalanceStrategy,
+} from './PortfolioRebalanceService';
+
+// Auto-Rebalance Scheduler
+export {
+  AutoRebalanceScheduler,
+  getAutoRebalanceScheduler,
+  createAutoRebalanceScheduler,
+  DEFAULT_SCHEDULE_CONFIG,
+  type RebalanceScheduleConfig,
+  type PendingRebalance,
+  type RebalanceApprovalStatus,
+  type RebalanceExecutionResult,
+  type ScheduleFrequency,
+  type TriggerType,
+  type RebalanceEvent,
+  type SchedulerStatus,
+} from './AutoRebalanceScheduler';

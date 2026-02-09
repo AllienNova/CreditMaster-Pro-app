@@ -1,5 +1,5 @@
 /**
- * CPFI Debt Consolidation Marketplace Screen
+ * Fynvita Debt Consolidation Marketplace Screen
  * Debt consolidation options
  */
 

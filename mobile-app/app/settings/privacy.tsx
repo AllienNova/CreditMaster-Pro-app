@@ -1,5 +1,5 @@
 /**
- * CPFI Privacy & Security Settings Screen
+ * Fynvita Privacy & Security Settings Screen
  * Manage privacy and security preferences
  */
 

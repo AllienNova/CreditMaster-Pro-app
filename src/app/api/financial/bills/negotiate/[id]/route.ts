@@ -34,8 +34,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json({ negotiation });
-  } catch (error) {
-    console.error('Negotiation GET error:', error);
+  } catch (_error) {
+    // BillNegotiateRoute error: Failed to get negotiation
+    void _error;
     return NextResponse.json(
       { error: 'Failed to get negotiation' },
       { status: 500 }
@@ -64,8 +65,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const negotiation = await billNegotiationService.updateNegotiation(id, userId, input);
 
     return NextResponse.json({ negotiation });
-  } catch (error) {
-    console.error('Negotiation PATCH error:', error);
+  } catch (_error) {
+    // BillNegotiateRoute error: Failed to update negotiation
+    void _error;
     return NextResponse.json(
       { error: 'Failed to update negotiation' },
       { status: 500 }
@@ -104,8 +106,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const negotiation = await billNegotiationService.addAttempt(id, userId, attemptInput);
 
     return NextResponse.json({ negotiation });
-  } catch (error) {
-    console.error('Negotiation attempt POST error:', error);
+  } catch (_error) {
+    // BillNegotiateRoute error: Failed to add attempt
+    void _error;
     return NextResponse.json(
       { error: 'Failed to add attempt' },
       { status: 500 }

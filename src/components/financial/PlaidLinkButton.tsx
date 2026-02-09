@@ -80,7 +80,7 @@ export default function PlaidLinkButton({ onSuccess, variant = 'primary' }: Plai
 
   const buttonClasses = variant === 'primary'
     ? 'px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold'
-    : 'px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+    : 'px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
     <div>
@@ -100,7 +100,7 @@ export default function PlaidLinkButton({ onSuccess, variant = 'primary' }: Plai
           </span>
         ) : (
           <span className="flex items-center gap-2">
-            <span>🏦</span>
+            <span></span>
             <span>Connect Bank Account</span>
           </span>
         )}

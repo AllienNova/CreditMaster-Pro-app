@@ -1,5 +1,7 @@
 'use client';
 
+
+import { Icon } from '@/components/ui/Icon';
 /**
  * Goal Tracker Page
  * 
@@ -31,11 +33,11 @@ const MOCK_ACTIVE_GOALS: CreditGoal[] = [
     createdAt: new Date('2025-01-01'),
     progress: 56,
     milestones: [
-      { id: 'm1', title: 'Foundation', description: 'Establish payment history', targetValue: 6, currentValue: 6, completed: true, completedAt: new Date('2025-02-15'), icon: '📅' },
-      { id: 'm2', title: 'Low Utilization', description: 'Under 30%', targetValue: 30, currentValue: 28, completed: true, completedAt: new Date('2025-03-01'), icon: '💳' },
-      { id: 'm3', title: 'Clean Up', description: 'Dispute errors', targetValue: 1, currentValue: 0, completed: false, icon: '🧹' },
-      { id: 'm4', title: 'Diversify', description: 'Credit mix', targetValue: 3, currentValue: 2, completed: false, icon: '🎨' },
-      { id: 'm5', title: 'Goal Achieved!', description: 'Reach 670+', targetValue: 670, currentValue: 635, completed: false, icon: '🌟' },
+      { id: 'm1', title: 'Foundation', description: 'Establish payment history', targetValue: 6, currentValue: 6, completed: true, completedAt: new Date('2025-02-15'), icon: "building" },
+      { id: 'm2', title: 'Low Utilization', description: 'Under 30%', targetValue: 30, currentValue: 28, completed: true, completedAt: new Date('2025-03-01'), icon: "trending-down" },
+      { id: 'm3', title: 'Clean Up', description: 'Dispute errors', targetValue: 1, currentValue: 0, completed: false, icon: "sparkles" },
+      { id: 'm4', title: 'Diversify', description: 'Credit mix', targetValue: 3, currentValue: 2, completed: false, icon: "puzzle-piece" },
+      { id: 'm5', title: 'Goal Achieved!', description: 'Reach 670+', targetValue: 670, currentValue: 635, completed: false, icon: "target" },
     ],
   },
 ];
@@ -67,12 +69,12 @@ export default function GoalsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Goal Tracker</h1>
-              <p className="mt-1 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Goal Tracker</h1>
+              <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
                 Set goals and track your credit improvement journey
               </p>
             </div>
@@ -86,7 +88,7 @@ export default function GoalsPage() {
               </button>
               <Link
                 href="/credit-builder"
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900"
               >
                 Back
               </Link>
@@ -99,25 +101,25 @@ export default function GoalsPage() {
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Active Goals', value: activeGoals.filter(g => g.status === 'active').length, icon: '🎯' },
-            { label: 'Completed', value: activeGoals.filter(g => g.status === 'completed').length, icon: '✅' },
-            { label: 'Points Gained', value: '+45', icon: '📈' },
-            { label: 'Current Streak', value: '12 days', icon: '🔥' },
+            { label: 'Active Goals', value: activeGoals.filter(g => g.status === 'active').length, icon: "sparkles" },
+            { label: 'Completed', value: activeGoals.filter(g => g.status === 'completed').length, icon: "sparkles" },
+            { label: 'Points Gained', value: '+45', icon: "sparkles" },
+            { label: 'Current Streak', value: '12 days', icon: "sparkles" },
           ].map(stat => (
-            <div key={stat.label} className="bg-white rounded-xl shadow-sm p-4 text-center">
-              <span className="text-2xl">{stat.icon}</span>
-              <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
-              <p className="text-sm text-gray-500">{stat.label}</p>
+            <div key={stat.label} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 text-center">
+              <Icon name={stat.icon} className="text-2xl inline-block" />
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{stat.value}</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">{stat.label}</p>
             </div>
           ))}
         </div>
 
         {/* Goal Templates Modal */}
         {showTemplates && (
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Choose a Goal</h2>
-              <button type="button" onClick={() => setShowTemplates(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Choose a Goal</h2>
+              <button type="button" onClick={() => setShowTemplates(false)} className="text-gray-400 hover:text-gray-600 dark:text-slate-300"></button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {GOAL_TEMPLATES.map(template => (
@@ -125,12 +127,12 @@ export default function GoalsPage() {
                   key={template.id}
                   type="button"
                   onClick={() => createGoal(template)}
-                  className="p-4 border-2 border-gray-200 rounded-lg text-left hover:border-blue-500 hover:bg-blue-50 transition-all"
+                  className="p-4 border-2 border-gray-200 dark:border-slate-700 rounded-lg text-left hover:border-blue-500 hover:bg-blue-50 transition-all"
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="text-3xl">{template.icon}</span>
+                    <Icon name={template.icon} className="text-3xl inline-block" />
                     <div>
-                      <h3 className="font-medium text-gray-900">{template.title}</h3>
+                      <h3 className="font-medium text-gray-900 dark:text-white">{template.title}</h3>
                       <span className={`text-xs px-2 py-0.5 rounded ${
                         template.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
                         template.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
@@ -140,8 +142,8 @@ export default function GoalsPage() {
                       </span>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-500 mb-2">{template.description}</p>
-                  <div className="flex justify-between text-xs text-gray-400">
+                  <p className="text-sm text-gray-500 dark:text-slate-400 mb-2">{template.description}</p>
+                  <div className="flex justify-between text-xs text-gray-400 dark:text-slate-500">
                     <span>+{template.targetScoreIncrease} pts</span>
                     <span>{template.suggestedTimeframeDays} days</span>
                   </div>
@@ -153,47 +155,47 @@ export default function GoalsPage() {
 
         {/* Active Goals */}
         <div className="space-y-6">
-          <h2 className="text-lg font-semibold text-gray-900">Your Goals</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Your Goals</h2>
           {activeGoals.map(goal => (
-            <div key={goal.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div key={goal.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">{goal.title}</h3>
-                    <p className="text-sm text-gray-500">{goal.description}</p>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{goal.title}</h3>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">{goal.description}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold text-blue-600">{goal.currentScore}</p>
-                    <p className="text-xs text-gray-500">/ {goal.targetScore} target</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">/ {goal.targetScore} target</p>
                   </div>
                 </div>
                 <div className="mb-4">
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Progress</span>
+                    <span className="text-gray-600 dark:text-slate-300">Progress</span>
                     <span className="font-medium">{goal.progress}%</span>
                   </div>
-                  <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div className={`h-full ${getProgressColor(goal.progress)} transition-all`} style={{ width: `${goal.progress}%` }} />
                   </div>
                 </div>
-                <div className="flex justify-between text-sm text-gray-500">
+                <div className="flex justify-between text-sm text-gray-500 dark:text-slate-400">
                   <span>Started: {goal.createdAt.toLocaleDateString()}</span>
                   <span>{getDaysRemaining(goal.targetDate)} days remaining</span>
                 </div>
               </div>
-              <div className="bg-gray-50 px-6 py-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Milestones</h4>
+              <div className="bg-gray-50 dark:bg-slate-900 px-6 py-4">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Milestones</h4>
                 <div className="flex items-center gap-2 overflow-x-auto pb-2">
                   {goal.milestones.map((milestone, i) => (
                     <div
                       key={milestone.id}
                       className={`flex-shrink-0 w-20 text-center p-2 rounded-lg ${
-                        milestone.completed ? 'bg-green-100' : 'bg-white border border-gray-200'
+                        milestone.completed ? 'bg-green-100' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700'
                       }`}
                     >
                       <span className="text-xl">{milestone.icon}</span>
                       <p className="text-xs mt-1 truncate" title={milestone.title}>{milestone.title}</p>
-                      {milestone.completed && <span className="text-xs text-green-600">✓</span>}
+                      {milestone.completed && <span className="text-xs text-green-600"></span>}
                     </div>
                   ))}
                 </div>

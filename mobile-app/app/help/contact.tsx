@@ -1,5 +1,5 @@
 /**
- * CPFI Contact Support Screen
+ * Fynvita Contact Support Screen
  * Submit support tickets and contact options
  */
 

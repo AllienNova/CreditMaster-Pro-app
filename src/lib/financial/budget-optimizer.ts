@@ -94,7 +94,7 @@ class BudgetOptimizer {
       try {
         this.aimlService = new AIMLService();
       } catch {
-        console.warn('Failed to initialize AIML service for budget optimization');
+        // AIML service initialization failed
       }
     }
     return this.aimlService;

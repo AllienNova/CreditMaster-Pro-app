@@ -31,29 +31,29 @@ const mockLoans: BuilderLoan[] = [
 
 function LoanCard({ loan }: { loan: BuilderLoan }) {
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="font-semibold text-gray-900 text-lg">{loan.lender}</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white text-lg">{loan.lender}</h3>
           <div className="flex items-center mt-1">
-            <span className="text-yellow-400">★</span>
+            <span className="text-yellow-400"></span>
             <span className="ml-1 text-sm font-medium">{loan.rating}</span>
           </div>
         </div>
-        <span className="text-xl font-bold text-indigo-600">{loan.apr} APR</span>
+        <span className="text-xl font-bold text-blue-600">{loan.apr} APR</span>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
         <div>
-          <p className="text-gray-500">Loan Amount</p>
+          <p className="text-gray-500 dark:text-slate-400">Loan Amount</p>
           <p className="font-semibold">${loan.minAmount} - ${loan.maxAmount}</p>
         </div>
         <div>
-          <p className="text-gray-500">Monthly Payment</p>
+          <p className="text-gray-500 dark:text-slate-400">Monthly Payment</p>
           <p className="font-semibold">{loan.monthlyPayment}</p>
         </div>
         <div>
-          <p className="text-gray-500">Terms</p>
+          <p className="text-gray-500 dark:text-slate-400">Terms</p>
           <p className="font-semibold">{loan.termMonths.join(', ')} months</p>
         </div>
       </div>
@@ -65,10 +65,10 @@ function LoanCard({ loan }: { loan: BuilderLoan }) {
       </div>
 
       <div className="flex gap-2">
-        <button className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+        <button className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
           Check Eligibility
         </button>
-        <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+        <button className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900">
           Learn More
         </button>
       </div>
@@ -85,20 +85,20 @@ function LoanCalculator() {
   const payment = amount * (monthlyRate * Math.pow(1 + monthlyRate, term)) / (Math.pow(1 + monthlyRate, term) - 1);
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100">
-      <h3 className="font-semibold text-gray-900 mb-4">💰 Loan Calculator</h3>
+    <div className="bg-gradient-to-br from-blue-50 to-blue-50 rounded-xl p-6 border border-blue-100">
+      <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Loan Calculator</h3>
       <div className="space-y-4">
         <div>
-          <label className="text-sm text-gray-600">Loan Amount: ${amount}</label>
+          <label className="text-sm text-gray-600 dark:text-slate-300">Loan Amount: ${amount}</label>
           <input type="range" min={100} max={3000} value={amount} onChange={(e) => setAmount(Number(e.target.value))} className="w-full" />
         </div>
         <div>
-          <label className="text-sm text-gray-600">Term: {term} months</label>
+          <label className="text-sm text-gray-600 dark:text-slate-300">Term: {term} months</label>
           <input type="range" min={6} max={36} value={term} onChange={(e) => setTerm(Number(e.target.value))} className="w-full" />
         </div>
-        <div className="p-4 bg-white rounded-lg text-center">
-          <p className="text-sm text-gray-500">Estimated Monthly Payment</p>
-          <p className="text-3xl font-bold text-indigo-600">${payment.toFixed(2)}</p>
+        <div className="p-4 bg-white dark:bg-slate-800 rounded-lg text-center">
+          <p className="text-sm text-gray-500 dark:text-slate-400">Estimated Monthly Payment</p>
+          <p className="text-3xl font-bold text-blue-600">${payment.toFixed(2)}</p>
         </div>
       </div>
     </div>
@@ -113,15 +113,15 @@ export default function LoansPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Credit Builder Loans</h1>
-        <p className="text-gray-600">Small installment loans designed to build your credit</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Credit Builder Loans</h1>
+        <p className="text-gray-600 dark:text-slate-300">Small installment loans designed to build your credit</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center gap-4">
             <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'rating' | 'apr')}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm">
               <option value="rating">Highest Rated</option>
               <option value="apr">Lowest APR</option>
             </select>

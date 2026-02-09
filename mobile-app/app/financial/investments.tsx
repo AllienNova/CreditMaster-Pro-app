@@ -1,5 +1,5 @@
 /**
- * CPFI Investment Portfolio Screen (Enhanced)
+ * Fynvita Investment Portfolio Screen (Enhanced)
  * Track investment portfolio, performance, and navigate to analysis/holdings
  */
 
@@ -400,7 +400,7 @@ export default function InvestmentsScreen() {
             <TouchableOpacity
               key={h.id}
               onPress={() =>
-                router.push(`/financial/stock-analysis?symbol=${h.symbol}`)
+                router.push(`/investments/analyze/${h.symbol}`)
               }
             >
               <Card style={styles.holdingCard}>
@@ -500,9 +500,7 @@ export default function InvestmentsScreen() {
               disabled={!searchQuery}
               onPress={() => {
                 setShowSearchModal(false);
-                router.push(
-                  `/financial/stock-analysis?symbol=${searchQuery.toUpperCase()}`
-                );
+                router.push(`/investments/analyze/${searchQuery.toUpperCase()}`);
                 setSearchQuery('');
               }}
             >
@@ -518,7 +516,7 @@ export default function InvestmentsScreen() {
                   style={styles.popularChip}
                   onPress={() => {
                     setShowSearchModal(false);
-                    router.push(`/financial/stock-analysis?symbol=${s}`);
+                    router.push(`/investments/analyze/${s}`);
                   }}
                 >
                   <Text style={styles.popularChipText}>{s}</Text>

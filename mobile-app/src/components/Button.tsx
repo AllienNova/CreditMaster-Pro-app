@@ -1,5 +1,6 @@
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
-import { lightTheme as theme } from '../constants/theme';
+import React, { useMemo } from 'react';
+import { TouchableOpacity, Text, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
+import { useTheme } from '../hooks/useTheme';
 
 interface ButtonProps {
   title: string;
@@ -24,15 +25,16 @@ export function Button({
   style,
   textStyle,
 }: ButtonProps) {
-  const getButtonStyle = (): ViewStyle => {
+  const { colors, borderRadius, fontSize, fontWeight } = useTheme();
+
+  const buttonStyle = useMemo((): ViewStyle => {
     const base: ViewStyle = {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: theme.borderRadius.md,
+      borderRadius: borderRadius.md,
     };
 
-    // Size styles
     switch (size) {
       case 'sm':
         base.paddingVertical = 8;
@@ -47,21 +49,20 @@ export function Button({
         base.paddingHorizontal = 20;
     }
 
-    // Variant styles
     switch (variant) {
       case 'secondary':
-        base.backgroundColor = theme.colors.secondary;
+        base.backgroundColor = colors.secondary;
         break;
       case 'outline':
         base.backgroundColor = 'transparent';
         base.borderWidth = 1;
-        base.borderColor = theme.colors.primary;
+        base.borderColor = colors.primary;
         break;
       case 'ghost':
         base.backgroundColor = 'transparent';
         break;
       default:
-        base.backgroundColor = theme.colors.primary;
+        base.backgroundColor = colors.primary;
     }
 
     if (disabled) {
@@ -69,56 +70,53 @@ export function Button({
     }
 
     return base;
-  };
+  }, [variant, size, disabled, colors, borderRadius]);
 
-  const getTextStyle = (): TextStyle => {
+  const labelStyle = useMemo((): TextStyle => {
     const base: TextStyle = {
-      fontWeight: '600',
+      fontWeight: fontWeight.semibold,
     };
 
-    // Size styles
     switch (size) {
       case 'sm':
-        base.fontSize = 14;
+        base.fontSize = fontSize.sm;
         break;
       case 'lg':
-        base.fontSize = 18;
+        base.fontSize = fontSize.lg;
         break;
       default:
-        base.fontSize = 16;
+        base.fontSize = fontSize.md;
     }
 
-    // Variant styles
     switch (variant) {
       case 'outline':
       case 'ghost':
-        base.color = theme.colors.primary;
+        base.color = colors.primary;
         break;
       default:
-        base.color = '#FFFFFF';
+        base.color = colors.white;
     }
 
     return base;
-  };
+  }, [variant, size, colors, fontSize, fontWeight]);
+
+  const loaderColor = variant === 'outline' || variant === 'ghost' ? colors.primary : colors.white;
 
   return (
     <TouchableOpacity
-      style={[getButtonStyle(), style]}
+      style={[buttonStyle, style]}
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.7}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'outline' || variant === 'ghost' ? theme.colors.primary : '#FFFFFF'} />
+        <ActivityIndicator color={loaderColor} />
       ) : (
         <>
           {icon}
-          <Text style={[getTextStyle(), icon ? { marginLeft: 8 } : {}, textStyle]}>{title}</Text>
+          <Text style={[labelStyle, icon ? { marginLeft: 8 } : undefined, textStyle]}>{title}</Text>
         </>
       )}
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({});
-

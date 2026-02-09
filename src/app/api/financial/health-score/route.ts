@@ -218,10 +218,10 @@ export async function GET(request: NextRequest) {
         calculatedAt: healthScore.calculatedAt.toISOString(),
       },
     });
-  } catch (error) {
-    console.error('Error fetching health score:', error);
+  } catch (_error) {
+    // HealthScoreRoute error: Failed to fetch score
 
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch health score';
+    const errorMessage = _error instanceof Error ? _error.message : 'Failed to fetch health score';
 
     return NextResponse.json(
       {
@@ -376,10 +376,10 @@ export async function POST(request: NextRequest) {
         forceRecalculate,
       },
     });
-  } catch (error) {
-    console.error('Error calculating health score:', error);
+  } catch (_error) {
+    // HealthScoreRoute error: Failed to calculate score
 
-    const errorMessage = error instanceof Error ? error.message : 'Failed to calculate health score';
+    const errorMessage = _error instanceof Error ? _error.message : 'Failed to calculate health score';
 
     return NextResponse.json(
       {

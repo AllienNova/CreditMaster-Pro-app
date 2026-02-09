@@ -80,10 +80,23 @@ async function handleAIGeneration(body: Record<string, unknown>) {
     );
   }
 
+  // Parse creditReport - it can be a string (raw report text) or an object
+  let parsedCreditReport: import('@/lib/ai-orchestrator').CreditReport;
+  if (typeof creditReport === 'string') {
+    // If it's a string, wrap it in a CreditReport structure with raw text in remarks
+    parsedCreditReport = {
+      accounts: [{
+        remarks: creditReport,
+      }],
+    };
+  } else {
+    parsedCreditReport = creditReport as import('@/lib/ai-orchestrator').CreditReport;
+  }
+
   const input: DisputeGenerationInput = {
-    creditReport: creditReport as string,
+    creditReport: parsedCreditReport,
     disputeReason: disputeReason as string,
-    userInfo: userInfoObj as { name: string; address: string; ssn?: string; dob?: string },
+    userInfo: userInfoObj as { name: string; address: string; ssn?: string; accountNumber?: string },
     additionalContext: body.additionalContext as string | undefined,
   };
 
@@ -248,8 +261,13 @@ async function handleStrategyGeneration(body: Record<string, unknown>) {
 
   // Use AI to generate letter based on strategy prompt
   const orchestrator = getAIOrchestrator();
+  const disputeDetails = variableValues.DISPUTE_DETAILS || '';
   const disputeLetter = await orchestrator.generateDispute({
-    creditReport: variableValues.DISPUTE_DETAILS || '',
+    creditReport: disputeDetails ? {
+      accounts: [{
+        remarks: disputeDetails,
+      }],
+    } : { accounts: [] },
     disputeReason: strategy.name,
     userInfo: {
       name: variableValues.YOUR_NAME || '[YOUR_NAME]',

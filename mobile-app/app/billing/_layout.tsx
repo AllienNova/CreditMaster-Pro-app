@@ -1,5 +1,5 @@
 /**
- * CPFI Billing Navigation Layout
+ * Fynvita Billing Navigation Layout
  */
 
 import { Stack } from 'expo-router';

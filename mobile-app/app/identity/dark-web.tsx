@@ -1,5 +1,5 @@
 /**
- * CPFI Dark Web Monitoring Screen
+ * Fynvita Dark Web Monitoring Screen
  * Scan for exposed credentials and data breaches
  */
 

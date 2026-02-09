@@ -77,7 +77,7 @@ Length: 1 page maximum
         followUpDate,
       };
     } catch (error) {
-      console.error('Error generating goodwill letter:', error);
+      // NegotiationService error: Error generating goodwill letter
       throw error;
     }
   }
@@ -222,7 +222,7 @@ ${userInfo.name}
         letterScript,
       };
     } catch (error) {
-      console.error('Error generating negotiation script:', error);
+      // NegotiationService error: Error generating negotiation script
       throw error;
     }
   }

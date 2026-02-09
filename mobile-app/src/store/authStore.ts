@@ -170,7 +170,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         user: { ...currentUser, ...updates },
       });
     } catch (error) {
-      console.error('Failed to update profile:', error);
+      if (__DEV__) console.error('Failed to update profile:', error);
       throw error;
     }
   },
@@ -187,7 +187,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (error) throw error;
     } catch (error) {
-      console.error('Failed to complete onboarding:', error);
+      if (__DEV__) console.error('Failed to complete onboarding:', error);
       throw error;
     }
   },

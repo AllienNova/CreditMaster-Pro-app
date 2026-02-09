@@ -194,11 +194,9 @@ export class EntityExtractor {
       }
 
       return entities;
-    } catch (error) {
-      console.error(
-        'AI entity extraction failed, using regex fallback:',
-        error
-      );
+    } catch (_error) {
+      // EntityExtractor error: AI entity extraction failed, using regex fallback
+      void _error;
       return this.regexExtract(userMessage, intent);
     }
   }
@@ -286,8 +284,9 @@ export class EntityExtractor {
       }
 
       return JSON.parse(jsonMatch[0]);
-    } catch (error) {
-      console.error('Failed to parse entity response:', error);
+    } catch (_error) {
+      // EntityExtractor error: Failed to parse entity response
+      void _error;
       return {};
     }
   }

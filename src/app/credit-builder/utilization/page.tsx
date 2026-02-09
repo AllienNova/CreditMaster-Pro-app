@@ -55,7 +55,7 @@ export default function UtilizationOptimizerPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-slate-300">Loading...</p>
         </div>
       </div>
     );
@@ -107,7 +107,7 @@ export default function UtilizationOptimizerPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
             href="/credit-builder"
@@ -115,10 +115,10 @@ export default function UtilizationOptimizerPage() {
           >
             ← Back to Credit Builder
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Credit Utilization Optimizer
           </h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-gray-600 dark:text-slate-300">
             Optimize your credit card balances for maximum score impact
           </p>
         </div>
@@ -155,9 +155,9 @@ export default function UtilizationOptimizerPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Overall Progress */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               Overall Utilization
             </h2>
             <span
@@ -179,7 +179,7 @@ export default function UtilizationOptimizerPage() {
 
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 dark:text-slate-300">
                 ${totalBalance.toLocaleString()} / $
                 {totalLimit.toLocaleString()}
               </span>
@@ -187,7 +187,7 @@ export default function UtilizationOptimizerPage() {
                 {currentUtilization.toFixed(1)}%
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-4 relative overflow-hidden">
+            <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-4 relative overflow-hidden">
               <div
                 className={`h-4 rounded-full transition-all duration-500 ${
                   currentUtilization < 30
@@ -200,7 +200,7 @@ export default function UtilizationOptimizerPage() {
               ></div>
               <div className="absolute top-0 left-[30%] w-0.5 h-4 bg-gray-400"></div>
             </div>
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-gray-500 dark:text-slate-400 mt-1">
               <span>0%</span>
               <span className="text-green-600 font-semibold">30% (Ideal)</span>
               <span>100%</span>
@@ -208,22 +208,22 @@ export default function UtilizationOptimizerPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">Total Balance</div>
-              <div className="text-2xl font-bold text-gray-900">
+            <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Total Balance</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 ${totalBalance.toLocaleString()}
               </div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">
+            <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">
                 Total Credit Limit
               </div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 ${totalLimit.toLocaleString()}
               </div>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">Available Credit</div>
+            <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Available Credit</div>
               <div className="text-2xl font-bold text-green-600">
                 ${(totalLimit - totalBalance).toLocaleString()}
               </div>
@@ -232,8 +232,8 @@ export default function UtilizationOptimizerPage() {
         </div>
 
         {/* Per-Card Breakdown */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Per-Card Utilization
           </h2>
 
@@ -241,14 +241,14 @@ export default function UtilizationOptimizerPage() {
             {cards.map((card) => (
               <div
                 key={card.id}
-                className="border-2 border-gray-200 rounded-lg p-6"
+                className="border-2 border-gray-200 dark:border-slate-700 rounded-lg p-6"
               >
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                       {card.name}
                     </h3>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-slate-300">
                       ${card.balance.toLocaleString()} / $
                       {card.limit.toLocaleString()}
                     </p>
@@ -267,7 +267,7 @@ export default function UtilizationOptimizerPage() {
                 </div>
 
                 <div className="mb-4">
-                  <div className="w-full bg-gray-200 rounded-full h-3 relative overflow-hidden">
+                  <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 relative overflow-hidden">
                     <div
                       className={`h-3 rounded-full transition-all duration-300 ${
                         card.status === 'good'
@@ -283,10 +283,10 @@ export default function UtilizationOptimizerPage() {
 
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-medium text-gray-700 dark:text-slate-200">
                       Adjust Balance
                     </label>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-gray-600 dark:text-slate-300">
                       ${card.balance.toLocaleString()}
                     </span>
                   </div>
@@ -299,7 +299,7 @@ export default function UtilizationOptimizerPage() {
                     onChange={(e) =>
                       updateCardBalance(card.id, parseInt(e.target.value))
                     }
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
                   />
                 </div>
               </div>
@@ -308,7 +308,7 @@ export default function UtilizationOptimizerPage() {
         </div>
 
         {/* AI Recommendations */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-8 mb-8">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-50 border-2 border-blue-200 rounded-xl p-8 mb-8">
           <div className="flex items-start space-x-4 mb-6">
             <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
               <svg
@@ -326,10 +326,10 @@ export default function UtilizationOptimizerPage() {
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 AI-Powered Recommendations
               </h2>
-              <p className="text-gray-700">
+              <p className="text-gray-700 dark:text-slate-200">
                 Optimized payment strategy to maximize your credit score
               </p>
             </div>
@@ -341,14 +341,14 @@ export default function UtilizationOptimizerPage() {
               .map((card) => (
                 <div
                   key={card.id}
-                  className="bg-white rounded-lg p-4 border-2 border-blue-200"
+                  className="bg-white dark:bg-slate-800 rounded-lg p-4 border-2 border-blue-200"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
                         {card.name}
                       </h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-slate-300">
                         Current: ${card.balance.toLocaleString()} (
                         {card.utilization.toFixed(1)}%)
                       </p>
@@ -357,7 +357,7 @@ export default function UtilizationOptimizerPage() {
                       <div className="text-xl font-bold text-blue-600">
                         Pay ${card.payment.toLocaleString()}
                       </div>
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-gray-600 dark:text-slate-300">
                         → ${card.targetBalance.toFixed(0)} (10%)
                       </div>
                     </div>
@@ -374,7 +374,7 @@ export default function UtilizationOptimizerPage() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-gray-700">
+                    <span className="text-gray-700 dark:text-slate-200">
                       Impact: +{Math.floor((card.utilization - 10) / 3)} points
                     </span>
                   </div>
@@ -408,13 +408,13 @@ export default function UtilizationOptimizerPage() {
         </div>
 
         {/* Monthly Budget Planner */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Monthly Payment Plan
           </h2>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
               Monthly Budget for Credit Cards
             </label>
             <div className="flex items-center space-x-4">
@@ -425,16 +425,16 @@ export default function UtilizationOptimizerPage() {
                 step="50"
                 value={monthlyBudget}
                 onChange={(e) => setMonthlyBudget(parseInt(e.target.value))}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                className="flex-1 h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
               />
-              <div className="text-2xl font-bold text-gray-900 w-32 text-right">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white w-32 text-right">
                 ${monthlyBudget}
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">
+          <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-6">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
               Distribution Strategy
             </h3>
 
@@ -455,16 +455,16 @@ export default function UtilizationOptimizerPage() {
                 return (
                   <div
                     key={card.id}
-                    className="flex items-center justify-between py-2 border-b border-gray-200"
+                    className="flex items-center justify-between py-2 border-b border-gray-200 dark:border-slate-700"
                   >
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
                       {card.name}
                     </span>
                     <div className="text-right">
-                      <div className="text-sm font-bold text-gray-900">
+                      <div className="text-sm font-bold text-gray-900 dark:text-white">
                         ${(minPayment + extraPayment).toFixed(0)}
                       </div>
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-gray-600 dark:text-slate-300">
                         ${minPayment.toFixed(0)} min + $
                         {extraPayment.toFixed(0)} extra
                       </div>
@@ -474,8 +474,8 @@ export default function UtilizationOptimizerPage() {
               })}
             </div>
 
-            <div className="mt-4 pt-4 border-t-2 border-gray-300 flex items-center justify-between">
-              <span className="font-semibold text-gray-900">
+            <div className="mt-4 pt-4 border-t-2 border-gray-300 dark:border-slate-600 flex items-center justify-between">
+              <span className="font-semibold text-gray-900 dark:text-white">
                 Total Monthly Payment
               </span>
               <span className="text-xl font-bold text-blue-600">
@@ -486,8 +486,8 @@ export default function UtilizationOptimizerPage() {
         </div>
 
         {/* Tips */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-8">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Utilization Tips
           </h2>
 
@@ -507,10 +507,10 @@ export default function UtilizationOptimizerPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                   Pay Before Statement
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-slate-300">
                   Make payments before your statement closes to lower reported
                   balance
                 </p>
@@ -532,10 +532,10 @@ export default function UtilizationOptimizerPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                   Request Limit Increases
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-slate-300">
                   Higher limits with same balance = lower utilization
                   automatically
                 </p>
@@ -557,10 +557,10 @@ export default function UtilizationOptimizerPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                   Spread Out Purchases
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-slate-300">
                   Distribute spending across cards to keep individual
                   utilization low
                 </p>
@@ -582,10 +582,10 @@ export default function UtilizationOptimizerPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                   Keep Old Cards Open
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-slate-300">
                   Zero balance on old cards helps overall utilization ratio
                 </p>
               </div>

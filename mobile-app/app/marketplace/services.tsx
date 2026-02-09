@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Services Marketplace Screen
+ * Fynvita Credit Services Marketplace Screen
  * Professional credit repair services
  */
 

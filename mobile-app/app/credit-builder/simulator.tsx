@@ -1,5 +1,5 @@
 /**
- * CPFI Score Simulator Screen
+ * Fynvita Score Simulator Screen
  * Scenario selection, impact visualization, combined calculations
  */
 

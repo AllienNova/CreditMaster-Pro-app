@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Factor Analysis Screen
+ * Fynvita Credit Factor Analysis Screen
  * 5 factor breakdown with impact indicators and recommendations
  */
 

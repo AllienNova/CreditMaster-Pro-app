@@ -1,5 +1,5 @@
 /**
- * CPFI Credit Monitoring Navigation Layout
+ * Fynvita Credit Monitoring Navigation Layout
  */
 
 import { Stack } from 'expo-router';

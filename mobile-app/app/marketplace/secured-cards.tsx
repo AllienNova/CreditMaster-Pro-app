@@ -1,5 +1,5 @@
 /**
- * CPFI Secured Cards Marketplace Screen
+ * Fynvita Secured Cards Marketplace Screen
  * Browse and compare secured credit cards
  */
 

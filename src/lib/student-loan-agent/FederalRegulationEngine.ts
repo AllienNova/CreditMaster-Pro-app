@@ -1,8 +1,44 @@
 import regulationsData from './regulations.json';
 
+// Types for regulation data
+export interface Regulation {
+  name: string;
+  description?: string;
+  requirements?: string[];
+  deadlines?: Record<string, string>;
+  eligibility?: Record<string, string | boolean | number> | string[];
+  benefits?: string[];
+  key_provisions?: string[];
+  protections?: string[];
+}
+
+export interface ComplianceResult {
+  isCompliant: boolean;
+  message: string;
+  violations: string[];
+  regulation?: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  message: string;
+  violations: string[];
+}
+
+export interface Scenario {
+  loanType: 'federal' | 'private';
+  status?: 'current' | 'default' | 'delinquent';
+}
+
+export interface Strategy {
+  type?: string;
+  regulation?: string;
+  actions?: string[];
+}
+
 // A placeholder for a more robust data structure, perhaps a database.
 interface RegulationDatabase {
-  [key: string]: any;
+  [key: string]: Regulation | undefined;
 }
 
 export class FederalRegulationEngine {
@@ -16,26 +52,26 @@ export class FederalRegulationEngine {
     try {
       // Load regulations from imported JSON data
       this.regulationDatabase = regulationsData;
-      console.log("Federal regulations loaded.");
-    } catch (error) {
-      console.error("Failed to load federal regulations:", error);
+      // FederalRegulationEngine: Federal regulations loaded
+    } catch {
+      // FederalRegulationEngine error: Failed to load federal regulations
       // Initialize with empty data if loading fails
       this.regulationDatabase = {};
     }
   }
 
-  public getRegulation(key: string): any {
+  public getRegulation(key: string): Regulation | undefined {
     return this.regulationDatabase[key];
   }
 
   public async checkForUpdates(): Promise<void> {
     // This method would be responsible for fetching the latest regulations.
-    console.log("Checking for regulation updates...");
+    // FederalRegulationEngine: Checking for regulation updates
     // For now, we just reload the local data.
     await this.loadRegulations();
   }
 
-  public checkCompliance(regulationType: string, data: any): any {
+  public checkCompliance(regulationType: string, _data: Record<string, unknown>): ComplianceResult {
     // Check compliance with a specific regulation
     const regulation = this.regulationDatabase[regulationType.toLowerCase()];
     
@@ -56,10 +92,10 @@ export class FederalRegulationEngine {
     };
   }
 
-  public getApplicableRegulations(scenario: any): any[] {
+  public getApplicableRegulations(scenario: Scenario): Regulation[] {
     // Return applicable regulations based on the scenario
     const { loanType, status } = scenario;
-    const applicable: any[] = [];
+    const applicable: (Regulation | undefined)[] = [];
 
     if (loanType === 'federal') {
       applicable.push(this.regulationDatabase.fcra);
@@ -78,9 +114,9 @@ export class FederalRegulationEngine {
     return applicable.filter(reg => reg !== undefined);
   }
 
-  public validateStrategy(strategy: any): any {
+  public validateStrategy(strategy: Strategy): ValidationResult {
     // Validate a strategy against regulations
-    const { type, regulation, actions } = strategy;
+    const { regulation, actions } = strategy;
 
     if (!regulation || !this.regulationDatabase[regulation.toLowerCase()]) {
       return {

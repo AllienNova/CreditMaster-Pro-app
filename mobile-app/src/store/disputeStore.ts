@@ -1,5 +1,5 @@
 /**
- * CPFI Dispute Store
+ * Fynvita Dispute Store
  * Manages disputes, templates, strategies, and AI letter generation
  */
 
@@ -268,7 +268,7 @@ export const useDisputeStore = create<DisputeState>()(
             set({ templates: response.data.templates });
           }
         } catch (error) {
-          console.error('Failed to fetch templates:', error);
+          if (__DEV__) console.error('Failed to fetch templates:', error);
         }
       },
 
@@ -279,7 +279,7 @@ export const useDisputeStore = create<DisputeState>()(
             set({ strategies: response.data.strategies });
           }
         } catch (error) {
-          console.error('Failed to fetch strategies:', error);
+          if (__DEV__) console.error('Failed to fetch strategies:', error);
         }
       },
 
@@ -290,7 +290,7 @@ export const useDisputeStore = create<DisputeState>()(
             set({ reasons: response.data.reasons });
           }
         } catch (error) {
-          console.error('Failed to fetch reasons:', error);
+          if (__DEV__) console.error('Failed to fetch reasons:', error);
         }
       },
 

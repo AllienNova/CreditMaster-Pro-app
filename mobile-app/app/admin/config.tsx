@@ -1,5 +1,5 @@
 /**
- * CPFI Admin System Configuration Screen
+ * Fynvita Admin System Configuration Screen
  * System settings and configuration management
  */
 

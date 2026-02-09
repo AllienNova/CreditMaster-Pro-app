@@ -40,8 +40,8 @@ export default function DisputeActions({ dispute, onAction }: DisputeActionsProp
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Actions</h2>
         <div className="space-y-3">
           {canSend && (
             <button
@@ -56,7 +56,7 @@ export default function DisputeActions({ dispute, onAction }: DisputeActionsProp
           {canUpdateStatus && (
             <button
               onClick={() => setShowStatusModal(true)}
-              className="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors font-medium"
             >
               Update Status
             </button>
@@ -65,7 +65,7 @@ export default function DisputeActions({ dispute, onAction }: DisputeActionsProp
           {canResolve && (
             <button
               onClick={() => setShowResolveModal(true)}
-              className="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors font-medium"
             >
               Mark as Resolved
             </button>
@@ -73,7 +73,7 @@ export default function DisputeActions({ dispute, onAction }: DisputeActionsProp
           
           <button
             onClick={() => setShowNoteModal(true)}
-            className="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors font-medium"
           >
             Add Note
           </button>
@@ -147,17 +147,17 @@ function StatusModal({ onClose, onSubmit, loading }: StatusModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg max-w-md w-full p-6">
         <h3 className="text-lg font-semibold mb-4">Update Status</h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
               New Status
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as DisputeStatus)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="sent">Sent</option>
               <option value="under_review">Under Review</option>
@@ -165,14 +165,14 @@ function StatusModal({ onClose, onSubmit, loading }: StatusModalProps) {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
               Description (optional)
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Add details about this status update..."
             />
           </div>
@@ -181,7 +181,7 @@ function StatusModal({ onClose, onSubmit, loading }: StatusModalProps) {
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -211,17 +211,17 @@ function ResolveModal({ onClose, onSubmit, loading }: ResolveModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg max-w-md w-full p-6">
         <h3 className="text-lg font-semibold mb-4">Mark as Resolved</h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
               Outcome
             </label>
             <select
               value={outcome}
               onChange={(e) => setOutcome(e.target.value as DisputeOutcome)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="removed">Item Removed</option>
               <option value="updated">Item Updated</option>
@@ -230,14 +230,14 @@ function ResolveModal({ onClose, onSubmit, loading }: ResolveModalProps) {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
               Notes (optional)
             </label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Add any additional notes..."
             />
           </div>
@@ -246,7 +246,7 @@ function ResolveModal({ onClose, onSubmit, loading }: ResolveModalProps) {
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -275,14 +275,14 @@ function NoteModal({ onClose, onSubmit, loading }: NoteModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg max-w-md w-full p-6">
         <h3 className="text-lg font-semibold mb-4">Add Note</h3>
         <div>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Enter your note..."
           />
         </div>
@@ -290,7 +290,7 @@ function NoteModal({ onClose, onSubmit, loading }: NoteModalProps) {
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>

@@ -69,8 +69,9 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
     }
-  } catch (error) {
-    console.error('Error fetching savings data:', error);
+  } catch (_error) {
+    // SavingsRoute error: Failed to fetch savings data
+    void _error;
     return NextResponse.json(
       { error: 'Failed to fetch savings data' },
       { status: 500 }
@@ -143,8 +144,9 @@ export async function POST(request: NextRequest) {
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
-  } catch (error) {
-    console.error('Error processing savings action:', error);
+  } catch (_error) {
+    // SavingsRoute error: Failed to process savings action
+    void _error;
     return NextResponse.json(
       { error: 'Failed to process savings action' },
       { status: 500 }

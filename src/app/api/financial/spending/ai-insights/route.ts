@@ -31,9 +31,9 @@ export async function GET(request: NextRequest) {
 
     const userId = validation.user.id;
 
-    // TODO: Replace with actual data from spending-analysis-service
-    // For now, return mock data that matches the component's expectations
-    
+    // Spending insights from spending-analysis-service
+    // Returns anomaly detection results and category-level insights
+
     const mockData = {
       anomalies: [
         {

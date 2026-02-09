@@ -1,5 +1,6 @@
-import { View, StyleSheet, ViewStyle, StyleProp } from 'react-native';
-import { lightTheme as theme } from '../constants/theme';
+import React, { useMemo } from 'react';
+import { View, ViewStyle, StyleProp } from 'react-native';
+import { useTheme } from '../hooks/useTheme';
 
 interface CardProps {
   children: React.ReactNode;
@@ -9,44 +10,31 @@ interface CardProps {
 }
 
 export function Card({ children, style, padding = 'md', shadow = true }: CardProps) {
-  const getPadding = () => {
+  const { colors, spacing, borderRadius, shadow: themeShadow } = useTheme();
+
+  const paddingValue = useMemo(() => {
     switch (padding) {
       case 'none':
         return 0;
       case 'sm':
-        return theme.spacing.sm;
+        return spacing.sm;
       case 'lg':
-        return theme.spacing.lg;
+        return spacing.lg;
       default:
-        return theme.spacing.md;
+        return spacing.md;
     }
+  }, [padding, spacing]);
+
+  const cardStyle: ViewStyle = {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.lg,
+    padding: paddingValue,
+    ...(shadow ? themeShadow.sm : {}),
   };
 
   return (
-    <View
-      style={[
-        styles.card,
-        { padding: getPadding() },
-        shadow && styles.shadow,
-        style,
-      ]}
-    >
+    <View style={[cardStyle, style]}>
       {children}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-  },
-  shadow: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-});
-

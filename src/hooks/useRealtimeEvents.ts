@@ -65,7 +65,7 @@ export function useRealtimeEvents(
       eventSourceRef.current = eventSource;
       
       eventSource.onopen = () => {
-        console.log('📡 SSE connection opened');
+        // SSE connection opened
         setIsConnected(true);
         setError(null);
         onConnect?.();
@@ -77,7 +77,7 @@ export function useRealtimeEvents(
           
           // Skip connection and heartbeat messages
           if (data.type === 'connected') {
-            console.log('📡 SSE connected:', data.userId);
+            // SSE connected
             return;
           }
           
@@ -86,12 +86,12 @@ export function useRealtimeEvents(
           setEvents(prev => [...prev, realtimeEvent]);
           onEvent?.(realtimeEvent);
         } catch (err) {
-          console.error('Error parsing SSE message:', err);
+          // Silently ignore malformed messages
         }
       };
       
       eventSource.onerror = (err) => {
-        console.error('📡 SSE error:', err);
+        // SSE error - state updated below
         setIsConnected(false);
         
         const error = new Error('SSE connection error');
@@ -101,7 +101,7 @@ export function useRealtimeEvents(
         
         // Auto-reconnect if enabled
         if (autoReconnect && shouldReconnectRef.current) {
-          console.log(`📡 Reconnecting in ${reconnectDelay}ms...`);
+          // Attempting reconnect
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, reconnectDelay);
@@ -109,7 +109,7 @@ export function useRealtimeEvents(
       };
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to connect');
-      console.error('📡 Failed to create SSE connection:', error);
+      // Failed to create SSE connection
       setError(error);
       onError?.(error);
     }
@@ -129,7 +129,7 @@ export function useRealtimeEvents(
     }
     
     setIsConnected(false);
-    console.log('📡 SSE connection closed');
+    // SSE connection closed
   }, []);
   
   const reconnect = useCallback(() => {

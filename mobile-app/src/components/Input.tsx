@@ -1,5 +1,6 @@
-import { View, Text, TextInput, StyleSheet, TextInputProps, ViewStyle } from 'react-native';
-import { lightTheme as theme } from '../constants/theme';
+import React, { useMemo } from 'react';
+import { View, Text, TextInput, TextInputProps, ViewStyle } from 'react-native';
+import { useTheme } from '../hooks/useTheme';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -8,49 +9,43 @@ interface InputProps extends TextInputProps {
 }
 
 export function Input({ label, error, containerStyle, style, ...props }: InputProps) {
+  const { colors, spacing, borderRadius, fontSize, fontWeight } = useTheme();
+
+  const styles = useMemo(() => ({
+    container: {
+      marginBottom: spacing.md,
+    } as ViewStyle,
+    label: {
+      fontSize: fontSize.sm,
+      fontWeight: fontWeight.medium,
+      color: colors.text,
+      marginBottom: spacing.xs,
+    },
+    input: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: error ? colors.error : colors.border,
+      borderRadius: borderRadius.md,
+      padding: spacing.md,
+      fontSize: fontSize.md,
+      color: colors.text,
+    },
+    errorText: {
+      fontSize: fontSize.xs,
+      color: colors.error,
+      marginTop: spacing.xs,
+    },
+  }), [colors, spacing, borderRadius, fontSize, fontWeight, error]);
+
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
-        style={[
-          styles.input,
-          error ? styles.inputError : undefined,
-          style,
-        ]}
-        placeholderTextColor={theme.colors.textSecondary}
+        style={[styles.input, style]}
+        placeholderTextColor={colors.textSecondary}
         {...props}
       />
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: theme.spacing.md,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
-  },
-  input: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    fontSize: 16,
-    color: theme.colors.text,
-  },
-  inputError: {
-    borderColor: theme.colors.error,
-  },
-  errorText: {
-    fontSize: 12,
-    color: theme.colors.error,
-    marginTop: theme.spacing.xs,
-  },
-});
-

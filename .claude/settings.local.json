@@ -19,7 +19,16 @@
       "Bash(ls -la \"c:\\\\Githhub\\\\CreditMaster-Pro-app\\\\src\\\\app\\\\api\\\\marketplace\"\" 2>/dev/null || echo \"No marketplace API routes exist \")",
       "Bash(timeout:*)",
       "Bash(curl:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(ls -la \"C:\\\\Githhub\\\\Fynvita\\\\src\\\\app\\\\api\"\" 2>/dev/null || ls -la \"C:GithhubFynvitasrcapp\"\")",
+      "Bash(dir /b /s \"C:\\\\Githhub\\\\Fynvita\\\\src\\\\app\\\\api\")",
+      "Bash(dir /b \"C:\\\\Githhub\\\\Fynvita\\\\src\\\\app\")",
+      "Bash(dir /b \"C:\\\\Githhub\\\\Fynvita\\\\src\\\\lib\")",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(ipconfig:*)"
     ],
     "deny": [],
     "ask": []

@@ -134,8 +134,8 @@ export async function POST(request: NextRequest) {
       message: 'Credit report analyzed successfully',
     });
 
-  } catch (error) {
-    console.error('Credit report analysis error:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to analyze credit report' },
       { status: 500 }

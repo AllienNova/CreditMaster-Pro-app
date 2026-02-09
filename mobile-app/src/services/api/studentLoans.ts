@@ -124,7 +124,7 @@ export const studentLoansApi = {
       const response = await api.get<{ loans: StudentLoan[] }>('/api/student-loans');
       return { data: response.data?.loans || [] };
     } catch (error) {
-      console.error('Get loans error:', error);
+      if (__DEV__) console.error('Get loans error:', error);
       return { data: [], error: error instanceof Error ? error.message : 'Failed to fetch loans' };
     }
   },
@@ -137,7 +137,7 @@ export const studentLoansApi = {
       const response = await api.get<StudentLoan>(`/api/student-loans/${id}`);
       return { data: response.data || null };
     } catch (error) {
-      console.error('Get loan error:', error);
+      if (__DEV__) console.error('Get loan error:', error);
       return { data: null, error: error instanceof Error ? error.message : 'Failed to fetch loan' };
     }
   },
@@ -150,7 +150,7 @@ export const studentLoansApi = {
       const response = await api.post<StudentLoan>('/api/student-loans', loan);
       return { data: response.data || null };
     } catch (error) {
-      console.error('Add loan error:', error);
+      if (__DEV__) console.error('Add loan error:', error);
       return { data: null, error: error instanceof Error ? error.message : 'Failed to add loan' };
     }
   },
@@ -163,7 +163,7 @@ export const studentLoansApi = {
       const response = await api.patch<StudentLoan>(`/api/student-loans/${id}`, data);
       return { data: response.data || null };
     } catch (error) {
-      console.error('Update loan error:', error);
+      if (__DEV__) console.error('Update loan error:', error);
       return { data: null, error: error instanceof Error ? error.message : 'Failed to update loan' };
     }
   },
@@ -176,7 +176,7 @@ export const studentLoansApi = {
       await api.delete(`/api/student-loans/${id}`);
       return { success: true };
     } catch (error) {
-      console.error('Delete loan error:', error);
+      if (__DEV__) console.error('Delete loan error:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Failed to delete loan' };
     }
   },
@@ -189,7 +189,7 @@ export const studentLoansApi = {
       const response = await api.post<PortfolioStats>('/api/student-loans/analyze', { loans });
       return { data: response.data || null };
     } catch (error) {
-      console.error('Analyze portfolio error:', error);
+      if (__DEV__) console.error('Analyze portfolio error:', error);
       return { data: null, error: error instanceof Error ? error.message : 'Failed to analyze portfolio' };
     }
   },
@@ -208,7 +208,7 @@ export const studentLoansApi = {
       );
       return { data: response.data?.strategies || [] };
     } catch (error) {
-      console.error('Generate strategies error:', error);
+      if (__DEV__) console.error('Generate strategies error:', error);
       return { data: [], error: error instanceof Error ? error.message : 'Failed to generate strategies' };
     }
   },
@@ -228,7 +228,7 @@ export const studentLoansApi = {
       );
       return { data: response.data?.letter || null };
     } catch (error) {
-      console.error('Generate dispute error:', error);
+      if (__DEV__) console.error('Generate dispute error:', error);
       return { data: null, error: error instanceof Error ? error.message : 'Failed to generate dispute' };
     }
   },
@@ -247,7 +247,7 @@ export const studentLoansApi = {
       });
       return { data: response };
     } catch (error) {
-      console.error('Check eligibility error:', error);
+      if (__DEV__) console.error('Check eligibility error:', error);
       return { data: null, error: error instanceof Error ? error.message : 'Failed to check eligibility' };
     }
   },

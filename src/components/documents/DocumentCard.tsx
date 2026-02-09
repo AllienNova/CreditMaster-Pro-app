@@ -23,21 +23,21 @@ export default function DocumentCard({
   const getDocumentIcon = (type: DocumentType): string => {
     switch (type) {
       case 'credit_report':
-        return '📊';
+        return '';
       case 'dispute_letter':
-        return '✉️';
+        return '';
       case 'evidence':
-        return '📎';
+        return '';
       case 'identity_document':
-        return '🪪';
+        return '';
       case 'proof_of_address':
-        return '🏠';
+        return '';
       case 'income_verification':
-        return '💰';
+        return '';
       case 'other':
-        return '📄';
+        return '';
       default:
-        return '📄';
+        return '';
     }
   };
 
@@ -46,7 +46,7 @@ export default function DocumentCard({
       case 'credit_report':
         return 'bg-green-50 text-green-700 border-green-200';
       case 'dispute_letter':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'evidence':
         return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'identity_document':
@@ -54,11 +54,11 @@ export default function DocumentCard({
       case 'proof_of_address':
         return 'bg-orange-50 text-orange-700 border-orange-200';
       case 'income_verification':
-        return 'bg-pink-50 text-pink-700 border-pink-200';
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'other':
-        return 'bg-gray-50 text-gray-700 border-gray-200';
+        return 'bg-gray-50 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-700';
       default:
-        return 'bg-gray-50 text-gray-700 border-gray-200';
+        return 'bg-gray-50 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-700';
     }
   };
 
@@ -95,7 +95,7 @@ export default function DocumentCard({
 
   if (viewMode === 'list') {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 flex-1">
             {/* Icon */}
@@ -105,10 +105,10 @@ export default function DocumentCard({
             
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-semibold text-gray-900 truncate">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                 {document.originalName}
               </h3>
-              <div className="flex items-center gap-3 mt-1 text-xs text-gray-600">
+              <div className="flex items-center gap-3 mt-1 text-xs text-gray-600 dark:text-slate-300">
                 <span className={`px-2 py-1 rounded-full border ${getDocumentColor(document.type)}`}>
                   {formatTypeName(document.type)}
                 </span>
@@ -124,7 +124,7 @@ export default function DocumentCard({
               <button
                 type="button"
                 onClick={() => onShare(document)}
-                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 rounded-lg transition-colors"
                 title="Share"
               >
                 Share
@@ -141,7 +141,7 @@ export default function DocumentCard({
             <button
               type="button"
               onClick={() => onDownload(document)}
-              className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 rounded-lg transition-colors"
               title="Download"
             >
               Download
@@ -162,7 +162,7 @@ export default function DocumentCard({
 
   // Grid view
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
       {/* Preview */}
       <div
         className={`h-32 flex items-center justify-center cursor-pointer ${getDocumentColor(document.type)}`}
@@ -179,7 +179,7 @@ export default function DocumentCard({
       {/* Info */}
       <div className="p-4">
         <h3
-          className="text-sm font-semibold text-gray-900 truncate mb-2 cursor-pointer hover:text-blue-600"
+          className="text-sm font-semibold text-gray-900 dark:text-white truncate mb-2 cursor-pointer hover:text-blue-600"
           onClick={handleView}
           title={document.originalName}
         >
@@ -191,7 +191,7 @@ export default function DocumentCard({
             {formatTypeName(document.type)}
           </div>
           
-          <div className="text-xs text-gray-600 space-y-1">
+          <div className="text-xs text-gray-600 dark:text-slate-300 space-y-1">
             <div className="flex items-center justify-between">
               <span>Size:</span>
               <span className="font-medium">{formatFileSize(document.size)}</span>
@@ -209,7 +209,7 @@ export default function DocumentCard({
             <button
               type="button"
               onClick={() => onShare(document)}
-              className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
             >
               Share
             </button>
@@ -224,7 +224,7 @@ export default function DocumentCard({
           <button
             type="button"
             onClick={() => onDownload(document)}
-            className="px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
             title="Download"
           >
             ⬇
@@ -235,8 +235,7 @@ export default function DocumentCard({
             className="px-3 py-2 text-sm border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
             title="Delete"
           >
-            🗑
-          </button>
+                      </button>
         </div>
       </div>
     </div>

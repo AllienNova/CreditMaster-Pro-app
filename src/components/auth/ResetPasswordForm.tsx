@@ -9,7 +9,7 @@ export default function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isResetMode = searchParams.get('mode') === 'reset';
-  
+
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -80,21 +80,21 @@ export default function ResetPasswordForm() {
 
   if (success) {
     return (
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8 w-full max-w-md">
         <div className="text-center">
-          <div className="text-6xl mb-6">✅</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="text-6xl mb-6"></div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             {isResetMode ? 'Password Updated!' : 'Check Your Email'}
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-slate-300 mb-6">
             {isResetMode
               ? 'Your password has been successfully updated. Redirecting to login...'
-              : 'We\'ve sent you an email with instructions to reset your password.'}
+              : "We've sent you an email with instructions to reset your password."}
           </p>
           {!isResetMode && (
             <Link
               href="/auth/login"
-              className="inline-block px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-semibold"
+              className="inline-block px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-lg hover:from-blue-700 hover:to-blue-700 transition-all font-semibold"
             >
               Back to Login
             </Link>
@@ -105,16 +105,16 @@ export default function ResetPasswordForm() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8 w-full max-w-md">
       {/* Logo */}
       <div className="text-center mb-8">
-        <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2">
-          CPFI
+        <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-600 mb-2">
+          Fynvita
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           {isResetMode ? 'Set New Password' : 'Reset Password'}
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-gray-600 dark:text-slate-300 mt-2">
           {isResetMode
             ? 'Enter your new password below'
             : 'Enter your email to receive reset instructions'}
@@ -125,7 +125,7 @@ export default function ResetPasswordForm() {
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-center gap-2">
-            <span className="text-red-600 text-xl">⚠️</span>
+            <span className="text-red-600 text-xl"></span>
             <p className="text-red-800 text-sm">{error}</p>
           </div>
         </div>
@@ -136,7 +136,10 @@ export default function ResetPasswordForm() {
         <form onSubmit={handleUpdatePassword} className="space-y-6">
           {/* New Password */}
           <div>
-            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="newPassword"
+              className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2"
+            >
               New Password
             </label>
             <div className="relative">
@@ -147,22 +150,27 @@ export default function ResetPasswordForm() {
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200"
               >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
+                {showPassword ? '' : '‍'}
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+              Must be at least 8 characters
+            </p>
           </div>
 
           {/* Confirm Password */}
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2"
+            >
               Confirm Password
             </label>
             <input
@@ -172,7 +180,7 @@ export default function ResetPasswordForm() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               placeholder="••••••••"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
             />
           </div>
 
@@ -180,7 +188,7 @@ export default function ResetPasswordForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-lg hover:from-blue-700 hover:to-blue-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Updating...' : 'Update Password'}
           </button>
@@ -189,7 +197,10 @@ export default function ResetPasswordForm() {
         <form onSubmit={handleRequestReset} className="space-y-6">
           {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2"
+            >
               Email Address
             </label>
             <input
@@ -199,7 +210,7 @@ export default function ResetPasswordForm() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="you@example.com"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
             />
           </div>
 
@@ -207,7 +218,7 @@ export default function ResetPasswordForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-lg hover:from-blue-700 hover:to-blue-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Sending...' : 'Send Reset Link'}
           </button>
@@ -226,4 +237,3 @@ export default function ResetPasswordForm() {
     </div>
   );
 }
-

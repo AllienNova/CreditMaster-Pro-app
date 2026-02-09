@@ -70,7 +70,7 @@ export class WorkflowEngine {
     templateId: string,
     config?: Record<string, unknown>
   ): Promise<WorkflowExecution> {
-    console.log(`🔄 Starting workflow execution: ${templateId}`);
+    // Workflow:(`Starting workflow execution: ${templateId}`);
     
     const template = await this.getWorkflowTemplate(templateId);
     if (!template) {
@@ -98,7 +98,7 @@ export class WorkflowEngine {
     
     // Execute workflow asynchronously
     this.runWorkflow(workflow).catch(error => {
-      console.error('Workflow execution error:', error);
+      // Workflow error:('Workflow execution error:', error);
     });
     
     return workflow;
@@ -212,7 +212,7 @@ export class WorkflowEngine {
         return await this.calculatePayment(params);
         
       default:
-        console.log(`Action executed: ${actionType}`);
+        // Workflow:(`Action executed: ${actionType}`);
         return { success: true };
     }
   }
@@ -229,7 +229,7 @@ export class WorkflowEngine {
     };
     const conditionType = typeof rawConditionType === 'string' ? rawConditionType : 'custom_condition';
     
-    console.log('Evaluating workflow condition', { workflowId: workflow.id, conditionType, params });
+    // Workflow:('Evaluating workflow condition', { workflowId: workflow.id, conditionType, params });
     return true;
   }
   
@@ -251,7 +251,7 @@ export class WorkflowEngine {
   ): Promise<void> {
     const config = step.config as Record<string, unknown>;
     const message = typeof config.message === 'string' ? config.message : 'Workflow notification triggered';
-    console.log(`📧 Sending notification: ${message}`);
+    // Workflow:(`Sending notification: ${message}`);
     // In production, integrate with notification service
   }
   
@@ -283,7 +283,7 @@ export class WorkflowEngine {
     userId: string,
     params: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
-    console.log('Generating dispute', { userId, params });
+    // Workflow:('Generating dispute', { userId, params });
     return { dispute_id: `dispute_${Date.now()}`, status: 'generated' };
   }
   
@@ -294,7 +294,7 @@ export class WorkflowEngine {
     userId: string,
     params: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
-    console.log('Sending document request', { userId, params });
+    // Workflow:('Sending document request', { userId, params });
     return { request_id: `request_${Date.now()}`, status: 'sent' };
   }
   
@@ -304,7 +304,7 @@ export class WorkflowEngine {
   private static async updateLoanStatus(
     params: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
-    console.log('Updating loan status', { params });
+    // Workflow:('Updating loan status', { params });
     return { success: true };
   }
   
@@ -314,7 +314,7 @@ export class WorkflowEngine {
   private static async calculatePayment(
     params: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
-    console.log('Calculating payment', { params });
+    // Workflow:('Calculating payment', { params });
     return { payment_amount: 0, due_date: new Date().toISOString() };
   }
   
@@ -365,7 +365,7 @@ export class WorkflowEngine {
    */
   private static async saveWorkflow(workflow: WorkflowExecution): Promise<void> {
     // In production, save to database
-    console.log(`💾 Saving workflow: ${workflow.id}`);
+    // Workflow:(`Saving workflow: ${workflow.id}`);
   }
   
   /**
@@ -373,7 +373,7 @@ export class WorkflowEngine {
    */
   private static async updateWorkflow(workflow: WorkflowExecution): Promise<void> {
     // In production, update in database
-    console.log(`🔄 Updating workflow: ${workflow.id} - Status: ${workflow.status}`);
+    // Workflow:(`Updating workflow: ${workflow.id} - Status: ${workflow.status}`);
   }
   
   /**
@@ -381,7 +381,7 @@ export class WorkflowEngine {
    */
   static async getWorkflow(workflowId: string): Promise<WorkflowExecution | null> {
     // In production, fetch from database
-    console.log(`📖 Fetching workflow: ${workflowId}`);
+    // Workflow:(`Fetching workflow: ${workflowId}`);
     return null;
   }
   
@@ -389,7 +389,7 @@ export class WorkflowEngine {
    * Cancel workflow
    */
   static async cancelWorkflow(workflowId: string): Promise<void> {
-    console.log(`❌ Cancelling workflow: ${workflowId}`);
+    // Workflow:(`Cancelling workflow: ${workflowId}`);
     // In production, update status in database
   }
   
@@ -398,7 +398,7 @@ export class WorkflowEngine {
    */
   static async getUserWorkflows(userId: string): Promise<WorkflowExecution[]> {
     // In production, fetch from database
-    console.log(`📋 Fetching workflows for user: ${userId}`);
+    // Workflow:(`Fetching workflows for user: ${userId}`);
     return [];
   }
 }

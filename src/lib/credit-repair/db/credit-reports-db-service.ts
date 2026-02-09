@@ -108,7 +108,7 @@ export async function createCreditReport(
 
     return mapCreditReportFromDb(data as CreditReportRow);
   } catch (error) {
-    console.error('Error creating credit report:', error);
+    // CreditReportsDB error: Error creating credit report
     throw new Error(`Failed to create credit report: ${(error as Error).message}`);
   }
 }
@@ -137,7 +137,7 @@ export async function getCreditReport(
 
     return data ? mapCreditReportFromDb(data as CreditReportRow) : null;
   } catch (error) {
-    console.error('Error getting credit report:', error);
+    // CreditReportsDB error: Error getting credit report
     throw new Error(`Failed to get credit report: ${(error as Error).message}`);
   }
 }
@@ -184,7 +184,7 @@ export async function getCreditReportsByUser(
     const rows = (data ?? []) as CreditReportRow[];
     return rows.map(mapCreditReportFromDb);
   } catch (error) {
-    console.error('Error getting credit reports by user:', error);
+    // CreditReportsDB error: Error getting credit reports by user
     throw new Error(`Failed to get credit reports: ${(error as Error).message}`);
   }
 }
@@ -215,7 +215,7 @@ export async function getLatestCreditReport(
 
     return mapCreditReportFromDb(data as CreditReportRow);
   } catch (error) {
-    console.error('Error getting latest credit report:', error);
+    // CreditReportsDB error: Error getting latest credit report
     throw new Error(`Failed to get latest credit report: ${(error as Error).message}`);
   }
 }
@@ -247,7 +247,7 @@ export async function getCreditReportsByBureau(
     const rows = (data ?? []) as CreditReportRow[];
     return rows.map(mapCreditReportFromDb);
   } catch (error) {
-    console.error('Error getting credit reports by bureau:', error);
+    // CreditReportsDB error: Error getting credit reports by bureau
     throw new Error(`Failed to get credit reports by bureau: ${(error as Error).message}`);
   }
 }
@@ -284,7 +284,7 @@ export async function updateCreditReport(
 
     return mapCreditReportFromDb(data as CreditReportRow);
   } catch (error) {
-    console.error('Error updating credit report:', error);
+    // CreditReportsDB error: Error updating credit report
     throw new Error(`Failed to update credit report: ${(error as Error).message}`);
   }
 }
@@ -307,7 +307,7 @@ export async function deleteCreditReport(
 
     return true;
   } catch (error) {
-    console.error('Error deleting credit report:', error);
+    // CreditReportsDB error: Error deleting credit report
     throw new Error(`Failed to delete credit report: ${(error as Error).message}`);
   }
 }
@@ -348,7 +348,7 @@ export async function getCreditScoreHistory(
       bureau: item.bureau,
     }));
   } catch (error) {
-    console.error('Error getting credit score history:', error);
+    // CreditReportsDB error: Error getting credit score history
     throw new Error(`Failed to get credit score history: ${(error as Error).message}`);
   }
 }
@@ -410,7 +410,7 @@ export async function getCreditReportStats(
       scoreChange,
     };
   } catch (error) {
-    console.error('Error getting credit report stats:', error);
+    // CreditReportsDB error: Error getting credit report stats
     throw new Error(`Failed to get credit report stats: ${(error as Error).message}`);
   }
 }

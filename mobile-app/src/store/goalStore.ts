@@ -1,5 +1,5 @@
 /**
- * CPFI Goal Store
+ * Fynvita Goal Store
  * Manages financial goals and progress tracking
  * Split from financialStore for better modularity
  */

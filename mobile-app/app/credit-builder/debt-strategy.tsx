@@ -1,5 +1,5 @@
 /**
- * CPFI Debt Strategy Screen
+ * Fynvita Debt Strategy Screen
  * Avalanche vs Snowball debt payoff strategies
  */
 
@@ -126,7 +126,7 @@ export default function DebtStrategyScreen() {
         </Card>
 
         {/* Calculator Link */}
-        <TouchableOpacity style={styles.calculatorButton} onPress={() => router.push('/credit-builder/debt-calculator')}>
+        <TouchableOpacity style={styles.calculatorButton} onPress={() => router.push('/credit-builder/debt-calculator' as never)}>
           <Ionicons name="calculator" size={20} color={theme.colors.primary} />
           <Text style={styles.calculatorButtonText}>Open Payoff Calculator</Text>
           <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} />

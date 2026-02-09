@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile User API Service
+ * Fynvita Mobile User API Service
  * Handles user profile, subscriptions, notifications, and settings
  */
 

@@ -156,7 +156,7 @@ export function HelpTooltip({
 }) {
   return (
     <Tooltip content={content} placement={placement}>
-      <QuestionMarkCircleIcon className="w-5 h-5 text-gray-400 hover:text-gray-600 cursor-help inline-block" />
+      <QuestionMarkCircleIcon className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:text-slate-300 cursor-help inline-block" />
     </Tooltip>
   );
 }
@@ -197,7 +197,7 @@ export function ContextualHelp({
 // Inline help text
 export function InlineHelp({ children }: { children: ReactNode }) {
   return (
-    <p className="text-sm text-gray-500 mt-1 flex items-start space-x-1">
+    <p className="text-sm text-gray-500 dark:text-slate-400 mt-1 flex items-start space-x-1">
       <InformationCircleIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
       <span>{children}</span>
     </p>
@@ -215,11 +215,11 @@ export function LabelWithTooltip({
   required?: boolean;
 }) {
   return (
-    <label className="block text-sm font-medium text-gray-700 mb-1">
+    <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">
       {label}
       {required && <span className="text-red-500 ml-1">*</span>}
       <Tooltip content={tooltip} placement="right">
-        <InformationCircleIcon className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help inline-block ml-1" />
+        <InformationCircleIcon className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-slate-300 cursor-help inline-block ml-1" />
       </Tooltip>
     </label>
   );

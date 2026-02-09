@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile API Client Tests
+ * Fynvita Mobile API Client Tests
  */
 
 import { api, apiRequest, initializeApiClient, processOfflineQueue } from '../client';

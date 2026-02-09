@@ -165,8 +165,9 @@ export class OfflineQueue {
       if (stored) {
         this.queue = JSON.parse(stored);
       }
-    } catch (error) {
-      console.error('Failed to load offline queue:', error);
+    } catch (_error) {
+      // OfflineQueue error: Failed to load offline queue
+      void _error;
     }
   }
 
@@ -175,8 +176,9 @@ export class OfflineQueue {
 
     try {
       localStorage.setItem(this.options.storageKey, JSON.stringify(this.queue));
-    } catch (error) {
-      console.error('Failed to save offline queue:', error);
+    } catch (_error) {
+      // OfflineQueue error: Failed to save offline queue
+      void _error;
     }
   }
 

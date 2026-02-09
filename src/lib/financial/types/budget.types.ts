@@ -297,12 +297,16 @@ export interface BudgetRecommendation {
   suggestedAmount: number;
   reason: string;
   confidence?: number; // 0-100
-  impact: {
-    monthlySavings?: number;
-    debtReduction?: number;
-    goalProgress?: number;
-    riskLevel?: 'low' | 'medium' | 'high';
-  } | 'high' | 'medium' | 'low'; // Support both formats for backward compatibility
+  impact:
+    | {
+        monthlySavings?: number;
+        debtReduction?: number;
+        goalProgress?: number;
+        riskLevel?: 'low' | 'medium' | 'high';
+      }
+    | 'high'
+    | 'medium'
+    | 'low'; // Support both formats for backward compatibility
   potentialSavings?: number;
   actionSteps?: string[];
   createdAt?: Date;
@@ -391,7 +395,6 @@ export interface BudgetAlertRow {
   created_at: string;
 }
 
-
 // ============================================================================
 // SMART BUDGET ENGINE TYPES (Phase 2.1)
 // ============================================================================
@@ -446,6 +449,14 @@ export interface SmartBudget {
     dependents?: number;
     location?: string;
     preferences?: BudgetPreferences;
+    budgetType?: 'standard' | 'zero-based' | '50-30-20';
+    priorities?: {
+      essentials?: number;
+      debtPayoff?: number;
+      savings?: number;
+      lifestyle?: number;
+    };
+    lastRebalanced?: string;
   };
 }
 
@@ -474,8 +485,6 @@ export interface SmartBudgetCategory {
     confidence: number;
   };
 }
-
-
 
 /**
  * Budget Preferences for AI generation

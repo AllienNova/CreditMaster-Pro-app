@@ -1,5 +1,5 @@
 /**
- * CPFI Billing Overview Screen
+ * Fynvita Billing Overview Screen
  * Manage subscription and payments
  */
 

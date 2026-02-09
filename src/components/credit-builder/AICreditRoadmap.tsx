@@ -113,7 +113,7 @@ export default function AICreditRoadmap() {
 
   const getStatusIcon = (status: 'completed' | 'in_progress' | 'upcoming') => {
     switch (status) {
-      case 'completed': return <span className="text-green-400">✓</span>;
+      case 'completed': return <span className="text-green-400"></span>;
       case 'in_progress': return <span className="text-yellow-400">⏳</span>;
       case 'upcoming': return <span className="text-blue-400">○</span>;
     }
@@ -122,8 +122,8 @@ export default function AICreditRoadmap() {
   if (loading) {
     return (
       <div className="bg-gradient-to-br from-green-500 to-teal-600 rounded-xl shadow-lg p-6 mb-6 animate-pulse">
-        <div className="h-8 bg-white/20 rounded w-1/3 mb-4"></div>
-        <div className="h-24 bg-white/20 rounded"></div>
+        <div className="h-8 bg-white dark:bg-slate-800/20 rounded w-1/3 mb-4"></div>
+        <div className="h-24 bg-white dark:bg-slate-800/20 rounded"></div>
       </div>
     );
   }
@@ -150,9 +150,8 @@ export default function AICreditRoadmap() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-2xl">
-            📈
-          </div>
+          <div className="w-10 h-10 bg-white dark:bg-slate-800/20 rounded-lg flex items-center justify-center text-2xl">
+                      </div>
           <div>
             <h2 className="text-xl font-bold">AI Credit Building Roadmap</h2>
             <p className="text-green-100 text-sm">Personalized path to your credit goals</p>
@@ -160,7 +159,7 @@ export default function AICreditRoadmap() {
         </div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          className="p-2 hover:bg-white dark:bg-slate-800/10 rounded-lg transition-colors"
         >
           {isExpanded ? (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,17 +176,17 @@ export default function AICreditRoadmap() {
       {isExpanded && (
         <div className="space-y-6">
           {/* Progress Metrics */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold flex items-center space-x-2">
-                <span className="text-xl">🎯</span>
+                <span className="text-xl"></span>
                 <span>Roadmap Progress</span>
               </h3>
               <span className="text-2xl font-bold">{data.roadmapScore}/100</span>
             </div>
-            <div className="w-full bg-white/20 rounded-full h-3 mb-3">
+            <div className="w-full bg-white dark:bg-slate-800/20 rounded-full h-3 mb-3">
               <div
-                className="bg-white rounded-full h-3 transition-all duration-500"
+                className="bg-white dark:bg-slate-800 rounded-full h-3 transition-all duration-500"
                 style={{ width: `${data.progressMetrics.completionPercentage}%` }}
               ></div>
             </div>
@@ -212,12 +211,12 @@ export default function AICreditRoadmap() {
             <div className="mt-3 flex items-center space-x-2">
               {data.progressMetrics.onTrack ? (
                 <>
-                  <span className="text-green-300">✓</span>
+                  <span className="text-green-300"></span>
                   <span className="text-sm text-green-100">On track to reach your goal!</span>
                 </>
               ) : (
                 <>
-                  <span className="text-yellow-300">⚡</span>
+                  <span className="text-yellow-300"></span>
                   <span className="text-sm text-yellow-100">Need to accelerate progress</span>
                 </>
               )}
@@ -225,14 +224,14 @@ export default function AICreditRoadmap() {
           </div>
 
           {/* Roadmap Milestones */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
             <h3 className="font-semibold mb-3 flex items-center space-x-2">
-              <span className="text-xl">📅</span>
+              <span className="text-xl"></span>
               <span>Credit Building Milestones</span>
             </h3>
             <div className="space-y-3">
               {data.milestones.map((milestone, idx) => (
-                <div key={milestone.id} className="bg-white/10 rounded-lg p-3">
+                <div key={milestone.id} className="bg-white dark:bg-slate-800/10 rounded-lg p-3">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-start space-x-2">
                       {getStatusIcon(milestone.status)}
@@ -269,14 +268,14 @@ export default function AICreditRoadmap() {
           </div>
 
           {/* Timeline Predictions */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
             <h3 className="font-semibold mb-3 flex items-center space-x-2">
               <span className="text-xl">⏰</span>
               <span>Score Timeline Predictions</span>
             </h3>
             <div className="space-y-2">
               {data.timelinePredictions.map((pred, idx) => (
-                <div key={idx} className="flex items-center justify-between text-sm bg-white/10 rounded-lg p-2">
+                <div key={idx} className="flex items-center justify-between text-sm bg-white dark:bg-slate-800/10 rounded-lg p-2">
                   <div>
                     <div className="font-medium">{pred.milestone}</div>
                     <div className="text-xs text-green-200">
@@ -293,14 +292,14 @@ export default function AICreditRoadmap() {
           </div>
 
           {/* Prioritized Actions */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
             <h3 className="font-semibold mb-3 flex items-center space-x-2">
-              <span className="text-xl">⚡</span>
+              <span className="text-xl"></span>
               <span>Priority Actions (Next 30 Days)</span>
             </h3>
             <div className="space-y-2">
               {data.prioritizedActions.slice(0, 4).map((action) => (
-                <div key={action.id} className="bg-white/10 rounded-lg p-3">
+                <div key={action.id} className="bg-white dark:bg-slate-800/10 rounded-lg p-3">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
@@ -321,7 +320,7 @@ export default function AICreditRoadmap() {
                   </div>
                   {action.completed && (
                     <div className="flex items-center space-x-1 text-xs text-green-300">
-                      <span>✓</span>
+                      <span></span>
                       <span>Completed</span>
                     </div>
                   )}
@@ -331,11 +330,11 @@ export default function AICreditRoadmap() {
           </div>
 
           {/* Strategy Recommendations */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
             <h3 className="font-semibold mb-3">Recommended Strategies</h3>
             <div className="space-y-3">
               {data.strategyRecommendations.slice(0, 2).map((strategy) => (
-                <div key={strategy.id} className="bg-white/10 rounded-lg p-3">
+                <div key={strategy.id} className="bg-white dark:bg-slate-800/10 rounded-lg p-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium">{strategy.strategy}</span>
                     <div className="flex items-center space-x-2">
@@ -364,7 +363,7 @@ export default function AICreditRoadmap() {
           </div>
 
           {/* Next Steps */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
             <h3 className="font-semibold mb-3">Your Next Steps</h3>
             <ul className="space-y-2">
               {data.nextSteps.map((step, idx) => (

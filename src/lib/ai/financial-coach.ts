@@ -271,7 +271,7 @@ export class FinancialCoach {
         generatedAt: new Date(),
       };
     } catch (error) {
-      console.error('AI advice failed:', error);
+      // FinancialCoach error: AI advice failed
       // Return fallback advice
       return {
         question,
@@ -619,7 +619,7 @@ Respond in JSON format with keys: behavioralInsights (array), nextSteps (array),
         encouragement: parsed.encouragement || 'You can do this! Every step forward is progress.',
       };
     } catch (error) {
-      console.error('AI analysis failed:', error);
+      // FinancialCoach error: AI analysis failed
       return {
         behavioralInsights: ['Track every dollar', 'Build your emergency fund', 'Focus on one step at a time'],
         nextSteps: ['Create a budget', 'Save $1,000', 'List all debts'],
@@ -671,7 +671,7 @@ Generate 3-5 prioritized recommendations with specific action steps.`;
         return JSON.parse(jsonMatch[0]);
       }
     } catch (error) {
-      console.error('Failed to parse action plan:', error);
+      // FinancialCoach error: Failed to parse action plan
     }
 
     return {
@@ -690,7 +690,7 @@ Generate 3-5 prioritized recommendations with specific action steps.`;
         return JSON.parse(jsonMatch[0]);
       }
     } catch (error) {
-      console.error('Failed to parse advice:', error);
+      // FinancialCoach error: Failed to parse advice
     }
 
     return {
@@ -709,7 +709,7 @@ Generate 3-5 prioritized recommendations with specific action steps.`;
         return JSON.parse(jsonMatch[0]);
       }
     } catch (error) {
-      console.error('Failed to parse recommendations:', error);
+      // FinancialCoach error: Failed to parse recommendations
     }
 
     return [];

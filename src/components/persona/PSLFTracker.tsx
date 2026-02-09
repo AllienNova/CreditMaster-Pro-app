@@ -33,9 +33,9 @@ export default function PSLFTracker() {
   estimatedCompletionDate.setMonth(estimatedCompletionDate.getMonth() + monthsRemaining);
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">PSLF Tracker</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">PSLF Tracker</h2>
         <InfoTooltip content="Track your progress toward Public Service Loan Forgiveness" />
       </div>
 
@@ -56,14 +56,14 @@ export default function PSLFTracker() {
           <div className="text-3xl font-bold text-blue-600">
             {remainingPayments} payments left
           </div>
-          <div className="text-gray-600 mt-2">
+          <div className="text-gray-600 dark:text-slate-300 mt-2">
             Estimated completion:{' '}
             {estimatedCompletionDate.toLocaleDateString('en-US', {
               month: 'long',
               year: 'numeric',
             })}
           </div>
-          <div className="text-sm text-gray-500 mt-1">
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             ({yearsRemaining} years, {monthsRemainingInYear} months)
           </div>
         </div>
@@ -89,11 +89,11 @@ export default function PSLFTracker() {
           </div>
         </div>
 
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-          <div className="text-sm text-purple-700 font-medium mb-1">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="text-sm text-blue-700 font-medium mb-1">
             Estimated Forgiveness
           </div>
-          <div className="text-2xl font-bold text-purple-900">
+          <div className="text-2xl font-bold text-blue-900">
             ${pslfData.estimatedForgiveness.toLocaleString()}
           </div>
         </div>
@@ -101,9 +101,9 @@ export default function PSLFTracker() {
 
       {/* Eligibility Status */}
       <div className="space-y-4 mb-8">
-        <h3 className="text-lg font-semibold text-gray-900">Eligibility Status</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Eligibility Status</h3>
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
           <div className="flex items-center space-x-3">
             <div
               className={`w-6 h-6 rounded-full flex items-center justify-center ${
@@ -137,8 +137,8 @@ export default function PSLFTracker() {
               )}
             </div>
             <div>
-              <div className="font-medium text-gray-900">Qualifying Employer</div>
-              <div className="text-sm text-gray-600">
+              <div className="font-medium text-gray-900 dark:text-white">Qualifying Employer</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300">
                 {pslfData.employerQualifies
                   ? 'Your employer qualifies for PSLF'
                   : 'Your employer does not qualify for PSLF'}
@@ -153,7 +153,7 @@ export default function PSLFTracker() {
           </button>
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
           <div className="flex items-center space-x-3">
             <div className="w-6 h-6 rounded-full flex items-center justify-center bg-green-500">
               <svg
@@ -169,8 +169,8 @@ export default function PSLFTracker() {
               </svg>
             </div>
             <div>
-              <div className="font-medium text-gray-900">Loan Type</div>
-              <div className="text-sm text-gray-600">
+              <div className="font-medium text-gray-900 dark:text-white">Loan Type</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300">
                 {pslfData.loanType === 'direct'
                   ? 'Direct Loans (Eligible)'
                   : 'Non-Direct Loans (May need consolidation)'}
@@ -185,7 +185,7 @@ export default function PSLFTracker() {
           </button>
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
           <div className="flex items-center space-x-3">
             <div className="w-6 h-6 rounded-full flex items-center justify-center bg-green-500">
               <svg
@@ -201,8 +201,8 @@ export default function PSLFTracker() {
               </svg>
             </div>
             <div>
-              <div className="font-medium text-gray-900">Repayment Plan</div>
-              <div className="text-sm text-gray-600">
+              <div className="font-medium text-gray-900 dark:text-white">Repayment Plan</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300">
                 {pslfData.repaymentPlan} (Qualifying)
               </div>
             </div>

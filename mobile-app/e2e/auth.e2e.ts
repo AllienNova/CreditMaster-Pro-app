@@ -1,5 +1,5 @@
 /**
- * CPFI Authentication E2E Tests
+ * Fynvita Authentication E2E Tests
  * Tests complete authentication flows using Detox
  */
 

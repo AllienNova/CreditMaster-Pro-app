@@ -447,8 +447,9 @@ export class UnifiedMarketDataService {
             }))
           );
         }
-      } catch (error) {
-        console.error('Alpha Vantage search error:', error);
+      } catch (_error) {
+        // MarketDataService error: Alpha Vantage search error
+        void _error;
       }
     }
 
@@ -466,8 +467,9 @@ export class UnifiedMarketDataService {
             }))
           );
         }
-      } catch (error) {
-        console.error('CoinGecko search error:', error);
+      } catch (_error) {
+        // MarketDataService error: CoinGecko search error
+        void _error;
       }
     }
 
@@ -484,7 +486,7 @@ export class UnifiedMarketDataService {
    */
   subscribeToRealTime(symbols: string[], callback: RealtimeCallback): () => void {
     if (!this.isProviderHealthy('Polygon')) {
-      console.warn('Polygon unavailable for real-time data');
+      // MarketDataService warning: Polygon unavailable for real-time data
       return () => {};
     }
 

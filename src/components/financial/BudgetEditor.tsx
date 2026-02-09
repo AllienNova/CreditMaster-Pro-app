@@ -80,20 +80,22 @@ export default function BudgetEditor({ budget, onSave, onCancel }: BudgetEditorP
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6" data-testid="budget-editor">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Edit Budget</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Budget</h3>
         <div className="flex items-center gap-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            data-testid="budget-cancel-button"
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
+            data-testid="budget-save-button"
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Saving...' : 'Save Changes'}
@@ -102,16 +104,16 @@ export default function BudgetEditor({ budget, onSave, onCancel }: BudgetEditorP
       </div>
 
       {/* Total Budget Summary */}
-      <div className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
+      <div className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-gray-600 mb-1">Total Budget</div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Total Budget</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {formatCurrency(editedBudget.totalBudgeted)}
             </div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-600 mb-1">Total Spent</div>
+            <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Total Spent</div>
             <div className="text-2xl font-bold text-blue-600">
               {formatCurrency(editedBudget.totalSpent)}
             </div>
@@ -122,13 +124,13 @@ export default function BudgetEditor({ budget, onSave, onCancel }: BudgetEditorP
       {/* Category Editors */}
       <div className="space-y-4">
         {editedBudget.categories.map((category, index) => (
-          <div key={category.category} className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+          <div key={category.category} className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:border-blue-300 transition-colors">
             <div className="flex items-center justify-between mb-3">
               <div className="flex-1">
-                <div className="font-medium text-gray-900 capitalize mb-1">
+                <div className="font-medium text-gray-900 dark:text-white capitalize mb-1">
                   {category.category.replace(/_/g, ' ')}
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-500 dark:text-slate-400">
                   {category.transactions} transactions • {formatCurrency(category.spent)} spent
                 </div>
               </div>
@@ -136,16 +138,16 @@ export default function BudgetEditor({ budget, onSave, onCancel }: BudgetEditorP
             
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                   Budget Amount
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400">$</span>
                   <input
                     type="number"
                     value={category.budgeted}
                     onChange={(e) => handleCategoryChange(index, parseFloat(e.target.value) || 0)}
-                    className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     min="0"
                     step="10"
                   />
@@ -153,9 +155,9 @@ export default function BudgetEditor({ budget, onSave, onCancel }: BudgetEditorP
               </div>
               
               <div className="flex-1">
-                <div className="text-sm font-medium text-gray-700 mb-2">Status</div>
+                <div className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Status</div>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div className="flex-1 bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                     <div
                       className={`h-full rounded-full transition-all ${
                         category.percentUsed >= 100 ? 'bg-red-500' :
@@ -165,7 +167,7 @@ export default function BudgetEditor({ budget, onSave, onCancel }: BudgetEditorP
                       style={{ width: `${Math.min(100, category.percentUsed)}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm font-medium text-gray-600 min-w-[50px]">
+                  <span className="text-sm font-medium text-gray-600 dark:text-slate-300 min-w-[50px]">
                     {category.percentUsed.toFixed(0)}%
                   </span>
                 </div>
@@ -177,4 +179,3 @@ export default function BudgetEditor({ budget, onSave, onCancel }: BudgetEditorP
     </div>
   );
 }
-

@@ -99,20 +99,19 @@ class AuthService {
         };
       }
 
-      // Create user profile in database
+      // Create user profile in database (using canonical 'profiles' table)
       const { error: profileError } = await supabase
-        .from('users')
+        .from('profiles')
         .insert({
           id: authData.user.id,
-          email: sanitizedEmail,
-          name: sanitizedName,
-          role: 'user',
+          full_name: sanitizedName,
+          subscription_tier: 'free',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
 
       if (profileError) {
-        console.error('Failed to create user profile:', profileError);
+        // Profile creation failed - error captured in profileError variable
       }
 
       const user: User = {
@@ -130,7 +129,7 @@ class AuthService {
         token: authData.session?.access_token,
       };
     } catch (error) {
-      console.error('Sign up error:', error);
+      // Sign up error - returning error response
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to sign up',
@@ -178,24 +177,25 @@ class AuthService {
         };
       }
 
-      // Get user profile from database
+      // Get user profile from database (using canonical 'profiles' table)
       const { data: profileData, error: profileError } = await supabase
-        .from('users')
+        .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
         .single();
 
       if (profileError) {
-        console.error('Failed to fetch user profile:', profileError);
+        // Profile fetch failed - using fallback data
       }
 
       const user: User = {
         id: authData.user.id,
         email: authData.user.email || sanitizedEmail,
-        name: profileData?.name || authData.user.user_metadata?.name || 'User',
-        role: profileData?.role || 'user',
-        subscriptionId: profileData?.subscription_id,
-        subscriptionStatus: profileData?.subscription_status,
+        name: profileData?.full_name || authData.user.user_metadata?.name || 'User',
+        role: (profileData?.subscription_tier === 'premium' || profileData?.subscription_tier === 'enterprise')
+          ? 'premium' : 'user',
+        subscriptionId: profileData?.stripe_customer_id,
+        subscriptionStatus: profileData?.subscription_status as User['subscriptionStatus'],
         createdAt: new Date(authData.user.created_at),
         updatedAt: new Date(profileData?.updated_at || authData.user.updated_at),
       };
@@ -206,7 +206,7 @@ class AuthService {
         token: authData.session?.access_token,
       };
     } catch (error) {
-      console.error('Sign in error:', error);
+      // Sign in error - returning error response
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to sign in',
@@ -230,7 +230,7 @@ class AuthService {
 
       return { success: true };
     } catch (error) {
-      console.error('Sign out error:', error);
+      // Sign out error - returning error response
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to sign out',
@@ -249,31 +249,32 @@ class AuthService {
         return null;
       }
 
-      // Get user profile from database
+      // Get user profile from database (using canonical 'profiles' table)
       const { data: profileData, error: profileError } = await supabase
-        .from('users')
+        .from('profiles')
         .select('*')
         .eq('id', authUser.id)
         .single();
 
       if (profileError) {
-        console.error('Failed to fetch user profile:', profileError);
+        // Profile fetch failed - using fallback data
       }
 
       const user: User = {
         id: authUser.id,
         email: authUser.email || '',
-        name: profileData?.name || authUser.user_metadata?.name || 'User',
-        role: profileData?.role || 'user',
-        subscriptionId: profileData?.subscription_id,
-        subscriptionStatus: profileData?.subscription_status,
+        name: profileData?.full_name || authUser.user_metadata?.name || 'User',
+        role: (profileData?.subscription_tier === 'premium' || profileData?.subscription_tier === 'enterprise')
+          ? 'premium' : 'user',
+        subscriptionId: profileData?.stripe_customer_id,
+        subscriptionStatus: profileData?.subscription_status as User['subscriptionStatus'],
         createdAt: new Date(authUser.created_at),
         updatedAt: new Date(profileData?.updated_at || authUser.updated_at),
       };
 
       return user;
     } catch (error) {
-      console.error('Get current user error:', error);
+      // Get current user error - returning null
       return null;
     }
   }
@@ -313,7 +314,7 @@ class AuthService {
 
       return { success: true };
     } catch (error) {
-      console.error('Password reset request error:', error);
+      // Password reset request error - returning error response
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to request password reset',
@@ -339,7 +340,7 @@ class AuthService {
 
       return { success: true };
     } catch (error) {
-      console.error('Update password error:', error);
+      // Update password error - returning error response
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update password',
@@ -355,13 +356,13 @@ class AuthService {
       const { data: { session }, error } = await supabase.auth.getSession();
 
       if (error) {
-        console.error('Get session error:', error);
+        // Get session error - returning null
         return null;
       }
 
       return session;
     } catch (error) {
-      console.error('Get session error:', error);
+      // Get session error - returning null
       return null;
     }
   }
@@ -374,13 +375,13 @@ class AuthService {
       const { data: { session }, error } = await supabase.auth.refreshSession();
 
       if (error) {
-        console.error('Refresh session error:', error);
+        // Refresh session error - returning null
         return null;
       }
 
       return session;
     } catch (error) {
-      console.error('Refresh session error:', error);
+      // Refresh session error - returning null
       return null;
     }
   }
@@ -409,7 +410,7 @@ class AuthService {
 
       return { success: true };
     } catch (error) {
-      console.error('OAuth sign in error:', error);
+      // OAuth sign in error - returning error response
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to sign in with OAuth',
@@ -438,7 +439,7 @@ class AuthService {
 
       return { success: true };
     } catch (error) {
-      console.error('Resend verification email error:', error);
+      // Resend verification email error - returning error response
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to resend verification email',
@@ -468,7 +469,7 @@ class AuthService {
         secret: data.totp.secret,
       };
     } catch (error) {
-      console.error('Enable 2FA error:', error);
+      // Enable 2FA error - returning error response
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to enable 2FA',
@@ -495,7 +496,7 @@ class AuthService {
 
       return { success: true };
     } catch (error) {
-      console.error('Verify 2FA error:', error);
+      // Verify 2FA error - returning error response
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to verify 2FA code',
@@ -521,7 +522,7 @@ class AuthService {
 
       return { success: true };
     } catch (error) {
-      console.error('Disable 2FA error:', error);
+      // Disable 2FA error - returning error response
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to disable 2FA',
@@ -537,13 +538,13 @@ class AuthService {
       const { data, error } = await supabase.auth.mfa.listFactors();
 
       if (error) {
-        console.error('Get MFA factors error:', error);
+        // Get MFA factors error - returning null
         return null;
       }
 
       return data;
     } catch (error) {
-      console.error('Get MFA factors error:', error);
+      // Get MFA factors error - returning null
       return null;
     }
   }

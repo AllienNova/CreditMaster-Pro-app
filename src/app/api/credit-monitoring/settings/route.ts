@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
       success: true,
       data: settings,
     });
-  } catch (error) {
-    console.error('Error fetching monitoring settings:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to fetch monitoring settings' },
       { status: 500 }
@@ -75,8 +75,8 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
     });
-  } catch (error) {
-    console.error('Error updating monitoring settings:', error);
+  } catch (_error) {
+    // Error silently caught
     return NextResponse.json(
       { error: 'Failed to update monitoring settings' },
       { status: 500 }

@@ -289,14 +289,14 @@ export function decryptPIIFields<T extends Record<string, any>>(
 /**
  * Secure data deletion (overwrite before delete)
  */
-export function secureDelete(data: any): void {
+export function secureDelete(data: Record<string, unknown>): void {
   if (typeof data === 'object' && data !== null) {
     for (const key in data) {
       if (typeof data[key] === 'string') {
         // Overwrite with random data
-        data[key] = encryption.generateToken(data[key].length);
-      } else if (typeof data[key] === 'object') {
-        secureDelete(data[key]);
+        (data as Record<string, string>)[key] = encryption.generateToken(data[key].length);
+      } else if (typeof data[key] === 'object' && data[key] !== null) {
+        secureDelete(data[key] as Record<string, unknown>);
       }
     }
   }

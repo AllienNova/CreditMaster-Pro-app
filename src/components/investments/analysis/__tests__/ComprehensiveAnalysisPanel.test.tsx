@@ -9,9 +9,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ComprehensiveAnalysisPanel } from '../ComprehensiveAnalysisPanel';
 
-// Mock fetch
-const mockFetch = jest.fn();
-global.fetch = mockFetch as any;
+// Mock useMarketDataWebSocket hook
+jest.mock('@/hooks/useMarketDataWebSocket', () => ({
+  useMarketDataWebSocket: () => ({
+    priceUpdate: null,
+    status: 'disconnected' as const,
+    connect: jest.fn(),
+    disconnect: jest.fn(),
+  }),
+}));
 
 // Mock URL methods for export tests
 global.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
@@ -19,8 +25,9 @@ global.URL.revokeObjectURL = jest.fn();
 
 describe('ComprehensiveAnalysisPanel', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockFetch.mockClear();
+    // Clear URL mocks only - let MSW handle fetch
+    (global.URL.createObjectURL as jest.Mock).mockClear();
+    (global.URL.revokeObjectURL as jest.Mock).mockClear();
   });
 
   describe('Component Rendering', () => {
@@ -71,113 +78,50 @@ describe('ComprehensiveAnalysisPanel', () => {
   });
 
   describe('API Calls', () => {
-    const mockAnalysisResponse = {
-      success: true,
-      data: {
-        symbol: 'AAPL',
-        analyzedAt: '2026-01-03T12:00:00Z',
-        currentPrice: 150.25,
-        overallSignal: 'buy',
-        overallConfidence: 0.85,
-        riskLevel: 'moderate',
-        compositeScore: {
-          overall: 75,
-          technical: 80,
-          fundamental: 70,
-          sentiment: 75,
-          pattern: 72,
-          confidence: 0.85,
-          signal: 'buy',
-        },
-        correlationAnalysis: {
-          overallAlignment: 0.78,
-          alignmentLevel: 'strong',
-        },
-        keyInsights: ['Strong technical momentum', 'Positive earnings trend'],
-        risks: ['Market volatility', 'Sector rotation risk'],
-        opportunities: ['Growth potential', 'Market expansion'],
-        summary: 'Strong buy signal with high confidence',
-      },
-    };
+    // MSW handler will automatically return mock data for /api/investments/comprehensive-analysis
+    // No need to manually mock fetch - MSW handles it
 
     it('should call API when analyze button is clicked', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockAnalysisResponse,
-      });
-
       render(<ComprehensiveAnalysisPanel symbol="AAPL" />);
 
       const button = screen.getByRole('button', { name: /Analyze/i });
       fireEvent.click(button);
 
-      await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledTimes(1);
-        // Just verify fetch was called, don't check exact arguments
-        const callArgs = mockFetch.mock.calls[0];
-        expect(callArgs[0]).toContain('comprehensive-analysis');
-      });
+      // Wait for the analysis results to appear (MSW will return mock data)
+      await waitFor(
+        () => {
+          // Check that analysis results are displayed (look for BUY signal)
+          const text = screen.getByText(/BUY/);
+          expect(text).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
     });
 
     it('should display loading state during API call', async () => {
-      mockFetch.mockImplementation(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(() => resolve({ json: async () => mockAnalysisResponse }), 100)
-          )
-      );
-
       render(<ComprehensiveAnalysisPanel symbol="AAPL" />);
 
       const button = screen.getByRole('button', { name: /Analyze/i });
       fireEvent.click(button);
 
-      // Button should show loading state
+      // Button should show loading state immediately
       expect(button).toHaveTextContent(/Analyzing/i);
       expect(button).toBeDisabled();
 
-      await waitFor(() => {
-        expect(button).not.toHaveTextContent(/Analyzing/i);
-      });
+      // Wait for loading to complete
+      await waitFor(
+        () => {
+          expect(button).not.toHaveTextContent(/Analyzing/i);
+        },
+        { timeout: 3000 }
+      );
     });
   });
 
   describe('Analysis Results Display', () => {
-    const mockAnalysisResponse = {
-      success: true,
-      data: {
-        symbol: 'AAPL',
-        analyzedAt: '2026-01-03T12:00:00Z',
-        currentPrice: 150.25,
-        overallSignal: 'buy',
-        overallConfidence: 0.85,
-        riskLevel: 'moderate',
-        compositeScore: {
-          overall: 75,
-          technical: 80,
-          fundamental: 70,
-          sentiment: 75,
-          pattern: 72,
-          confidence: 0.85,
-          signal: 'buy',
-        },
-        correlationAnalysis: {
-          overallAlignment: 0.78,
-          alignmentLevel: 'strong',
-        },
-        keyInsights: ['Strong technical momentum', 'Positive earnings trend'],
-        risks: ['Market volatility', 'Sector rotation risk'],
-        opportunities: ['Growth potential', 'Market expansion'],
-        summary: 'Strong buy signal with high confidence',
-      },
-    };
+    // MSW handler will automatically return mock data
 
     it('should display analysis results after successful API call', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockAnalysisResponse,
-      });
-
       render(<ComprehensiveAnalysisPanel symbol="AAPL" />);
 
       const button = screen.getByRole('button', { name: /Analyze/i });
@@ -194,78 +138,16 @@ describe('ComprehensiveAnalysisPanel', () => {
     });
 
     it('should handle network error gracefully', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+      // Import server to override handler for this test
+      const { server } = require('@/__tests__/mocks/server');
+      const { rest } = require('msw');
 
-      render(<ComprehensiveAnalysisPanel symbol="AAPL" />);
-
-      const button = screen.getByRole('button', { name: /Analyze/i });
-      fireEvent.click(button);
-
-      await waitFor(() => {
-        // Error message should be displayed
-        expect(screen.getByText(/Network error/i)).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Export Functionality', () => {
-    const mockAnalysisResponse = {
-      success: true,
-      data: {
-        symbol: 'AAPL',
-        analyzedAt: '2026-01-03T12:00:00Z',
-        currentPrice: 150.25,
-        overallSignal: 'buy',
-        overallConfidence: 0.85,
-        riskLevel: 'moderate',
-        compositeScore: {
-          overall: 75,
-          technical: 80,
-          fundamental: 70,
-          sentiment: 75,
-          pattern: 72,
-          confidence: 0.85,
-          signal: 'buy',
-        },
-        correlationAnalysis: {
-          overallAlignment: 0.78,
-          alignmentLevel: 'strong',
-        },
-        keyInsights: ['Strong technical momentum'],
-        risks: ['Market volatility'],
-        opportunities: ['Growth potential'],
-        summary: 'Strong buy signal',
-      },
-    };
-
-    let mockAnchor: any;
-
-    beforeEach(() => {
-      // Mock document.createElement and appendChild/removeChild
-      mockAnchor = {
-        href: '',
-        download: '',
-        click: jest.fn(),
-      };
-      jest.spyOn(document, 'createElement').mockReturnValue(mockAnchor);
-      jest.spyOn(document.body, 'appendChild').mockImplementation(() => mockAnchor);
-      jest.spyOn(document.body, 'removeChild').mockImplementation(() => mockAnchor);
-    });
-
-    it('should not show export buttons before analysis', () => {
-      render(<ComprehensiveAnalysisPanel symbol="AAPL" />);
-
-      // Export buttons should not be visible before analysis
-      expect(screen.queryByText(/📊 CSV/)).not.toBeInTheDocument();
-      expect(screen.queryByText(/📄 JSON/)).not.toBeInTheDocument();
-      expect(screen.queryByText(/📑 PDF/)).not.toBeInTheDocument();
-    });
-
-    it('should show export buttons after successful analysis', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockAnalysisResponse,
-      });
+      // Override MSW handler to return error for this test only
+      server.use(
+        rest.post('http://localhost/api/investments/comprehensive-analysis', (req: any, res: any, ctx: any) => {
+          return res(ctx.status(500), ctx.json({ success: false, error: 'Network error' }));
+        })
+      );
 
       render(<ComprehensiveAnalysisPanel symbol="AAPL" />);
 
@@ -274,20 +156,43 @@ describe('ComprehensiveAnalysisPanel', () => {
 
       await waitFor(
         () => {
-          expect(screen.getByText(/📊 CSV/)).toBeInTheDocument();
-          expect(screen.getByText(/📄 JSON/)).toBeInTheDocument();
-          expect(screen.getByText(/📑 PDF/)).toBeInTheDocument();
+          // Error message should be displayed - look for the text content
+          expect(screen.getByText(/Network error/)).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
+    });
+  });
+
+  describe('Export Functionality', () => {
+    // MSW handler will automatically return mock data
+
+    it('should not show export buttons before analysis', () => {
+      render(<ComprehensiveAnalysisPanel symbol="AAPL" />);
+
+      // Export buttons should not be visible before analysis
+      expect(screen.queryByText(/CSV/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/JSON/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/PDF/)).not.toBeInTheDocument();
+    });
+
+    it('should show export buttons after successful analysis', async () => {
+      render(<ComprehensiveAnalysisPanel symbol="AAPL" />);
+
+      const button = screen.getByRole('button', { name: /Analyze/i });
+      fireEvent.click(button);
+
+      await waitFor(
+        () => {
+          expect(screen.getByText(/CSV/)).toBeInTheDocument();
+          expect(screen.getByText(/JSON/)).toBeInTheDocument();
+          expect(screen.getByText(/PDF/)).toBeInTheDocument();
         },
         { timeout: 3000 }
       );
     });
 
     it('should trigger CSV export when CSV button is clicked', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockAnalysisResponse,
-      });
-
       render(<ComprehensiveAnalysisPanel symbol="AAPL" />);
 
       const analyzeButton = screen.getByRole('button', { name: /Analyze/i });
@@ -295,18 +200,33 @@ describe('ComprehensiveAnalysisPanel', () => {
 
       await waitFor(
         () => {
-          expect(screen.getByText(/📊 CSV/)).toBeInTheDocument();
+          expect(screen.getByText(/CSV/)).toBeInTheDocument();
         },
         { timeout: 3000 }
       );
 
-      const csvButton = screen.getByText(/📊 CSV/);
+      // Now set up mocks for export functionality AFTER component is rendered
+      const mockAnchor = {
+        href: '',
+        download: '',
+        click: jest.fn(),
+      };
+      const createElementSpy = jest.spyOn(document, 'createElement').mockReturnValue(mockAnchor as any);
+      const appendChildSpy = jest.spyOn(document.body, 'appendChild').mockImplementation(() => mockAnchor as any);
+      const removeChildSpy = jest.spyOn(document.body, 'removeChild').mockImplementation(() => mockAnchor as any);
+
+      const csvButton = screen.getByText(/CSV/);
       fireEvent.click(csvButton);
 
       await waitFor(() => {
         expect(global.URL.createObjectURL).toHaveBeenCalled();
-        expect(document.createElement).toHaveBeenCalledWith('a');
+        expect(createElementSpy).toHaveBeenCalledWith('a');
       });
+
+      // Clean up spies
+      createElementSpy.mockRestore();
+      appendChildSpy.mockRestore();
+      removeChildSpy.mockRestore();
     });
   });
 });

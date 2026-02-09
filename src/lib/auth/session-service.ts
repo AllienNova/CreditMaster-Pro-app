@@ -73,7 +73,7 @@ class SessionService {
         sessionId: sessionData.id,
       };
     } catch (error) {
-      console.error('Create session error:', error);
+      // SessionService error: Create session error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to create session',
@@ -94,7 +94,7 @@ class SessionService {
         .order('last_active_at', { ascending: false });
 
       if (error) {
-        console.error('Get user sessions error:', error);
+        // SessionService error: Get user sessions error
         return [];
       }
 
@@ -113,7 +113,7 @@ class SessionService {
         isCurrent: session.id === currentSessionId,
       }));
     } catch (error) {
-      console.error('Get user sessions error:', error);
+      // SessionService error: Get user sessions error
       return [];
     }
   }
@@ -139,7 +139,7 @@ class SessionService {
 
       return { success: true };
     } catch (error) {
-      console.error('Update session activity error:', error);
+      // SessionService error: Update session activity error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update session',
@@ -167,7 +167,7 @@ class SessionService {
 
       return { success: true };
     } catch (error) {
-      console.error('Revoke session error:', error);
+      // SessionService error: Revoke session error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to revoke session',
@@ -195,7 +195,7 @@ class SessionService {
 
       return { success: true };
     } catch (error) {
-      console.error('Revoke all other sessions error:', error);
+      // SessionService error: Revoke all other sessions error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to revoke sessions',
@@ -222,7 +222,7 @@ class SessionService {
 
       return { success: true };
     } catch (error) {
-      console.error('Cleanup expired sessions error:', error);
+      // SessionService error: Cleanup expired sessions error
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to cleanup sessions',

@@ -1,5 +1,5 @@
 /**
- * CPFI Identity Protection Dashboard
+ * Fynvita Identity Protection Dashboard
  * Comprehensive identity monitoring and protection
  */
 

@@ -54,12 +54,12 @@ export async function GET(
       success: true,
       data: budget,
     });
-  } catch (error) {
-    console.error('Error fetching budget:', error);
+  } catch (_error) {
+    // BudgetsRoute error: Failed to fetch budget
     return NextResponse.json(
       {
         error: 'Failed to fetch budget',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: _error instanceof Error ? _error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -166,12 +166,12 @@ export async function PATCH(
       data: budget,
       message: 'Budget updated successfully',
     });
-  } catch (error) {
-    console.error('Error updating budget:', error);
+  } catch (_error) {
+    // BudgetsRoute error: Failed to update budget
     return NextResponse.json(
       {
         error: 'Failed to update budget',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: _error instanceof Error ? _error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -215,12 +215,12 @@ export async function DELETE(
       success: true,
       message: 'Budget deleted successfully',
     });
-  } catch (error) {
-    console.error('Error deleting budget:', error);
+  } catch (_error) {
+    // BudgetsRoute error: Failed to delete budget
     return NextResponse.json(
       {
         error: 'Failed to delete budget',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: _error instanceof Error ? _error.message : 'Unknown error',
       },
       { status: 500 }
     );

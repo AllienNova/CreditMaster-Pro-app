@@ -102,27 +102,27 @@ export default function PortfolioOverview() {
           value={formatCurrency(portfolio.totalValue)}
           subValue={`${formatCurrency(portfolio.totalGainLoss)} (${formatPercent(portfolio.totalGainLossPercent)})`}
           isPositive={portfolio.totalGainLoss >= 0}
-          icon="💰"
+          icon=""
         />
         <SummaryCard
           title="Day Change"
           value={formatCurrency(portfolio.dayChange)}
           subValue={formatPercent(portfolio.dayChangePercent)}
           isPositive={portfolio.dayChange >= 0}
-          icon="📈"
+          icon=""
         />
         <SummaryCard
           title="Total Cost"
           value={formatCurrency(portfolio.totalCost)}
           subValue={`${portfolio.holdings.length} holdings`}
-          icon="💵"
+          icon=""
         />
         <SummaryCard
           title="Total Return"
           value={formatPercent(portfolio.totalGainLossPercent)}
           subValue={formatCurrency(portfolio.totalGainLoss)}
           isPositive={portfolio.totalGainLoss >= 0}
-          icon="🎯"
+          icon=""
         />
       </div>
 
@@ -133,58 +133,62 @@ export default function PortfolioOverview() {
           onClick={() => router.push('/investments/holdings')}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
-          <span>➕</span> Add Holding
+          <span></span> Add Holding
         </button>
         <button
           type="button"
           onClick={() => router.push('/investments/analyze/AAPL')}
           className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
         >
-          <span>📊</span> Analyze Stock
+          <span></span> Analyze Stock
         </button>
         <button
           type="button"
           onClick={() => router.push('/investments/signals')}
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
-          <span>📡</span> View Signals
+          <span></span> View Signals
         </button>
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Allocation Chart */}
-        <ChartContainer title="Portfolio Allocation" className="h-[400px]">
-          <PieChartComponent
-            data={portfolio.allocation.map((a) => ({
-              name: a.name,
-              value: a.value,
-            }))}
-            height={320}
-            showLabels
-            showLegend
-            innerRadius={60}
-            outerRadius={100}
-            currency
-          />
-        </ChartContainer>
+        <div data-testid="asset-allocation">
+          <ChartContainer title="Portfolio Allocation" className="h-[400px]">
+            <PieChartComponent
+              data={portfolio.allocation.map((a) => ({
+                name: a.name,
+                value: a.value,
+              }))}
+              height={320}
+              showLabels
+              showLegend
+              innerRadius={60}
+              outerRadius={100}
+              currency
+            />
+          </ChartContainer>
+        </div>
 
         {/* Performance Chart */}
-        <ChartContainer title="Performance" className="h-[400px]">
-          <DateRangeSelector selected={dateRange} onSelect={setDateRange} />
-          <AreaChartComponent
-            data={portfolio.performanceHistory.map((p) => ({
-              label: p.date,
-              value: p.value,
-            }))}
-            areas={[
-              { dataKey: 'value', name: 'Portfolio Value', color: '#3B82F6' },
-            ]}
-            height={280}
-            currency
-            showLegend={false}
-          />
-        </ChartContainer>
+        <div data-testid="performance-chart">
+          <ChartContainer title="Performance" className="h-[400px]">
+            <DateRangeSelector selected={dateRange} onSelect={setDateRange} />
+            <AreaChartComponent
+              data={portfolio.performanceHistory.map((p) => ({
+                label: p.date,
+                value: p.value,
+              }))}
+              areas={[
+                { dataKey: 'value', name: 'Portfolio Value', color: '#3B82F6' },
+              ]}
+              height={280}
+              currency
+              showLegend={false}
+            />
+          </ChartContainer>
+        </div>
       </div>
 
       {/* Holdings Table */}
@@ -215,31 +219,35 @@ function SummaryCard({
   isPositive,
   icon,
 }: SummaryCardProps) {
+  const valueTestId =
+    title === 'Total Value'
+      ? 'portfolio-value'
+      : title === 'Total Return'
+        ? 'total-gain-loss'
+        : undefined;
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6" data-testid="summary-card">
       <div className="flex items-center justify-between">
         <span className="text-2xl">{icon}</span>
         {isPositive !== undefined && (
           <span
-            className={`text-sm font-medium ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+            className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600 dark:text-red-400'}`}
           >
             {isPositive ? '▲' : '▼'}
           </span>
         )}
       </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{title}</p>
-      <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+      <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">{title}</p>
+      <p
+        className="text-2xl font-bold text-gray-900 dark:text-white mt-1"
+        data-testid={valueTestId}
+      >
         {value}
       </p>
       {subValue && (
         <p
-          className={`text-sm mt-1 ${
-            isPositive !== undefined
-              ? isPositive
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-red-600 dark:text-red-400'
-              : 'text-gray-500 dark:text-gray-400'
-          }`}
+          className={`text-sm mt-1 ${ isPositive !== undefined ? (isPositive ? 'text-green-600' : 'text-red-600') : 'text-gray-500 dark:text-slate-400' }`}
         >
           {subValue}
         </p>
@@ -262,11 +270,7 @@ function DateRangeSelector({ selected, onSelect }: DateRangeSelectorProps) {
           type="button"
           key={range}
           onClick={() => onSelect(range)}
-          className={`px-3 py-1 text-sm rounded ${
-            selected === range
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-          }`}
+          className={`px-3 py-1 text-sm rounded ${ selected === range ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
         >
           {range}
         </button>
@@ -316,47 +320,50 @@ function HoldingsTable({ holdings, onAnalyze }: HoldingsTableProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+    <div
+      className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden"
+      data-testid="holdings-list"
+    >
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Holdings ({holdings.length})
         </h3>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700">
+        <table className="w-full" aria-label="Holdings table">
+          <thead className="bg-gray-50 dark:bg-slate-700">
             <tr>
               <th
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600"
                 onClick={() => handleSort('symbol')}
               >
                 Symbol <SortIcon field="symbol" />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                 Name
               </th>
               <th
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600"
                 onClick={() => handleSort('shares')}
               >
                 Shares <SortIcon field="shares" />
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                 Price
               </th>
               <th
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600"
                 onClick={() => handleSort('totalValue')}
               >
                 Value <SortIcon field="totalValue" />
               </th>
               <th
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600"
                 onClick={() => handleSort('gainLoss')}
               >
                 Gain/Loss <SortIcon field="gainLoss" />
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -365,14 +372,14 @@ function HoldingsTable({ holdings, onAnalyze }: HoldingsTableProps) {
             {sortedHoldings.map((holding) => (
               <tr
                 key={holding.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="hover:bg-gray-50 dark:hover:bg-slate-700"
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="font-medium text-gray-900 dark:text-white">
                     {holding.symbol}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400 max-w-[200px] truncate">
+                <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-slate-400 max-w-[200px] truncate">
                   {holding.name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-gray-900 dark:text-white">
@@ -413,7 +420,7 @@ function HoldingsTable({ holdings, onAnalyze }: HoldingsTableProps) {
           </tbody>
         </table>
         {holdings.length === 0 && (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+          <div className="text-center py-12 text-gray-500 dark:text-slate-400">
             No holdings yet. Add your first holding to get started.
           </div>
         )}
@@ -424,12 +431,12 @@ function HoldingsTable({ holdings, onAnalyze }: HoldingsTableProps) {
 
 function EmptyPortfolio({ onAddHolding }: { onAddHolding: () => void }) {
   return (
-    <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow">
-      <span className="text-6xl">📊</span>
+    <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-lg shadow">
+      <span className="text-6xl"></span>
       <h3 className="mt-4 text-xl font-semibold text-gray-900 dark:text-white">
         No Portfolio Data
       </h3>
-      <p className="mt-2 text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+      <p className="mt-2 text-gray-500 dark:text-slate-400 max-w-md mx-auto">
         Start building your investment portfolio by adding your first holding.
       </p>
       <button
@@ -450,18 +457,18 @@ function PortfolioSkeleton() {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+            className="bg-white dark:bg-slate-800 rounded-lg shadow p-6"
           >
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4" />
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+            <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4" />
+            <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
           </div>
         ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-[400px]" />
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-[400px]" />
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 h-[400px]" />
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 h-[400px]" />
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-[300px]" />
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 h-[300px]" />
     </div>
   );
 }

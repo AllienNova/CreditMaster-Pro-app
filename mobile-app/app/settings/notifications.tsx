@@ -1,5 +1,5 @@
 /**
- * CPFI Notification Settings Screen
+ * Fynvita Notification Settings Screen
  * Manage notification preferences
  */
 

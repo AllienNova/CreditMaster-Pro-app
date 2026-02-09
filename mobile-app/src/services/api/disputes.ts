@@ -1,5 +1,5 @@
 /**
- * CPFI Mobile Disputes API Service
+ * Fynvita Mobile Disputes API Service
  * Handles all dispute-related API calls including AI-powered letter generation
  */
 

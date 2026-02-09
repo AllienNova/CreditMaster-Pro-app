@@ -1,21 +1,42 @@
 /**
  * Multi-Model Consensus API
- * 
+ *
  * Gets consensus from multiple AI models for critical decisions
  * Uses GPT-5 Pro as meta-model to synthesize responses
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { getAIOrchestrator } from '@/lib/ai-orchestrator';
 import { TaskType } from '@/lib/model-router';
 
+async function getUser() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } }
+  );
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Authentication check
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    
+
     // Validate required fields
     const { taskType, prompt } = body;
-    
+
     if (!taskType || !prompt) {
       return NextResponse.json(
         {
@@ -54,11 +75,14 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Consensus generation error:', error);
-    
+
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to generate consensus',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to generate consensus',
       },
       { status: 500 }
     );
@@ -76,4 +100,3 @@ export async function GET() {
     description: 'Get consensus from multiple AI models for critical decisions',
   });
 }
-

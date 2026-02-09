@@ -1,5 +1,5 @@
 /**
- * CPFI AI Dispute Assistant
+ * Fynvita AI Dispute Assistant
  * Conversational dispute creation with document scanning
  */
 

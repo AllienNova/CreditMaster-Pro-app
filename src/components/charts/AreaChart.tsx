@@ -18,7 +18,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { ChartTooltip } from './ChartHelpers';
-import { CHART_COLORS, formatCurrency, formatNumber } from './chartUtils';
+import { CHART_COLORS, formatCurrency, formatNumber, generateChartDescription } from './chartUtils';
 
 export interface AreaChartDataPoint {
   label: string;
@@ -47,6 +47,8 @@ export interface AreaChartProps {
   stacked?: boolean;
   animationDuration?: number;
   className?: string;
+  /** Accessible label for the chart */
+  ariaLabel?: string;
 }
 
 export default function AreaChartComponent({
@@ -61,11 +63,20 @@ export default function AreaChartComponent({
   stacked = false,
   animationDuration = 1000,
   className = '',
+  ariaLabel,
 }: AreaChartProps) {
   const formatAxis = (value: number): string => {
     if (currency) return formatCurrency(value);
     return formatNumber(value);
   };
+
+  // Generate accessible description
+  const accessibleDescription = ariaLabel || generateChartDescription(
+    'Area chart',
+    data.length,
+    undefined,
+    currency
+  );
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
     if (!active || !payload || payload.length === 0) return null;
@@ -80,9 +91,18 @@ export default function AreaChartComponent({
   ];
 
   return (
-    <div className={`w-full ${className}`} style={{ height }}>
+    <div
+      className={`w-full ${className}`}
+      style={{ height }}
+      role="img"
+      aria-label={accessibleDescription}
+    >
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+        <AreaChart
+          data={data}
+          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+          aria-hidden="true"
+        >
           <defs>
             {areas.map((area, index) => {
               const color = area.color || defaultColors[index % defaultColors.length];
@@ -96,18 +116,24 @@ export default function AreaChartComponent({
             })}
           </defs>
           {showGrid && (
-            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#E5E7EB"
+              className="dark:stroke-gray-600"
+            />
           )}
           <XAxis
             dataKey={xAxisKey}
-            tick={{ fontSize: 12, fill: '#6B7280' }}
-            tickLine={{ stroke: '#E5E7EB' }}
-            axisLine={{ stroke: '#E5E7EB' }}
+            tick={{ fontSize: 11, fill: 'currentColor' }}
+            tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
+            axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+            className="text-gray-500 dark:text-slate-400"
           />
           <YAxis
-            tick={{ fontSize: 12, fill: '#6B7280' }}
-            tickLine={{ stroke: '#E5E7EB' }}
-            axisLine={{ stroke: '#E5E7EB' }}
+            tick={{ fontSize: 11, fill: 'currentColor' }}
+            tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
+            axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+            className="text-gray-500 dark:text-slate-400"
             tickFormatter={formatAxis}
           />
           {showTooltip && <Tooltip content={<CustomTooltip />} />}

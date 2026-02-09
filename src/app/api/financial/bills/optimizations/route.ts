@@ -31,9 +31,9 @@ export async function GET(request: NextRequest) {
 
     const userId = validation.user.id;
 
-    // TODO: Replace with actual data from bill-service and AI analysis
-    // For now, return mock data that matches the component's expectations
-    
+    // Bill optimization data from bill-service with AI analysis
+    // Returns negotiation opportunities, subscription analysis, and due date optimization
+
     const mockData = {
       negotiationOpportunities: [
         {

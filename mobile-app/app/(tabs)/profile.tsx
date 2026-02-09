@@ -1,11 +1,13 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { useMemo } from 'react';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/store/authStore';
-import { lightTheme as theme } from '../../src/constants/theme';
+import { useTheme } from '../../src/hooks/useTheme';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
+  const { colors, spacing, borderRadius, fontSize, fontWeight, withOpacity } = useTheme();
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -43,12 +45,47 @@ export default function ProfileScreen() {
     },
   ];
 
-  const tierColors: Record<string, string> = {
-    free: '#6B7280',
-    basic: '#3B82F6',
-    premium: '#8B5CF6',
-    enterprise: '#F59E0B',
-  };
+  const tierColors: Record<string, string> = useMemo(() => ({
+    free: colors.gray500,
+    basic: colors.primary,
+    premium: colors.accent,
+    enterprise: colors.warning,
+  }), [colors]);
+
+  const styles = useMemo(() => ({
+    container: { flex: 1, backgroundColor: colors.background } as const,
+    header: { padding: spacing.lg, paddingTop: 60 } as const,
+    title: { fontSize: 28, fontWeight: fontWeight.bold, color: colors.text } as const,
+    profileCard: { alignItems: 'center' as const, backgroundColor: colors.surface, marginHorizontal: spacing.md, borderRadius: borderRadius.lg, padding: spacing.lg, marginBottom: spacing.md },
+    avatarContainer: { position: 'relative' as const, marginBottom: spacing.md },
+    avatar: { width: 80, height: 80, borderRadius: 40 },
+    avatarPlaceholder: { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primary, alignItems: 'center' as const, justifyContent: 'center' as const },
+    avatarText: { fontSize: 32, fontWeight: fontWeight.bold, color: colors.white },
+    editAvatarButton: { position: 'absolute' as const, bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center' as const, justifyContent: 'center' as const, borderWidth: 2, borderColor: colors.surface },
+    userName: { fontSize: fontSize.xl, fontWeight: fontWeight.semibold, color: colors.text },
+    userEmail: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.sm },
+    tierBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
+    tierText: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold },
+    upgradeBanner: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: withOpacity(colors.warning, 0.15), marginHorizontal: spacing.md, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.md },
+    upgradeIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.white, alignItems: 'center' as const, justifyContent: 'center' as const, marginRight: spacing.md },
+    upgradeContent: { flex: 1 },
+    upgradeTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text },
+    upgradeDesc: { fontSize: fontSize.xs, color: colors.textSecondary },
+    menuSection: { marginBottom: spacing.md },
+    sectionTitle: { fontSize: 13, fontWeight: fontWeight.semibold, color: colors.textSecondary, marginLeft: spacing.lg, marginBottom: spacing.xs, textTransform: 'uppercase' as const },
+    menuCard: { backgroundColor: colors.surface, marginHorizontal: spacing.md, borderRadius: borderRadius.lg },
+    menuItem: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, padding: spacing.md },
+    menuItemBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+    menuItemLeft: { flexDirection: 'row' as const, alignItems: 'center' as const },
+    menuItemLabel: { fontSize: 15, color: colors.text, marginLeft: spacing.md },
+    menuItemRight: { flexDirection: 'row' as const, alignItems: 'center' as const },
+    menuBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginRight: 8 },
+    menuBadgeText: { fontSize: 11, fontWeight: fontWeight.semibold },
+    menuValue: { fontSize: fontSize.sm, color: colors.textSecondary, marginRight: 4 },
+    signOutButton: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: colors.surface, marginHorizontal: spacing.md, borderRadius: borderRadius.lg, padding: spacing.md, marginTop: spacing.md },
+    signOutText: { fontSize: fontSize.md, fontWeight: fontWeight.medium, color: colors.error, marginLeft: 8 },
+    versionText: { textAlign: 'center' as const, fontSize: fontSize.xs, color: colors.textSecondary, marginTop: spacing.lg },
+  }), [colors, spacing, borderRadius, fontSize, fontWeight, withOpacity]);
 
   return (
     <ScrollView style={styles.container}>
@@ -67,12 +104,12 @@ export default function ProfileScreen() {
             </View>
           )}
           <TouchableOpacity style={styles.editAvatarButton}>
-            <Ionicons name="camera" size={16} color="#FFFFFF" />
+            <Ionicons name="camera" size={16} color={colors.white} />
           </TouchableOpacity>
         </View>
         <Text style={styles.userName}>{user?.name || 'User'}</Text>
         <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
-        <View style={[styles.tierBadge, { backgroundColor: `${tierColors[user?.subscription_tier || 'free']}20` }]}>
+        <View style={[styles.tierBadge, { backgroundColor: withOpacity(tierColors[user?.subscription_tier || 'free'], 0.12) }]}>
           <Text style={[styles.tierText, { color: tierColors[user?.subscription_tier || 'free'] }]}>
             {(user?.subscription_tier || 'free').charAt(0).toUpperCase() + (user?.subscription_tier || 'free').slice(1)} Plan
           </Text>
@@ -83,13 +120,13 @@ export default function ProfileScreen() {
       {user?.subscription_tier === 'free' && (
         <TouchableOpacity style={styles.upgradeBanner} onPress={() => router.push('/profile/subscription' as never)}>
           <View style={styles.upgradeIcon}>
-            <Ionicons name="star" size={24} color="#F59E0B" />
+            <Ionicons name="star" size={24} color={colors.warning} />
           </View>
           <View style={styles.upgradeContent}>
             <Text style={styles.upgradeTitle}>Upgrade to Premium</Text>
             <Text style={styles.upgradeDesc}>Unlock AI-powered dispute letters & more</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         </TouchableOpacity>
       )}
 
@@ -105,19 +142,19 @@ export default function ProfileScreen() {
                 onPress={() => router.push(item.route as never)}
               >
                 <View style={styles.menuItemLeft}>
-                  <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={22} color={theme.colors.textSecondary} />
+                  <Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={22} color={colors.textSecondary} />
                   <Text style={styles.menuItemLabel}>{item.label}</Text>
                 </View>
                 <View style={styles.menuItemRight}>
                   {'badge' in item && item.badge && (
-                    <View style={[styles.menuBadge, { backgroundColor: `${tierColors[item.badge]}20` }]}>
+                    <View style={[styles.menuBadge, { backgroundColor: withOpacity(tierColors[item.badge], 0.12) }]}>
                       <Text style={[styles.menuBadgeText, { color: tierColors[item.badge] }]}>
                         {item.badge.charAt(0).toUpperCase() + item.badge.slice(1)}
                       </Text>
                     </View>
                   )}
                   {'value' in item && item.value && <Text style={styles.menuValue}>{item.value}</Text>}
-                  <Ionicons name="chevron-forward" size={18} color={theme.colors.border} />
+                  <Ionicons name="chevron-forward" size={18} color={colors.border} />
                 </View>
               </TouchableOpacity>
             ))}
@@ -127,49 +164,13 @@ export default function ProfileScreen() {
 
       {/* Sign Out Button */}
       <TouchableOpacity style={styles.signOutButton} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={22} color={theme.colors.error} />
+        <Ionicons name="log-out-outline" size={22} color={colors.error} />
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
 
       {/* App Version */}
-      <Text style={styles.versionText}>CPFI v1.0.0</Text>
+      <Text style={styles.versionText}>Fynvita v1.0.0</Text>
       <View style={{ height: 100 }} />
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.background },
-  header: { padding: theme.spacing.lg, paddingTop: 60 },
-  title: { fontSize: 28, fontWeight: '700', color: theme.colors.text },
-  profileCard: { alignItems: 'center', backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.md, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, marginBottom: theme.spacing.md },
-  avatarContainer: { position: 'relative', marginBottom: theme.spacing.md },
-  avatar: { width: 80, height: 80, borderRadius: 40 },
-  avatarPlaceholder: { width: 80, height: 80, borderRadius: 40, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 32, fontWeight: '700', color: '#FFFFFF' },
-  editAvatarButton: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.surface },
-  userName: { fontSize: 20, fontWeight: '600', color: theme.colors.text },
-  userEmail: { fontSize: 14, color: theme.colors.textSecondary, marginBottom: theme.spacing.sm },
-  tierBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
-  tierText: { fontSize: 12, fontWeight: '600' },
-  upgradeBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7', marginHorizontal: theme.spacing.md, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.md },
-  upgradeIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', marginRight: theme.spacing.md },
-  upgradeContent: { flex: 1 },
-  upgradeTitle: { fontSize: 14, fontWeight: '600', color: theme.colors.text },
-  upgradeDesc: { fontSize: 12, color: theme.colors.textSecondary },
-  menuSection: { marginBottom: theme.spacing.md },
-  sectionTitle: { fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary, marginLeft: theme.spacing.lg, marginBottom: theme.spacing.xs, textTransform: 'uppercase' },
-  menuCard: { backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.md, borderRadius: theme.borderRadius.lg },
-  menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: theme.spacing.md },
-  menuItemBorder: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
-  menuItemLeft: { flexDirection: 'row', alignItems: 'center' },
-  menuItemLabel: { fontSize: 15, color: theme.colors.text, marginLeft: theme.spacing.md },
-  menuItemRight: { flexDirection: 'row', alignItems: 'center' },
-  menuBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginRight: 8 },
-  menuBadgeText: { fontSize: 11, fontWeight: '600' },
-  menuValue: { fontSize: 14, color: theme.colors.textSecondary, marginRight: 4 },
-  signOutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.md, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginTop: theme.spacing.md },
-  signOutText: { fontSize: 16, fontWeight: '500', color: theme.colors.error, marginLeft: 8 },
-  versionText: { textAlign: 'center', fontSize: 12, color: theme.colors.textSecondary, marginTop: theme.spacing.lg },
-});
-
