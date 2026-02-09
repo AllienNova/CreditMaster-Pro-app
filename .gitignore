@@ -6,12 +6,25 @@ node_modules/
 # Testing
 coverage/
 .nyc_output
+test-output.txt
+test-results*.txt
+test-results/
+savings-test-output.txt
+*.junit.xml
+
+# Cypress
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/
 
 # Next.js
 .next/
 out/
 build/
 dist/
+
+# TypeScript
+*.tsbuildinfo
 
 # Production
 *.log
@@ -29,6 +42,7 @@ yarn-error.log*
 # IDE
 .vscode/
 .idea/
+.vs/
 *.swp
 *.swo
 *~
@@ -36,14 +50,12 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+nul
+
+# Supabase temp
+supabase/.temp/
 
 # Misc
 *.pem
 .vercel
-
-
-
-#Ignore vscode AI rules
-.github\instructions\codacy.instructions.md
-nul
-nul
+.github/instructions/codacy.instructions.md
