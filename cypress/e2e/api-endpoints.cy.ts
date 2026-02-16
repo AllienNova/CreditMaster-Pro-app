@@ -287,30 +287,24 @@ describe('Credit Repair API - E2E Tests', () => {
     });
 
     it('should handle concurrent requests', () => {
-      const requests = [
-        cy.request({
-          method: 'GET',
-          url: `${baseUrl}/api/credit-repair/disputes`,
-          headers: { 'Authorization': `Bearer ${authToken}` },
-          failOnStatusCode: false,
-        }),
-        cy.request({
-          method: 'GET',
-          url: `${baseUrl}/api/credit-repair/cards`,
-          headers: { 'Authorization': `Bearer ${authToken}` },
-          failOnStatusCode: false,
-        }),
-        cy.request({
-          method: 'GET',
-          url: `${baseUrl}/api/credit-repair/quick-wins`,
-          headers: { 'Authorization': `Bearer ${authToken}` },
-          failOnStatusCode: false,
-        }),
-      ];
-
-      // All requests should complete
-      Promise.all(requests).then(() => {
-        cy.log('All concurrent requests completed');
+      // Chain sequential requests (Cypress doesn't support Promise.all with cy commands)
+      cy.request({
+        method: 'GET',
+        url: `${baseUrl}/api/credit-repair/disputes`,
+        headers: { 'Authorization': `Bearer ${authToken}` },
+        failOnStatusCode: false,
+      });
+      cy.request({
+        method: 'GET',
+        url: `${baseUrl}/api/credit-repair/cards`,
+        headers: { 'Authorization': `Bearer ${authToken}` },
+        failOnStatusCode: false,
+      });
+      cy.request({
+        method: 'GET',
+        url: `${baseUrl}/api/credit-repair/quick-wins`,
+        headers: { 'Authorization': `Bearer ${authToken}` },
+        failOnStatusCode: false,
       });
     });
   });

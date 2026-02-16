@@ -5,6 +5,7 @@
  * Best for understanding document context and complex layouts.
  */
 
+import 'openai/shims/node';
 import OpenAI from 'openai';
 import {
   BaseOCRProvider,

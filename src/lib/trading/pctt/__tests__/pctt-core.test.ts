@@ -216,14 +216,33 @@ describe('PCTTEngine - Boundary Estimation', () => {
   });
 
   test('should estimate boundaries with sufficient data', () => {
-    const data = generateOHLCV(100, 100, 0.02, 'range');
-    
+    // Use deterministic oscillating data to guarantee pivot detection
+    const data: OHLCV[] = [];
+    const startTime = Date.now() - 200 * 60000;
+    const basePrice = 100;
+
+    for (let i = 0; i < 200; i++) {
+      // Deterministic sine wave oscillation between ~95 and ~105
+      const phase = (i / 10) * Math.PI;
+      const price = basePrice + Math.sin(phase) * 5;
+      const range = 0.5;
+
+      data.push({
+        time: startTime + i * 60000,
+        open: price - range * 0.2,
+        high: price + range,
+        low: price - range,
+        close: price + range * 0.2,
+        volume: 100000,
+      });
+    }
+
     let result;
     for (const bar of data) {
       result = engine.update(bar);
     }
 
-    // At least one boundary should be present with range data
+    // At least one boundary should be present with clear oscillating data
     const hasSupport = result?.structure.support !== null;
     const hasResistance = result?.structure.resistance !== null;
     expect(hasSupport || hasResistance).toBe(true);
@@ -292,8 +311,25 @@ describe('PCTTEngine - Regime Detection', () => {
   });
 
   test('should detect downtrend regime', () => {
-    const data = generateOHLCV(100, 50, 0.01, 'down');
-    
+    // Use deterministic declining data to guarantee regime detection
+    const data: OHLCV[] = [];
+    const startTime = Date.now() - 80 * 60000;
+
+    for (let i = 0; i < 80; i++) {
+      // Clear downtrend: -0.5% per bar with minimal noise
+      const price = 100 * Math.pow(0.995, i);
+      const noise = 0.1;
+
+      data.push({
+        time: startTime + i * 60000,
+        open: price + noise,
+        high: price + noise * 2,
+        low: price - noise * 2,
+        close: price - noise,
+        volume: 100000,
+      });
+    }
+
     let result;
     for (const bar of data) {
       result = engine.update(bar);
@@ -303,21 +339,20 @@ describe('PCTTEngine - Regime Detection', () => {
   });
 
   test('should detect range regime with high crossing count', () => {
-    // Generate choppy range data
+    // Deterministic choppy range data — fast oscillation, no trend drift
     const data: OHLCV[] = [];
-    let price = 100;
     const startTime = Date.now();
 
-    for (let i = 0; i < 50; i++) {
-      // Oscillate around mean
-      price = 100 + Math.sin(i * 0.5) * 2 + (Math.random() - 0.5) * 1;
-      
+    for (let i = 0; i < 60; i++) {
+      // Pure sine oscillation with high frequency crossing
+      const price = 100 + Math.sin(i * 0.8) * 2;
+
       data.push({
         time: startTime + i * 60000,
-        open: price,
+        open: price - 0.1,
         high: price + 0.5,
         low: price - 0.5,
-        close: price + (Math.random() - 0.5) * 0.3,
+        close: price + 0.1,
         volume: 100000,
       });
     }

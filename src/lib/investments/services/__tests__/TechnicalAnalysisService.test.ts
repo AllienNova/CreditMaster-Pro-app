@@ -256,7 +256,10 @@ describe('TechnicalAnalysisService', () => {
       const result = await service.analyzeTechnical('AAPL', '1d', historicalData);
 
       expect(result.volatility.bollingerBandwidth).toBeGreaterThan(0);
-      expect(result.volatility.bollingerPercentB).toBeGreaterThanOrEqual(0);
+      // %B can be negative (price below lower band) or >1 (price above upper band)
+      expect(result.volatility.bollingerPercentB).toBeDefined();
+      expect(typeof result.volatility.bollingerPercentB).toBe('number');
+      expect(isFinite(result.volatility.bollingerPercentB)).toBe(true);
     });
 
     it('should identify volatility levels', async () => {
