@@ -8,7 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtValidation } from '@/lib/auth/jwt-validation';
 import { rbac } from '@/lib/auth/rbac';
 import { CreditBureauService } from '@/lib/credit-bureau/credit-bureau-service';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 
 export async function POST(request: NextRequest) {
   try {

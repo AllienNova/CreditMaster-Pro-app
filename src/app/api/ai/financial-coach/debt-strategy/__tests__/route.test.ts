@@ -10,9 +10,8 @@
 import { NextRequest } from 'next/server';
 
 // Mock transitive dependencies that require env vars at import time
-jest.mock('@/lib/supabase', () => ({
-  supabase: {},
-  getSupabase: jest.fn(),
+jest.mock('@/lib/supabase/client', () => ({
+  getSupabase: jest.fn(() => ({})),
 }));
 
 const mockGetUser = jest.fn();

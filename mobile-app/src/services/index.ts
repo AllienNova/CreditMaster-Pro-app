@@ -21,5 +21,17 @@ export * from './haptics';
 // Biometric Authentication Services
 export * from './biometrics';
 
+// Offline Sync Service
+export { offlineSyncService, OfflineSyncService } from './offline-sync';
+export type {
+  SyncQueueItem,
+  SyncResult,
+  SyncPriority,
+  SyncOperationType,
+  SyncEntity,
+  ConflictStrategy,
+  OfflineSyncConfig,
+} from './offline-sync';
+
 // Legacy Services (to be deprecated)
 export { supabase } from './supabase';

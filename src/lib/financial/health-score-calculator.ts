@@ -12,7 +12,9 @@
  * - 0-59: Critical (F)
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import {
   FinancialHealthScore,
   HealthScoreBreakdown,

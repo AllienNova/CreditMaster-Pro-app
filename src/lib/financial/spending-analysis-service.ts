@@ -5,7 +5,9 @@
  * trend analysis, and AI-powered insights.
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import { plaidService } from './plaid-service';
 import {
   BudgetCategoryValue,

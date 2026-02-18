@@ -16,12 +16,15 @@ export function createClient() {
   );
 }
 
-// Lazy-initialized typed singleton for service layer operations
-let _supabase: SupabaseClient<Database> | null = null;
+// Lazy-initialized singleton for service layer operations.
+// Intentionally untyped (no <Database> generic) because the Database type
+// only covers ~20 tables while the codebase uses 40+. Services that need
+// typed access should use createClient() instead.
+let _supabase: SupabaseClient | null = null;
 
-export function getSupabase(): SupabaseClient<Database> {
+export function getSupabase(): SupabaseClient {
   if (!_supabase) {
-    _supabase = createSupabaseClient<Database>(
+    _supabase = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );

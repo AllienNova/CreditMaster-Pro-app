@@ -1,12 +1,17 @@
 /**
  * Metrics and Monitoring Service
- * 
+ *
  * Tracks and reports:
  * - Application performance metrics
  * - Business metrics
  * - System health
  * - Custom metrics
+ *
+ * Uses Supabase for persistence (survives deploys/restarts)
+ * with in-memory aggregation and periodic batch writes.
  */
+
+import { supabaseAdmin } from '@/lib/supabase/server';
 
 export interface Metric {
   name: string;
@@ -25,20 +30,22 @@ export interface HealthCheck {
 }
 
 /**
- * Metrics collector
+ * Metrics collector with Supabase persistence.
+ * In-memory aggregation with periodic batch writes to metrics_data table.
  */
 class MetricsCollector {
   private metrics: Map<string, Metric[]> = new Map();
   private counters: Map<string, number> = new Map();
   private gauges: Map<string, number> = new Map();
-  
-  /**
-   * Increment a counter
-   */
+  private writeBuffer: Metric[] = [];
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly FLUSH_INTERVAL_MS = 10000;
+  private readonly FLUSH_BATCH_SIZE = 100;
+
   increment(name: string, value: number = 1, tags?: Record<string, string>): void {
     const current = this.counters.get(name) || 0;
     this.counters.set(name, current + value);
-    
+
     this.recordMetric({
       name,
       value: current + value,
@@ -47,20 +54,14 @@ class MetricsCollector {
       type: 'counter',
     });
   }
-  
-  /**
-   * Decrement a counter
-   */
+
   decrement(name: string, value: number = 1, tags?: Record<string, string>): void {
     this.increment(name, -value, tags);
   }
-  
-  /**
-   * Set a gauge value
-   */
+
   gauge(name: string, value: number, tags?: Record<string, string>): void {
     this.gauges.set(name, value);
-    
+
     this.recordMetric({
       name,
       value,
@@ -69,10 +70,7 @@ class MetricsCollector {
       type: 'gauge',
     });
   }
-  
-  /**
-   * Record a histogram value
-   */
+
   histogram(name: string, value: number, tags?: Record<string, string>): void {
     this.recordMetric({
       name,
@@ -82,10 +80,7 @@ class MetricsCollector {
       type: 'histogram',
     });
   }
-  
-  /**
-   * Record a timer value (duration in milliseconds)
-   */
+
   timer(name: string, duration: number, tags?: Record<string, string>): void {
     this.recordMetric({
       name,
@@ -95,20 +90,89 @@ class MetricsCollector {
       type: 'timer',
     });
   }
-  
-  /**
-   * Record a metric
-   */
+
   private recordMetric(metric: Metric): void {
     const existing = this.metrics.get(metric.name) || [];
     existing.push(metric);
-    
-    // Keep only last 1000 metrics per name
+
     if (existing.length > 1000) {
       existing.shift();
     }
-    
+
     this.metrics.set(metric.name, existing);
+
+    // Queue for DB persistence
+    this.writeBuffer.push(metric);
+    if (this.writeBuffer.length >= this.FLUSH_BATCH_SIZE) {
+      this.flushToDB();
+    } else if (!this.flushTimer) {
+      this.flushTimer = setTimeout(() => this.flushToDB(), this.FLUSH_INTERVAL_MS);
+    }
+  }
+
+  /** Flush buffered metrics to Supabase */
+  flushToDB(): void {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+    if (this.writeBuffer.length === 0) return;
+
+    const batch = this.writeBuffer.splice(0, this.FLUSH_BATCH_SIZE);
+    const rows = batch.map(m => ({
+      name: m.name,
+      value: m.value,
+      recorded_at: m.timestamp.toISOString(),
+      tags: m.tags ?? null,
+      metric_type: m.type,
+    }));
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabaseAdmin.from as any)('metrics_data')
+      .insert(rows)
+      .then(() => {})
+      .catch(() => {
+        if (this.writeBuffer.length < 1000) {
+          this.writeBuffer.unshift(...batch);
+        }
+      });
+
+    if (this.writeBuffer.length > 0 && !this.flushTimer) {
+      this.flushTimer = setTimeout(() => this.flushToDB(), this.FLUSH_INTERVAL_MS);
+    }
+  }
+
+  /** Query historical metrics from the database */
+  async queryFromDB(name: string, options?: {
+    startDate?: Date;
+    endDate?: Date;
+    limit?: number;
+  }): Promise<Metric[]> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query = (supabaseAdmin.from as any)('metrics_data')
+        .select('*')
+        .eq('name', name)
+        .order('recorded_at', { ascending: false })
+        .limit(options?.limit ?? 100);
+
+      if (options?.startDate) query = query.gte('recorded_at', options.startDate.toISOString());
+      if (options?.endDate) query = query.lte('recorded_at', options.endDate.toISOString());
+
+      const { data } = await query;
+      if (!data) return [];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (data as any[]).map((row: any) => ({
+        name: row.name,
+        value: Number(row.value),
+        timestamp: new Date(row.recorded_at),
+        tags: row.tags as Record<string, string> | undefined,
+        type: row.metric_type as Metric['type'],
+      }));
+    } catch {
+      return [];
+    }
   }
   
   /**

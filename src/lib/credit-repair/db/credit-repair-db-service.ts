@@ -13,7 +13,9 @@
  * - Row Level Security (RLS) enforcement
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import type {
   CreditRepairScore,
   CreditRepairAction,

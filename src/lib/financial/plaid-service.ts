@@ -4,7 +4,9 @@
  * Handles bank account connection and transaction syncing via Plaid API
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 
 // Plaid API configuration
 const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID || '';

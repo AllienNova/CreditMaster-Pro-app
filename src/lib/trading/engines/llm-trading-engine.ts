@@ -14,22 +14,7 @@
  * - Portfolio review
  */
 
-// Dynamic imports to handle missing packages gracefully
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let Anthropic: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let OpenAI: any = null;
-
-// Try to load SDKs if available
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  Anthropic = require('@anthropic-ai/sdk').default;
-} catch { /* SDK not installed */ }
-
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  OpenAI = require('openai').default;
-} catch { /* SDK not installed */ }
+import { AIMLService } from '@/lib/aiml-service';
 
 // ============================================================================
 // TYPES
@@ -213,20 +198,45 @@ export interface MarketAnalysis {
 // LLM TRADING ENGINE
 // ============================================================================
 
+export interface SentimentAnalysis {
+  symbol: string;
+  overallSentiment: 'very_bullish' | 'bullish' | 'neutral' | 'bearish' | 'very_bearish';
+  sentimentScore: number; // -1.0 to 1.0
+  confidence: number;
+  drivers: { factor: string; impact: 'positive' | 'negative' | 'neutral'; weight: number }[];
+  summary: string;
+  timestamp: Date;
+}
+
+export interface GeneratedSignal {
+  symbol: string;
+  action: 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
+  confidence: number;
+  timeframe: string;
+  entry?: { price: number; type: string };
+  stopLoss?: number;
+  takeProfit?: number;
+  reasoning: string;
+  supportingFactors: string[];
+  contraryFactors: string[];
+  timestamp: Date;
+}
+
 export class LLMTradingEngine {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private anthropic: any = null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private openai: any = null;
+  private aiml: AIMLService | null = null;
   private defaultProvider: LLMProvider = 'claude';
 
+  private readonly MODEL_MAP: Record<LLMProvider, string> = {
+    claude: 'anthropic/claude-4.5-sonnet',
+    gpt: 'openai/gpt-4o-mini',
+    deepseek: 'deepseek/deepseek-r1',
+  };
+
   constructor() {
-    // Initialize clients if API keys available
-    if (process.env.ANTHROPIC_API_KEY) {
-      this.anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    }
-    if (process.env.OPENAI_API_KEY) {
-      this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    try {
+      this.aiml = new AIMLService();
+    } catch {
+      // AIML_API_KEY not set — will use mock responses
     }
   }
 
@@ -472,49 +482,230 @@ ${positions.map(p => {
   }
 
   // ============================================================================
+  // SENTIMENT ANALYSIS
+  // ============================================================================
+
+  async analyzeSentiment(context: MarketContext): Promise<SentimentAnalysis> {
+    const prompt = `You are an expert market sentiment analyst. Analyze the sentiment for the following asset.
+
+## ${context.symbol}
+- Current Price: $${context.currentPrice.toFixed(2)}
+- 24h Change: ${(context.priceChange24h * 100).toFixed(2)}%
+- 7d Change: ${(context.priceChange7d * 100).toFixed(2)}%
+- Volume: ${context.volume.toLocaleString()} (change: ${(context.volumeChange * 100).toFixed(1)}%)
+${context.technicalSummary ? `- Technical Trend: ${context.technicalSummary.trend}, RSI: ${context.technicalSummary.rsi.toFixed(1)}` : ''}
+${context.recentNews?.length ? `\n## Recent News\n${context.recentNews.map(n => `- ${n.headline} (sentiment: ${n.sentiment.toFixed(2)})`).join('\n')}` : ''}
+${context.socialSentiment !== undefined ? `- Social Sentiment Score: ${context.socialSentiment.toFixed(2)}` : ''}
+
+## Required Output (JSON)
+{
+  "overallSentiment": "very_bullish|bullish|neutral|bearish|very_bearish",
+  "sentimentScore": -1.0 to 1.0,
+  "confidence": 0.0-1.0,
+  "drivers": [{"factor": "description", "impact": "positive|negative|neutral", "weight": 0.0-1.0}],
+  "summary": "Brief sentiment summary"
+}`;
+
+    const response = await this.callLLM(prompt, 'claude');
+    return this.parseSentimentAnalysis(response, context.symbol);
+  }
+
+  private parseSentimentAnalysis(response: string, symbol: string): SentimentAnalysis {
+    try {
+      const json = this.extractJSON(response);
+      return {
+        symbol,
+        overallSentiment: json.overallSentiment || 'neutral',
+        sentimentScore: Math.max(-1, Math.min(1, json.sentimentScore ?? 0)),
+        confidence: Math.max(0, Math.min(1, json.confidence ?? 0.5)),
+        drivers: json.drivers || [],
+        summary: json.summary || '',
+        timestamp: new Date(),
+      };
+    } catch {
+      return {
+        symbol,
+        overallSentiment: 'neutral',
+        sentimentScore: 0,
+        confidence: 0.5,
+        drivers: [],
+        summary: 'Unable to analyze sentiment',
+        timestamp: new Date(),
+      };
+    }
+  }
+
+  // ============================================================================
+  // SIGNAL GENERATION
+  // ============================================================================
+
+  async generateSignal(
+    context: MarketContext,
+    signals?: { source: string; signal: string; confidence: number }[],
+    sentiment?: SentimentAnalysis
+  ): Promise<GeneratedSignal> {
+    const prompt = `You are an expert quantitative analyst. Generate a trading signal for the following asset, synthesizing all available data.
+
+## ${context.symbol}
+- Current Price: $${context.currentPrice.toFixed(2)}
+- 24h Change: ${(context.priceChange24h * 100).toFixed(2)}%
+- 7d Change: ${(context.priceChange7d * 100).toFixed(2)}%
+- Volume: ${context.volume.toLocaleString()}
+${context.technicalSummary ? `
+- Trend: ${context.technicalSummary.trend}
+- RSI: ${context.technicalSummary.rsi.toFixed(1)}
+- MACD: ${context.technicalSummary.macdSignal}
+- Support: $${context.technicalSummary.support.toFixed(2)}
+- Resistance: $${context.technicalSummary.resistance.toFixed(2)}` : ''}
+
+${signals?.length ? `## Existing Signals\n${signals.map(s => `- ${s.source}: ${s.signal} (${(s.confidence * 100).toFixed(0)}%)`).join('\n')}` : ''}
+
+${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${sentiment.sentimentScore.toFixed(2)}, confidence: ${(sentiment.confidence * 100).toFixed(0)}%)` : ''}
+
+## Required Output (JSON)
+{
+  "action": "strong_buy|buy|hold|sell|strong_sell",
+  "confidence": 0.0-1.0,
+  "timeframe": "intraday|swing|position",
+  "entry": {"price": 0.00, "type": "market|limit"},
+  "stopLoss": 0.00,
+  "takeProfit": 0.00,
+  "reasoning": "Why this signal",
+  "supportingFactors": ["factor1", "factor2"],
+  "contraryFactors": ["factor1", "factor2"]
+}`;
+
+    const response = await this.callLLM(prompt, 'deepseek');
+    return this.parseGeneratedSignal(response, context.symbol);
+  }
+
+  private parseGeneratedSignal(response: string, symbol: string): GeneratedSignal {
+    try {
+      const json = this.extractJSON(response);
+      return {
+        symbol,
+        action: json.action || 'hold',
+        confidence: Math.max(0, Math.min(1, json.confidence ?? 0.5)),
+        timeframe: json.timeframe || 'swing',
+        entry: json.entry,
+        stopLoss: json.stopLoss,
+        takeProfit: json.takeProfit,
+        reasoning: json.reasoning || '',
+        supportingFactors: json.supportingFactors || [],
+        contraryFactors: json.contraryFactors || [],
+        timestamp: new Date(),
+      };
+    } catch {
+      return {
+        symbol,
+        action: 'hold',
+        confidence: 0.5,
+        timeframe: 'swing',
+        reasoning: 'Unable to generate signal',
+        supportingFactors: [],
+        contraryFactors: [],
+        timestamp: new Date(),
+      };
+    }
+  }
+
+  // ============================================================================
   // LLM COMMUNICATION
   // ============================================================================
 
   private async callLLM(prompt: string, provider: LLMProvider): Promise<string> {
-    try {
-      if (provider === 'claude' && this.anthropic) {
-        const response = await this.anthropic.messages.create({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4096,
-          messages: [{ role: 'user', content: prompt }],
-        });
-        return response.content[0].type === 'text' ? response.content[0].text : '';
-      }
-      
-      if ((provider === 'gpt' || provider === 'deepseek') && this.openai) {
-        const model = provider === 'deepseek' ? 'gpt-4o-mini' : 'gpt-4o-mini';
-        const response = await this.openai.chat.completions.create({
-          model,
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 4096,
-        });
-        return response.choices[0]?.message?.content || '';
-      }
-
-      // Fallback mock response
+    if (!this.aiml) {
       return this.getMockResponse(prompt);
-    } catch (_error) {
-      // Error logged
+    }
+
+    try {
+      const model = this.MODEL_MAP[provider] || this.MODEL_MAP.claude;
+      const response = await this.aiml.chat(
+        model,
+        [{ role: 'user', content: prompt }],
+        { max_tokens: 4096, temperature: 0.3 }
+      );
+      return response.choices[0]?.message?.content || this.getMockResponse(prompt);
+    } catch {
       return this.getMockResponse(prompt);
     }
   }
 
   private getMockResponse(prompt: string): string {
-    // Return mock JSON responses for testing
-    if (prompt.includes('market analysis')) {
+    const lowerPrompt = prompt.toLowerCase();
+
+    if (lowerPrompt.includes('market analysis') || lowerPrompt.includes('market analyst')) {
       return JSON.stringify({
         marketCondition: 'neutral',
-        summary: 'Market showing mixed signals',
-        sectors: [],
+        summary: 'Market showing mixed signals with no clear directional bias',
+        sectors: [{ name: 'Technology', outlook: 'neutral', reasoning: 'Awaiting earnings catalysts' }],
         keyLevels: [],
         tradingOpportunities: [],
-        risks: ['Market volatility'],
-        catalysts: ['Earnings season'],
+        risks: ['Elevated volatility', 'Macro uncertainty'],
+        catalysts: ['Upcoming earnings season', 'Central bank policy decisions'],
+      });
+    }
+    if (lowerPrompt.includes('trade idea') || lowerPrompt.includes('expert trader')) {
+      return JSON.stringify({
+        direction: 'neutral',
+        conviction: 'low',
+        entry: { type: 'limit', price: 100, zone: { low: 99, high: 101 } },
+        stopLoss: { price: 95, type: 'fixed', rationale: 'Below recent support' },
+        targets: [{ price: 110, exitPercent: 100, rationale: 'Next resistance level' }],
+        positionSizePercent: 2,
+        rationale: 'Insufficient data for high-conviction trade',
+        keyRisks: ['Market uncertainty'],
+        catalysts: [],
+        invalidationCriteria: 'Break below support',
+      });
+    }
+    if (lowerPrompt.includes('sentiment')) {
+      return JSON.stringify({
+        overallSentiment: 'neutral',
+        sentimentScore: 0,
+        confidence: 0.5,
+        drivers: [{ factor: 'Mixed market signals', impact: 'neutral', weight: 1.0 }],
+        summary: 'Sentiment is neutral with no strong directional bias',
+      });
+    }
+    if (lowerPrompt.includes('trading signal') || lowerPrompt.includes('generate a trading signal')) {
+      return JSON.stringify({
+        action: 'hold',
+        confidence: 0.5,
+        timeframe: 'swing',
+        reasoning: 'Insufficient conviction for directional trade',
+        supportingFactors: ['Stable price action'],
+        contraryFactors: ['Low volume', 'No clear trend'],
+      });
+    }
+    if (lowerPrompt.includes('interpret') || lowerPrompt.includes('interpreting trading signals')) {
+      return JSON.stringify({
+        overallSignal: 'hold',
+        confidence: 0.5,
+        recommendation: 'wait',
+        signalQuality: { technical: 0.5, fundamental: 0.5, sentiment: 0.5, overall: 0.5 },
+        conflicts: [],
+        considerations: ['Wait for clearer signals'],
+        riskFactors: ['Market uncertainty'],
+        rationale: 'Signals do not converge on a clear direction',
+      });
+    }
+    if (lowerPrompt.includes('risk') && lowerPrompt.includes('assess')) {
+      return JSON.stringify({
+        overallRisk: 'medium',
+        riskScore: 50,
+        factors: [{ factor: 'Market volatility', impact: 'negative', severity: 5, description: 'Standard market conditions' }],
+        recommendations: ['Use appropriate position sizing'],
+        warnings: [],
+      });
+    }
+    if (lowerPrompt.includes('portfolio') && lowerPrompt.includes('review')) {
+      return JSON.stringify({
+        healthScore: 70,
+        diversification: { score: 70, issues: [], suggestions: ['Consider adding more sectors'] },
+        riskExposure: { overall: 'medium', byCategory: {}, concerns: [] },
+        performanceInsights: ['Portfolio performance is in line with market averages'],
+        actionItems: [],
       });
     }
     return '{}';

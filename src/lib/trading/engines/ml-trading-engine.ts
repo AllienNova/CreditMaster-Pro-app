@@ -421,27 +421,25 @@ export class MLTradingEngine {
     modelId: string,
     features: number[]
   ): { signal: 'buy' | 'sell' | 'hold'; confidence: number; predictedReturn?: number } {
-    // Simplified tree ensemble prediction
-    // In production, would use actual trained model weights
     const weights = this.modelWeights.get(modelId);
-    
+
     if (!weights) {
-      // Return mock prediction based on features
-      const avgFeature = features.reduce((a, b) => a + b, 0) / features.length;
-      if (avgFeature > 0.5) return { signal: 'buy', confidence: 0.6 };
-      if (avgFeature < -0.5) return { signal: 'sell', confidence: 0.6 };
       return { signal: 'hold', confidence: 0.5 };
     }
 
-    // Weighted sum (simplified)
-    let score = 0;
-    for (let i = 0; i < Math.min(features.length, weights.length); i++) {
-      score += features[i] * weights[i];
+    // Linear model with trained weights + bias
+    const bias = weights[weights.length - 1];
+    let score = bias;
+    for (let i = 0; i < Math.min(features.length, weights.length - 1); i++) {
+      score += (features[i] || 0) * weights[i];
     }
 
-    const confidence = Math.min(0.95, Math.abs(score) + 0.5);
-    if (score > 0.2) return { signal: 'buy', confidence, predictedReturn: score };
-    if (score < -0.2) return { signal: 'sell', confidence, predictedReturn: score };
+    // Sigmoid-based confidence mapping
+    const sigmoid = 1 / (1 + Math.exp(-Math.abs(score) * 5));
+    const confidence = Math.min(0.95, Math.max(0.5, sigmoid));
+
+    if (score > 0.1) return { signal: 'buy', confidence, predictedReturn: score };
+    if (score < -0.1) return { signal: 'sell', confidence, predictedReturn: score };
     return { signal: 'hold', confidence: 0.5, predictedReturn: score };
   }
 
@@ -449,20 +447,25 @@ export class MLTradingEngine {
     modelId: string,
     features: number[]
   ): { signal: 'buy' | 'sell' | 'hold'; confidence: number; predictedReturn?: number } {
-    // Simplified neural network forward pass
     const weights = this.modelWeights.get(modelId);
-    
+
     if (!weights) {
       return { signal: 'hold', confidence: 0.5 };
     }
 
-    // Simple feedforward (mock)
-    let hidden = features.map((f, i) => Math.tanh(f * (weights[i] || 1)));
-    const output = hidden.reduce((a, b) => a + b, 0) / hidden.length;
-    
-    const confidence = Math.min(0.95, Math.abs(output) + 0.5);
-    if (output > 0.2) return { signal: 'buy', confidence, predictedReturn: output };
-    if (output < -0.2) return { signal: 'sell', confidence, predictedReturn: output };
+    // Two-layer forward pass: tanh activation → linear output
+    const bias = weights[weights.length - 1];
+    const hidden = features.map((f, i) => Math.tanh(f * (weights[i] || 0)));
+    let output = bias;
+    for (let i = 0; i < hidden.length; i++) {
+      output += hidden[i] * (weights[i] || 0);
+    }
+    // Scale output
+    output = Math.tanh(output);
+
+    const confidence = Math.min(0.95, Math.max(0.5, 0.5 + Math.abs(output) * 0.45));
+    if (output > 0.1) return { signal: 'buy', confidence, predictedReturn: output };
+    if (output < -0.1) return { signal: 'sell', confidence, predictedReturn: output };
     return { signal: 'hold', confidence: 0.5, predictedReturn: output };
   }
 
@@ -505,20 +508,35 @@ export class MLTradingEngine {
     };
   }
 
-  private getFeatureImportance(modelId: string): Record<string, number> {
-    const model = this.models.get(modelId);
-    if (!model) return {};
+  private storedImportance: Map<string, Record<string, number>> = new Map();
 
-    // Return mock feature importance
+  private getFeatureImportance(modelId: string): Record<string, number> {
+    // Return stored permutation importance if available (set during training)
+    const stored = this.storedImportance.get(modelId);
+    if (stored) return stored;
+
+    // Fallback: weight-magnitude based importance
+    const model = this.models.get(modelId);
+    const weights = this.modelWeights.get(modelId);
+    if (!model || !weights) return {};
+
     const importance: Record<string, number> = {};
+    let totalMag = 0;
     model.features.forEach((f, i) => {
-      importance[f.name] = 1 / (i + 1); // Decreasing importance
+      const mag = Math.abs(weights[i] || 0);
+      importance[f.name] = mag;
+      totalMag += mag;
     });
+    if (totalMag > 0) {
+      for (const key of Object.keys(importance)) {
+        importance[key] /= totalMag;
+      }
+    }
     return importance;
   }
 
   // ============================================================================
-  // MODEL TRAINING (STUB)
+  // MODEL TRAINING
   // ============================================================================
 
   async train(
@@ -527,38 +545,308 @@ export class MLTradingEngine {
   ): Promise<ModelEvaluation> {
     const model = this.models.get(modelId);
     if (!model) throw new Error(`Model ${modelId} not found`);
+    if (trainingData.length < 10) throw new Error('Insufficient training data (minimum 10 samples)');
 
-    // Calculate feature scalers
     const featureNames = Object.keys(trainingData[0]?.features || {});
-    const scalers: { mean: number; std: number }[] = [];
-    
-    for (const name of featureNames) {
-      const values = trainingData.map(d => d.features[name]);
-      const mean = values.reduce((a, b) => a + b, 0) / values.length;
-      const std = Math.sqrt(
-        values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length
-      );
-      scalers.push({ mean, std: std || 1 });
-    }
+    const numFeatures = featureNames.length;
+    if (numFeatures === 0) throw new Error('No features in training data');
+
+    // Compute and store feature scalers (z-score normalization)
+    const scalers = this.computeScalers(trainingData, featureNames);
     this.featureScalers.set(modelId, scalers);
 
-    // Initialize mock weights
-    const weights = new Float32Array(featureNames.length);
-    for (let i = 0; i < weights.length; i++) {
-      weights[i] = (Math.random() - 0.5) * 0.1;
-    }
-    this.modelWeights.set(modelId, weights);
+    // Prepare target labels
+    const targets = this.computeTargets(trainingData, model.target);
 
-    // Return mock evaluation
+    // Split data: train / validation / test
+    const { trainSplit, validationSplit } = model.training;
+    const trainEnd = Math.floor(trainingData.length * trainSplit);
+    const valEnd = Math.floor(trainingData.length * (trainSplit + validationSplit));
+
+    const trainX = trainingData.slice(0, trainEnd);
+    const trainY = targets.slice(0, trainEnd);
+    const valX = trainingData.slice(trainEnd, valEnd);
+    const valY = targets.slice(trainEnd, valEnd);
+    const testX = trainingData.slice(valEnd);
+    const testY = targets.slice(valEnd);
+
+    // Train using gradient descent with L2 regularization
+    const lr = model.training.learningRate || 0.01;
+    const epochs = model.training.epochs || 200;
+    const patience = model.training.earlyStoppingPatience || 20;
+    const lambda = 0.001; // L2 regularization
+
+    const weights = new Float32Array(numFeatures);
+    for (let i = 0; i < numFeatures; i++) {
+      weights[i] = (Math.random() - 0.5) * 0.01;
+    }
+    let bias = 0;
+
+    let bestValLoss = Infinity;
+    let bestWeights = new Float32Array(weights);
+    let bestBias = bias;
+    let staleEpochs = 0;
+
+    for (let epoch = 0; epoch < epochs; epoch++) {
+      // Mini-batch gradient descent over training set
+      const gradW = new Float32Array(numFeatures);
+      let gradB = 0;
+      let trainLoss = 0;
+
+      for (let i = 0; i < trainX.length; i++) {
+        const x = this.normalizeFeatures(modelId, trainX[i].features);
+        const yHat = this.linearForward(x, weights, bias);
+        const error = yHat - trainY[i];
+        trainLoss += error * error;
+
+        for (let j = 0; j < numFeatures; j++) {
+          gradW[j] += (2 * error * (x[j] || 0)) / trainX.length + lambda * weights[j];
+        }
+        gradB += (2 * error) / trainX.length;
+      }
+
+      // Update weights
+      for (let j = 0; j < numFeatures; j++) {
+        weights[j] -= lr * gradW[j];
+      }
+      bias -= lr * gradB;
+      trainLoss /= trainX.length;
+
+      // Validation loss
+      let valLoss = 0;
+      for (let i = 0; i < valX.length; i++) {
+        const x = this.normalizeFeatures(modelId, valX[i].features);
+        const yHat = this.linearForward(x, weights, bias);
+        valLoss += (yHat - valY[i]) ** 2;
+      }
+      valLoss /= Math.max(valX.length, 1);
+
+      // Early stopping
+      if (valLoss < bestValLoss) {
+        bestValLoss = valLoss;
+        bestWeights = new Float32Array(weights);
+        bestBias = bias;
+        staleEpochs = 0;
+      } else {
+        staleEpochs++;
+        if (staleEpochs >= patience) break;
+      }
+    }
+
+    // Store best weights (bias appended as last element)
+    const finalWeights = new Float32Array(numFeatures + 1);
+    finalWeights.set(bestWeights);
+    finalWeights[numFeatures] = bestBias;
+    this.modelWeights.set(modelId, finalWeights);
+
+    // Evaluate on all splits
+    const trainEval = this.evaluatePredictions(trainX, trainY, modelId, model.type);
+    const valEval = this.evaluatePredictions(valX, valY, modelId, model.type);
+    const testEval = testX.length > 0
+      ? this.evaluatePredictions(testX, testY, modelId, model.type)
+      : undefined;
+
+    // Permutation feature importance (stored for prediction-time access)
+    const featureImportance = this.computeFeatureImportance(
+      valX, valY, modelId, featureNames
+    );
+    this.storedImportance.set(modelId, featureImportance);
+
     return {
-      accuracy: 0.65,
-      precision: 0.62,
-      recall: 0.68,
-      f1Score: 0.65,
-      featureImportance: this.getFeatureImportance(modelId),
-      trainScore: 0.72,
-      validationScore: 0.65,
+      accuracy: valEval.accuracy,
+      precision: valEval.precision,
+      recall: valEval.recall,
+      f1Score: valEval.f1,
+      mse: valEval.mse,
+      mae: valEval.mae,
+      r2: valEval.r2,
+      sharpeRatio: this.computeSharpe(valX, valY, modelId),
+      confusionMatrix: model.type === 'classification' ? valEval.confusionMatrix : undefined,
+      featureImportance,
+      trainScore: trainEval.score,
+      validationScore: valEval.score,
+      testScore: testEval?.score,
     };
+  }
+
+  private computeScalers(
+    data: FeatureVector[],
+    featureNames: string[]
+  ): { mean: number; std: number }[] {
+    return featureNames.map(name => {
+      const values = data.map(d => d.features[name]);
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+      return { mean, std: Math.sqrt(variance) || 1 };
+    });
+  }
+
+  private computeTargets(data: FeatureVector[], target: TargetConfig): number[] {
+    return data.map((fv, i) => {
+      if (fv.target !== undefined) return fv.target;
+      // Compute forward return as target if not provided
+      if (i + target.horizon < data.length) {
+        const futureFeatures = data[i + target.horizon].features;
+        const currentFeatures = fv.features;
+        const currentClose = currentFeatures['close'] ?? currentFeatures['price'] ?? 0;
+        const futureClose = futureFeatures['close'] ?? futureFeatures['price'] ?? 0;
+        if (currentClose === 0) return 0;
+        const ret = (futureClose - currentClose) / currentClose;
+        if (target.type === 'direction') {
+          const threshold = target.threshold || 0;
+          return ret > threshold ? 1 : ret < -threshold ? -1 : 0;
+        }
+        return ret;
+      }
+      return 0;
+    });
+  }
+
+  private linearForward(features: number[], weights: Float32Array, bias: number): number {
+    let sum = bias;
+    for (let i = 0; i < Math.min(features.length, weights.length); i++) {
+      sum += (features[i] || 0) * weights[i];
+    }
+    return sum;
+  }
+
+  private evaluatePredictions(
+    data: FeatureVector[],
+    targets: number[],
+    modelId: string,
+    modelType: MLModelType
+  ): {
+    accuracy?: number; precision?: number; recall?: number; f1?: number;
+    mse: number; mae: number; r2?: number; score: number;
+    confusionMatrix?: number[][];
+  } {
+    const predictions: number[] = [];
+    for (let i = 0; i < data.length; i++) {
+      const x = this.normalizeFeatures(modelId, data[i].features);
+      const weights = this.modelWeights.get(modelId);
+      if (!weights) { predictions.push(0); continue; }
+      const bias = weights[weights.length - 1];
+      predictions.push(this.linearForward(x, weights, bias));
+    }
+
+    // MSE & MAE
+    let mse = 0, mae = 0;
+    for (let i = 0; i < predictions.length; i++) {
+      const err = predictions[i] - targets[i];
+      mse += err * err;
+      mae += Math.abs(err);
+    }
+    mse /= Math.max(predictions.length, 1);
+    mae /= Math.max(predictions.length, 1);
+
+    // R²
+    const meanTarget = targets.reduce((a, b) => a + b, 0) / Math.max(targets.length, 1);
+    const ssRes = predictions.reduce((sum, p, i) => sum + (p - targets[i]) ** 2, 0);
+    const ssTot = targets.reduce((sum, t) => sum + (t - meanTarget) ** 2, 0);
+    const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+
+    if (modelType === 'classification') {
+      // Convert regression output to class predictions
+      const predClasses = predictions.map(p => p > 0.2 ? 1 : p < -0.2 ? -1 : 0);
+      const actualClasses = targets.map(t => t > 0.2 ? 1 : t < -0.2 ? -1 : 0);
+
+      let correct = 0, tp = 0, fp = 0, fn = 0;
+      const cm = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]; // -1, 0, 1
+
+      for (let i = 0; i < predClasses.length; i++) {
+        const pi = predClasses[i] + 1; // index 0,1,2
+        const ai = actualClasses[i] + 1;
+        cm[ai][pi]++;
+        if (predClasses[i] === actualClasses[i]) correct++;
+        if (predClasses[i] === 1 && actualClasses[i] === 1) tp++;
+        if (predClasses[i] === 1 && actualClasses[i] !== 1) fp++;
+        if (predClasses[i] !== 1 && actualClasses[i] === 1) fn++;
+      }
+
+      const accuracy = correct / Math.max(predClasses.length, 1);
+      const precision = tp + fp > 0 ? tp / (tp + fp) : 0;
+      const recall = tp + fn > 0 ? tp / (tp + fn) : 0;
+      const f1 = precision + recall > 0 ? 2 * precision * recall / (precision + recall) : 0;
+
+      return { accuracy, precision, recall, f1, mse, mae, r2, score: accuracy, confusionMatrix: cm };
+    }
+
+    return { mse, mae, r2, score: Math.max(0, r2) };
+  }
+
+  private computeFeatureImportance(
+    valData: FeatureVector[],
+    valTargets: number[],
+    modelId: string,
+    featureNames: string[]
+  ): Record<string, number> {
+    // Permutation importance: shuffle each feature and measure score degradation
+    const baseScore = this.scoreDataset(valData, valTargets, modelId);
+    const importance: Record<string, number> = {};
+
+    for (const name of featureNames) {
+      // Create shuffled copy
+      const shuffled = valData.map(fv => ({
+        ...fv,
+        features: { ...fv.features },
+      }));
+      const values = shuffled.map(fv => fv.features[name]);
+      // Fisher-Yates shuffle
+      for (let i = values.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [values[i], values[j]] = [values[j], values[i]];
+      }
+      shuffled.forEach((fv, idx) => { fv.features[name] = values[idx]; });
+
+      const shuffledScore = this.scoreDataset(shuffled, valTargets, modelId);
+      importance[name] = Math.max(0, baseScore - shuffledScore);
+    }
+
+    // Normalize to sum to 1
+    const total = Object.values(importance).reduce((a, b) => a + b, 0);
+    if (total > 0) {
+      for (const key of Object.keys(importance)) {
+        importance[key] /= total;
+      }
+    }
+    return importance;
+  }
+
+  private scoreDataset(data: FeatureVector[], targets: number[], modelId: string): number {
+    const weights = this.modelWeights.get(modelId);
+    if (!weights) return 0;
+    const bias = weights[weights.length - 1];
+
+    let ssRes = 0, ssTot = 0;
+    const mean = targets.reduce((a, b) => a + b, 0) / Math.max(targets.length, 1);
+    for (let i = 0; i < data.length; i++) {
+      const x = this.normalizeFeatures(modelId, data[i].features);
+      const pred = this.linearForward(x, weights, bias);
+      ssRes += (pred - targets[i]) ** 2;
+      ssTot += (targets[i] - mean) ** 2;
+    }
+    return ssTot > 0 ? 1 - ssRes / ssTot : 0;
+  }
+
+  private computeSharpe(data: FeatureVector[], targets: number[], modelId: string): number {
+    const weights = this.modelWeights.get(modelId);
+    if (!weights) return 0;
+    const bias = weights[weights.length - 1];
+
+    // Strategy returns: predicted direction * actual return
+    const returns: number[] = [];
+    for (let i = 0; i < data.length; i++) {
+      const x = this.normalizeFeatures(modelId, data[i].features);
+      const pred = this.linearForward(x, weights, bias);
+      const direction = pred > 0 ? 1 : pred < 0 ? -1 : 0;
+      returns.push(direction * targets[i]);
+    }
+    if (returns.length === 0) return 0;
+
+    const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+    const variance = returns.reduce((s, r) => s + (r - mean) ** 2, 0) / returns.length;
+    const std = Math.sqrt(variance);
+    return std > 0 ? (mean / std) * Math.sqrt(252) : 0; // Annualized
   }
 
   // ============================================================================

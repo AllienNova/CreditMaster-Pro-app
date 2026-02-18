@@ -1,3 +1,8 @@
+// Set Supabase env vars before any modules load (prevents "supabaseUrl is required" crash)
+process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'test-anon-key-for-jest';
+process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role-key-for-jest';
+
 module.exports = {
   roots: ['<rootDir>/src'],
   testEnvironmentOptions: {

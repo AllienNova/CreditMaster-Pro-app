@@ -64,7 +64,9 @@ import { jwtValidation } from '@/lib/auth/jwt-validation';
 import { rbac } from '@/lib/auth/rbac';
 import { healthScoreCalculatorV2 } from '@/lib/financial/health-score-calculator-v2';
 import { financialAggregationService } from '@/lib/financial/financial-aggregation-service';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 
 /**
  * GET /api/financial/health-score

@@ -13,6 +13,11 @@ export { TransUnionClient } from './transunion-client';
 
 export type {
   BureauCredentials,
+  BureauApiEnvironment,
+  SingleBureauCredential,
+  BureauConfig,
+  BureauCredentialStatus,
+  CredentialValidationResult,
   Bureau,
   ReportType,
   CreditReportRequest,

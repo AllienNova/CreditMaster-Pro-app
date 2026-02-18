@@ -26,8 +26,8 @@ jest.mock('../plaid-service', () => ({
 }));
 
 // Mock Supabase
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
+jest.mock('@/lib/supabase/client', () => ({
+  getSupabase: () => ({
     from: jest.fn(() => ({
       select: jest.fn(() => ({
         eq: jest.fn(() => ({
@@ -37,7 +37,7 @@ jest.mock('@/lib/supabase', () => ({
         })),
       })),
     })),
-  },
+  }),
 }));
 
 describe('SpendingAnalysisService', () => {

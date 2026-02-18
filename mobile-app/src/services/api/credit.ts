@@ -4,6 +4,7 @@
  */
 
 import { api } from './client';
+import { offlineSyncService } from '../offline-sync';
 import type {
   CreditScore,
   CreditScoreHistory,
@@ -156,12 +157,33 @@ export const creditReportApi = {
     }>(`/credit/reports/${reportId}`),
 
   /**
-   * Upload and analyze a credit report
+   * Upload and analyze a credit report.
+   * If the device is offline, the upload metadata is queued for sync.
    */
-  uploadReport: async (file: { uri: string; name: string; type: string }) => {
+  uploadReport: async (file: { uri: string; name: string; type: string }): Promise<ApiResponse<{ reportId: string; status: string }>> => {
+    // Check connectivity via the sync service
+    if (!offlineSyncService.getIsOnline()) {
+      // Queue the upload intent for when connectivity is restored
+      await offlineSyncService.addToQueue({
+        endpoint: '/credit/reports/upload',
+        method: 'POST',
+        body: JSON.stringify({ fileName: file.name, fileUri: file.uri, fileType: file.type }),
+        entity: 'credit_score',
+        operationType: 'upload',
+        priority: 'high',
+        conflictStrategy: 'client_wins',
+        metadata: { fileName: file.name },
+      });
+      return {
+        success: false,
+        error: { code: 'OFFLINE_QUEUED', message: 'Upload queued for when online', retryable: true },
+        message: 'You appear to be offline. This upload will be processed when you reconnect.',
+      } as ApiResponse<{ reportId: string; status: string }>;
+    }
+
     const { supabase } = await import('../supabase');
     const { data: { session } } = await supabase.auth.getSession();
-    
+
     const formData = new FormData();
     formData.append('file', {
       uri: file.uri,

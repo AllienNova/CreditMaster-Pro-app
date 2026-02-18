@@ -46,7 +46,7 @@ describe('Data Sync Integration', () => {
       // Mock API responses
       creditScoreApi.getScores.mockResolvedValue({
         success: true,
-        data: { scores: [{ bureau: 'experian', score: 720 }] },
+        data: [{ bureau: 'experian', score: 720 }],
       });
       creditMonitoringApi.getAlerts.mockResolvedValue({
         success: true,
@@ -104,7 +104,7 @@ describe('Data Sync Integration', () => {
       });
       creditScoreApi.getScores.mockResolvedValue({
         success: true,
-        data: { scores: [{ bureau: 'experian', score: 720 }] },
+        data: [{ bureau: 'experian', score: 720 }],
       });
 
       await act(async () => {
@@ -182,7 +182,7 @@ describe('Data Sync Integration', () => {
 
   describe('Data Refresh', () => {
     it('should refresh all data on pull-to-refresh', async () => {
-      creditScoreApi.getScores.mockResolvedValue({ success: true, data: { scores: [] } });
+      creditScoreApi.getScores.mockResolvedValue({ success: true, data: [] });
       financialOverviewApi.getDashboard.mockResolvedValue({ success: true, data: {} });
       bankAccountApi.getAccounts.mockResolvedValue({ success: true, data: { accounts: [] } });
 

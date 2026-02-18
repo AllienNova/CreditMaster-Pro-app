@@ -25,12 +25,18 @@ export function useOnboardingProgress() {
     form_data: {},
     last_updated: new Date().toISOString(),
   });
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasChangesRef = useRef(false);
+  const progressRef = useRef(progress);
+  const savingRef = useRef(saving);
+
+  // Keep refs in sync with state
+  progressRef.current = progress;
+  savingRef.current = saving;
 
   // Load saved progress on mount
   useEffect(() => {
@@ -88,8 +94,8 @@ export function useOnboardingProgress() {
   // Auto-save every 30 seconds if there are changes
   useEffect(() => {
     autoSaveTimerRef.current = setInterval(() => {
-      if (hasChangesRef.current && !saving) {
-        saveProgress(progress);
+      if (hasChangesRef.current && !savingRef.current) {
+        saveProgress(progressRef.current);
       }
     }, AUTO_SAVE_INTERVAL);
 
@@ -98,7 +104,7 @@ export function useOnboardingProgress() {
         clearInterval(autoSaveTimerRef.current);
       }
     };
-  }, [progress, saving, saveProgress]);
+  }, [saveProgress]);
 
   // Update progress state
   const updateProgress = useCallback((updates: Partial<OnboardingProgress>) => {
@@ -112,27 +118,31 @@ export function useOnboardingProgress() {
 
   // Complete a step
   const completeStep = useCallback(async (stepNumber: number) => {
-    const newCompletedSteps = Array.from(new Set([...progress.completed_steps, stepNumber]));
+    const current = progressRef.current;
+    const newCompletedSteps = Array.from(new Set([...current.completed_steps, stepNumber]));
     const newProgress = {
-      ...progress,
+      ...current,
       completed_steps: newCompletedSteps,
       current_step: Math.min(stepNumber + 1, 5),
       last_updated: new Date().toISOString(),
     };
-    
+
     setProgress(newProgress);
     await saveProgress(newProgress);
-  }, [progress, saveProgress]);
+  }, [saveProgress]);
 
   // Update form data for current step
   const updateFormData = useCallback((stepData: Record<string, any>) => {
-    updateProgress({
+    setProgress((prev) => ({
+      ...prev,
       form_data: {
-        ...progress.form_data,
-        [`step_${progress.current_step}`]: stepData,
+        ...prev.form_data,
+        [`step_${prev.current_step}`]: stepData,
       },
-    });
-  }, [progress, updateProgress]);
+      last_updated: new Date().toISOString(),
+    }));
+    hasChangesRef.current = true;
+  }, []);
 
   // Go to specific step
   const goToStep = useCallback((stepNumber: number) => {
@@ -143,8 +153,8 @@ export function useOnboardingProgress() {
 
   // Manual save
   const save = useCallback(async () => {
-    return await saveProgress(progress);
-  }, [progress, saveProgress]);
+    return await saveProgress(progressRef.current);
+  }, [saveProgress]);
 
   return {
     progress,

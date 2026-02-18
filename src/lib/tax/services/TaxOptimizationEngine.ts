@@ -18,7 +18,9 @@
  * @module TaxOptimizationEngine
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import {
   TaxBracketCalculator,
   TaxCalculationResult,
@@ -41,7 +43,119 @@ import {
   TAX_STRATEGIES,
   StrategyCategory,
 } from '../types/tax-strategy.types';
+import { FICA_RATES_2024 } from '../types/tax-jurisdiction.types';
 import type { TaxOptimizationResult, TaxSavingsOpportunity } from '../types';
+
+// ============================================================================
+// QUARTERLY ESTIMATED TAX TYPES
+// ============================================================================
+
+/**
+ * Represents a single quarter's estimated tax payment calculation.
+ */
+export interface QuarterlyEstimate {
+  /** Quarter number (1-4) */
+  quarter: 1 | 2 | 3 | 4;
+  /** Due date for this quarterly payment */
+  dueDate: Date;
+  /** Period start date covered by this quarter */
+  periodStart: Date;
+  /** Period end date covered by this quarter */
+  periodEnd: Date;
+  /** Federal estimated tax payment for this quarter */
+  federalPayment: number;
+  /** State estimated tax payment for this quarter */
+  statePayment: number;
+  /** Self-employment tax portion for this quarter */
+  selfEmploymentTaxPayment: number;
+  /** Total payment due for this quarter (federal + state + SE) */
+  totalPayment: number;
+  /** Cumulative payments through this quarter */
+  cumulativePayment: number;
+  /** Whether this payment has passed its due date */
+  isPastDue: boolean;
+  /** Breakdown of quarterlyTax by component (federal, state, SE) */
+  quarterlyTaxBreakdown: {
+    federal: number;
+    state: number;
+    selfEmployment: number;
+  };
+}
+
+/**
+ * Result of safe harbor calculation per IRS rules.
+ * Safe harbor protects taxpayers from underpayment penalties.
+ */
+export interface SafeHarborResult {
+  /** 100% of prior year tax liability */
+  priorYearTaxLiability: number;
+  /** 90% of current year estimated tax liability */
+  currentYearNinetyPercent: number;
+  /** 110% of prior year (required for AGI > $150K / $75K MFS) */
+  priorYearOneHundredTenPercent: number;
+  /** Whether the high-income threshold applies (AGI > $150K) */
+  isHighIncome: boolean;
+  /** The safe harbor amount to use (minimum required to avoid penalty) */
+  safeHarborAmount: number;
+  /** The method that produced the lowest safe harbor amount */
+  recommendedMethod: 'prior_year_100' | 'prior_year_110' | 'current_year_90';
+  /** Required quarterly payment based on safe harbor */
+  quarterlyPaymentRequired: number;
+}
+
+/**
+ * Estimated underpayment penalty calculation based on IRS Form 2210
+ * simplified method.
+ */
+export interface UnderpaymentPenalty {
+  /** Whether an underpayment exists */
+  hasUnderpayment: boolean;
+  /** Total tax owed for the year */
+  totalTaxOwed: number;
+  /** Total payments made (withholding + estimated payments) */
+  totalPaymentsMade: number;
+  /** Amount of underpayment */
+  underpaymentAmount: number;
+  /** IRS penalty rate (federal short-term rate + 3%) */
+  penaltyRate: number;
+  /** Estimated penalty amount */
+  estimatedPenalty: number;
+  /** Number of days of underpayment (simplified) */
+  underpaymentDays: number;
+  /** Whether a penalty exception may apply */
+  exceptionMayApply: boolean;
+  /** Reason for possible exception */
+  exceptionReason: string | null;
+}
+
+/**
+ * A single entry in the quarterly payment schedule with
+ * due dates and payment amounts.
+ */
+export interface PaymentScheduleEntry {
+  /** Quarter number (1-4) */
+  quarter: 1 | 2 | 3 | 4;
+  /** Due date for payment */
+  dueDate: Date;
+  /** Label for the quarter (e.g., "Q1 (Jan-Mar)") */
+  label: string;
+  /** Income period covered */
+  incomePeriod: string;
+  /** Recommended federal estimated payment amount */
+  federalPayment: number;
+  /** Recommended state estimatedPayment amount */
+  statePayment: number;
+  /** Self-employment tax portion */
+  selfEmploymentTaxPayment: number;
+  /** Total recommended payment */
+  totalPayment: number;
+  /** Whether this quarter's payment is past due */
+  isPastDue: boolean;
+  /** Days until due date (negative if past due) */
+  daysUntilDue: number;
+  /** Payment voucher form number */
+  federalVoucherForm: string;
+}
 
 // ============================================================================
 // CONSTANTS
@@ -59,7 +173,28 @@ const AUDIT_ACTION_TYPES = {
   ANALYSIS_RUN: 'analysis_run',
   RECOMMENDATION_GENERATED: 'recommendation_generated',
   PROFILE_UPDATED: 'profile_updated',
+  QUARTERLY_ESTIMATE: 'quarterly_estimate',
 } as const;
+
+// Self-employment tax rates
+const SE_TAX = {
+  /** Combined SS + Medicare rate for self-employed */
+  combinedRate: 0.153,
+  /** Social Security portion rate */
+  socialSecurityRate: 0.124,
+  /** Medicare portion rate */
+  medicareRate: 0.029,
+  /** Net earnings factor (92.35% of gross SE income) */
+  netEarningsFactor: 0.9235,
+} as const;
+
+// IRS underpayment penalty rate (federal short-term rate + 3%)
+// Updated quarterly by IRS; using 2024 Q1 rate as default
+const IRS_UNDERPAYMENT_PENALTY_RATE = 0.08;
+
+// Safe harbor AGI thresholds
+const SAFE_HARBOR_HIGH_INCOME_THRESHOLD_JOINT = 150000;
+const SAFE_HARBOR_HIGH_INCOME_THRESHOLD_MFS = 75000;
 
 // ============================================================================
 // TAX OPTIMIZATION ENGINE CLASS
@@ -644,6 +779,398 @@ export class TaxOptimizationEngine {
       // TaxOptimizationEngine error: Failed to log tax audit event
       void _error;
     }
+  }
+
+  // ==========================================================================
+  // QUARTERLY ESTIMATED TAX METHODS (TAX-003)
+  // ==========================================================================
+
+  /**
+   * Calculate quarterly estimated tax payments for the given tax year.
+   *
+   * Computes federal income tax, state income tax, and self-employment tax,
+   * then divides into four equal quarterly installments. Accounts for
+   * withholding already taken from W-2 wages to determine the remaining
+   * estimated tax obligation.
+   *
+   * @param profile       The user's tax profile for the current year
+   * @param priorYearTax  Total tax liability from the prior year (for safe harbor)
+   * @returns Array of 4 QuarterlyEstimate objects
+   */
+  calculateQuarterlyEstimatedTax(
+    profile: TaxProfile,
+    priorYearTax: number = 0
+  ): QuarterlyEstimate[] {
+    const taxCalc = this.taxCalculator.calculateTaxes(profile);
+    const now = new Date();
+
+    // Total annual tax liability
+    const federalTaxOwed = taxCalc.federalTax;
+    const stateTaxOwed = taxCalc.stateTax;
+    const selfEmploymentTax = this.calculateSelfEmploymentTaxForEstimate(profile);
+
+    // Subtract withholding already paid through W-2
+    const remainingFederalTax = Math.max(
+      0,
+      federalTaxOwed - profile.federalWithheld
+    );
+    const remainingStateTax = Math.max(
+      0,
+      stateTaxOwed - profile.stateWithheld
+    );
+
+    // Self-employment tax is not withheld, so full amount is owed via estimates
+    const totalEstimatedTaxNeeded =
+      remainingFederalTax + remainingStateTax + selfEmploymentTax;
+
+    // Safe harbor check: determine minimum required payment
+    const safeHarbor = this.calculateSafeHarborAmount(
+      profile,
+      priorYearTax,
+      taxCalc
+    );
+
+    // Use the higher of: estimated tax needed or safe harbor requirement
+    // (minus withholding already applied to safe harbor)
+    const safeHarborRemaining = Math.max(
+      0,
+      safeHarbor.safeHarborAmount - profile.federalWithheld - profile.stateWithheld
+    );
+
+    const annualEstimatedPayment = Math.max(
+      totalEstimatedTaxNeeded,
+      safeHarborRemaining
+    );
+
+    // Split into quarterly payments (equal installments)
+    const quarterlyFederal = remainingFederalTax / 4;
+    const quarterlyState = remainingStateTax / 4;
+    const quarterlySE = selfEmploymentTax / 4;
+    const quarterlyTotal = annualEstimatedPayment / 4;
+
+    // Get quarterly due dates
+    const dueDates = this.getQuarterlyDueDates(profile.taxYear);
+
+    // Quarter period boundaries
+    const periodBoundaries: { start: Date; end: Date }[] = [
+      {
+        start: new Date(profile.taxYear, 0, 1),
+        end: new Date(profile.taxYear, 2, 31),
+      },
+      {
+        start: new Date(profile.taxYear, 3, 1),
+        end: new Date(profile.taxYear, 4, 31),
+      },
+      {
+        start: new Date(profile.taxYear, 5, 1),
+        end: new Date(profile.taxYear, 7, 31),
+      },
+      {
+        start: new Date(profile.taxYear, 8, 1),
+        end: new Date(profile.taxYear, 11, 31),
+      },
+    ];
+
+    const quarters: QuarterlyEstimate[] = [];
+
+    for (let i = 0; i < 4; i++) {
+      const quarterNum = (i + 1) as 1 | 2 | 3 | 4;
+      const cumulativePayment = quarterlyTotal * (i + 1);
+
+      const roundedFederal = Math.round(quarterlyFederal * 100) / 100;
+      const roundedState = Math.round(quarterlyState * 100) / 100;
+      const roundedSE = Math.round(quarterlySE * 100) / 100;
+
+      quarters.push({
+        quarter: quarterNum,
+        dueDate: dueDates[i],
+        periodStart: periodBoundaries[i].start,
+        periodEnd: periodBoundaries[i].end,
+        federalPayment: roundedFederal,
+        statePayment: roundedState,
+        selfEmploymentTaxPayment: roundedSE,
+        totalPayment: Math.round(quarterlyTotal * 100) / 100,
+        cumulativePayment: Math.round(cumulativePayment * 100) / 100,
+        isPastDue: now > dueDates[i],
+        quarterlyTaxBreakdown: {
+          federal: roundedFederal,
+          state: roundedState,
+          selfEmployment: roundedSE,
+        },
+      });
+    }
+
+    return quarters;
+  }
+
+  /**
+   * Calculate the IRS safe harbor amount to avoid underpayment penalties.
+   *
+   * IRS safe harbor rules:
+   * - Pay at least 90% of current year tax, OR
+   * - Pay 100% of prior year tax (110% if AGI > $150K, or $75K if MFS)
+   * The taxpayer must meet EITHER threshold to be penalty-free.
+   *
+   * @param profile        The user's current year tax profile
+   * @param priorYearTax   Total tax liability from the prior tax year
+   * @param currentCalc    Optional pre-computed current year tax calculation
+   * @returns SafeHarborResult with amounts and recommended method
+   */
+  calculateSafeHarborAmount(
+    profile: TaxProfile,
+    priorYearTax: number = 0,
+    currentCalc?: TaxCalculationResult
+  ): SafeHarborResult {
+    // Calculate current year tax if not provided
+    const taxCalc = currentCalc ?? this.taxCalculator.calculateTaxes(profile);
+
+    // Current year total tax including SE tax
+    const selfEmploymentTax = this.calculateSelfEmploymentTaxForEstimate(profile);
+    const currentYearTotalTax = taxCalc.totalTax + selfEmploymentTax;
+
+    // 90% of current year estimated tax
+    const currentYearNinetyPercent = currentYearTotalTax * 0.9;
+
+    // Determine if high-income threshold applies
+    const highIncomeThreshold =
+      profile.filingStatus === FilingStatus.MARRIED_FILING_SEPARATELY
+        ? SAFE_HARBOR_HIGH_INCOME_THRESHOLD_MFS
+        : SAFE_HARBOR_HIGH_INCOME_THRESHOLD_JOINT;
+
+    const agi = taxCalc.adjustedGrossIncome;
+    const isHighIncome = agi > highIncomeThreshold;
+
+    // 100% of prior year tax (or 110% for high income)
+    const priorYearTaxLiability = priorYearTax;
+    const priorYearOneHundredTenPercent = priorYearTax * 1.1;
+
+    // Determine the applicable prior year threshold
+    const applicablePriorYearAmount = isHighIncome
+      ? priorYearOneHundredTenPercent
+      : priorYearTaxLiability;
+
+    // Safe harbor is the SMALLER of: 90% current year OR applicable prior year amount
+    // (taxpayer needs to meet only ONE of the two thresholds)
+    let safeHarborAmount: number;
+    let recommendedMethod: SafeHarborResult['recommendedMethod'];
+
+    if (priorYearTax <= 0) {
+      // No prior year tax data available — use 90% of current year
+      safeHarborAmount = currentYearNinetyPercent;
+      recommendedMethod = 'current_year_90';
+    } else if (currentYearNinetyPercent <= applicablePriorYearAmount) {
+      safeHarborAmount = currentYearNinetyPercent;
+      recommendedMethod = 'current_year_90';
+    } else {
+      safeHarborAmount = applicablePriorYearAmount;
+      recommendedMethod = isHighIncome ? 'prior_year_110' : 'prior_year_100';
+    }
+
+    return {
+      priorYearTaxLiability,
+      currentYearNinetyPercent: Math.round(currentYearNinetyPercent * 100) / 100,
+      priorYearOneHundredTenPercent:
+        Math.round(priorYearOneHundredTenPercent * 100) / 100,
+      isHighIncome,
+      safeHarborAmount: Math.round(safeHarborAmount * 100) / 100,
+      recommendedMethod,
+      quarterlyPaymentRequired: Math.round((safeHarborAmount / 4) * 100) / 100,
+    };
+  }
+
+  /**
+   * Estimate the underpayment penalty using the IRS Form 2210 simplified method.
+   *
+   * The simplified method calculates penalty as:
+   *   penalty = underpayment_amount * penalty_rate * (days_of_underpayment / 365)
+   *
+   * Exception: No penalty if total tax owed is under $1,000, or if
+   * withholding covers at least 90% of current year tax or 100% (110% for
+   * high income) of prior year tax.
+   *
+   * @param profile          The user's tax profile
+   * @param priorYearTax     Prior year total tax liability
+   * @param paymentsMade     Total estimated payments made during the year
+   * @param penaltyRate      IRS penalty rate (defaults to current rate)
+   * @returns UnderpaymentPenalty with penalty estimate and exception info
+   */
+  estimateUnderpaymentPenalty(
+    profile: TaxProfile,
+    priorYearTax: number = 0,
+    paymentsMade: number = 0,
+    penaltyRate: number = IRS_UNDERPAYMENT_PENALTY_RATE
+  ): UnderpaymentPenalty {
+    const taxCalc = this.taxCalculator.calculateTaxes(profile);
+    const selfEmploymentTax = this.calculateSelfEmploymentTaxForEstimate(profile);
+    const totalTaxOwed = taxCalc.totalTax + selfEmploymentTax;
+
+    // Total payments = withholding + estimated payments made
+    const totalPaymentsMade =
+      profile.federalWithheld +
+      profile.stateWithheld +
+      profile.estimatedPayments +
+      paymentsMade;
+
+    const underpaymentAmount = Math.max(0, totalTaxOwed - totalPaymentsMade);
+
+    // Check exceptions
+    let exceptionMayApply = false;
+    let exceptionReason: string | null = null;
+
+    // Exception 1: Total tax owed is less than $1,000
+    const remainingTaxAfterWithholding = Math.max(
+      0,
+      totalTaxOwed - profile.federalWithheld - profile.stateWithheld
+    );
+    if (remainingTaxAfterWithholding < 1000) {
+      exceptionMayApply = true;
+      exceptionReason =
+        'Tax owed after withholding is less than $1,000. No penalty applies.';
+    }
+
+    // Exception 2: Safe harbor met
+    if (!exceptionMayApply) {
+      const safeHarbor = this.calculateSafeHarborAmount(
+        profile,
+        priorYearTax,
+        taxCalc
+      );
+      if (totalPaymentsMade >= safeHarbor.safeHarborAmount) {
+        exceptionMayApply = true;
+        exceptionReason =
+          'Payments meet safe harbor threshold. No penalty applies.';
+      }
+    }
+
+    // Calculate penalty using simplified method
+    // Assume underpayment spans from April 15 to April 15 (365 days)
+    const underpaymentDays = underpaymentAmount > 0 ? 365 : 0;
+    const estimatedPenalty = exceptionMayApply
+      ? 0
+      : Math.round(
+          underpaymentAmount * penaltyRate * (underpaymentDays / 365) * 100
+        ) / 100;
+
+    return {
+      hasUnderpayment: underpaymentAmount > 0 && !exceptionMayApply,
+      totalTaxOwed: Math.round(totalTaxOwed * 100) / 100,
+      totalPaymentsMade: Math.round(totalPaymentsMade * 100) / 100,
+      underpaymentAmount: Math.round(underpaymentAmount * 100) / 100,
+      penaltyRate,
+      estimatedPenalty,
+      underpaymentDays,
+      exceptionMayApply,
+      exceptionReason,
+    };
+  }
+
+  /**
+   * Get the full quarterly payment schedule with due dates, amounts,
+   * and status information for each quarter.
+   *
+   * @param profile       The user's tax profile
+   * @param priorYearTax  Prior year total tax liability (for safe harbor)
+   * @returns Array of 4 PaymentScheduleEntry objects with complete details
+   */
+  getQuarterlyPaymentSchedule(
+    profile: TaxProfile,
+    priorYearTax: number = 0
+  ): PaymentScheduleEntry[] {
+    const estimates = this.calculateQuarterlyEstimatedTax(profile, priorYearTax);
+    const now = new Date();
+
+    const quarterLabels = [
+      'Q1 (Jan-Mar)',
+      'Q2 (Apr-May)',
+      'Q3 (Jun-Aug)',
+      'Q4 (Sep-Dec)',
+    ];
+
+    const incomePeriods = [
+      'January 1 – March 31',
+      'April 1 – May 31',
+      'June 1 – August 31',
+      'September 1 – December 31',
+    ];
+
+    const voucherForms = [
+      '1040-ES (Voucher 1)',
+      '1040-ES (Voucher 2)',
+      '1040-ES (Voucher 3)',
+      '1040-ES (Voucher 4)',
+    ];
+
+    return estimates.map((estimate, idx) => {
+      const daysUntilDue = Math.ceil(
+        (estimate.dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      return {
+        quarter: estimate.quarter,
+        dueDate: estimate.dueDate,
+        label: quarterLabels[idx],
+        incomePeriod: incomePeriods[idx],
+        federalPayment: estimate.federalPayment,
+        statePayment: estimate.statePayment,
+        selfEmploymentTaxPayment: estimate.selfEmploymentTaxPayment,
+        totalPayment: estimate.totalPayment,
+        isPastDue: estimate.isPastDue,
+        daysUntilDue,
+        federalVoucherForm: voucherForms[idx],
+      };
+    });
+  }
+
+  // ==========================================================================
+  // QUARTERLY TAX PRIVATE HELPERS
+  // ==========================================================================
+
+  /**
+   * Calculate self-employment tax for estimated tax purposes.
+   * Uses the same IRS methodology: 92.35% of net SE income,
+   * then applies SS (12.4% up to wage base) + Medicare (2.9%).
+   */
+  private calculateSelfEmploymentTaxForEstimate(profile: TaxProfile): number {
+    if (!profile.isSelfEmployed || profile.selfEmploymentIncome <= 0) {
+      return 0;
+    }
+
+    // Net self-employment earnings = 92.35% of gross SE income
+    const netSE = profile.selfEmploymentIncome * SE_TAX.netEarningsFactor;
+
+    // Social Security: 12.4% up to wage base, accounting for W-2 wages already taxed
+    const remainingSSWageBase = Math.max(
+      0,
+      FICA_RATES_2024.socialSecurityWageBase - profile.w2Income
+    );
+    const ssTaxableIncome = Math.min(netSE, remainingSSWageBase);
+    const ssTax = ssTaxableIncome * SE_TAX.socialSecurityRate;
+
+    // Medicare: 2.9% on all SE income
+    const medicareTax = netSE * SE_TAX.medicareRate;
+
+    return ssTax + medicareTax;
+  }
+
+  /**
+   * Get the four quarterly estimated tax due dates for a given tax year.
+   * Standard IRS due dates:
+   *   Q1: April 15
+   *   Q2: June 15
+   *   Q3: September 15
+   *   Q4: January 15 of the following year
+   *
+   * Note: In practice, if a due date falls on a weekend or holiday,
+   * the due date moves to the next business day. This method returns
+   * the standard dates; business day adjustments can be layered on.
+   */
+  private getQuarterlyDueDates(taxYear: number): Date[] {
+    return [
+      new Date(taxYear, 3, 15),     // Q1: April 15
+      new Date(taxYear, 5, 15),     // Q2: June 15
+      new Date(taxYear, 8, 15),     // Q3: September 15
+      new Date(taxYear + 1, 0, 15), // Q4: January 15 (next year)
+    ];
   }
 
   /**

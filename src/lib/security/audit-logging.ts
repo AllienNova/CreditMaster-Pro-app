@@ -1,13 +1,18 @@
 /**
  * Audit Logging Service
- * 
+ *
  * Provides comprehensive logging for:
  * - AI interactions
  * - Security events
  * - User actions
  * - System events
  * - Compliance tracking
+ *
+ * Uses Supabase for persistence (survives deploys/restarts)
+ * with in-memory buffer for batch writes.
  */
+
+import { supabaseAdmin } from '@/lib/supabase/server';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'critical';
 
@@ -75,26 +80,83 @@ export interface SecurityEventLog extends LogEntry {
 }
 
 /**
- * In-memory log store
- * In production, use a proper logging service (e.g., Winston, Pino, or cloud logging)
+ * Hybrid log store: in-memory buffer + Supabase persistence.
+ * Logs are buffered in memory and flushed to the database in batches.
  */
 class LogStore {
   private logs: LogEntry[] = [];
-  private maxLogs = 10000; // Keep last 10k logs in memory
+  private maxLogs = 10000;
+  private writeBuffer: LogEntry[] = [];
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly FLUSH_INTERVAL_MS = 5000;
+  private readonly FLUSH_BATCH_SIZE = 50;
 
   add(entry: LogEntry): void {
     this.logs.push(entry);
-    
-    // Keep only recent logs
+
     if (this.logs.length > this.maxLogs) {
       this.logs = this.logs.slice(-this.maxLogs);
+    }
+
+    // Queue for DB persistence
+    this.writeBuffer.push(entry);
+    if (this.writeBuffer.length >= this.FLUSH_BATCH_SIZE) {
+      this.flush();
+    } else if (!this.flushTimer) {
+      this.flushTimer = setTimeout(() => this.flush(), this.FLUSH_INTERVAL_MS);
+    }
+  }
+
+  /** Flush buffered logs to Supabase */
+  flush(): void {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+    if (this.writeBuffer.length === 0) return;
+
+    const batch = this.writeBuffer.splice(0, this.FLUSH_BATCH_SIZE);
+    const rows = batch.map(entry => ({
+      id: entry.id,
+      created_at: entry.timestamp.toISOString(),
+      level: entry.level,
+      event_type: entry.eventType,
+      message: entry.message.substring(0, 2000),
+      user_id: entry.userId ?? null,
+      session_id: entry.sessionId ?? null,
+      ip_address: entry.ipAddress ?? null,
+      user_agent: entry.userAgent ?? null,
+      metadata: entry.metadata ?? null,
+      duration: entry.duration ?? null,
+      cost: entry.cost ?? null,
+      tokens: entry.tokens ?? null,
+      model: entry.model ?? null,
+      error: entry.error ? JSON.parse(JSON.stringify(entry.error)) : null,
+      severity: (entry as SecurityEventLog).severity ?? null,
+      action: (entry as SecurityEventLog).action ?? null,
+    }));
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabaseAdmin.from as any)('audit_logs')
+      .insert(rows)
+      .then(() => {})
+      .catch(() => {
+        // On failure, re-queue for next attempt (drop if buffer grows too large)
+        if (this.writeBuffer.length < 500) {
+          this.writeBuffer.unshift(...batch);
+        }
+      });
+
+    // Schedule next flush if there's more in the buffer
+    if (this.writeBuffer.length > 0 && !this.flushTimer) {
+      this.flushTimer = setTimeout(() => this.flush(), this.FLUSH_INTERVAL_MS);
     }
   }
 
   query(filter: Partial<LogEntry>): LogEntry[] {
     return this.logs.filter(log => {
       for (const [key, value] of Object.entries(filter)) {
-        if (log[key as keyof LogEntry] !== value) {
+        if (value !== undefined && log[key as keyof LogEntry] !== value) {
           return false;
         }
       }
@@ -107,11 +169,60 @@ class LogStore {
   }
 
   clear(): void {
+    this.flush(); // Persist before clearing
     this.logs = [];
   }
 
   count(): number {
     return this.logs.length;
+  }
+
+  /** Query logs from database for historical access */
+  async queryFromDB(filter: {
+    userId?: string;
+    eventType?: EventType;
+    level?: LogLevel;
+    startDate?: Date;
+    endDate?: Date;
+    limit?: number;
+  }): Promise<LogEntry[]> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query = (supabaseAdmin.from as any)('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(filter.limit ?? 100);
+
+      if (filter.userId) query = query.eq('user_id', filter.userId);
+      if (filter.eventType) query = query.eq('event_type', filter.eventType);
+      if (filter.level) query = query.eq('level', filter.level);
+      if (filter.startDate) query = query.gte('created_at', filter.startDate.toISOString());
+      if (filter.endDate) query = query.lte('created_at', filter.endDate.toISOString());
+
+      const { data } = await query;
+      if (!data) return [];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (data as any[]).map((row: any) => ({
+        id: row.id,
+        timestamp: new Date(row.created_at),
+        level: row.level as LogLevel,
+        eventType: row.event_type as EventType,
+        message: row.message,
+        userId: row.user_id ?? undefined,
+        sessionId: row.session_id ?? undefined,
+        ipAddress: row.ip_address ?? undefined,
+        userAgent: row.user_agent ?? undefined,
+        metadata: row.metadata as Record<string, unknown> | undefined,
+        duration: row.duration ?? undefined,
+        cost: row.cost ? Number(row.cost) : undefined,
+        tokens: row.tokens ?? undefined,
+        model: row.model ?? undefined,
+        error: row.error as LogEntry['error'],
+      }));
+    } catch {
+      return [];
+    }
   }
 }
 
@@ -476,6 +587,28 @@ export function logAPIRequest(
  * Provides a unified interface for logging operations.
  * This object wraps the individual logging functions for convenient import.
  */
+/**
+ * Flush pending audit logs to the database.
+ * Call before shutdown or when you need to ensure all logs are persisted.
+ */
+export function flushLogs(): void {
+  logStore.flush();
+}
+
+/**
+ * Query historical logs from the database (not limited to in-memory buffer).
+ */
+export async function queryLogsFromDB(filter: {
+  userId?: string;
+  eventType?: EventType;
+  level?: LogLevel;
+  startDate?: Date;
+  endDate?: Date;
+  limit?: number;
+}): Promise<LogEntry[]> {
+  return logStore.queryFromDB(filter);
+}
+
 export const auditLogger = {
   logAIInteraction,
   logSecurityEvent,
@@ -485,6 +618,7 @@ export const auditLogger = {
   logWarning,
   logAPIRequest,
   queryLogs,
+  queryLogsFromDB,
   getRecentLogs,
   getUserLogs,
   getSecurityEvents,
@@ -492,6 +626,7 @@ export const auditLogger = {
   getUsageStats,
   exportLogs,
   clearLogs,
+  flushLogs,
   getLogCount,
   createLogEntry,
 };

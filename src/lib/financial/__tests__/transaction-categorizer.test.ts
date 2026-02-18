@@ -7,11 +7,11 @@
 // Mock Supabase with inline factory
 const mockFrom = jest.fn();
 
-jest.mock('@/lib/supabase', () => {
+jest.mock('@/lib/supabase/client', () => {
   return {
-    supabase: {
+    getSupabase: () => ({
       from: mockFrom,
-    },
+    }),
   };
 });
 

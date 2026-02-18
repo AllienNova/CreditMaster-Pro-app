@@ -7,7 +7,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import { generateMockCreditReport } from '@/lib/credit-bureau/mock-credit-report-generator';
 import type { Bureau } from '@/types/credit-bureau';
 

@@ -1,3 +1,5 @@
+import type { CorrelationMonitor } from '@/lib/trading/correlation-monitor';
+
 /**
  * PCTT Core Engine - Pivot-Constrained Trendline Trading
  * 
@@ -108,6 +110,10 @@ export interface PCTTConfig {
   
   // RANSAC consensus
   minConsensus: number;         // Min inlier pivots for valid line (default: 3)
+  ransacIterations: number;     // Max RANSAC iterations (default: 50)
+  ransacInlierThreshold: number; // Inlier tolerance in ATR multiples (default: 0.2)
+  ransacRefitIterations: number; // Iterative re-fit passes (default: 3)
+  ransacEarlyStopPct: number;   // Stop if inlier% exceeds this (default: 0.85)
   
   // Boundary hysteresis
   hysteresisThreshold: number;  // Score improvement needed to switch (default: 0.3)
@@ -127,6 +133,23 @@ export interface PCTTConfig {
   target1R: number;             // First target in R multiples (default: 1.0)
   target2R: number;             // Second target (default: 2.0)
   target3R: number;             // Third target (default: 3.0)
+
+  // TRD-005: White's Reality Check
+  bootstrapSamples: number;             // Number of bootstrap resamples (default: 1000)
+  whiteRealityAlpha: number;            // Significance level (default: 0.05)
+
+  // TRD-006: Hybrid trailing stop
+  hybridTrailingEnabled: boolean;       // Enable ATR+volatility trailing (default: true)
+  trailingAtrMultiplier: number;        // ATR multiplier for base trailing distance (default: 2.0)
+  trailingVolatilityHalfLife: number;   // EWMA half-life in bars for volatility (default: 20)
+  trailingMinLockR: number;             // Min R profit before trailing activates (default: 0.5)
+  adaptiveStopVolWeight: number;        // Volatility regime weight in stop (default: 0.3)
+
+  // TRD-007: Composite rejection score weights
+  rejectionCandleWeight: number;        // Candle pattern weight (default: 0.55)
+  rejectionVolumeWeight: number;        // Volume factor weight (default: 0.15)
+  rejectionCorrelationWeight: number;   // Correlation factor weight (default: 0.15)
+  rejectionStructureWeight: number;     // Structure Q-score weight (default: 0.15)
 }
 
 // ============================================================================
@@ -146,6 +169,10 @@ export const DEFAULT_PCTT_CONFIG: PCTTConfig = {
   minQScore: 0.65,
   touchTolerance: 0.15,
   minConsensus: 3,
+  ransacIterations: 50,
+  ransacInlierThreshold: 0.2,
+  ransacRefitIterations: 3,
+  ransacEarlyStopPct: 0.85,
   hysteresisThreshold: 0.3,
   minLineLife: 5,
   failureBuffer: 0.35,
@@ -157,7 +184,68 @@ export const DEFAULT_PCTT_CONFIG: PCTTConfig = {
   target1R: 1.0,
   target2R: 2.0,
   target3R: 3.0,
+  // TRD-005: White's Reality Check
+  bootstrapSamples: 1000,
+  whiteRealityAlpha: 0.05,
+  // TRD-006: Hybrid trailing stop
+  hybridTrailingEnabled: true,
+  trailingAtrMultiplier: 2.0,
+  trailingVolatilityHalfLife: 20,
+  trailingMinLockR: 0.5,
+  adaptiveStopVolWeight: 0.3,
+  // TRD-007: Composite rejection score
+  rejectionCandleWeight: 0.55,
+  rejectionVolumeWeight: 0.15,
+  rejectionCorrelationWeight: 0.15,
+  rejectionStructureWeight: 0.15,
 };
+
+// ============================================================================
+// TRD-005: WHITE'S REALITY CHECK TYPES
+// ============================================================================
+
+export interface WhiteRealityResult {
+  pValue: number;
+  isSignificant: boolean;
+  actualMetric: number;
+  bootstrapMean: number;
+  bootstrapStdDev: number;
+  bootstrapPercentile95: number;
+  numSamples: number;
+  alpha: number;
+}
+
+// ============================================================================
+// TRD-006: HYBRID TRAILING STOP TYPES
+// ============================================================================
+
+export interface HybridTrailingStop {
+  active: boolean;
+  direction: 'long' | 'short';
+  entryPrice: number;
+  initialStop: number;
+  currentStop: number;
+  highWaterMark: number;     // Best price since entry (highest for long, lowest for short)
+  trailingDistance: number;   // Current trailing distance in price units
+  atrAtEntry: number;
+  riskDistance: number;       // Entry-to-stop distance = 1R
+  lockedR: number;           // Current R locked (0 = no profit locked)
+  barsHeld: number;
+  adaptiveMultiplier: number; // Volatility-adjusted ATR multiplier
+}
+
+// ============================================================================
+// TRD-007: COMPOSITE REJECTION SCORE TYPES
+// ============================================================================
+
+export interface CompositeRejectionScore {
+  compositeScore: number;     // Final blended score 0-1
+  candleScore: number;        // Raw candle rejection score
+  volumeScore: number;        // Volume confirmation score
+  correlationScore: number;   // Correlation regime score (1 = low correlation / favorable)
+  structureScore: number;     // Boundary Q-score component
+  breakdown: Record<string, number>;
+}
 
 // ============================================================================
 // PCTT ENGINE
@@ -184,6 +272,15 @@ export class PCTTEngine {
   // ATR cache for performance
   private cachedATR: number = 0;
   private atrCacheBar: number = -1;
+
+  // TRD-006: Hybrid trailing stop state
+  private activeTrailingStop: HybridTrailingStop | null = null;
+  private volatilityEwma: number = 0;
+  private volatilityEwmaInitialized: boolean = false;
+
+  // TRD-007: Correlation monitor for composite rejection scoring
+  private correlationMonitor: CorrelationMonitor | null = null;
+  private currentSymbol: string = '';
 
   constructor(config: Partial<PCTTConfig> = {}) {
     this.config = { ...DEFAULT_PCTT_CONFIG, ...config };
@@ -267,6 +364,227 @@ export class PCTTEngine {
     this.frozenSafetyLine = null;
     this.breakBar = -1;
     this.breakDirection = null;
+    this.activeTrailingStop = null;
+    this.volatilityEwma = 0;
+    this.volatilityEwmaInitialized = false;
+  }
+
+  // ==========================================================================
+  // TRD-007: Correlation monitor injection
+  // ==========================================================================
+
+  /**
+   * Set correlation monitor for composite rejection scoring.
+   * The symbol is used to check correlation regime for this instrument.
+   */
+  setCorrelationMonitor(monitor: CorrelationMonitor, symbol: string): void {
+    this.correlationMonitor = monitor;
+    this.currentSymbol = symbol;
+  }
+
+  // ==========================================================================
+  // TRD-005: WHITE'S REALITY CHECK
+  // ==========================================================================
+
+  /**
+   * Run White's Reality Check to validate that PCTT signals on the given
+   * bar series are statistically significant (not curve-fitted).
+   *
+   * Method:
+   * 1. Run PCTT on actual data, compute performance metric (Sharpe ratio).
+   * 2. Generate bootstrapSamples resampled return series (stationary bootstrap).
+   * 3. For each bootstrap, compute performance of a random-entry strategy.
+   * 4. p-value = fraction of bootstrap samples with metric >= actual.
+   *
+   * @param bars - OHLCV data series to test
+   * @param metric - Performance metric function (default: Sharpe ratio)
+   */
+  whiteRealityCheck(
+    bars: OHLCV[],
+    metric?: (returns: number[]) => number
+  ): WhiteRealityResult {
+    const metricFn = metric ?? this.sharpeRatio.bind(this);
+
+    // 1. Run PCTT on actual data, collect signal returns
+    const actualReturns = this.collectSignalReturns(bars);
+    const actualMetric = actualReturns.length >= 2 ? metricFn(actualReturns) : 0;
+
+    // 2. Compute bar-to-bar returns for bootstrap resampling
+    const barReturns: number[] = [];
+    for (let i = 1; i < bars.length; i++) {
+      barReturns.push((bars[i].close - bars[i - 1].close) / bars[i - 1].close);
+    }
+
+    if (barReturns.length < 10) {
+      return {
+        pValue: 1,
+        isSignificant: false,
+        actualMetric,
+        bootstrapMean: 0,
+        bootstrapStdDev: 0,
+        bootstrapPercentile95: 0,
+        numSamples: 0,
+        alpha: this.config.whiteRealityAlpha,
+      };
+    }
+
+    // 3. Bootstrap: compute metric on resampled return series
+    const bootstrapMetrics = this.bootstrapPValue(
+      barReturns,
+      metricFn,
+      this.config.bootstrapSamples
+    );
+
+    // 4. Compute p-value
+    const exceedCount = bootstrapMetrics.filter(m => m >= actualMetric).length;
+    const pValue = exceedCount / bootstrapMetrics.length;
+
+    // Bootstrap distribution stats
+    const sorted = [...bootstrapMetrics].sort((a, b) => a - b);
+    const mean = sorted.reduce((a, b) => a + b, 0) / sorted.length;
+    const variance = sorted.reduce((a, b) => a + (b - mean) ** 2, 0) / sorted.length;
+
+    return {
+      pValue,
+      isSignificant: pValue < this.config.whiteRealityAlpha,
+      actualMetric,
+      bootstrapMean: mean,
+      bootstrapStdDev: Math.sqrt(variance),
+      bootstrapPercentile95: sorted[Math.floor(sorted.length * 0.95)],
+      numSamples: bootstrapMetrics.length,
+      alpha: this.config.whiteRealityAlpha,
+    };
+  }
+
+  // ==========================================================================
+  // TRD-006: HYBRID TRAILING STOP
+  // ==========================================================================
+
+  /**
+   * Initialize a hybrid trailing stop for a new trade.
+   * Combines ATR-based trailing with volatility-regime adaptation.
+   */
+  initHybridTrailingStop(
+    direction: 'long' | 'short',
+    entryPrice: number,
+    initialStop: number,
+    atr: number
+  ): HybridTrailingStop {
+    const riskDistance = Math.abs(entryPrice - initialStop);
+    this.activeTrailingStop = {
+      active: false,   // Doesn't trail until minLockR is reached
+      direction,
+      entryPrice,
+      initialStop,
+      currentStop: initialStop,
+      highWaterMark: entryPrice,
+      trailingDistance: this.config.trailingAtrMultiplier * atr,
+      atrAtEntry: atr,
+      riskDistance,
+      lockedR: 0,
+      barsHeld: 0,
+      adaptiveMultiplier: this.config.trailingAtrMultiplier,
+    };
+    return { ...this.activeTrailingStop };
+  }
+
+  /**
+   * Update the hybrid trailing stop with a new bar.
+   * Returns the updated stop and whether the stop was hit.
+   */
+  updateHybridTrailingStop(bar: OHLCV, currentATR: number): {
+    stop: HybridTrailingStop;
+    stopHit: boolean;
+    adaptiveStop: number;
+  } | null {
+    const ts = this.activeTrailingStop;
+    if (!ts) return null;
+
+    ts.barsHeld++;
+
+    // Update volatility EWMA for adaptive stop
+    this.updateVolatilityEwma(bar, currentATR);
+
+    // Compute adaptive multiplier blending ATR with volatility regime
+    const volRatio = this.volatilityEwma > 0 ? currentATR / this.volatilityEwma : 1;
+    const baseMultiplier = this.config.trailingAtrMultiplier;
+    const volAdjust = this.config.adaptiveStopVolWeight * (volRatio - 1);
+    ts.adaptiveMultiplier = Math.max(1.0, baseMultiplier + volAdjust);
+
+    // Update trailing distance
+    ts.trailingDistance = ts.adaptiveMultiplier * currentATR;
+
+    if (ts.direction === 'long') {
+      // Update high water mark
+      if (bar.high > ts.highWaterMark) {
+        ts.highWaterMark = bar.high;
+      }
+
+      // Calculate current R profit
+      ts.lockedR = (ts.highWaterMark - ts.entryPrice) / ts.riskDistance;
+
+      // Activate trailing once minLockR is reached
+      if (!ts.active && ts.lockedR >= this.config.trailingMinLockR) {
+        ts.active = true;
+      }
+
+      // Compute adaptive trailing stop
+      const trailedStop = ts.active
+        ? ts.highWaterMark - ts.trailingDistance
+        : ts.initialStop;
+
+      // Stop only ratchets up for longs
+      ts.currentStop = Math.max(ts.currentStop, trailedStop);
+
+      // Check if stop is hit
+      const stopHit = bar.low <= ts.currentStop;
+
+      return {
+        stop: { ...ts },
+        stopHit,
+        adaptiveStop: ts.currentStop,
+      };
+    } else {
+      // Short direction
+      if (bar.low < ts.highWaterMark) {
+        ts.highWaterMark = bar.low;
+      }
+
+      ts.lockedR = (ts.entryPrice - ts.highWaterMark) / ts.riskDistance;
+
+      if (!ts.active && ts.lockedR >= this.config.trailingMinLockR) {
+        ts.active = true;
+      }
+
+      const trailedStop = ts.active
+        ? ts.highWaterMark + ts.trailingDistance
+        : ts.initialStop;
+
+      // Stop only ratchets down for shorts
+      ts.currentStop = Math.min(ts.currentStop, trailedStop);
+
+      const stopHit = bar.high >= ts.currentStop;
+
+      return {
+        stop: { ...ts },
+        stopHit,
+        adaptiveStop: ts.currentStop,
+      };
+    }
+  }
+
+  /**
+   * Get active trailing stop state (read-only copy)
+   */
+  getHybridTrailingStop(): HybridTrailingStop | null {
+    return this.activeTrailingStop ? { ...this.activeTrailingStop } : null;
+  }
+
+  /**
+   * Close the active trailing stop
+   */
+  closeHybridTrailingStop(): void {
+    this.activeTrailingStop = null;
   }
 
   // ==========================================================================
@@ -334,49 +652,98 @@ export class PCTTEngine {
   private estimateBoundary(type: 'support' | 'resistance', atr: number): BoundaryLine | null {
     const pivots = type === 'support' ? this.pivotLows : this.pivotHighs;
     const currentLine = type === 'support' ? this.currentSupport : this.currentResistance;
-    
+
     if (pivots.length < 2) return null;
 
-    const recentPivots = pivots.slice(-15); // Use last 15 pivots max
+    const recentPivots = pivots.slice(-Math.max(15, pivots.length));
+    const maxSlope = this.config.touchTolerance * atr;
+
+    // Phase 1: RANSAC random sampling + exhaustive for small sets
     let bestLine: BoundaryLine | null = null;
     let bestScore = -Infinity;
+    let bestSlope = 0;
+    let bestIntercept = 0;
 
-    // Enumerate pivot pairs
-    for (let i = 0; i < recentPivots.length - 1; i++) {
-      for (let j = i + 1; j < recentPivots.length; j++) {
-        const p1 = recentPivots[i];
-        const p2 = recentPivots[j];
+    const n = recentPivots.length;
+    const pairCount = (n * (n - 1)) / 2;
+    const useExhaustive = pairCount <= this.config.ransacIterations;
 
-        if (p1.index === p2.index) continue;
+    if (useExhaustive) {
+      // Exhaustive enumeration for small pivot sets
+      for (let i = 0; i < n - 1; i++) {
+        for (let j = i + 1; j < n; j++) {
+          const result = this.evaluateRansacCandidate(
+            recentPivots[i], recentPivots[j], recentPivots, atr, maxSlope, type
+          );
+          if (result && result.score > bestScore) {
+            bestScore = result.score;
+            bestSlope = result.slope;
+            bestIntercept = result.intercept;
+            bestLine = result.line;
+          }
+        }
+      }
+    } else {
+      // RANSAC random sampling for larger sets
+      for (let iter = 0; iter < this.config.ransacIterations; iter++) {
+        const i = Math.floor(Math.random() * n);
+        let j = Math.floor(Math.random() * (n - 1));
+        if (j >= i) j++;
 
-        // Calculate line parameters
-        const slope = (p2.price - p1.price) / (p2.index - p1.index);
-        const intercept = p1.price - slope * p1.index;
+        const result = this.evaluateRansacCandidate(
+          recentPivots[i], recentPivots[j], recentPivots, atr, maxSlope, type
+        );
+        if (result && result.score > bestScore) {
+          bestScore = result.score;
+          bestSlope = result.slope;
+          bestIntercept = result.intercept;
+          bestLine = result.line;
+        }
 
-        // Reject extreme slopes
-        const maxSlope = this.config.touchTolerance * atr;
-        if (Math.abs(slope) > maxSlope) continue;
+        // Early stop if inlier percentage is very high
+        if (result && result.inlierCount / n >= this.config.ransacEarlyStopPct) {
+          break;
+        }
+      }
+    }
 
-        // Score the line
+    // Phase 2: Iterative re-fitting on inlier set
+    if (bestLine) {
+      let refitSlope = bestSlope;
+      let refitIntercept = bestIntercept;
+
+      for (let pass = 0; pass < this.config.ransacRefitIterations; pass++) {
+        const inliers = this.getInliers(refitSlope, refitIntercept, recentPivots, atr);
+        if (inliers.length < 2) break;
+
+        // Least-squares re-fit on inliers only
+        const fitted = this.leastSquaresFit(inliers);
+        if (!fitted || Math.abs(fitted.slope) > maxSlope) break;
+
+        // Re-score with the fitted line
         const { score, touches, violations, inlierCount } = this.scoreLine(
-          slope, intercept, recentPivots, atr, type
+          fitted.slope, fitted.intercept, recentPivots, atr, type
         );
 
-        // RANSAC consensus check: require minimum inliers
-        if (inlierCount < this.config.minConsensus) continue;
+        if (inlierCount < this.config.minConsensus) break;
 
         if (score > bestScore) {
           bestScore = score;
+          refitSlope = fitted.slope;
+          refitIntercept = fitted.intercept;
           bestLine = {
-            slope,
-            intercept,
-            startIndex: p1.index,
+            slope: fitted.slope,
+            intercept: fitted.intercept,
+            startIndex: inliers[0].index,
             pivots: recentPivots,
             qScore: this.sigmoid(score),
             touches,
             violations,
             frozen: false,
           };
+        } else {
+          // Convergence: re-fit didn't improve, stop
+          break;
         }
       }
     }
@@ -390,9 +757,8 @@ export class PCTTEngine {
     if (currentLine && bestLine) {
       const currentScore = this.getLineScore(currentLine, atr, type);
       const improvement = bestScore - currentScore;
-      
+
       if (improvement < this.config.hysteresisThreshold) {
-        // Keep current line, increment age
         if (type === 'support') {
           this.supportLineAge++;
         } else {
@@ -416,12 +782,81 @@ export class PCTTEngine {
     // Check minimum line life for tradability
     const lineAge = type === 'support' ? this.supportLineAge : this.resistanceLineAge;
     if (bestLine && lineAge < this.config.minLineLife) {
-      // Line exists but not yet tradable - still return it for visualization
-      // but with reduced Q-score to prevent trading
       bestLine.qScore = bestLine.qScore * 0.5;
     }
 
     return bestLine;
+  }
+
+  /** Evaluate a single RANSAC candidate pair */
+  private evaluateRansacCandidate(
+    p1: Pivot,
+    p2: Pivot,
+    allPivots: Pivot[],
+    atr: number,
+    maxSlope: number,
+    type: 'support' | 'resistance'
+  ): { score: number; slope: number; intercept: number; line: BoundaryLine; inlierCount: number } | null {
+    if (p1.index === p2.index) return null;
+
+    const slope = (p2.price - p1.price) / (p2.index - p1.index);
+    const intercept = p1.price - slope * p1.index;
+
+    if (Math.abs(slope) > maxSlope) return null;
+
+    const { score, touches, violations, inlierCount } = this.scoreLine(
+      slope, intercept, allPivots, atr, type
+    );
+
+    if (inlierCount < this.config.minConsensus) return null;
+
+    return {
+      score,
+      slope,
+      intercept,
+      inlierCount,
+      line: {
+        slope,
+        intercept,
+        startIndex: Math.min(p1.index, p2.index),
+        pivots: allPivots,
+        qScore: this.sigmoid(score),
+        touches,
+        violations,
+        frozen: false,
+      },
+    };
+  }
+
+  /** Get inlier pivots within RANSAC threshold of a line */
+  private getInliers(slope: number, intercept: number, pivots: Pivot[], atr: number): Pivot[] {
+    const tolerance = this.config.ransacInlierThreshold * atr;
+    return pivots.filter(p => {
+      const linePrice = slope * p.index + intercept;
+      return Math.abs(p.price - linePrice) <= tolerance;
+    });
+  }
+
+  /** Ordinary least-squares fit on a set of pivots */
+  private leastSquaresFit(pivots: Pivot[]): { slope: number; intercept: number } | null {
+    const n = pivots.length;
+    if (n < 2) return null;
+
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    for (const p of pivots) {
+      sumX += p.index;
+      sumY += p.price;
+      sumXY += p.index * p.price;
+      sumX2 += p.index * p.index;
+    }
+
+    const denom = n * sumX2 - sumX * sumX;
+    if (Math.abs(denom) < 1e-12) return null;
+
+    const slope = (n * sumXY - sumX * sumY) / denom;
+    const intercept = (sumY - slope * sumX) / n;
+
+    return { slope, intercept };
   }
 
   private getLineScore(line: BoundaryLine, atr: number, type: 'support' | 'resistance'): number {
@@ -738,16 +1173,19 @@ export class PCTTEngine {
       ? this.projectLine(this.frozenSafetyLine, currentIndex)
       : (this.breakDirection === 'up' ? bar.low - 2 * atr : bar.high + 2 * atr);
 
-    // Check for rejection (entry signal) with rejection score
+    // Check for rejection (entry signal) with composite rejection score (TRD-007)
     if (this.breakDirection === 'up') {
       // Long setup: close above action line with wick below
-      const rejectionScore = this.calculateRejectionScore(bar, actionPrice, atr, 'long');
+      const composite = this.calculateCompositeRejectionScore(
+        bar, actionPrice, atr, 'long', this.frozenActionLine.qScore
+      );
+      const rejectionScore = composite.compositeScore;
       const hasRejection = bar.close > actionPrice && bar.low < actionPrice;
-      
+
       if (hasRejection && rejectionScore >= this.config.minRejectionScore) {
         const stopPrice = safetyPrice - this.config.stopBuffer * atr;
         const riskDistance = bar.close - stopPrice;
-        
+
         const signal: PCTTSignal = {
           type: 'long',
           event: 'entry_long',
@@ -762,23 +1200,31 @@ export class PCTTEngine {
             bar.close + riskDistance * this.config.target3R,
           ],
           riskReward: this.config.target2R,
-          confidence: this.frozenActionLine.qScore,
+          confidence: rejectionScore,
           regime: this.structure?.regime || 'transition',
           timestamp: bar.time,
         };
+
+        // TRD-006: Initialize hybrid trailing stop if enabled
+        if (this.config.hybridTrailingEnabled) {
+          this.initHybridTrailingStop('long', bar.close, stopPrice, atr);
+        }
 
         this.resetState();
         return signal;
       }
     } else {
       // Short setup: close below action line with wick above
-      const rejectionScore = this.calculateRejectionScore(bar, actionPrice, atr, 'short');
+      const composite = this.calculateCompositeRejectionScore(
+        bar, actionPrice, atr, 'short', this.frozenActionLine.qScore
+      );
+      const rejectionScore = composite.compositeScore;
       const hasRejection = bar.close < actionPrice && bar.high > actionPrice;
-      
+
       if (hasRejection && rejectionScore >= this.config.minRejectionScore) {
         const stopPrice = safetyPrice + this.config.stopBuffer * atr;
         const riskDistance = stopPrice - bar.close;
-        
+
         const signal: PCTTSignal = {
           type: 'short',
           event: 'entry_short',
@@ -793,10 +1239,15 @@ export class PCTTEngine {
             bar.close - riskDistance * this.config.target3R,
           ],
           riskReward: this.config.target2R,
-          confidence: this.frozenActionLine.qScore,
+          confidence: rejectionScore,
           regime: this.structure?.regime || 'transition',
           timestamp: bar.time,
         };
+
+        // TRD-006: Initialize hybrid trailing stop if enabled
+        if (this.config.hybridTrailingEnabled) {
+          this.initHybridTrailingStop('short', bar.close, stopPrice, atr);
+        }
 
         this.resetState();
         return signal;
@@ -872,6 +1323,225 @@ export class PCTTEngine {
     this.frozenSafetyLine = null;
     this.breakBar = -1;
     this.breakDirection = null;
+  }
+
+  // ==========================================================================
+  // TRD-005: WHITE'S REALITY CHECK - PRIVATE HELPERS
+  // ==========================================================================
+
+  /**
+   * Collect per-signal returns by running PCTT on the given bars.
+   * Each signal's return = (exit price - entry price) / entry price,
+   * where exit = target1R hit or stopPrice hit, whichever comes first.
+   */
+  private collectSignalReturns(bars: OHLCV[]): number[] {
+    const engine = new PCTTEngine(this.config);
+    const returns: number[] = [];
+    let pendingSignal: PCTTSignal | null = null;
+
+    for (const bar of bars) {
+      if (pendingSignal) {
+        // Check exit
+        if (pendingSignal.type === 'long') {
+          if (bar.low <= pendingSignal.stopPrice) {
+            returns.push((pendingSignal.stopPrice - pendingSignal.entryPrice) / pendingSignal.entryPrice);
+            pendingSignal = null;
+          } else if (bar.high >= pendingSignal.targetPrices[0]) {
+            returns.push((pendingSignal.targetPrices[0] - pendingSignal.entryPrice) / pendingSignal.entryPrice);
+            pendingSignal = null;
+          }
+        } else {
+          if (bar.high >= pendingSignal.stopPrice) {
+            returns.push((pendingSignal.entryPrice - pendingSignal.stopPrice) / pendingSignal.entryPrice);
+            pendingSignal = null;
+          } else if (bar.low <= pendingSignal.targetPrices[0]) {
+            returns.push((pendingSignal.entryPrice - pendingSignal.targetPrices[0]) / pendingSignal.entryPrice);
+            pendingSignal = null;
+          }
+        }
+      }
+
+      const { signal } = engine.update(bar);
+      if (signal && !pendingSignal) {
+        pendingSignal = signal;
+      }
+    }
+
+    return returns;
+  }
+
+  /**
+   * Bootstrap p-value calculation using stationary block bootstrap.
+   * Resamples bar returns with random block lengths (geometric distribution)
+   * to preserve serial dependence, then computes metric on each sample.
+   */
+  private bootstrapPValue(
+    barReturns: number[],
+    metricFn: (returns: number[]) => number,
+    numSamples: number
+  ): number[] {
+    const n = barReturns.length;
+    const avgBlockLen = Math.max(2, Math.floor(Math.sqrt(n)));
+    const pContinue = 1 - 1 / avgBlockLen; // Geometric distribution parameter
+    const metrics: number[] = [];
+
+    for (let s = 0; s < numSamples; s++) {
+      // Generate one bootstrap sample with stationary block resampling
+      const sample: number[] = [];
+      let pos = Math.floor(Math.random() * n);
+
+      while (sample.length < n) {
+        sample.push(barReturns[pos % n]);
+
+        // With probability pContinue, continue current block; otherwise start new block
+        if (Math.random() < pContinue) {
+          pos++;
+        } else {
+          pos = Math.floor(Math.random() * n);
+        }
+      }
+
+      metrics.push(metricFn(sample));
+    }
+
+    return metrics;
+  }
+
+  /**
+   * Sharpe ratio: mean(returns) / std(returns) * sqrt(252)
+   * Annualized assuming daily returns.
+   */
+  private sharpeRatio(returns: number[]): number {
+    if (returns.length < 2) return 0;
+    const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+    const variance = returns.reduce((a, b) => a + (b - mean) ** 2, 0) / (returns.length - 1);
+    const std = Math.sqrt(variance);
+    if (std < 1e-12) return 0;
+    return (mean / std) * Math.sqrt(252);
+  }
+
+  // ==========================================================================
+  // TRD-006: HYBRID TRAILING STOP - PRIVATE HELPERS
+  // ==========================================================================
+
+  /**
+   * Update exponentially-weighted moving average of ATR for volatility regime.
+   * Uses half-life from config to compute decay factor.
+   */
+  private updateVolatilityEwma(_bar: OHLCV, currentATR: number): void {
+    const halfLife = this.config.trailingVolatilityHalfLife;
+    const decay = Math.exp(-Math.LN2 / halfLife);
+
+    if (!this.volatilityEwmaInitialized) {
+      this.volatilityEwma = currentATR;
+      this.volatilityEwmaInitialized = true;
+    } else {
+      this.volatilityEwma = decay * this.volatilityEwma + (1 - decay) * currentATR;
+    }
+  }
+
+  // ==========================================================================
+  // TRD-007: COMPOSITE REJECTION SCORE
+  // ==========================================================================
+
+  /**
+   * Compute composite rejection score blending candle, volume,
+   * correlation regime, and structure quality factors.
+   */
+  private calculateCompositeRejectionScore(
+    bar: OHLCV,
+    actionPrice: number,
+    atr: number,
+    direction: 'long' | 'short',
+    boundaryQScore: number
+  ): CompositeRejectionScore {
+    // 1. Candle rejection score (original method)
+    const candleScore = this.calculateRejectionScore(bar, actionPrice, atr, direction);
+
+    // 2. Volume score: higher volume on rejection = stronger confirmation
+    const volumeScore = this.calculateVolumeScore(bar);
+
+    // 3. Correlation score: lower correlation environment = better for mean-reversion retests
+    const correlationScore = this.calculateCorrelationScore();
+
+    // 4. Structure score: higher Q-score boundary = stronger support/resistance
+    const structureScore = Math.min(1, boundaryQScore);
+
+    // 5. Weighted composite
+    const compositeScore = Math.min(1,
+      this.config.rejectionCandleWeight * candleScore +
+      this.config.rejectionVolumeWeight * volumeScore +
+      this.config.rejectionCorrelationWeight * correlationScore +
+      this.config.rejectionStructureWeight * structureScore
+    );
+
+    return {
+      compositeScore,
+      candleScore,
+      volumeScore,
+      correlationScore,
+      structureScore,
+      breakdown: {
+        candleWeighted: this.config.rejectionCandleWeight * candleScore,
+        volumeWeighted: this.config.rejectionVolumeWeight * volumeScore,
+        correlationWeighted: this.config.rejectionCorrelationWeight * correlationScore,
+        structureWeighted: this.config.rejectionStructureWeight * structureScore,
+      },
+    };
+  }
+
+  /**
+   * Volume score: compare current bar volume to recent average.
+   * Above-average volume on rejection = stronger signal.
+   */
+  private calculateVolumeScore(bar: OHLCV): number {
+    if (this.data.length < 21 || bar.volume <= 0) return 0.5; // Neutral if no volume data
+
+    // Average volume over last 20 bars
+    let volSum = 0;
+    const lookback = Math.min(20, this.data.length - 1);
+    for (let i = this.data.length - 1 - lookback; i < this.data.length - 1; i++) {
+      volSum += this.data[i].volume;
+    }
+    const avgVolume = volSum / lookback;
+
+    if (avgVolume < 1) return 0.5;
+
+    // Volume ratio capped at 3x for scoring
+    const ratio = Math.min(3, bar.volume / avgVolume);
+
+    // Map [0, 3] → [0, 1] with diminishing returns above 1.5x
+    if (ratio <= 1.5) {
+      return ratio / 1.5 * 0.7; // 0 to 0.7
+    }
+    return 0.7 + (ratio - 1.5) / 1.5 * 0.3; // 0.7 to 1.0
+  }
+
+  /**
+   * Correlation score: use CorrelationMonitor to assess regime.
+   * Low average correlation = favorable for independent signals (score → 1).
+   * High correlation / spike = unfavorable (score → 0).
+   */
+  private calculateCorrelationScore(): number {
+    if (!this.correlationMonitor) return 0.5; // Neutral without monitor
+
+    // Check for recent regime changes (spikes)
+    const regimeChanges = this.correlationMonitor.detectRegimeChange(
+      this.currentSymbol ? [this.currentSymbol] : undefined
+    );
+
+    if (regimeChanges.length > 0) {
+      // Recent correlation spike — penalize
+      const severityMap: Record<string, number> = { low: 0.25, medium: 0.5, high: 0.75, critical: 1.0 };
+      const maxSeverity = Math.max(...regimeChanges.map(r => severityMap[r.severity] ?? 0.5));
+      return Math.max(0, 1 - maxSeverity);
+    }
+
+    // Use average correlation: lower = better
+    const avgCorr = this.correlationMonitor.getAverageCorrelation();
+
+    // Map [0, 1] → [1, 0]: low correlation = high score
+    return Math.max(0, 1 - avgCorr);
   }
 }
 

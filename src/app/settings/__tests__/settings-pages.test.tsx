@@ -22,11 +22,6 @@ jest.mock('@/lib/supabase/client', () => ({
   getSupabase: jest.fn(),
 }));
 
-jest.mock('@/lib/supabase', () => ({
-  supabase: {},
-  getSupabase: jest.fn(),
-}));
-
 jest.mock('@/lib/supabase/server', () => ({
   createClient: jest.fn(),
   supabaseAdmin: {},

@@ -11,9 +11,9 @@ import {
 } from '../financial-context-engine';
 import { DEFAULT_CONTEXT_OPTIONS } from '../types/financial-context.types';
 
-// Mock Supabase
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
+// Mock Supabase — define inside factory to avoid TDZ with jest.mock hoisting
+jest.mock('@/lib/supabase/client', () => {
+  const _client = {
     from: jest.fn(() => ({
       select: jest.fn(() => ({
         eq: jest.fn(() => ({
@@ -36,8 +36,9 @@ jest.mock('@/lib/supabase', () => ({
       })),
       insert: jest.fn(),
     })),
-  },
-}));
+  };
+  return { getSupabase: () => _client };
+});
 
 // Mock Plaid Service
 jest.mock('../plaid-service', () => ({
@@ -61,7 +62,8 @@ jest.mock('../health-score-calculator', () => ({
   },
 }));
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+const supabase = getSupabase();
 import { plaidService } from '../plaid-service';
 import { CreditBureauService } from '@/lib/credit-bureau';
 import { healthScoreCalculator } from '../health-score-calculator';

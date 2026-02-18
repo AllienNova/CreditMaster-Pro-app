@@ -1,9 +1,60 @@
 /**
  * Credit Bureau Integration Types
- * 
+ *
  * Type definitions for credit bureau API integration
  */
 
+// ---------------------------------------------------------------------------
+// Bureau API Environment
+// ---------------------------------------------------------------------------
+export type BureauApiEnvironment = 'sandbox' | 'production';
+
+// ---------------------------------------------------------------------------
+// Per-Bureau Credential Shape
+// ---------------------------------------------------------------------------
+export interface SingleBureauCredential {
+  apiKey: string;
+  apiSecret: string;
+  clientId: string;
+  baseUrl: string;
+  environment: BureauApiEnvironment;
+}
+
+// ---------------------------------------------------------------------------
+// Map of bureau name -> credentials
+// ---------------------------------------------------------------------------
+export type BureauConfig = Record<Bureau, SingleBureauCredential>;
+
+// ---------------------------------------------------------------------------
+// Credential status for a single bureau
+// ---------------------------------------------------------------------------
+export interface BureauCredentialStatus {
+  bureau: Bureau;
+  configured: boolean;
+  environment: BureauApiEnvironment;
+  baseUrl: string;
+  /** True when the last `validateCredentials` health-check succeeded */
+  valid: boolean;
+  /** ISO-8601 timestamp of the last validation attempt */
+  lastValidated: string | null;
+  /** Human-readable error from the last failed validation, if any */
+  lastError: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Credential validation result
+// ---------------------------------------------------------------------------
+export interface CredentialValidationResult {
+  bureau: Bureau;
+  valid: boolean;
+  latencyMs: number;
+  error: string | null;
+  checkedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Legacy BureauCredentials — retained for backward-compat with initialize()
+// ---------------------------------------------------------------------------
 export interface BureauCredentials {
   experian: {
     client_id: string;

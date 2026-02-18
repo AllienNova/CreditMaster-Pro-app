@@ -10,8 +10,12 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// Skip integration tests when Supabase credentials are not available
-const hasSupabaseCredentials = supabaseUrl.length > 0 && supabaseKey.length > 0;
+// Skip integration tests when real Supabase credentials are not available (not jest test dummies)
+const hasSupabaseCredentials =
+  supabaseUrl.length > 0 &&
+  !supabaseUrl.includes('localhost:54321') &&
+  supabaseKey.length > 0 &&
+  !supabaseKey.startsWith('test-');
 const supabase = hasSupabaseCredentials ? createClient(supabaseUrl, supabaseKey) : (null as never);
 
 // Test user data

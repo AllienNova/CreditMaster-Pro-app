@@ -552,6 +552,292 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 ---
 
+## 16. Consolidated Implementation Plan
+
+> **This section consolidates all implementation plans, roadmaps, upgrade strategies, and feature specs from 26 separate documents into a single authoritative reference. The original docs can be archived to `docs/archive/plans/`.**
+
+### 16.1 Module Completion Status
+
+| Module | Current Score | Target | Gap | Priority |
+|--------|--------------|--------|-----|----------|
+| Tax Optimization | 100% | 100 | 0 | Done |
+| Budgeting/Financial | 91% | 102 | +11 | HIGH |
+| Credit Repair | 88% | 102 | +14 | HIGH |
+| Security | 75% | 102 | +27 | HIGH |
+| Investment Intelligence | 71% | 102 | +31 | HIGH |
+| Trading System | 65% | 102 | +37 | MEDIUM |
+| Risk Management | 65% | 102 | +37 | MEDIUM |
+| AI/ML Features | 64% | 102 | +38 | MEDIUM |
+| Gamification | 60% | 102 | +42 | LOW |
+| Mobile App Parity | 30% | 102 | +72 | HIGH |
+| Global Connector | 0% | 102 | +102 | LOW |
+
+**Overall Platform Score**: 76/102 → Target: 102/102 (A+ rating)
+
+### 16.2 Roadmap Overview (Q1–Q4 2026)
+
+| Phase | Quarter | Focus | Status | Key Deliverables |
+|-------|---------|-------|--------|-----------------|
+| **Phase 1: Foundation** | Q1 2026 | Core platform stability | **100% Complete** | Onboarding UX, chat engine, auth hardening |
+| **Phase 2: Growth** | Q1–Q2 2026 | Revenue features | **95% Complete** | Stripe 6-tier pricing, marketplace, notifications |
+| **Phase 3: Differentiation** | Q2 2026 | Competitive moat | **95% Complete** | AI personalization, gamification, credit builder |
+| **Phase 3.5: AI & Gamification** | Q2–Q3 2026 | Deep integration | **70% Complete** | Behavioral coaching, XP system, nudge engine |
+| **Phase 4: Scale** | Q3–Q4 2026 | Infrastructure | **70% Complete** | Mobile parity, global connector, trading engines |
+| **Phase 5: Tax Optimization** | Q4 2026 | Tax module | **100% Complete** | Tax engine, OCR, retirement optimization |
+
+### 16.3 A+ Upgrade Strategy (76 → 102)
+
+**Timeline**: 20 weeks across 8 implementation phases
+**Estimated Budget**: ~$3,000/month (ML infra $500, LLM APIs $2,000, market data $200)
+
+#### 16.3.1 Credit Repair Upgrade (88 → 102, 10 weeks)
+
+| Feature | Description | Effort |
+|---------|-------------|--------|
+| Live Bureau APIs | Experian ($0.50–2.00/pull), Equifax ($1–3/pull), TransUnion ($0.75–2.50/pull) | L |
+| AI OCR Response Processing | Parse bureau responses, extract outcomes, update dispute status | M |
+| ML Success Prediction | Train model on dispute outcomes; predict success rate before submission | L |
+| Autonomous Dispute Agent | Full lifecycle: detect → generate → submit → track → resolve | XL |
+
+#### 16.3.2 Financial Upgrade (91 → 102, 10 weeks)
+
+| Feature | Description | Effort |
+|---------|-------------|--------|
+| Predictive Cash Flow | ML-based cash flow forecasting (target >90% accuracy) | L |
+| Smart Payment Scheduling | Optimize payment dates to minimize interest, maximize float | M |
+| Gig Economy Support | Irregular income modeling, 1099 tax estimation | M |
+| Multi-Currency | International account aggregation, FX conversion | L |
+| Family Collaboration | Shared budgets, delegated access, family financial goals | M |
+
+#### 16.3.3 Trading System Upgrade (25 → 102, 12 weeks)
+
+**Architecture: Hybrid Automated Trading System (HATS)**
+
+```
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ Rule-Based  │ │     ML      │ │     LLM     │
+│   Engine    │ │   Engine    │ │   Engine    │
+│ Visual rule │ │ RF + LSTM   │ │ Claude/GPT  │
+│   builder   │ │ prediction  │ │  analysis   │
+└──────┬──────┘ └──────┬──────┘ └──────┬──────┘
+       └───────────────┼───────────────┘
+                       ▼
+              ┌─────────────────┐
+              │  Signal Fusion  │  Weighted consensus
+              └────────┬────────┘
+                       ▼
+              ┌─────────────────┐
+              │  Risk Gateway   │  Kill switch, position limits
+              └────────┬────────┘
+                       ▼
+              ┌─────────────────┐
+              │ Order Management│  Alpaca (primary), IB, paper
+              └─────────────────┘
+```
+
+| Feature | Description | Effort |
+|---------|-------------|--------|
+| Broker Integration | Alpaca (primary), Interactive Brokers; paper trading mode | L |
+| 3-Engine System | Rule-based (visual builder), ML (RF/LSTM), LLM (Claude/GPT) | XL |
+| Signal Fusion | Weighted consensus across engines; confidence scoring | L |
+| Risk Gateway | Kill switch, position limits, max drawdown, correlation checks | L |
+| 5 Trailing Stop Types | Percentage, ATR-based, chandelier, parabolic SAR, volatility | M |
+| Backtesting Engine | Historical replay, Monte Carlo simulation, walk-forward analysis | L |
+
+**Success Metrics**: Sharpe ratio >2.0, max drawdown <15%, win rate >55%
+
+#### 16.3.4 Risk Management Upgrade (65 → 102, 12 weeks)
+
+| Feature | Description | Effort |
+|---------|-------------|--------|
+| Risk Rules Engine | Configurable TypeScript rules with real-time evaluation | L |
+| Position Sizing | Kelly Criterion, volatility-adjusted, risk-parity allocation | M |
+| Kill Switch System | Manual + automated circuit breakers (drawdown, correlation, volatility) | M |
+| Correlation Monitor | Cross-asset correlation tracking, diversification scoring | M |
+| Stress Testing | Historical scenario replay, Monte Carlo VaR, tail risk analysis | L |
+| Real-Time Risk Dashboard | Live P&L, Greeks exposure, sector concentration | M |
+
+### 16.4 Feature Implementation Plans
+
+#### 16.4.1 Mobile App Parity (14 weeks, 680 hours)
+
+**Stack**: React Native 0.74 + Expo SDK 51
+**Gap**: 126 web pages vs 29 mobile screens → 97 screens to implement
+
+| Phase | Duration | Screens | Focus |
+|-------|----------|---------|-------|
+| P0: Critical | 3 weeks | 25 | Auth, dashboard, credit score, budgeting, notifications |
+| P1: Credit Karma Competitive | 3 weeks | 20 | Credit repair, disputes, credit builder, score simulator |
+| P2: Financial Intelligence | 3 weeks | 22 | Investments, trading, tax, financial tools |
+| P3: Marketplace & Admin | 3 weeks | 20 | Marketplace, settings, admin, gamification |
+| P4: Testing & Polish | 2 weeks | 10 | E2E tests, performance, accessibility |
+
+#### 16.4.2 Intelligent Financial Suite (12 weeks, 3–4 developers)
+
+**4 sub-systems**:
+
+1. **Intelligent Banking** — Account aggregation, spending categorization, anomaly detection
+2. **AI Financial Coach** — Behavioral finance coaching, goal-based nudges, emotional spending detection
+3. **Expert Asset Scanner** — Real-time market data (Alpha Vantage, Polygon.io, CoinGecko, Finnhub), portfolio rebalancing
+4. **Financial Chat Engine** — Intent detection (10 types), entity extraction (6 types), action execution (10 types)
+
+**New Database Tables**: 8 (banking_accounts, transaction_categories, ai_coaching_sessions, asset_scans, chat_sessions, chat_messages, portfolio_snapshots, market_alerts)
+
+#### 16.4.3 Global Connector Strategy (12 weeks, 3 phases)
+
+**3 Rails Architecture**:
+
+| Rail | Purpose | Key Integration |
+|------|---------|----------------|
+| Data Rail | Account aggregation (bank, brokerage, crypto) | TrueLayer (EU/UK), Plaid (US) |
+| Commercial Rail | Affiliate revenue, insurance leads, product recommendations | Partner APIs, lead-gen |
+| Payment Rail | Bank-to-bank transfers, card payments, crypto on-ramp | Banking APIs, card networks |
+
+**New Database Tables**: 8 (connector_registry, partner_configs, affiliate_clicks, insurance_quotes, payment_rails, bank_connections, transfer_logs, commission_ledger)
+
+#### 16.4.4 AI Personalization & Gamification (5 sprints)
+
+| Component | Description |
+|-----------|-------------|
+| Behavioral Finance Coaching | Pipeline: spending analysis → pattern detection → personalized advice |
+| Goal-Based Nudge System | Contextual nudges triggered by financial events, idle periods, goal proximity |
+| Emotional Spending Detection | NLP on transaction memos, time-of-day patterns, category clustering |
+| Gamified Dashboard | ProgressRings, achievement badges (5 rarity tiers), XP/level system (30 levels) |
+| Social Features | Leaderboard (opt-in), challenges (solo + team), referral bonuses |
+
+**Gamification Leveling**: 30 levels, XP curve = `100 × level^1.5`, max level title: "Financial Sage"
+
+#### 16.4.5 Onboarding Enhancement (138 hours, 3 phases)
+
+| Phase | Hours | Focus | Target Improvement |
+|-------|-------|-------|-------------------|
+| Phase 1: Critical | 30h | Progress save/resume, smart defaults, error recovery | Completion 45% → 55% |
+| Phase 2: Enhanced UX | 48h | Contextual tooltips, skip/defer, adaptive forms | Completion 55% → 65% |
+| Phase 3: Polish | 60h | Animations, social proof, A/B testing | Completion 65% → 75% |
+
+**Targets**: Completion rate 45% → 75%, time 10min → 4min, drop-off 55% → 25%
+
+#### 16.4.6 Tax Optimization Module (Complete)
+
+| Feature | Status |
+|---------|--------|
+| Tax Calculation Engine | Done |
+| Retirement Optimization (Roth conversions, RMD planning) | Done |
+| Document OCR (W-2, 1099 parsing) | Done |
+| Scenario Modeling (what-if tax projections) | Done |
+| Tax-Loss Harvesting Integration | Done |
+
+#### 16.4.7 Financial Chat Engine (Phase 6 Architecture)
+
+```
+Intent Types (10): balance_inquiry, spending_analysis, budget_check,
+  investment_query, credit_score, bill_reminder, savings_goal,
+  transaction_search, financial_advice, general_chat
+
+Entity Types (6): amount, date_range, category, account,
+  merchant, financial_metric
+
+Action Types (10): fetch_balance, analyze_spending, check_budget,
+  get_portfolio, get_credit_score, list_bills, check_savings,
+  search_transactions, generate_advice, conversational_response
+```
+
+**Implementation**: FinancialChatEngine (804 lines) with Supabase RLS (8 policies), database triggers (2), helper functions (3)
+
+### 16.5 Master Task Priority Matrix
+
+| Priority | Timeframe | Tasks | Examples |
+|----------|-----------|-------|---------|
+| **P0: Immediate** | 2 weeks | 8 tasks | Fix CLAUDE.md metrics, persistent rate limiting, audit log persistence, Supabase client migration |
+| **P1: Short-term** | 1 month | 12 tasks | Credit bureau API integration, ML success prediction, CI/CD pipeline, brand consolidation |
+| **P2: Medium-term** | 1 quarter | 15 tasks | Trading engine v1, mobile app phase 1–2, global connector phase 1, AI personalization |
+| **P3: Long-term** | 6 months | 15+ tasks | Full mobile parity, global connector phase 2–3, trading engine v2 (ML+LLM), white-label |
+
+### 16.6 Competitive Positioning
+
+| Feature Area | Fynvita | Credit Karma | Betterment | Wealthfront | Mint | Robinhood |
+|-------------|---------|-------------|-----------|-------------|------|-----------|
+| Credit Repair (AI) | Strong | Basic | None | None | None | None |
+| Investment Intelligence | Strong | None | Strong | Strong | None | Basic |
+| Budgeting/Financial | Strong | None | Basic | Basic | Strong | None |
+| Trading | Planned | None | None | None | None | Strong |
+| Tax Optimization | Done | Basic | Tax-loss | Tax-loss | None | None |
+| AI Chat (300+ models) | Unique | None | None | None | None | None |
+| Gamification | Partial | None | None | None | None | Partial |
+| Mobile App | Planned | Full | Full | Full | Full | Full |
+
+**Key Differentiator**: Only platform combining AI credit repair + financial wellness + investment intelligence + 300+ AI model access in one product.
+
+### 16.7 Completed Milestones
+
+| Milestone | Date | What Was Delivered |
+|-----------|------|-------------------|
+| Onboarding Phase 1 | Jan 7, 2026 | Progress save/resume, smart defaults, real-time validation |
+| Onboarding Phase 2 | Jan 7, 2026 | Contextual tooltips, adaptive forms, skip/defer logic |
+| Phase 6.2 Chat Engine | Jan 5, 2026 | Financial chat web interface, intent detection, entity extraction |
+| Tax Module | Q4 2025 | Full tax calculation, OCR, retirement optimization, scenario modeling |
+| 6-Tier Pricing | Q4 2025 | Free → Family Plus ($0–$399.99), Stripe integration |
+| Security Hardening | Q4 2025 | Zero Trust audit (Grade A-), 5-layer security, RBAC (100+ permissions) |
+| E2E Test Suite | Q4 2025 | Cypress (21 specs) + Playwright (16 specs) covering critical paths |
+
+### 16.8 Security Audit Summary (Zero Trust)
+
+**Audit Grade**: A- (0 critical issues, 500+ files audited)
+
+| Layer | Coverage | Status |
+|-------|----------|--------|
+| Authentication (Supabase Auth + JWT + MFA) | Full | Pass |
+| Authorization (RBAC, 14 categories, 100+ permissions) | Full | Pass |
+| Input Validation (prompt injection, PII, sanitization) | Full | Pass |
+| Rate Limiting (per-IP, per-user, cost tracking) | Partial | In-memory only (TD-02) |
+| Error Handling (structured logging, audit trail) | Partial | In-memory only (TD-03/04) |
+
+### 16.9 Trading System Readiness Audit
+
+| Component | Coverage | Status |
+|-----------|----------|--------|
+| PCTT Core Strategy | 92% | Ready |
+| Risk Management Engine | 88% | Ready |
+| LLM Analysis Pipeline | 85% | Ready |
+| Mobile Trading UI | 80% | Ready |
+| Web Trading UI | 45% | Needs work |
+| Order Management | 30% | Needs work |
+
+### 16.10 Source Documents (Archivable)
+
+The following 26 documents were consolidated into this section. They can be moved to `docs/archive/plans/`:
+
+| Document | Lines | Key Content Captured |
+|----------|-------|---------------------|
+| ENHANCEMENT_ROADMAP.md | 900 | §16.2 Roadmap, §16.5 Priority Matrix |
+| UPGRADE_PLAN_OVERVIEW.md | 243 | §16.3 A+ Strategy, budget, timeline |
+| MASTER_TASK_LIST.md | 1,115 | §16.1 Status, §16.5 Priority Matrix |
+| MOBILE_APP_PARITY_IMPLEMENTATION_PLAN.md | 1,229 | §16.4.1 Mobile App |
+| INTELLIGENT_FINANCIAL_SUITE_IMPLEMENTATION_PLAN.md | 763 | §16.4.2 Financial Suite |
+| INTELLIGENT_BANKING_IMPLEMENTATION_PLAN.md | 448 | §16.4.2 Banking sub-system |
+| GLOBAL_CONNECTOR_STRATEGY_PLAN.md | 992 | §16.4.3 Global Connector |
+| ONBOARDING_UX_ENHANCEMENT_PLAN.md | 1,348 | §16.4.5 Onboarding |
+| AI_PERSONALIZATION_DESIGN.md | 842 | §16.4.4 AI Personalization |
+| UPGRADE_TRADING_SYSTEM.md | ~400 | §16.3.3 Trading Upgrade |
+| UPGRADE_RISK_MANAGEMENT.md | ~400 | §16.3.4 Risk Upgrade |
+| UPGRADE_CREDIT_REPAIR.md | ~300 | §16.3.1 Credit Upgrade |
+| UPGRADE_FINANCIAL.md | ~300 | §16.3.2 Financial Upgrade |
+| PHASE_6_ARCHITECTURE_DIAGRAM.md | ~500 | §16.4.7 Chat Engine |
+| ONBOARDING_PHASE1_IMPLEMENTATION.md | 297 | §16.7 Completed |
+| ONBOARDING_PHASE2_IMPLEMENTATION.md | 229 | §16.7 Completed |
+| PHASE_6.2_IMPLEMENTATION_SUMMARY.md | ~400 | §16.7 Completed |
+| phase-6-implementation-guide.md | ~300 | §16.4.7 Chat phases |
+| TAX_OPTIMIZATION_MODULE.md | — | §16.4.6 Tax (Complete) |
+| TRADING_SYSTEM_AUDIT.md | — | §16.9 Trading Readiness |
+| FINANCIAL_CHAT_API.md | — | §16.4.7 Chat API |
+| FEATURE_GAP_MATRIX.md | — | §16.6 Competitive |
+| ZERO_TRUST_AUDIT_REPORT.md | 597 | §16.8 Security Audit |
+| ONBOARDING_IMPLEMENTATION_EXAMPLES.md | — | §16.4.5 (code examples) |
+| ONBOARDING_QUICK_START.md | — | §16.4.5 (quick start) |
+| ONBOARDING_RECOMMENDATIONS_SUMMARY.md | — | §16.4.5 (summary) |
+
+---
+
 ## Cross-Reference
 
 | Related Document | Purpose |
@@ -566,4 +852,5 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 ---
 
 *Document generated from full codebase analysis on 2026-02-16.*
+*Section 16 consolidated from 26 implementation plan documents on 2026-02-17.*
 *Verified metrics: file counts via find/wc, LOC via wc -l, dependency versions via package.json.*

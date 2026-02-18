@@ -57,7 +57,6 @@ export async function POST(request: NextRequest) {
         stripe_customer_id: stripeCustomerId,
       };
       const query = profiles();
-      // @ts-expect-error - Supabase types issue with update operations
       await query.update(updateData).eq('id', user.id);
     }
 

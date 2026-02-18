@@ -68,15 +68,20 @@ export async function initializeApiClient(): Promise<void> {
 }
 
 /**
- * Check if device is online
+ * Check if device is online using NetInfo for mobile, navigator for web
  */
 async function isOnline(): Promise<boolean> {
   if (Platform.OS === 'web') {
-    return navigator.onLine;
+    return typeof navigator !== 'undefined' ? navigator.onLine : true;
   }
-  // For mobile, we'll use the NetInfo package when available
-  // For now, return true and handle errors gracefully
-  return true;
+  try {
+    const NetInfo = require('@react-native-community/netinfo').default;
+    const state = await NetInfo.fetch();
+    return state.isConnected ?? false;
+  } catch {
+    // If NetInfo is not available, assume online and let request errors handle it
+    return true;
+  }
 }
 
 /**

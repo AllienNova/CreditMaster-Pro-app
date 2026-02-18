@@ -37,7 +37,7 @@ describe('Dispute API', () => {
 
       await disputeApi.getAll({ status: 'pending', bureau: 'experian', page: 1 });
 
-      expect(api.get).toHaveBeenCalledWith('/disputes?status=pending&bureau=experian&page=1');
+      expect(api.get).toHaveBeenCalledWith('/disputes?page=1&status=pending&bureau=experian');
     });
   });
 
@@ -161,7 +161,7 @@ describe('Dispute Resources API', () => {
 
       await disputeResourcesApi.getTemplates();
 
-      expect(api.get).toHaveBeenCalledWith('/disputes/templates', { cache: true, cacheTime: 3600000 });
+      expect(api.get).toHaveBeenCalledWith('/disputes/templates', { enableCache: true, cacheTime: 1800000 });
     });
   });
 
@@ -174,7 +174,7 @@ describe('Dispute Resources API', () => {
 
       await disputeResourcesApi.getStrategies();
 
-      expect(api.get).toHaveBeenCalledWith('/disputes/strategies', { cache: true, cacheTime: 3600000 });
+      expect(api.get).toHaveBeenCalledWith('/disputes/strategies', { enableCache: true, cacheTime: 1800000 });
     });
   });
 
@@ -187,7 +187,7 @@ describe('Dispute Resources API', () => {
 
       await disputeResourcesApi.getReasons();
 
-      expect(api.get).toHaveBeenCalledWith('/disputes/reasons', { cache: true, cacheTime: 3600000 });
+      expect(api.get).toHaveBeenCalledWith('/disputes/reasons', { enableCache: true, cacheTime: 3600000 });
     });
   });
 });

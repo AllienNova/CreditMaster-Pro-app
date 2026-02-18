@@ -5,7 +5,9 @@
  * Focuses on PROVEN strategies that actually work
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import { CreditBureauService } from '@/lib/credit-bureau';
 import type {
   CreditRepairScore,

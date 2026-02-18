@@ -58,7 +58,7 @@ describe('Credit Store', () => {
 
       creditScoreApi.getScores.mockResolvedValueOnce({
         success: true,
-        data: { scores: mockScores },
+        data: mockScores,
       });
 
       await act(async () => {
@@ -100,43 +100,53 @@ describe('Credit Store', () => {
 
   describe('fetchScoreHistory', () => {
     it('should fetch score history successfully', async () => {
-      const mockHistory = {
-        dataPoints: [
-          { date: '2024-01-01', score: 700 },
-          { date: '2024-02-01', score: 710 },
-        ],
-      };
+      const mockHistoryScores = [
+        { date: '2024-02-01', score: 710, bureau: 'experian' as const },
+        { date: '2024-01-01', score: 700, bureau: 'experian' as const },
+      ];
 
       creditScoreApi.getHistory.mockResolvedValueOnce({
         success: true,
-        data: mockHistory,
+        data: mockHistoryScores,
       });
 
       await act(async () => {
         await useCreditStore.getState().fetchScoreHistory(6);
       });
 
-      expect(useCreditStore.getState().scoreHistory).toEqual(mockHistory);
+      const history = useCreditStore.getState().scoreHistory;
+      expect(history).not.toBeNull();
+      expect(history!.history).toHaveLength(2);
+      expect(history!.averageScore).toBe(705);
+      expect(history!.highestScore).toBe(710);
+      expect(history!.lowestScore).toBe(700);
     });
   });
 
   describe('fetchFactors', () => {
     it('should fetch credit factors successfully', async () => {
-      const mockFactors = [
-        { name: 'Payment History', impact: 'high', status: 'excellent' },
-        { name: 'Credit Utilization', impact: 'high', status: 'good' },
+      // Source API returns array of { factor, impact (number), status }
+      // Store transforms: f.factor -> name, f.impact > 0 -> 'positive', f.status -> description
+      const mockApiFactors = [
+        { factor: 'Payment History', impact: 35, status: 'excellent' },
+        { factor: 'Credit Utilization', impact: -10, status: 'needs_improvement' },
       ];
 
       creditScoreApi.getFactors.mockResolvedValueOnce({
         success: true,
-        data: { factors: mockFactors },
+        data: mockApiFactors,
       });
 
       await act(async () => {
         await useCreditStore.getState().fetchFactors();
       });
 
-      expect(useCreditStore.getState().factors).toEqual(mockFactors);
+      const factors = useCreditStore.getState().factors;
+      expect(factors).toHaveLength(2);
+      expect(factors[0].name).toBe('Payment History');
+      expect(factors[0].impact).toBe('positive');
+      expect(factors[1].name).toBe('Credit Utilization');
+      expect(factors[1].impact).toBe('negative');
     });
   });
 

@@ -14,7 +14,9 @@
  * @see Phase 2.1: Smart Budget Engine
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import { AIMLService } from '@/lib/aiml-service';
 import { ModelRouter, TaskType } from '@/lib/model-router';
 import {

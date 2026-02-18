@@ -30,16 +30,7 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: 'Ionicons',
 }));
 
-// Mock react-native-svg
-jest.mock('react-native-svg', () => ({
-  Svg: 'Svg',
-  Circle: 'Circle',
-  G: 'G',
-  Path: 'Path',
-  Rect: 'Rect',
-  Line: 'Line',
-  Text: 'SvgText',
-}));
+// react-native-svg is mocked globally in jest.setup.js with functional components
 
 describe('Button Component', () => {
   it('renders correctly with title', () => {

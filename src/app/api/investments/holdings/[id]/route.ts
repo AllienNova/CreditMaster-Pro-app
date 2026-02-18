@@ -8,7 +8,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import type {
   Holding,
   HoldingUpdateInput,

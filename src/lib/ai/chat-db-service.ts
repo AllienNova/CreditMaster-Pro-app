@@ -5,7 +5,9 @@
  * Integrates with Supabase tables: financial_chat_sessions and financial_chat_messages
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import type {
   ChatSession,
   ChatMessage,

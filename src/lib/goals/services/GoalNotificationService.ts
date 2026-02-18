@@ -5,7 +5,9 @@
  * generates adjustment recommendations when goals are off track.
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import { Subject, BehaviorSubject } from 'rxjs';
 
 // ============================================================================

@@ -20,24 +20,21 @@ import { FinancialGoalPlan, GoalType } from '../types/ai-coach.types';
 jest.mock('../goal-planner');
 jest.mock('../financial-context-engine');
 
-// Create a proper chainable Supabase mock
-const createMockSupabaseClient = () => {
+// Mock Supabase — define inside factory to avoid TDZ with jest.mock hoisting
+jest.mock('@/lib/supabase/client', () => {
   const mockDelete = jest.fn().mockReturnValue({
     eq: jest.fn().mockReturnValue({
       eq: jest.fn().mockResolvedValue({ error: null }),
     }),
   });
 
-  return {
+  const _client = {
     from: jest.fn().mockReturnValue({
       delete: mockDelete,
     }),
   };
-};
-
-jest.mock('@/lib/supabase/client', () => ({
-  getSupabase: jest.fn(() => createMockSupabaseClient()),
-}));
+  return { getSupabase: () => _client };
+});
 
 describe('GoalTracker', () => {
   const mockUserId = 'user-123';

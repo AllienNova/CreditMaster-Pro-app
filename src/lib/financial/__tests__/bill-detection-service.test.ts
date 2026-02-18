@@ -1,5 +1,4 @@
 import { billDetectionService } from '../bill-detection-service';
-import { supabase } from '@/lib/supabase';
 import type {
   Bill,
   BillPayment,
@@ -8,12 +7,14 @@ import type {
   BillPaymentInput,
 } from '../types/bill.types';
 
-// Mock Supabase
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
-    from: jest.fn(),
-  },
-}));
+// Mock Supabase — define inside factory to avoid TDZ with jest.mock hoisting
+jest.mock('@/lib/supabase/client', () => {
+  const _client = { from: jest.fn() };
+  return { getSupabase: () => _client };
+});
+
+import { getSupabase } from '@/lib/supabase/client';
+const supabase = getSupabase() as any;
 
 describe('BillDetectionService', () => {
   const mockUserId = 'user-123';

@@ -16,7 +16,9 @@
  * 4. Fallback: Use best available result
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import { BaseOCRProvider, DocumentInput } from './providers/base-provider';
 import { OpenAIVisionProvider } from './providers/openai-vision-provider';
 import { GoogleVisionProvider } from './providers/google-vision-provider';

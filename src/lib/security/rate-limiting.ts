@@ -1,12 +1,17 @@
 /**
  * Rate Limiting Service
- * 
+ *
  * Implements rate limiting to prevent:
  * - API abuse
  * - DDoS attacks
  * - Cost overruns
  * - Resource exhaustion
+ *
+ * Uses Supabase for persistence (survives deploys/restarts)
+ * with in-memory cache for hot-path performance.
  */
+
+import { supabaseAdmin } from '@/lib/supabase/server';
 
 export interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -31,70 +36,177 @@ export interface UsageStats {
 }
 
 /**
- * In-memory store for rate limiting
- * In production, use Redis for distributed rate limiting
+ * Hybrid store: in-memory cache backed by Supabase persistence.
+ * Writes are write-through (update cache + async DB write).
+ * Reads hit cache first, fall back to DB on cache miss.
  */
 class RateLimitStore {
-  private store: Map<string, { count: number; resetAt: number }> = new Map();
-  private usageStore: Map<string, UsageStats> = new Map();
+  private cache: Map<string, { count: number; resetAt: number }> = new Map();
+  private usageCache: Map<string, UsageStats> = new Map();
+  private pendingWrites: Set<string> = new Set();
 
   get(key: string): { count: number; resetAt: number } | undefined {
-    const entry = this.store.get(key);
+    const entry = this.cache.get(key);
     if (entry && entry.resetAt > Date.now()) {
       return entry;
     }
-    // Clean up expired entry
     if (entry) {
-      this.store.delete(key);
+      this.cache.delete(key);
     }
     return undefined;
   }
 
   set(key: string, count: number, resetAt: number): void {
-    this.store.set(key, { count, resetAt });
+    this.cache.set(key, { count, resetAt });
+    this.persistRateLimit(key, count, resetAt);
   }
 
   increment(key: string, windowMs: number): number {
     const entry = this.get(key);
     if (entry) {
       entry.count++;
-      this.store.set(key, entry);
+      this.cache.set(key, entry);
+      this.persistRateLimit(key, entry.count, entry.resetAt);
       return entry.count;
     } else {
       const resetAt = Date.now() + windowMs;
-      this.store.set(key, { count: 1, resetAt });
+      this.cache.set(key, { count: 1, resetAt });
+      this.persistRateLimit(key, 1, resetAt);
       return 1;
     }
   }
 
   reset(key: string): void {
-    this.store.delete(key);
+    this.cache.delete(key);
+    this.deleteRateLimit(key);
   }
 
-  // Usage tracking
   getUsage(key: string): UsageStats | undefined {
-    return this.usageStore.get(key);
+    return this.usageCache.get(key);
   }
 
   trackUsage(key: string, cost: number, tokens: number): void {
-    const existing = this.usageStore.get(key);
+    const existing = this.usageCache.get(key);
     if (existing) {
       existing.requests++;
       existing.cost += cost;
       existing.tokens += tokens;
       existing.lastRequest = new Date();
     } else {
-      this.usageStore.set(key, {
+      this.usageCache.set(key, {
         requests: 1,
         cost,
         tokens,
         lastRequest: new Date(),
       });
     }
+    this.persistUsage(key);
   }
 
   resetUsage(key: string): void {
-    this.usageStore.delete(key);
+    this.usageCache.delete(key);
+    this.deleteUsage(key);
+  }
+
+  /** Load rate limit from DB on cache miss */
+  async loadFromDB(key: string): Promise<{ count: number; resetAt: number } | undefined> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabaseAdmin.from as any)('rate_limits')
+        .select('count, reset_at')
+        .eq('key', key)
+        .single();
+      if (data && new Date((data as any).reset_at).getTime() > Date.now()) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const entry = { count: (data as any).count, resetAt: new Date((data as any).reset_at).getTime() };
+        this.cache.set(key, entry);
+        return entry;
+      }
+    } catch {
+      // DB unavailable — continue with in-memory only
+    }
+    return undefined;
+  }
+
+  /** Load usage from DB on cache miss */
+  async loadUsageFromDB(key: string): Promise<UsageStats | undefined> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabaseAdmin.from as any)('rate_limit_usage')
+        .select('requests, cost, tokens, last_request')
+        .eq('key', key)
+        .single();
+      if (data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const row = data as any;
+        const stats: UsageStats = {
+          requests: row.requests,
+          cost: Number(row.cost),
+          tokens: Number(row.tokens),
+          lastRequest: new Date(row.last_request),
+        };
+        this.usageCache.set(key, stats);
+        return stats;
+      }
+    } catch {
+      // DB unavailable — return undefined
+    }
+    return undefined;
+  }
+
+  // --- Async persistence (fire-and-forget for hot path) ---
+
+  private persistRateLimit(key: string, count: number, resetAt: number): void {
+    if (this.pendingWrites.has(`rl:${key}`)) return;
+    this.pendingWrites.add(`rl:${key}`);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabaseAdmin.from as any)('rate_limits')
+      .upsert({
+        key,
+        count,
+        reset_at: new Date(resetAt).toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .then(() => this.pendingWrites.delete(`rl:${key}`))
+      .catch(() => this.pendingWrites.delete(`rl:${key}`));
+  }
+
+  private deleteRateLimit(key: string): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabaseAdmin.from as any)('rate_limits')
+      .delete()
+      .eq('key', key)
+      .then(() => {})
+      .catch(() => {});
+  }
+
+  private persistUsage(key: string): void {
+    const stats = this.usageCache.get(key);
+    if (!stats) return;
+    if (this.pendingWrites.has(`usage:${key}`)) return;
+    this.pendingWrites.add(`usage:${key}`);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabaseAdmin.from as any)('rate_limit_usage')
+      .upsert({
+        key,
+        requests: stats.requests,
+        cost: stats.cost,
+        tokens: stats.tokens,
+        last_request: stats.lastRequest.toISOString(),
+      })
+      .then(() => this.pendingWrites.delete(`usage:${key}`))
+      .catch(() => this.pendingWrites.delete(`usage:${key}`));
+  }
+
+  private deleteUsage(key: string): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabaseAdmin.from as any)('rate_limit_usage')
+      .delete()
+      .eq('key', key)
+      .then(() => {})
+      .catch(() => {});
   }
 }
 
@@ -319,17 +431,61 @@ export interface UserQuota {
 const userQuotas: Map<string, UserQuota> = new Map();
 
 /**
- * Set user quota
+ * Set user quota (cache + persist to Supabase)
  */
 export function setUserQuota(quota: UserQuota): void {
   userQuotas.set(quota.userId, quota);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (supabaseAdmin.from as any)('user_quotas')
+    .upsert({
+      user_id: quota.userId,
+      max_requests: quota.maxRequests,
+      max_cost: quota.maxCost,
+      max_tokens: quota.maxTokens,
+      reset_period: quota.resetPeriod,
+      updated_at: new Date().toISOString(),
+    })
+    .then(() => {})
+    .catch(() => {});
 }
 
 /**
- * Get user quota
+ * Get user quota (cache first, then DB fallback)
  */
 export function getUserQuota(userId: string): UserQuota | undefined {
   return userQuotas.get(userId);
+}
+
+/**
+ * Load user quota from database into cache
+ */
+export async function loadUserQuota(userId: string): Promise<UserQuota | undefined> {
+  const cached = userQuotas.get(userId);
+  if (cached) return cached;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabaseAdmin.from as any)('user_quotas')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    if (data) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const row = data as any;
+      const quota: UserQuota = {
+        userId: row.user_id,
+        maxRequests: row.max_requests,
+        maxCost: Number(row.max_cost),
+        maxTokens: Number(row.max_tokens),
+        resetPeriod: row.reset_period as UserQuota['resetPeriod'],
+      };
+      userQuotas.set(userId, quota);
+      return quota;
+    }
+  } catch {
+    // DB unavailable
+  }
+  return undefined;
 }
 
 /**

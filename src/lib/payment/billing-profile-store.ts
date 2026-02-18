@@ -1,4 +1,4 @@
-import supabase from '../supabase';
+import { getSupabase } from '@/lib/supabase/client';
 import { SUBSCRIPTION_PLANS } from './stripe-service';
 
 const TABLE = 'billing_profiles';
@@ -77,7 +77,7 @@ const createSeedProfile = (userId: string): BillingProfile => {
 const repository = {
   async load(userId: string): Promise<BillingProfile | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from(TABLE)
         .select('profile')
         .eq('user_id', userId)
@@ -114,7 +114,7 @@ const repository = {
         user_id: userId,
         profile,
       };
-      const { error } = await supabase.from(TABLE).upsert(row, { onConflict: 'user_id' });
+      const { error } = await getSupabase().from(TABLE).upsert(row, { onConflict: 'user_id' });
       if (error) {
         // BillingProfileStore warning: Repository save failed
       }

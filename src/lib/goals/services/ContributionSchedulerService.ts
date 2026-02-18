@@ -5,7 +5,9 @@
  * including retry logic, notifications, and auto-increase features.
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import { Subject, BehaviorSubject } from 'rxjs';
 
 // ============================================================================

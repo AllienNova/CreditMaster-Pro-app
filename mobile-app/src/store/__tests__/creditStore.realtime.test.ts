@@ -94,7 +94,7 @@ describe('Credit Store - Real-Time Updates', () => {
 
       creditScoreApi.getScores.mockResolvedValue({
         success: true,
-        data: { scores: mockScores },
+        data: mockScores,
       });
 
       creditMonitoringApi.getAlerts.mockResolvedValue({
@@ -271,7 +271,7 @@ describe('Credit Store - Real-Time Updates', () => {
 
       creditScoreApi.getScores.mockResolvedValue({
         success: true,
-        data: { scores: mockScores },
+        data: mockScores,
       });
 
       await act(async () => {

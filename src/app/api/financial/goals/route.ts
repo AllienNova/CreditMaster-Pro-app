@@ -10,7 +10,9 @@ import { z } from 'zod';
 import { jwtValidation } from '@/lib/auth/jwt-validation';
 import { rbac } from '@/lib/auth/rbac';
 import { goalTracker } from '@/lib/financial/goal-tracker';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import type { GoalType } from '@/lib/financial/types/ai-coach.types';
 
 // Zod validation schemas

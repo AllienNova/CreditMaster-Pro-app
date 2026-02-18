@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
 import { requireRole, createAuthResponse } from '@/lib/security/auth-middleware';
 
 function getSupabaseClient() {
@@ -9,8 +10,27 @@ function getSupabaseClient() {
   );
 }
 
+// Strict schema for GET search params — sanitize search to prevent injection
+const AdminUserListSchema = z.object({
+  page: z.coerce.number().int().min(1).max(10000).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().max(200).regex(/^[a-zA-Z0-9@._\s-]*$/, 'Invalid search characters').default(''),
+  status: z.string().max(50).regex(/^[a-zA-Z_]*$/, 'Invalid status value').default(''),
+  plan: z.string().max(50).regex(/^[a-zA-Z_]*$/, 'Invalid plan value').default(''),
+});
+
+// Strict schema for PATCH — only allow safe profile fields, never role/permissions
+const AdminUserUpdateSchema = z.object({
+  userId: z.string().uuid('Invalid user ID format'),
+  updates: z.object({
+    full_name: z.string().min(1).max(200).optional(),
+    avatar_url: z.string().url().max(2000).optional(),
+    phone: z.string().max(20).regex(/^[+\d\s()-]*$/, 'Invalid phone format').optional(),
+    status: z.enum(['active', 'suspended', 'pending']).optional(),
+  }).strict(),
+});
+
 export async function GET(request: NextRequest) {
-  // SECURITY: Require admin role for this endpoint
   const authResult = await requireRole(request, 'admin');
   if (!authResult.authenticated || !authResult.user) {
     return createAuthResponse(authResult);
@@ -19,28 +39,30 @@ export async function GET(request: NextRequest) {
   const supabase = getSupabaseClient();
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const search = searchParams.get('search') || '';
-    const status = searchParams.get('status') || '';
-    const plan = searchParams.get('plan') || '';
+    const params = AdminUserListSchema.parse({
+      page: searchParams.get('page') ?? undefined,
+      limit: searchParams.get('limit') ?? undefined,
+      search: searchParams.get('search') ?? undefined,
+      status: searchParams.get('status') ?? undefined,
+      plan: searchParams.get('plan') ?? undefined,
+    });
 
-    const offset = (page - 1) * limit;
+    const offset = (params.page - 1) * params.limit;
 
     let query = supabase
       .from('profiles')
       .select('*, subscriptions(plan, status)', { count: 'exact' });
 
-    if (search) {
-      query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
+    if (params.search) {
+      query = query.or(`full_name.ilike.%${params.search}%,email.ilike.%${params.search}%`);
     }
 
-    if (status) {
-      query = query.eq('status', status);
+    if (params.status) {
+      query = query.eq('status', params.status);
     }
 
     const { data: users, count, error } = await query
-      .range(offset, offset + limit - 1)
+      .range(offset, offset + params.limit - 1)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -48,18 +70,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       users: users || [],
       total: count || 0,
-      page,
-      limit,
-      totalPages: Math.ceil((count || 0) / limit)
+      page: params.page,
+      limit: params.limit,
+      totalPages: Math.ceil((count || 0) / params.limit)
     });
-  } catch (_error) {
-    // Error silently caught
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid query parameters', details: error.errors }, { status: 400 });
+    }
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
   }
 }
 
 export async function PATCH(request: NextRequest) {
-  // SECURITY: Require admin role for this endpoint
   const authResult = await requireRole(request, 'admin');
   if (!authResult.authenticated || !authResult.user) {
     return createAuthResponse(authResult);
@@ -67,8 +90,10 @@ export async function PATCH(request: NextRequest) {
 
   const supabase = getSupabaseClient();
   try {
-    const { userId, updates } = await request.json();
+    const body = await request.json();
+    const { userId, updates } = AdminUserUpdateSchema.parse(body);
 
+    // Only pass validated/whitelisted fields to the DB
     const { data, error } = await supabase
       .from('profiles')
       .update(updates)
@@ -79,8 +104,10 @@ export async function PATCH(request: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ user: data });
-  } catch (_error) {
-    // Error silently caught
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid request body', details: error.errors }, { status: 400 });
+    }
     return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
   }
 }

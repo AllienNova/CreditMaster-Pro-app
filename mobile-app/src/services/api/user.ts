@@ -4,6 +4,7 @@
  */
 
 import { api } from './client';
+import { offlineSyncService } from '../offline-sync';
 import type {
   UserProfile,
   Subscription,
@@ -33,12 +34,31 @@ export const userProfileApi = {
     api.patch<UserProfile>('/user/profile', updates),
 
   /**
-   * Upload avatar
+   * Upload avatar.
+   * If the device is offline, the upload is queued for sync.
    */
-  uploadAvatar: async (file: { uri: string; name: string; type: string }) => {
+  uploadAvatar: async (file: { uri: string; name: string; type: string }): Promise<ApiResponse<{ avatarUrl: string }>> => {
+    if (!offlineSyncService.getIsOnline()) {
+      await offlineSyncService.addToQueue({
+        endpoint: '/user/avatar',
+        method: 'POST',
+        body: JSON.stringify({ fileName: file.name, fileUri: file.uri, fileType: file.type }),
+        entity: 'profile',
+        operationType: 'upload',
+        priority: 'low',
+        conflictStrategy: 'last_write_wins',
+        metadata: { fileName: file.name },
+      });
+      return {
+        success: false,
+        error: { code: 'OFFLINE_QUEUED', message: 'Upload queued for when online', retryable: true },
+        message: 'You appear to be offline. This upload will be processed when you reconnect.',
+      } as ApiResponse<{ avatarUrl: string }>;
+    }
+
     const { supabase } = await import('../supabase');
     const { data: { session } } = await supabase.auth.getSession();
-    
+
     const formData = new FormData();
     formData.append('avatar', {
       uri: file.uri,
@@ -281,9 +301,28 @@ export const documentApi = {
     api.get<Document>(`/documents/${documentId}`),
 
   /**
-   * Upload document
+   * Upload document.
+   * If the device is offline, the upload metadata is queued for sync.
    */
-  upload: async (file: { uri: string; name: string; type: string }, docType: Document['type']) => {
+  upload: async (file: { uri: string; name: string; type: string }, docType: Document['type']): Promise<ApiResponse<Document>> => {
+    if (!offlineSyncService.getIsOnline()) {
+      await offlineSyncService.addToQueue({
+        endpoint: '/documents/upload',
+        method: 'POST',
+        body: JSON.stringify({ fileName: file.name, fileUri: file.uri, fileType: file.type, docType }),
+        entity: 'document',
+        operationType: 'upload',
+        priority: 'normal',
+        conflictStrategy: 'client_wins',
+        metadata: { fileName: file.name, docType },
+      });
+      return {
+        success: false,
+        error: { code: 'OFFLINE_QUEUED', message: 'Upload queued for when online', retryable: true },
+        message: 'You appear to be offline. This upload will be processed when you reconnect.',
+      } as ApiResponse<Document>;
+    }
+
     const { supabase } = await import('../supabase');
     const { data: { session } } = await supabase.auth.getSession();
 

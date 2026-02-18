@@ -5,7 +5,9 @@
  * automated contributions, allocations, and progress tracking.
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 
 // ============================================================================
 // TYPES

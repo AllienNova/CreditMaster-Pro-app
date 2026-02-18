@@ -23,3 +23,9 @@ export {
   TaxOptimizationEngine,
   taxOptimizationEngine,
 } from './TaxOptimizationEngine';
+export type {
+  QuarterlyEstimate,
+  SafeHarborResult,
+  UnderpaymentPenalty,
+  PaymentScheduleEntry,
+} from './TaxOptimizationEngine';

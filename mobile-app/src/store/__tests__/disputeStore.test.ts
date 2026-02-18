@@ -17,6 +17,7 @@ jest.mock('../../services/api', () => ({
   },
   disputeLetterApi: {
     generateAILetter: jest.fn(),
+    generateFromTemplate: jest.fn(),
     getStrategyRecommendations: jest.fn(),
   },
   disputeResourcesApi: {
@@ -207,7 +208,8 @@ describe('Dispute Store', () => {
 
   describe('AI Letter Generation', () => {
     it('should generate AI letter successfully', async () => {
-      disputeLetterApi.generateAILetter.mockResolvedValueOnce({
+      // When no currentDispute is set, the store calls generateFromTemplate
+      disputeLetterApi.generateFromTemplate.mockResolvedValueOnce({
         success: true,
         data: { letter: 'Generated dispute letter content...' },
       });

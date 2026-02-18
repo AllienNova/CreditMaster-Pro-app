@@ -123,7 +123,6 @@ class NotificationServiceDB {
   async markAsRead(notificationId: string): Promise<boolean> {
     const updateData: NotificationUpdate = { read: true };
     const query = notifications();
-    // @ts-expect-error - Supabase types issue with update operations
     const { error } = await query.update(updateData).eq('id', notificationId);
 
     if (error) {

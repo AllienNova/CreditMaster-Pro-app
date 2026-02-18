@@ -9,7 +9,9 @@
  * - Token validation
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import { validateSignUpData, validateSignInData, validateResetEmail, sanitizeInput } from './validation';
 
 export interface User {

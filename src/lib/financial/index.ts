@@ -118,6 +118,30 @@ export {
   type AmortizationEntry,
 } from './real-estate-tracking-service';
 
+// Investment Calculators
+export {
+  InvestmentCalculators,
+  investmentCalculators,
+  createInvestmentCalculators,
+  type CompoundingFrequency,
+  type CompoundInterestParams,
+  type CompoundInterestResult,
+  type YearlyBreakdownEntry,
+  type ROIParams,
+  type ROIResult,
+  type RetirementProjectionParams,
+  type RetirementProjectionResult,
+  type RetirementYearEntry,
+  type FIREResult,
+  type DCAResult,
+  type DCAPurchase,
+  type BreakEvenResult,
+  type MortgagePaymentResult,
+  type LoanAmortizationEntry,
+  type LoanAmortizationResult,
+  type RiskAdjustedReturnResult,
+} from './investment-calculators';
+
 // Crypto Wallet Tracking
 export {
   CryptoWalletService,

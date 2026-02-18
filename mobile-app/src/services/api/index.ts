@@ -166,20 +166,35 @@ export default cpfiApi;
 
 /**
  * API Service initialization
- * Call this on app startup to initialize offline queue and other features
+ * Call this on app startup to initialize offline queue and other features.
+ * Also initializes the centralized OfflineSyncService with network awareness.
  */
 export async function initializeServices(): Promise<void> {
   const { initializeApiClient } = await import('./client');
+  const { offlineSyncService } = await import('../offline-sync');
   await initializeApiClient();
+  await offlineSyncService.initialize();
 }
 
 /**
- * Hook to sync offline requests when connectivity is restored
+ * Hook to sync offline requests when connectivity is restored.
+ * Processes both the legacy API offline queue and the new centralized sync queue.
  */
 export async function syncOfflineData(): Promise<{
   processed: number;
   failed: number;
 }> {
   const { processOfflineQueue } = await import('./client');
-  return processOfflineQueue();
+  const { offlineSyncService } = await import('../offline-sync');
+
+  // Process both queues
+  const [legacyResult, syncResult] = await Promise.all([
+    processOfflineQueue(),
+    offlineSyncService.processQueue(),
+  ]);
+
+  return {
+    processed: legacyResult.processed + syncResult.processed,
+    failed: legacyResult.failed + syncResult.failed,
+  };
 }

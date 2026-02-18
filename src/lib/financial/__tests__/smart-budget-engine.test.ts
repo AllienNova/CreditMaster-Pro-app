@@ -6,14 +6,15 @@
 
 import { SmartBudgetEngine, getSmartBudgetEngine } from '../smart-budget-engine';
 import { BudgetPreferences } from '../types/budget.types';
-import { supabase } from '@/lib/supabase';
 
-// Mock dependencies
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
-    from: jest.fn(),
-  },
-}));
+// Mock dependencies — define inside factory to avoid TDZ with jest.mock hoisting
+jest.mock('@/lib/supabase/client', () => {
+  const _client = { from: jest.fn() };
+  return { getSupabase: () => _client };
+});
+
+import { getSupabase } from '@/lib/supabase/client';
+const supabase = getSupabase() as any;
 
 jest.mock('@/lib/aiml-service', () => ({
   getAIMLService: jest.fn(() => ({

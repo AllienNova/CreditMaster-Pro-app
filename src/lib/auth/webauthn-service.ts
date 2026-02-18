@@ -5,7 +5,9 @@
  * and platform authenticators (Touch ID, Face ID, Windows Hello).
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 
 // ============================================================================
 // TYPES

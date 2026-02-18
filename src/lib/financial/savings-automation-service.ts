@@ -9,7 +9,9 @@
  * - Goal-based automation
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import {
   SavingsRule,
   SavingsRuleType,

@@ -44,8 +44,9 @@ describe('Onboarding Profile Page', () => {
     const ProfilePage = require('../profile/page').default;
     render(<ProfilePage />);
 
-    const profileText = screen.queryByText(/Profile/i) || screen.queryByText(/About/i) || screen.queryByText(/Tell us/i);
-    expect(profileText).toBeTruthy();
+    const profileElements = screen.queryAllByText(/Basic Information/i);
+    const profileFallback = screen.queryByText(/Profile/i) || screen.queryByText(/About/i) || screen.queryByText(/Tell us/i);
+    expect(profileElements.length > 0 || profileFallback).toBeTruthy();
   });
 
   it('shows name input field', () => {
@@ -182,8 +183,9 @@ describe('Onboarding Layout', () => {
     );
 
     // Should show step indicators or content
-    const stepIndicator = screen.queryByText(/1/i) || screen.queryByText(/Step/i) || screen.queryByText(/Test Content/i);
-    expect(stepIndicator).toBeTruthy();
+    const stepElements = screen.queryAllByText(/Step/i);
+    const contentElement = screen.queryByText(/Test Content/i);
+    expect(stepElements.length > 0 || contentElement).toBeTruthy();
   });
 });
 

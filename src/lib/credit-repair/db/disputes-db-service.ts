@@ -14,7 +14,9 @@
  * - Transaction support
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import type { Dispute, DisputeStrategy, DisputeStatus, Bureau } from './types';
 
 // ============================================================================

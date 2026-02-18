@@ -96,7 +96,6 @@ class ReviewService {
     };
 
     const query = reviews();
-    // @ts-expect-error - Supabase type issue
     const { data, error } = await query.insert(insertData).select().single();
 
     if (error) {

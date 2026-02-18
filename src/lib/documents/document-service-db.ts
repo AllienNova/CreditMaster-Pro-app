@@ -162,7 +162,6 @@ class DocumentServiceDB {
       // Update URL in database
       const updateData: DocumentUpdate = { s3_url: url };
       const query = documents();
-      // @ts-expect-error - Supabase types issue with update operations
       await query.update(updateData).eq('id', documentId);
 
       docData.s3_url = url;

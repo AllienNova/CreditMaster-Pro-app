@@ -5,7 +5,9 @@
  * into a single comprehensive profile. Implements caching with 15-minute TTL.
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import { budgetService } from './budget-service';
 import { spendingAnalysisService } from './spending-analysis-service';
 import { billDetectionService } from './bill-detection-service';

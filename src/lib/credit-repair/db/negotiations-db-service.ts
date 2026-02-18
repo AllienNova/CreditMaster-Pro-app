@@ -12,7 +12,9 @@
  * - Full error handling
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 
 // ============================================================================
 // TYPES

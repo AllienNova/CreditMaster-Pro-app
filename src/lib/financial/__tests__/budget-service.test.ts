@@ -17,50 +17,11 @@ import {
   BUDGET_CATEGORIES,
 } from '../types/budget.types';
 
-// Mock Supabase
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
-    from: jest.fn(() => ({
-      insert: jest.fn(() => ({
-        select: jest.fn(() => ({
-          single: jest.fn(),
-        })),
-      })),
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            single: jest.fn(),
-            order: jest.fn(() => ({
-              limit: jest.fn(),
-            })),
-          })),
-          single: jest.fn(),
-          order: jest.fn(() => ({
-            limit: jest.fn(),
-          })),
-        })),
-        single: jest.fn(),
-      })),
-      update: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            select: jest.fn(() => ({
-              single: jest.fn(),
-            })),
-          })),
-          select: jest.fn(() => ({
-            single: jest.fn(),
-          })),
-        })),
-      })),
-      delete: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          eq: jest.fn(),
-        })),
-      })),
-    })),
-  },
-}));
+// Mock Supabase — singleton to ensure source and test share the same object
+jest.mock('@/lib/supabase/client', () => {
+  const _client = { from: jest.fn() };
+  return { getSupabase: () => _client };
+});
 
 describe('BudgetService', () => {
   beforeEach(() => {
@@ -96,7 +57,7 @@ describe('BudgetService', () => {
           updated_at: new Date().toISOString(),
         };
 
-        const { supabase } = require('@/lib/supabase');
+        const supabase = require('@/lib/supabase/client').getSupabase();
         supabase.from.mockReturnValue({
           insert: jest.fn().mockReturnValue({
             select: jest.fn().mockReturnValue({
@@ -158,7 +119,7 @@ describe('BudgetService', () => {
           updated_at: new Date().toISOString(),
         };
 
-        const { supabase } = require('@/lib/supabase');
+        const supabase = require('@/lib/supabase/client').getSupabase();
         supabase.from.mockReturnValue({
           insert: jest.fn().mockReturnValue({
             select: jest.fn().mockReturnValue({
@@ -195,7 +156,7 @@ describe('BudgetService', () => {
           updated_at: new Date().toISOString(),
         };
 
-        const { supabase } = require('@/lib/supabase');
+        const supabase = require('@/lib/supabase/client').getSupabase();
         supabase.from.mockReturnValue({
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -221,7 +182,7 @@ describe('BudgetService', () => {
       });
 
       it('should return null for non-existent budget', async () => {
-        const { supabase } = require('@/lib/supabase');
+        const supabase = require('@/lib/supabase/client').getSupabase();
         supabase.from.mockReturnValue({
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -263,7 +224,7 @@ describe('BudgetService', () => {
           updated_at: new Date().toISOString(),
         };
 
-        const { supabase } = require('@/lib/supabase');
+        const supabase = require('@/lib/supabase/client').getSupabase();
         supabase.from.mockReturnValue({
           update: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -295,7 +256,7 @@ describe('BudgetService', () => {
 
     describe('deleteBudget', () => {
       it('should delete budget successfully', async () => {
-        const { supabase } = require('@/lib/supabase');
+        const supabase = require('@/lib/supabase/client').getSupabase();
         supabase.from.mockReturnValue({
           delete: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
@@ -406,7 +367,7 @@ describe('BudgetService', () => {
         },
       ];
 
-      const { supabase } = require('@/lib/supabase');
+      const supabase = require('@/lib/supabase/client').getSupabase();
       supabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -451,7 +412,7 @@ describe('BudgetService', () => {
         },
       ];
 
-      const { supabase } = require('@/lib/supabase');
+      const supabase = require('@/lib/supabase/client').getSupabase();
       supabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -493,7 +454,7 @@ describe('BudgetService', () => {
         },
       ];
 
-      const { supabase } = require('@/lib/supabase');
+      const supabase = require('@/lib/supabase/client').getSupabase();
       supabase.from.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({

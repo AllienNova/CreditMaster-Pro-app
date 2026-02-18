@@ -33,7 +33,7 @@ describe('Credit Score API', () => {
 
       const result = await creditScoreApi.getScores();
 
-      expect(api.get).toHaveBeenCalledWith('/credit/scores', { cache: true, cacheTime: 300000 });
+      expect(api.get).toHaveBeenCalledWith('/credit/scores', { enableCache: true, cacheTime: 300000 });
       expect(result.data).toEqual(mockScores);
     });
   });

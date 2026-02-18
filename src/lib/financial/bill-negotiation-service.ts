@@ -5,7 +5,9 @@
  * through intelligent negotiation scripts, market comparisons, and tracking.
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import type { Bill, BillCategory } from './types/bill.types';
 import type {
   BillNegotiation,

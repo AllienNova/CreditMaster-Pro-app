@@ -6,7 +6,9 @@
  * and provides the foundation for AI-powered insights and recommendations.
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import { plaidService } from './plaid-service';
 import { CreditBureauService } from '@/lib/credit-bureau';
 import {

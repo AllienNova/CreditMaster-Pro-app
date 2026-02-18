@@ -16,10 +16,14 @@ import {
   measureTime,
 } from '@/lib/test-utils/test-setup';
 
-// Check if we have required credentials
-const hasCredentials = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Check if we have REAL credentials (not jest test dummies)
+const hasCredentials =
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('localhost:54321') &&
+  process.env.SUPABASE_SERVICE_ROLE_KEY &&
+  !process.env.SUPABASE_SERVICE_ROLE_KEY.startsWith('test-');
 
-// Skip these tests if credentials are not available
+// Skip these tests if real credentials are not available
 const describeOrSkip = hasCredentials ? describe : describe.skip;
 
 describeOrSkip('Real Integration Tests - Credit Repair API', () => {

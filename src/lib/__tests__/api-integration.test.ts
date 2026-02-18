@@ -55,8 +55,8 @@ const createChainableMock = () => {
 
 const mockSupabaseClient = createChainableMock();
 
-jest.mock('@/lib/supabase', () => ({
-  supabase: mockSupabaseClient,
+jest.mock('@/lib/supabase/client', () => ({
+  getSupabase: () => mockSupabaseClient,
 }));
 
 jest.mock('@/lib/supabase/server', () => ({

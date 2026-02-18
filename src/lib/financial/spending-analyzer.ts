@@ -13,7 +13,9 @@
  * - AI-generated insights and recommendations
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import { AIMLService } from '@/lib/aiml-service';
 import { ModelRouter } from '@/lib/model-router';
 import type {

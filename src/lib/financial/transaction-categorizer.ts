@@ -5,7 +5,9 @@
  * recurring transaction detection, and category spending analysis.
  */
 
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase/client';
+
+const supabase = getSupabase();
 import { PlaidTransaction } from './plaid-service';
 import { AIMLService } from '@/lib/aiml-service';
 import { ModelRouter, TaskType } from '@/lib/model-router';
